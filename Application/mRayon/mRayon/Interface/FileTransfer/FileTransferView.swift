@@ -34,7 +34,7 @@ struct FileTransferView: View {
     var body: some View {
         Group {
             if context.destroyedSession {
-                EmptyStateView("Connection closed", systemImage: "bolt.horizontal", message: "This file transfer is no longer connected.")
+                EmptyStateView("Connection closed", systemImage: "bolt.horizontal")
             } else {
                 VStack(spacing: RX.Space.s3) {
                     mainView
@@ -68,7 +68,7 @@ struct FileTransferView: View {
                 EmptyStateView(
                     "Connection closed",
                     systemImage: "bolt.horizontal",
-                    message: context.currentHint.isEmpty ? "The file transfer is no longer connected." : context.currentHint,
+                    message: context.currentHint == "Connection Closed" ? "" : context.currentHint,
                     actionTitle: "Reconnect"
                 ) {
                     context.processBootstrap()
@@ -117,7 +117,7 @@ struct FileTransferView: View {
     var fileListView: some View {
         Group {
             if context.currentFileList.isEmpty {
-                EmptyStateView("Empty folder", systemImage: "folder", message: "Upload files with the arrow button below.")
+                EmptyStateView("Empty folder", systemImage: "folder")
             } else {
                 ScrollView(.vertical, showsIndicators: false) {
                     VStack(alignment: .leading, spacing: RX.Space.s2) {
@@ -414,7 +414,7 @@ final class IOSFileTransferUIHandler: FileTransferUIHandler {
     func downloadCompleted() {
         SPIndicator.present(
             title: "Download Completed",
-            message: "You can access it in file.app",
+            message: "Saved to Files",
             preset: .done
         )
     }

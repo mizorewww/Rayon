@@ -20,20 +20,20 @@ struct SettingView: View {
         List {
             Section {
                 Toggle(isOn: Binding(get: { !store.disableConformation }, set: { store.disableConformation = !$0 })) {
-                    row("Ask before closing", "Confirm before closing sessions or deleting items.")
+                    Text("Ask before closing")
                 }
                 Toggle(isOn: $store.storeRecent) {
-                    row("Remember recent servers", "Shows recent servers and commands on Home.")
+                    Text("Remember recent servers")
                 }
                 Stepper(value: $recentLimit, in: 1 ... 50) {
                     row("Recent items to keep", "\(recentLimit)")
                 }
                 .disabled(!store.storeRecent)
                 Toggle(isOn: $store.saveTemporarySession) {
-                    row("Record Quick Connect commands", "Lets Quick Connect suggest them.")
+                    Text("Record Quick Connect commands")
                 }
                 Toggle(isOn: $store.openInterfaceAutomatically) {
-                    row("Open sessions when connected", "Show a terminal or file transfer as soon as it opens.")
+                    Text("Open sessions when connected")
                 }
             } header: {
                 RXSectionHeader("Behavior")

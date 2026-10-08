@@ -39,7 +39,7 @@ struct IdentityView: View {
                 EmptyStateView(
                     "No identities yet",
                     systemImage: "person",
-                    message: "An identity is a username with a password or key pair. Servers and Quick Connect sign in with it.",
+                    message: "A username with a password or key.",
                     actionTitle: "New Identity"
                 ) {
                     openCreate = true

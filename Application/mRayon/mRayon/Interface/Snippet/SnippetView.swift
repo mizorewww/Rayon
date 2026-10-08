@@ -25,7 +25,6 @@ struct SnippetView: View {
                 EmptyStateView(
                     "No snippets yet",
                     systemImage: "chevron.left.forwardslash.chevron.right",
-                    message: "Save commands you run often, then run them on several servers at once.",
                     actionTitle: "New Snippet"
                 ) {
                     openCreate = true

@@ -34,7 +34,7 @@ struct EditSnippetView: View {
     var body: some View {
         List {
             Section {
-                TextField("Snippet Name (Required)", text: $name)
+                TextField("Name", text: $name)
                 Button {
                     openSymbolPicker = true
                 } label: {
@@ -44,13 +44,10 @@ struct EditSnippetView: View {
                         Label("Select SF Symbol", systemImage: avatar.isEmpty ? "square.dashed" : avatar)
                     }
                 }
-                TextField("Group (Optional)", text: $group)
-                TextField("Comment (Optional)", text: $comment)
+                TextField("Group", text: $group)
+                TextField("Comment", text: $comment)
             } header: {
                 RXSectionHeader("Name")
-            } footer: {
-                Text(avatar.isEmpty ? "No Symbol Selected" : avatar)
-                    .textSelection(.enabled)
             }
 
 //                Group is not available on iOS, :P

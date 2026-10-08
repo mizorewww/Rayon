@@ -33,7 +33,7 @@ struct EditMachineView: View {
         List {
             Section {
                 TextField("Name", text: $name)
-                TextField("Comment (Optional)", text: $comment)
+                TextField("Comment", text: $comment)
             } header: {
                 RXSectionHeader("Name")
             }
@@ -72,7 +72,7 @@ struct EditMachineView: View {
                 if let aid = associatedIdentity {
                     Text(RayonStore.shared.identityGroup[aid].shortDescription())
                 } else {
-                    Text("No Associated Identity (Optional)")
+                    Text("Automatic")
                 }
             }
 
@@ -81,21 +81,17 @@ struct EditMachineView: View {
                     .textInputAutocapitalization(.never)
             } header: {
                 RXSectionHeader("Group")
-            } footer: {
-                Text("Items with the same group are listed together.")
             }
 
             Section {
                 HStack {
-                    Text("Login Path: ")
+                    Text("Start folder")
                     TextField("", text: $fileTransferLoginPath)
                         .disableAutocorrection(true)
                         .textInputAutocapitalization(.never)
                 }
             } header: {
                 RXSectionHeader("SFTP")
-            } footer: {
-                Text("Customization about SFTP features")
             }
 
             if let identity = inEditWith?() {

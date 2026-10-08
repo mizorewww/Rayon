@@ -44,7 +44,6 @@ struct HomeView: View {
                         EmptyStateView(
                             "No servers yet",
                             systemImage: "server.rack",
-                            message: "Add a server to monitor it, open terminals and transfer files.",
                             actionTitle: "New Server"
                         ) {
                             openNewServer = true

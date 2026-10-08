@@ -189,7 +189,7 @@ struct SessionsView: View {
                 EmptyStateView(
                     "No sessions",
                     systemImage: "terminal",
-                    message: "Start one from Servers: open a terminal, a monitor or a file transfer."
+                    message: ""
                 )
                 .frame(maxHeight: .infinity)
                 .background(RXBackdrop().ignoresSafeArea())

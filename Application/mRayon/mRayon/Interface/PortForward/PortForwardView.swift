@@ -19,7 +19,6 @@ struct PortForwardView: View {
                 EmptyStateView(
                     "No port forwards",
                     systemImage: "arrow.right",
-                    message: "Reach a port on a server, or expose a local port to it, through the server's SSH connection.",
                     actionTitle: "New Port Forward"
                 ) {
                     openCreate = true
@@ -35,8 +34,6 @@ struct PortForwardView: View {
                         }
                     } header: {
                         RXSectionHeader("\(backend.container.count) running")
-                    } footer: {
-                        Text("Traffic goes through each server's SSH connection.")
                     }
                 }
                 .rxGroupedList()

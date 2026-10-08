@@ -51,8 +51,6 @@ struct EditPortForwardView: View {
                 .pickerStyle(MenuPickerStyle())
             } header: {
                 RXSectionHeader("Orientation")
-            } footer: {
-                Text("Indicate where should we listen on.")
             }
 
             Section {
@@ -65,9 +63,7 @@ struct EditPortForwardView: View {
                 .textInputAutocapitalization(.never)
                 .keyboardType(.numberPad)
             } header: {
-                RXSectionHeader("Forward Basic")
-            } footer: {
-                Text("You should be able to access target using this port on \(forwardOrientation == .listenLocal ? "local host" : "remote host").")
+                RXSectionHeader("Bind Port")
             }
 
             Section {
@@ -84,8 +80,6 @@ struct EditPortForwardView: View {
                 .keyboardType(.numberPad)
             } header: {
                 RXSectionHeader("Target Host")
-            } footer: {
-                Text("The target host and port you want to access, using this ssh tunnel.")
             }
 
             Section {
@@ -102,8 +96,6 @@ struct EditPortForwardView: View {
                 }
             } header: {
                 RXSectionHeader("Machine")
-            } footer: {
-                Text("We will use this machine to create tunnel for you.")
             }
 
             Section {} footer: { Text(forwardDescription) }

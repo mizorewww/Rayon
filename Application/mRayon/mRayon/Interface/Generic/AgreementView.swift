@@ -33,7 +33,6 @@ struct AgreementView: View {
                     Button {
                         UIBridge.requiresConfirmation(
                             message: "Accept the license?",
-                            informative: "You have read and agree to the license agreement.",
                             confirmTitle: "Agree",
                             destructive: false
                         ) { yes in

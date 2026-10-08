@@ -37,8 +37,6 @@ struct EditIdentityView: View {
                     .disableAutocorrection(true)
             } header: {
                 RXSectionHeader("Username")
-            } footer: {
-                Text("Username is identical to the parameter used during ssh login.")
             }
 
             Section {
@@ -66,7 +64,7 @@ struct EditIdentityView: View {
             } header: {
                 RXSectionHeader("Password")
             } footer: {
-                Text("Password is used to either authenticate the session or decrypt the private key. It's optional.")
+                Text("Optional. Also unlocks the private key.")
             }
 
             Section {
@@ -89,18 +87,14 @@ struct EditIdentityView: View {
                 Toggle(isOn: $autoAuth) {
                     Text("Authenticate automatically")
                 }
-            } header: {
-                RXSectionHeader("Automatic")
             } footer: {
-                Text("Tried when a server has no identity set. Required for Quick Connect.")
+                Text("Required for Quick Connect.")
             }
 
             Section {
-                TextField("Comment (Optional)", text: $comment)
+                TextField("Comment", text: $comment)
             } header: {
                 RXSectionHeader("Comment")
-            } footer: {
-                Text("Comment does not take any effect in authenticate, but keep you remember this identity.")
             }
 
             Section {
@@ -108,8 +102,6 @@ struct EditIdentityView: View {
                     .textInputAutocapitalization(.never)
             } header: {
                 RXSectionHeader("Group")
-            } footer: {
-                Text("Items with the same group are listed together.")
             }
             if let identity = inEditWith?() {
                 Section {
