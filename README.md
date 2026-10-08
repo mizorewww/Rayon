@@ -30,14 +30,19 @@ modify the project's distribution signing settings.
 Verified on 2026-10-08 with Xcode 27.0 (27A5209h), Swift 6.4 and an arm64
 macOS 27.2 host: both Debug and Release builds succeeded in Swift 6 language mode,
 and `lipo` confirmed both architectures in each executable. Both shared packages
-also resolved their dependencies independently. No application launch, SSH
-integration, Intel runtime, macOS 13 runtime or iOS build was tested. The native
+also resolved their dependencies independently. The locally signed Debug and Release applications were subsequently launched
+through LaunchServices on this host, and the Release configuration window was
+opened from the main sidebar. SSH integration, Intel runtime, macOS 13 runtime
+and iOS builds have not been tested. The native
 Ghostty terminal was exercised separately by the tests described below. Existing
 warnings include missing app icons, deprecated APIs and legacy SDK actor-isolation
 warnings. Explicit Combine imports were added to four timer-using
 views to remove the current compiler's implicit-import warnings.
 
-These are unsigned build artifacts, not notarized distribution packages. Configure
+The script uses Xcode ad hoc signing for local execution and verifies all
+architectures and nested code with `codesign --verify --deep --strict`. It clears
+the historical team/profile overrides for this local build only. These are
+locally signed applications, not notarized distribution packages. Configure
 your own team, signing identity and provisioning profile before distribution;
 changing signing identity can also affect access to existing Keychain items.
 Use disposable test credentials: the legacy Debug encryption is derived from the

@@ -90,8 +90,11 @@ bash Workflow/Scripts/build-configuration-preview.sh
 
 This creates `DerivedData/RayonConfigurationPreview.app` with a separate bundle
 identity and preference domain, without opening Rayon's account store. The
-application binaries produced by the main build script remain unsigned; signing,
-notarization, external SSH-server end-to-end interaction, and every individual
-standalone Ghostty setting are outside these local checks.
+application binaries produced by the main build script are ad hoc signed and
+strictly verified, including nested code and both architectures. Both main app
+configurations were launched through LaunchServices on the arm64 host, and the
+Release configuration window was opened from the main sidebar. Developer ID
+distribution signing, notarization, external SSH-server end-to-end interaction,
+and every individual standalone Ghostty setting are outside these local checks.
 
 Catalog refresh instructions live in `Workflow/Scripts/GhosttyConfig/README.md`.

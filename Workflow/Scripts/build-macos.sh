@@ -19,7 +19,13 @@ xcodebuild \
     -derivedDataPath "$DERIVED_DATA_PATH" \
     ARCHS='arm64 x86_64' \
     ONLY_ACTIVE_ARCH=NO \
-    CODE_SIGNING_ALLOWED=NO \
+    CODE_SIGNING_ALLOWED=YES \
+    CODE_SIGN_IDENTITY=- \
+    CODE_SIGN_STYLE=Manual \
+    DEVELOPMENT_TEAM= \
+    PROVISIONING_PROFILE_SPECIFIER= \
     build
 
-printf '\nUnsigned application: %s/Build/Products/%s/Rayon.app\n' "$DERIVED_DATA_PATH" "$CONFIGURATION"
+APP_PATH="$DERIVED_DATA_PATH/Build/Products/$CONFIGURATION/Rayon.app"
+/usr/bin/codesign --verify --deep --strict --all-architectures --verbose=2 "$APP_PATH"
+printf '\nLocally signed application: %s\n' "$APP_PATH"
