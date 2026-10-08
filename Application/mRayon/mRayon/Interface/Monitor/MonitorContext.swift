@@ -110,22 +110,11 @@ class MonitorContext: ObservableObject, Identifiable, Equatable {
 extension MonitorContext {
     struct DefaultPresent: View {
         let context: MonitorContext
-        @Environment(\.dismiss) private var dismiss
 
         var body: some View {
-            NavigationView {
+            DefaultModalPresenter {
                 MonitorView(context: context)
-                    .toolbar {
-                        ToolbarItem {
-                            Button {
-                                dismiss()
-                            } label: {
-                                Image(systemName: "arrow.down.right.and.arrow.up.left")
-                            }
-                        }
-                    }
             }
-            .navigationViewStyle(StackNavigationViewStyle())
         }
     }
 }

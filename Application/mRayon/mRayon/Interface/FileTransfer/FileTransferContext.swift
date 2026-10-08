@@ -391,22 +391,11 @@ class FileTransferContext: ObservableObject, Identifiable, Equatable {
 extension FileTransferContext {
     struct DefaultPresent: View {
         let context: FileTransferContext
-        @Environment(\.dismiss) private var dismiss
 
         var body: some View {
-            NavigationView {
+            DefaultModalPresenter {
                 FileTransferView(context: context)
-                    .toolbar {
-                        ToolbarItem {
-                            Button {
-                                dismiss()
-                            } label: {
-                                Image(systemName: "arrow.down.right.and.arrow.up.left")
-                            }
-                        }
-                    }
             }
-            .navigationViewStyle(StackNavigationViewStyle())
         }
     }
 }

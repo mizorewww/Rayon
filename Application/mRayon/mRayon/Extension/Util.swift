@@ -44,6 +44,19 @@ enum RayonUtil {
         }
     }
 
+    /// Presents a SwiftUI view in a form-sheet hosting controller over the
+    /// topmost view controller. Shared by all modal picker flows.
+    static func presentModalSheet<Content: View>(rootView: Content) {
+        let controller = UIHostingController(rootView: rootView)
+        controller.isModalInPresentation = true
+        controller.modalTransitionStyle = .coverVertical
+        controller.modalPresentationStyle = .formSheet
+        controller.preferredContentSize = preferredPopOverSize
+        UIWindow.shutUpKeyWindow?
+            .topMostViewController?
+            .present(controller, animated: true, completion: nil)
+    }
+
     static func selectIdentity() -> RDIdentity.ID? {
         assert(!Thread.isMainThread, "select identity must be called from background thread")
 
@@ -53,22 +66,14 @@ enum RayonUtil {
         debugPrint("Picking Identity")
 
         mainActor {
-            let picker = NavigationView {
+            let picker = NavigationStack {
                 PickIdentityView {
                     selection = $0
                     sem.signal()
                 }
             }
             .expended()
-            .navigationViewStyle(StackNavigationViewStyle())
-            let controller = UIHostingController(rootView: picker)
-            controller.isModalInPresentation = true
-            controller.modalTransitionStyle = .coverVertical
-            controller.modalPresentationStyle = .formSheet
-            controller.preferredContentSize = preferredPopOverSize
-            UIWindow.shutUpKeyWindow?
-                .topMostViewController?
-                .present(controller, animated: true, completion: nil)
+            presentModalSheet(rootView: picker)
         }
 
         sem.wait()
@@ -77,7 +82,7 @@ enum RayonUtil {
     }
 
     static func selectMachine(canSelectMany: Bool = true) -> [RDMachine.ID] {
-        assert(!Thread.isMainThread, "select identity must be called from background thread")
+        assert(!Thread.isMainThread, "select machine must be called from background thread")
 
         var selection: [RDMachine.ID] = []
         let sem = DispatchSemaphore(value: 0)
@@ -85,22 +90,14 @@ enum RayonUtil {
         debugPrint("Picking Machine")
 
         mainActor {
-            let picker = NavigationView {
+            let picker = NavigationStack {
                 PickMachineView(completion: {
                     selection = $0
                     sem.signal()
                 }, canSelectMany: canSelectMany)
             }
             .expended()
-            .navigationViewStyle(StackNavigationViewStyle())
-            let controller = UIHostingController(rootView: picker)
-            controller.isModalInPresentation = true
-            controller.modalTransitionStyle = .coverVertical
-            controller.modalPresentationStyle = .formSheet
-            controller.preferredContentSize = preferredPopOverSize
-            UIWindow.shutUpKeyWindow?
-                .topMostViewController?
-                .present(controller, animated: true, completion: nil)
+            presentModalSheet(rootView: picker)
         }
 
         sem.wait()
@@ -121,23 +118,15 @@ enum RayonUtil {
             }
             // so that picker is closed
             mainActor(delay: 0.6) {
-                let runner = NavigationView {
+                let runner = NavigationStack {
                     let context = SnippetExecuteContext(snippet: snippet, machineGroup: machineIds.map { machineId in
                         RayonStore.shared.machineGroup[machineId]
                     })
                     SnippetExecuteView(context: context)
                 }
                 .expended()
-                .navigationViewStyle(StackNavigationViewStyle())
                 .navigationBarTitleDisplayMode(.inline)
-                let controller = UIHostingController(rootView: runner)
-                controller.isModalInPresentation = true
-                controller.modalTransitionStyle = .coverVertical
-                controller.modalPresentationStyle = .formSheet
-                controller.preferredContentSize = preferredPopOverSize
-                UIWindow.shutUpKeyWindow?
-                    .topMostViewController?
-                    .present(controller, animated: true, completion: nil)
+                presentModalSheet(rootView: runner)
             }
         }
     }

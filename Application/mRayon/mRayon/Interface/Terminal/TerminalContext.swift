@@ -292,22 +292,11 @@ class TerminalContext: ObservableObject, Identifiable, Equatable {
 extension TerminalContext {
     struct DefaultPresent: View {
         let context: TerminalContext
-        @Environment(\.dismiss) private var dismiss
 
         var body: some View {
-            NavigationView {
+            DefaultModalPresenter {
                 TerminalView(context: context)
-                    .toolbar {
-                        ToolbarItem {
-                            Button {
-                                dismiss()
-                            } label: {
-                                Image(systemName: "arrow.down.right.and.arrow.up.left")
-                            }
-                        }
-                    }
             }
-            .navigationViewStyle(StackNavigationViewStyle())
         }
     }
 }

@@ -30,16 +30,37 @@ struct NavigationLazyView<Content: View>: View {
 
 import RayonModule
 
+/// Shared modal wrapper: a NavigationStack hosting the content with a
+/// trailing close button. Replaces the per-context DefaultPresent copies.
+struct DefaultModalPresenter<Content: View>: View {
+    @Environment(\.dismiss) private var dismiss
+    @ViewBuilder var content: () -> Content
+
+    var body: some View {
+        NavigationStack {
+            content()
+                .toolbar {
+                    ToolbarItem {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Image(systemName: "arrow.down.right.and.arrow.up.left")
+                        }
+                    }
+                }
+        }
+    }
+}
+
 func createPreview(creation: () -> AnyView) -> some View {
     Group {
-        NavigationView {
+        NavigationStack {
             creation()
                 .environmentObject(RayonStore.shared)
         }
         .previewDevice(PreviewDevice(rawValue: "iPod touch (7th generation)"))
-        .navigationViewStyle(StackNavigationViewStyle())
-        NavigationView {
-            NavigationLink(isActive: .constant(true)) {
+        NavigationStack {
+            NavigationLink {
                 creation()
                     .environmentObject(RayonStore.shared)
             } label: {

@@ -17,8 +17,9 @@ struct SidebarView: View {
     @StateObject var transferBackend = FileTransferManager.shared
 
     var body: some View {
-        NavigationView {
+        NavigationSplitView {
             sidebar
+        } detail: {
             JustWelcomeView()
         }
     }
