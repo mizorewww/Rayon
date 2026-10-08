@@ -20,11 +20,11 @@ public extension RDMachine.RedactedLevel {
     var tooltip: String {
         switch self {
         case .none:
-            return "Redaction: server names and addresses are visible"
+            return "Show Everything"
         case .sensitive:
-            return "Redaction: server addresses are hidden"
+            return "Hide Addresses"
         case .all:
-            return "Redaction: server names and addresses are hidden"
+            return "Hide Names and Addresses"
         }
     }
 }
