@@ -156,13 +156,10 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
     }
 
     private func connectAndAuthenticate() {
-        shell.requestConnectAndWait()
-        guard shell.isConnected else { return }
-        if let identity {
-            identity.callAuthenticationWith(remote: shell)
-        } else {
-            shell.authenticateWithAutoIdentities(RayonStore.shared.identityGroupForAutoAuth) { _ in }
-        }
+        shell.connectAndAuthenticate(
+            identity: identity,
+            autoIdentities: RayonStore.shared.identityGroupForAutoAuth
+        )
     }
 
     public func shutdown() {
@@ -207,12 +204,7 @@ public final class MonitorCenter: ObservableObject {
         if let existing = session(for: machineID) { return existing }
         let machine = RayonStore.shared.machineGroup[machineID]
         guard machine.isNotPlaceholder() else { throw BeginError.malformedMachine }
-        var identity: RDIdentity?
-        if let aid = machine.associatedIdentity, let uid = UUID(uuidString: aid) {
-            let read = RayonStore.shared.identityGroup[uid]
-            if !read.username.isEmpty { identity = read }
-        }
-        let session = MonitorSession(machine: machine, identity: identity)
+        let session = MonitorSession(machine: machine, identity: RayonStore.shared.associatedIdentity(for: machine))
         sessions.append(session)
         RayonStore.shared.storeRecentIfNeeded(from: machineID)
         return session

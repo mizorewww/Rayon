@@ -66,17 +66,14 @@ class MenubarTool {
             )
             return
         }
-        guard let identityIdStr = machine.associatedIdentity,
-              let identityId = UUID(uuidString: identityIdStr)
-        else {
+        guard machine.associatedIdentity != nil else {
             UIBridge.presentError(
                 with: "Could not create menubar app: login identity of this machine must be set",
                 delay: 0
             )
             return
         }
-        let identity = RayonStore.shared.identityGroup[identityId]
-        guard !identity.username.isEmpty else {
+        guard let identity = RayonStore.shared.associatedIdentity(for: machine) else {
             UIBridge.presentError(
                 with: "Could not create menubar app: malformed identity info",
                 delay: 0

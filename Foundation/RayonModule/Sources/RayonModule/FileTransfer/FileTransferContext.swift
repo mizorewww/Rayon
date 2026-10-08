@@ -117,24 +117,20 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable {
         setupShellData()
 
         debugPrint("\(self) \(#function) \(machine.id)")
-        shell.requestConnectAndWait()
-        guard shell.isConnected else {
+        let result = shell.connectAndAuthenticate(
+            identity: identity,
+            autoIdentities: RayonStore.shared.identityGroupForAutoAuth
+        ) { [self] hintText in
+            putInformation(hintText)
+        }
+        switch result {
+        case .success:
+            break
+        case .connectFailed:
             putInformation("Unable to connect for \(machine.remoteAddress):\(machine.remotePort)")
             onMainThread { self.processShutdown() }
             return
-        }
-
-        if let idd = identity {
-            idd.callAuthenticationWith(remote: shell)
-        } else {
-            shell.authenticateWithAutoIdentities(
-                RayonStore.shared.identityGroupForAutoAuth
-            ) { [self] hintText in
-                putInformation(hintText)
-            }
-        }
-
-        guard shell.isConnected, shell.isAuthenticated else {
+        case .authenticateFailed:
             putInformation("Failed to authenticate connection, did you forget to add identity or enable auto authentication?")
             onMainThread { self.processShutdown() }
             return

@@ -181,42 +181,30 @@ class TerminalContext: ObservableObject, Identifiable, Equatable {
                 self?.terminalSize = size
             }
 
-        shell.requestConnectAndWait()
+        let identity: RDIdentity?
+        if machine.associatedIdentity != nil {
+            guard let resolved = RayonStore.shared.associatedIdentity(for: machine) else {
+                putInformation("Malformed machine or identity data")
+                return
+            }
+            identity = resolved
+        } else {
+            identity = nil
+        }
 
-        guard shell.isConnected else {
+        let result = shell.connectAndAuthenticate(
+            identity: identity,
+            autoIdentities: RayonStore.shared.identityGroupForAutoAuth
+        ) { [self] hintText in
+            putInformation(hintText)
+        }
+        switch result {
+        case .success:
+            break
+        case .connectFailed:
             putInformation("Unable to connect for \(machine.remoteAddress):\(machine.remotePort)")
             return
-        }
-
-        if let rid = machine.associatedIdentity {
-            guard let uid = UUID(uuidString: rid) else {
-                putInformation("Malformed machine data")
-                return
-            }
-            let identity = RayonStore.shared.identityGroup[uid]
-            guard !identity.username.isEmpty else {
-                putInformation("Malformed identity data")
-                return
-            }
-            identity.callAuthenticationWith(remote: shell)
-        } else {
-            shell.authenticateWithAutoIdentities(
-                RayonStore.shared.identityGroupForAutoAuth
-            ) { [self] hintText in
-                putInformation(hintText)
-            }
-            putInformation("")
-            // user may get confused if multiple session opened the picker
-//                if !shell.isAuthenticated,
-//                   let identity = RayonUtil.selectIdentity()
-//                {
-//                    RayonStore.shared
-//                        .identityGroup[identity]
-//                        .callAuthenticationWith(remote: shell)
-//                }
-        }
-
-        guard shell.isConnected, shell.isAuthenticated else {
+        case .authenticateFailed:
             putInformation("Failed to authenticate connection")
             putInformation("Did you forget to add identity or enable auto authentication?")
             return

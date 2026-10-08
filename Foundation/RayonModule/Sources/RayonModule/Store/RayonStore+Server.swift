@@ -9,6 +9,16 @@ import Foundation
 import NSRemoteShell
 
 public extension RayonStore {
+    /// The identity referenced by `machine.associatedIdentity`; nil when the
+    /// reference is unset, malformed, or resolves to a placeholder.
+    func associatedIdentity(for machine: RDMachine) -> RDIdentity? {
+        guard let raw = machine.associatedIdentity,
+              let uuid = UUID(uuidString: raw)
+        else { return nil }
+        let identity = identityGroup[uuid]
+        return identity.username.isEmpty ? nil : identity
+    }
+
     @discardableResult
     func registerServer(
         withAddress: String,

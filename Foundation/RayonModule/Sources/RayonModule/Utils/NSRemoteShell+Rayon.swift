@@ -60,4 +60,33 @@ public extension NSRemoteShell {
         }
         return isConnected && isAuthenticated
     }
+
+    /// Outcome of `connectAndAuthenticate`.
+    enum ConnectAndAuthenticateResult {
+        /// Connected and authenticated.
+        case success
+        /// The initial connection failed.
+        case connectFailed
+        /// Connected, but authentication failed.
+        case authenticateFailed
+    }
+
+    /// Connects (blocking), then authenticates with `identity` when given,
+    /// otherwise with each of `autoIdentities` in turn. Shared by the
+    /// terminal, file-transfer and monitor bootstraps of both apps.
+    @discardableResult
+    func connectAndAuthenticate(
+        identity: RDIdentity?,
+        autoIdentities: [RDIdentity],
+        hint: ((String) -> Void)? = nil
+    ) -> ConnectAndAuthenticateResult {
+        requestConnectAndWait()
+        guard isConnected else { return .connectFailed }
+        if let identity {
+            identity.callAuthenticationWith(remote: self)
+        } else {
+            authenticateWithAutoIdentities(autoIdentities, hint: hint)
+        }
+        return isConnected && isAuthenticated ? .success : .authenticateFailed
+    }
 }
