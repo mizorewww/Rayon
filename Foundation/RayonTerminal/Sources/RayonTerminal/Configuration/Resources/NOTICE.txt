@@ -15,3 +15,7 @@ Native Swift implementation and adaptations by Rayon contributors:
 Theme color metadata originates from the upstream generated themes.ts, which is
 synchronized from Ghostty's iTerm2-Color-Schemes collection. Theme names retain
 their original attribution; no font binaries are redistributed.
+
+Ghostty icon layers are vendored from ghostty-org/ghostty/macOS assets via the
+upstream generate-macicons.ts script. See GhosttyIcons-LICENSE.txt (MIT).
+Color theme license text is included in Themes-LICENSE.txt (MIT).

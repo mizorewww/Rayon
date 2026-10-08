@@ -14,10 +14,10 @@ public struct RayonTerminalView: NSViewRepresentable {
 
     nonisolated public func write(_ string: String) { session.output.write(Data(string.utf8)) }
 
-    nonisolated public func setTerminalFontSize(with size: Int) {
+    nonisolated public func setTerminalFontSize(with size: Int, preferConfigured: Bool = false) {
         session.callbacks.setFontSize(size)
         let session = session
-        DispatchQueue.main.async { session.applyFontSize() }
+        DispatchQueue.main.async { session.applyFontSize(preferConfigured: preferConfigured) }
     }
 
     nonisolated public func requestTerminalSize() -> CGSize { session.callbacks.terminalSize }
@@ -73,47 +73,59 @@ final class RayonTerminalSession: @unchecked Sendable {
         return presentation.view
     }
 
-    @MainActor func applyFontSize() { presentation?.applyFontSize() }
+    @MainActor func applyFontSize(preferConfigured: Bool) { presentation?.applyFontSize(preferConfigured: preferConfigured) }
 }
 
 @MainActor
-private final class TerminalPresentation: TerminalSurfaceTitleDelegate,
+private final class TerminalPresentation: NSObject, TerminalSurfaceTitleDelegate,
     TerminalSurfaceBellDelegate, TerminalSurfaceLifecycleDelegate,
     TerminalSurfaceClipboardConfirmationDelegate
 {
-    private static let controller = TerminalController(
-        configuration: TerminalConfiguration.default
-            .custom("clipboard-read", "ask")
-            .custom("clipboard-write", "ask")
-    )
     let view: AppTerminalView
     private let callbacks: TerminalCallbacks
     private let output: TerminalOutputBuffer
+    private var initialFontPreferenceApplied = false
+    private var didAttach = false
 
     // SSH workers may release the last session reference. Ghostty's coordinator
     // requires main-actor teardown, including destruction of this view's fields.
-    isolated deinit {}
+    isolated deinit { NotificationCenter.default.removeObserver(self) }
 
     init(session: RayonTerminalSession) {
         callbacks = session.callbacks
         output = session.output
         view = AppTerminalView(frame: .zero)
+        super.init()
+        NotificationCenter.default.addObserver(self, selector: #selector(configurationDidApply), name: RayonTerminalConfiguration.didApply, object: nil)
         view.delegate = self
-        view.controller = Self.controller
+        view.controller = RayonTerminalConfiguration.controller
         // Never use the default .exec backend: SSH remains owned by Rayon.
         view.configuration = TerminalSurfaceOptions(
-            backend: .inMemory(session.backend), fontSize: Float(callbacks.fontSize)
+            backend: .inMemory(session.backend), fontSize: Float(RayonTerminalConfiguration.appliedFontSize ?? Double(callbacks.fontSize))
         )
     }
 
-    func applyFontSize() {
+    func applyFontSize(preferConfigured: Bool) {
+        if preferConfigured && initialFontPreferenceApplied { return }
+        initialFontPreferenceApplied = true
+        if preferConfigured { applyConfiguredFontSize(); return }
         // Changing configuration.fontSize would recreate the surface and erase
         // scrollback. A binding action updates the existing surface in place.
         _ = view.performBindingAction("set_font_size:\(callbacks.fontSize)")
     }
 
+    @objc private func configurationDidApply() {
+        initialFontPreferenceApplied = true
+        applyConfiguredFontSize()
+    }
+
+    private func applyConfiguredFontSize() {
+        let size = RayonTerminalConfiguration.appliedFontSize ?? Double(callbacks.fontSize)
+        _ = view.performBindingAction("set_font_size:\(size)")
+    }
+
     func terminalDidAttachSurface(_ surface: TerminalSurface) {
-        applyFontSize()
+        if !didAttach { applyConfiguredFontSize(); didAttach = true }
         output.setAttached(true)
     }
 

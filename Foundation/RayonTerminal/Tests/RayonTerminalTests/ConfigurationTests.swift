@@ -18,7 +18,7 @@ final class ConfigurationTests: XCTestCase {
         XCTAssertEqual(draft.text("font-size"), "19")
         XCTAssertEqual(draft.values("font-family"), ["Other"])
         XCTAssertEqual(draft.paletteOverrides, [2: "#112233", 3: "#334455"])
-        XCTAssertEqual(draft.overrides["keybind"], ["ctrl+k=text:a=b:c", "ctrl+x=ignore"])
+        XCTAssertEqual(Array(draft.values("keybind").suffix(2)), ["ctrl+k=text:a=b:c", "ctrl+x=ignore"])
         let original = draft
         XCTAssertThrowsError(try draft.merge("font-size = 22\npalette = broken"))
         XCTAssertEqual(original, draft)
