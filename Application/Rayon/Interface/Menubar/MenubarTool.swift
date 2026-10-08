@@ -6,18 +6,10 @@
 //
 
 import AppKit
-// import AuxiliaryExecute
 import RayonModule
 
-// private let dataEncoder = JSONEncoder()
-// private let dataDecoder = JSONDecoder()
-
 class MenubarTool {
-//    let menubarMagic = "wiki.qaq.menubar"
-//    var menubarInitialCommand: MenubarTool.ArgumentCompiler!
-//    let mebubarLoaderQueue = DispatchQueue(label: "wiki.qaq.menubar.loader", attributes: .concurrent)
     let bootstrapLock = NSLock()
-//    var menubarAppPids = [pid_t]()
 
     // Keep the existing caller-managed queue and lock ownership.
     nonisolated(unsafe) static let shared = MenubarTool()
@@ -41,13 +33,6 @@ class MenubarTool {
             self.identity = identity
         }
 
-//        func commandLineArgument() -> String? {
-//            if let data = try? dataEncoder.encode(self) {
-//                return data.base64EncodedString()
-//            }
-//            return nil
-//        }
-
         @MainActor func createStatusItem() -> MenubarStatusItem? {
             let machine = RayonStore.shared.machineGroup[machine]
             let identity = RayonStore.shared.identityGroup[identity]
@@ -60,18 +45,6 @@ class MenubarTool {
             return .init(machine: machine, identity: identity)
         }
     }
-
-//    func requireMenubarSetup() -> Bool {
-//        guard CommandLine.arguments.count >= 3,
-//              CommandLine.arguments[1] == menubarMagic,
-//              let data = Data(base64Encoded: CommandLine.arguments[2]),
-//              let compiler = try? dataDecoder.decode(ArgumentCompiler.self, from: data)
-//        else {
-//            return false
-//        }
-//        menubarInitialCommand = compiler
-//        return true
-//    }
 
     @MainActor func createRuncat(for machineId: RDMachine.ID) {
         bootstrapLock.lock()
@@ -110,57 +83,14 @@ class MenubarTool {
             )
             return
         }
-//        guard let executable = Bundle.main.executablePath else {
-//            UIBridge.presentError(
-//                with: "Could not locate bundle, did you move the app?"
-//            )
-//            return
-//        }
         let compiler = ArgumentCompiler(machine: machine.id, identity: identity.id)
-//        guard let parser = compiler.commandLineArgument() else {
-//            UIBridge.presentError(
-//                with: "Could not build command line argument"
-//            )
-//            return
-//        }
         guard let item = compiler.createStatusItem() else {
             return
         }
         bootstrapLock.lock()
         statusItem.append(item)
         bootstrapLock.unlock()
-
-        // bye bye this thread~
-        // SANDBOX SUCKS
-//        mebubarLoaderQueue.async {
-//            var thisPid: pid_t?
-//            let recipe = AuxiliaryExecute.spawn(
-//                command: executable,
-//                args: [self.menubarMagic, parser],
-//                setPid: { pid in
-//                    thisPid = pid
-//                    self.bootstrapLock.lock()
-//                    self.menubarAppPids.append(pid)
-//                    self.bootstrapLock.unlock()
-//                }
-//            )
-//            print("Menubar app returned: \(recipe.exitCode)")
-//            self.bootstrapLock.lock()
-//            self.menubarAppPids = self.menubarAppPids
-//                .filter { $0 != thisPid }
-//            self.bootstrapLock.unlock()
-//        }
     }
-
-//    func beginMenubarBootstrap() {
-//        mainActor(delay: 0.5) {
-//            NSApp.setActivationPolicy(.accessory)
-//            for window in NSApp.windows {
-//                window.close()
-//            }
-//            self.statusItem = self.menubarInitialCommand.createStatusItem()
-//        }
-//    }
 
     func remove(menubarItem: MenubarStatusItem.ID) {
         bootstrapLock.lock()
