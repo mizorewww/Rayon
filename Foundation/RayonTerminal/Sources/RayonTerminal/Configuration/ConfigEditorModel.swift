@@ -10,6 +10,9 @@ final class ConfigEditorModel: ObservableObject {
     @Published var message = ""
     @Published private(set) var undoStack: [ConfigDocument] = []
     @Published private(set) var redoStack: [ConfigDocument] = []
+    /// Called after a change is applied, with the new font size when it changed.
+    var onApplied: ((Double?) -> Void)?
+    private var pendingSave: Task<Void, Never>?
     private let defaults: UserDefaults
     private struct Storage: Codable { let version: Int; let document: ConfigDocument }
     private static let snapshotKey = "wiki.qaq.rayon.ghosttyConfiguration.v1"
@@ -39,12 +42,26 @@ final class ConfigEditorModel: ObservableObject {
         if undoStack.count > 200 { undoStack.removeFirst() }
         redoStack.removeAll()
         document = next
+        scheduleSave()
     }
     func binding(_ key: String) -> Binding<String> {
         Binding(get: { self.document.text(key) }, set: { value in self.edit { $0.set(key, [value]) } })
     }
-    func undo() { guard let previous = undoStack.popLast() else { return }; redoStack.append(document); document = previous }
-    func redo() { guard let next = redoStack.popLast() else { return }; undoStack.append(document); document = next }
+    func undo() { guard let previous = undoStack.popLast() else { return }; redoStack.append(document); document = previous; scheduleSave() }
+    func redo() { guard let next = redoStack.popLast() else { return }; undoStack.append(document); document = next; scheduleSave() }
+
+    /// Settings save themselves: a short pause after the last change, then apply.
+    private func scheduleSave() {
+        pendingSave?.cancel()
+        pendingSave = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 400_000_000)
+            guard !Task.isCancelled, let self, self.isDirty else { return }
+            let fontChanged = self.document.overrides["font-size"] != self.saved.overrides["font-size"]
+            if self.save(), fontChanged {
+                self.onApplied?(self.document.overrides["font-size"]?.first.flatMap(Double.init) ?? 14)
+            }
+        }
+    }
     func reset(_ key: String) { edit { $0.overrides.removeValue(forKey: key) } }
     func importConfig(_ source: String) throws {
         var next = document
@@ -56,11 +73,10 @@ final class ConfigEditorModel: ObservableObject {
             try RayonTerminalConfiguration.apply(document)
             defaults.set(try JSONEncoder().encode(Storage(version: 1, document: document)), forKey: Self.snapshotKey)
             saved = document
-            message = "Saved. Supported terminal settings have been applied to open sessions."
+            message = ""
             return true
         } catch { message = error.localizedDescription; return false }
     }
-    func discard() { edit { $0 = saved } }
     static func storedDocument() -> ConfigDocument { ConfigEditorModel().document }
 }
 

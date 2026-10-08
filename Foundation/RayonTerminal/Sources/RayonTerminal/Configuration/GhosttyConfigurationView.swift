@@ -68,6 +68,10 @@ public struct GhosttyConfigurationView: View {
         _showPreview = State(initialValue: !embedded)
     }
 
+    private func installApplyHandler() {
+        model.onApplied = onApplied
+    }
+
     private var panel: ConfigPanel? { navigation.first { $0.id == selection } }
 
     public var body: some View {
@@ -89,8 +93,8 @@ public struct GhosttyConfigurationView: View {
                         .padding(.top, RX.Space.s3)
                     }
                 }
-                if !isHostSection || model.isDirty {
-                    applyBar
+                if !model.message.isEmpty {
+                    errorBar
                 }
             }
         }
@@ -121,6 +125,7 @@ public struct GhosttyConfigurationView: View {
             }
         }))
         .searchable(text: $search, placement: .toolbar, prompt: "Search settings")
+        .onAppear(perform: installApplyHandler)
         .onChange(of: selection) { next in
             if navigating { navigating = false; return }
             navigationHistory = Array(navigationHistory.prefix(navigationIndex + 1)) + [next]
@@ -203,37 +208,21 @@ public struct GhosttyConfigurationView: View {
         return model.document.overrides.keys.filter { keys.contains($0) }.count
     }
 
-    // MARK: Apply bar
+    // MARK: Errors
 
-    private var applyBar: some View {
-        VStack(alignment: .leading, spacing: RX.Space.s2) {
-            HStack(spacing: RX.Space.s2) {
-                StatusDot(model.isDirty ? .warning : .success)
-                Text(model.isDirty ? "Unsaved terminal changes" : "Terminal settings applied")
-                    .font(.rxBody)
-                    .foregroundStyle(.rxInk)
-                Spacer()
-                Button("Discard") { model.discard() }
-                    .rxGlassAction()
-                    .disabled(!model.isDirty)
-                Button("Apply") {
-                    let fontChanged = model.document.overrides["font-size"] != model.saved.overrides["font-size"]
-                    if model.save(), fontChanged { onApplied?(model.document.overrides["font-size"]?.first.flatMap(Double.init) ?? 14) }
-                }
-                .rxPrimaryAction()
-                .keyboardShortcut("s", modifiers: .command)
-                .disabled(!model.isDirty)
-            }
-            if !model.message.isEmpty {
-                HStack(spacing: RX.Space.s2) {
-                    HelpText(model.message)
-                        .textSelection(.enabled)
-                    Spacer()
-                    Button { model.message = "" } label: { Image(systemName: "xmark") }
-                        .buttonStyle(.borderless)
-                        .accessibilityLabel("Dismiss")
-                }
-            }
+    /// Settings save automatically; only a failed save needs a word.
+    private var errorBar: some View {
+        HStack(spacing: RX.Space.s2) {
+            Image(systemName: "exclamationmark.triangle")
+                .foregroundStyle(.rxWarning)
+            Text(model.message)
+                .font(.rxBody)
+                .foregroundStyle(.rxInk)
+                .textSelection(.enabled)
+            Spacer()
+            Button { model.message = "" } label: { Image(systemName: "xmark") }
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Dismiss")
         }
         .padding(.horizontal, RX.Space.s4)
         .padding(.vertical, RX.Space.s3)
