@@ -70,9 +70,9 @@ private struct PortForwardRow: View {
         switch backend.lastHint[forward.id] {
         case "awaiting connect", "opening channel": return (.running, "Connecting")
         case "forward running": return running ? (.success, "Running") : (.off, "Stopped")
-        case "failed connect": return (.danger, "Failed · could not connect")
-        case "failed authenticate": return (.danger, "Failed · could not sign in")
-        case "forward stopped": return running ? (.danger, "Failed · forward ended") : (.off, "Stopped")
+        case "failed connect": return (.danger, "Could not connect")
+        case "failed authenticate": return (.danger, "Could not sign in")
+        case "forward stopped": return running ? (.danger, "Forward ended") : (.off, "Stopped")
         default: return running ? (.running, "Starting") : (.off, "Stopped")
         }
     }
@@ -90,8 +90,11 @@ private struct PortForwardRow: View {
                     .font(.rxCode)
                     .foregroundStyle(.rxInkSecondary)
                     .lineLimit(1)
-                StatusLabel(status.0, status.1)
-                    .font(.caption)
+                if status.0 == .danger {
+                    Text(status.1)
+                        .font(.caption)
+                        .foregroundStyle(.rxDanger)
+                }
             }
             Spacer()
             Toggle("Running", isOn: Binding(get: { running }, set: { on in

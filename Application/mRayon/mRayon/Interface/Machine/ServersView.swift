@@ -166,8 +166,6 @@ private struct ServerRowState: View {
     @ObservedObject var session: MonitorSession
     var body: some View {
         VStack(alignment: .trailing, spacing: 2) {
-            StatusLabel(session.health.status, session.health.text)
-                .font(.footnote)
             if session.status.hasData {
                 Text("CPU \(RXFormat.percent(Double(session.status.processor.summary.sumUsed)))%")
                     .font(.caption.monospacedDigit())

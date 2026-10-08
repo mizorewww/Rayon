@@ -92,7 +92,7 @@ struct PortForwardView: View {
                 TableHeaderLabel("Bind").frame(width: 90)
                 TableHeaderLabel("Through").frame(maxWidth: .infinity)
                 TableHeaderLabel("Target").frame(maxWidth: .infinity)
-                TableHeaderLabel("Status").frame(width: 200)
+                Color.clear.frame(width: 200, height: 1)
                 Color.clear.frame(width: 52, height: 1)
             }
             .padding(.horizontal, RX.Space.s3)
@@ -142,7 +142,10 @@ private struct PortForwardRow: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            StatusLabel(status.status, status.text)
+            Text(status.status == .danger ? status.text : "")
+                .font(.rxBody)
+                .foregroundStyle(.rxDanger)
+                .lineLimit(1)
                 .frame(width: 200, alignment: .leading)
             Toggle("Running", isOn: Binding(get: { running }, set: { on in
                 if on {
@@ -189,11 +192,11 @@ struct PortForwardStatus {
         case "forward running":
             (status, text) = running ? (.success, "Running") : (.off, "Stopped")
         case "failed connect":
-            (status, text) = (.danger, "Failed · could not connect")
+            (status, text) = (.danger, "Could not connect")
         case "failed authenticate":
-            (status, text) = (.danger, "Failed · could not sign in")
+            (status, text) = (.danger, "Could not sign in")
         case "forward stopped":
-            (status, text) = running ? (.danger, "Failed · forward ended") : (.off, "Stopped")
+            (status, text) = running ? (.danger, "Forward ended") : (.off, "Stopped")
         default:
             (status, text) = running ? (.running, "Starting") : (.off, "Stopped")
         }

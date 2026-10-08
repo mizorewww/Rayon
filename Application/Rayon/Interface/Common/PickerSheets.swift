@@ -131,11 +131,6 @@ struct ServerPickerSheet: View {
                         .foregroundStyle(.rxInkSecondary)
                 }
                 Spacer()
-                ServerLiveReader(machine: machine.id) { state in
-                    if state.status != .off {
-                        StatusLabel(state.status, state.text)
-                    }
-                }
                 if !machine.group.isEmpty {
                     RXTag(machine.group)
                 }

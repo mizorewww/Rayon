@@ -249,8 +249,6 @@ struct ServerTile: View {
                             .lineLimit(1)
                     }
                     Spacer(minLength: RX.Space.s2)
-                    StatusLabel(state.status, state.text)
-                        .font(.system(size: 12))
                 }
                 if let cpu = state.cpu, let memory = state.memory {
                     tileBar("CPU", percent: cpu, color: .rxAccent)
@@ -273,7 +271,6 @@ struct ServerTile: View {
                     }
                 }
             }
-            .opacity(state.status == .danger ? 0.6 : 1)
         }
         .rxCard()
         .scaleEffect(hovered ? 1.01 : 1)

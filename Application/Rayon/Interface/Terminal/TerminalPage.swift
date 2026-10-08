@@ -103,7 +103,6 @@ struct TerminalPage: View {
 
     var disconnectedBanner: some View {
         HStack(spacing: RX.Space.s2) {
-            StatusDot(.danger)
             Text("Connection closed.")
                 .foregroundStyle(.rxTerminalForeground)
             Text("Reconnect uses the details from when this session started.")
@@ -153,7 +152,6 @@ private struct SessionTab: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            StatusDot(context.interfaceDisabled ? .off : .success, size: .small)
             Text(context.remoteType == .machine ? context.machine.name : context.navigationTitle)
                 .font(.system(size: 12, weight: selected ? .medium : .regular))
                 .foregroundStyle(selected ? Color.rxInk : Color.rxInkSecondary)
@@ -200,10 +198,6 @@ private struct TerminalStatusBar: View {
 
     var body: some View {
         HStack(spacing: RX.Space.s4) {
-            HStack(spacing: 6) {
-                StatusDot(context.interfaceDisabled ? .off : .success)
-                Text(context.interfaceDisabled ? "Disconnected" : "Connected")
-            }
             RedactableText(endpoint, redacted: store.machineRedacted != .none)
                 .font(.rxCode)
             if !context.navigationSubtitle.isEmpty, context.navigationSubtitle != context.navigationTitle {

@@ -32,12 +32,7 @@ struct MonitorPage: View {
             }
         } header: {
             VStack(alignment: .leading, spacing: RX.Space.s5) {
-                HStack(alignment: .firstTextBaseline, spacing: RX.Space.s3) {
-                    PageTitle(store.machineRedacted == .all ? "Server" : session.machine.name)
-                        .fixedSize()
-                    StatusPill(refreshStatus, refreshText, caps: true)
-                    Spacer()
-                }
+                PageTitle(store.machineRedacted == .all ? "Server" : session.machine.name)
                 MonitorFacts(session: session, redactAddress: store.machineRedacted != .none)
             }
         } content: {
@@ -46,24 +41,6 @@ struct MonitorPage: View {
             } else {
                 MonitorPlaceholder(session: session)
             }
-        }
-    }
-
-    var refreshStatus: RXStatus {
-        switch session.phase {
-        case .connected: return session.isRefreshing ? .running : .success
-        case .connecting: return .running
-        case .failed: return .danger
-        case .closed: return .off
-        }
-    }
-
-    var refreshText: String {
-        switch session.phase {
-        case .connected: return "Refreshing every \(session.refreshInterval) s"
-        case .connecting: return "Connecting"
-        case .failed: return "Retrying"
-        case .closed: return "Closed"
         }
     }
 }

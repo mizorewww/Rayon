@@ -23,11 +23,7 @@ public struct SystemCard: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            CardHead("System") {
-                StatusDot(session.health.status, size: .large)
-                    .padding(.trailing, 6)
-                    .accessibilityLabel(session.health.text)
-            }
+            CardHead("System")
             MetricView(String(format: "%.2f", system.load1), unit: "load 1 min")
                 .padding(.top, RX.Space.s1)
             SubMetricRow([

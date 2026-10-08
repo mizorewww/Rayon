@@ -54,10 +54,6 @@ struct ConfigSettingRow: View {
                         Text(highlightedName)
                             .font(.rxBody)
                             .foregroundStyle(.rxInk)
-                        if isModified {
-                            StatusDot(.running, size: .small)
-                                .help("Changed from the default")
-                        }
                         if setting.deprecated != nil {
                             RXTag("Deprecated", style: .warning)
                         }

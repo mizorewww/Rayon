@@ -201,7 +201,7 @@ struct SessionsView: View {
                                 NavigationLink {
                                     TerminalView(context: context)
                                 } label: {
-                                    SessionRow(title: context.navigationTitle, systemImage: "terminal", status: context.interfaceDisabled ? .off : .success, statusText: context.interfaceDisabled ? "Disconnected" : "Connected")
+                                    SessionRow(title: context.navigationTitle, systemImage: "terminal")
                                 }
                                 .swipeActions { Button("Close", role: .destructive) { TerminalManager.shared.end(for: context.id) } }
                                 .rxListRow()
@@ -227,7 +227,7 @@ struct SessionsView: View {
                                 NavigationLink {
                                     FileTransferView(context: context)
                                 } label: {
-                                    SessionRow(title: context.machine.name, systemImage: "arrow.up.arrow.down", status: context.connected ? .success : .off, statusText: context.connected ? "Connected" : "Closed")
+                                    SessionRow(title: context.machine.name, systemImage: "arrow.up.arrow.down")
                                 }
                                 .swipeActions { Button("Close", role: .destructive) { FileTransferManager.shared.end(for: context.id) } }
                                 .rxListRow()
@@ -245,8 +245,6 @@ struct SessionsView: View {
 struct SessionRow: View {
     let title: String
     let systemImage: String
-    let status: RXStatus
-    let statusText: String
 
     var body: some View {
         HStack(spacing: RX.Space.s3) {
@@ -258,8 +256,6 @@ struct SessionRow: View {
                 .foregroundStyle(.rxInk)
                 .lineLimit(1)
             Spacer()
-            StatusLabel(status, statusText)
-                .font(.subheadline)
         }
     }
 }
@@ -267,7 +263,7 @@ struct SessionRow: View {
 private struct MonitorSessionRow: View {
     @ObservedObject var session: MonitorSession
     var body: some View {
-        SessionRow(title: session.machine.name, systemImage: "waveform.path.ecg", status: session.health.status, statusText: session.health.text)
+        SessionRow(title: session.machine.name, systemImage: "waveform.path.ecg")
     }
 }
 

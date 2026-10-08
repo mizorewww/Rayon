@@ -127,29 +127,22 @@ struct ServerContextMenu: View {
     }
 }
 
-/// Live state of a server as far as the app knows it: an open monitor or terminal.
+/// Live figures of a server while its monitor is open.
 struct ServerLiveState {
-    let status: RXStatus
-    let text: String
     let cpu: Double?
     let memory: Double?
 
     @MainActor
     static func of(_ machine: RDMachine.ID) -> ServerLiveState {
-        if let session = MonitorCenter.shared.session(for: machine) {
-            let health = session.health
-            let hasData = session.phase == .connected && session.status.hasData
+        if let session = MonitorCenter.shared.session(for: machine),
+           session.phase == .connected, session.status.hasData
+        {
             return ServerLiveState(
-                status: health.status,
-                text: health.text,
-                cpu: hasData ? Double(session.status.processor.summary.sumUsed) : nil,
-                memory: hasData ? session.status.memoryUsedPercent : nil
+                cpu: Double(session.status.processor.summary.sumUsed),
+                memory: session.status.memoryUsedPercent
             )
         }
-        if TerminalManager.shared.sessionAlive(forMachine: machine) {
-            return ServerLiveState(status: .success, text: "Connected", cpu: nil, memory: nil)
-        }
-        return ServerLiveState(status: .off, text: "Not monitored", cpu: nil, memory: nil)
+        return ServerLiveState(cpu: nil, memory: nil)
     }
 }
 

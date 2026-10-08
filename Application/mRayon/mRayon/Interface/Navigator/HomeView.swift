@@ -203,12 +203,6 @@ struct ServerTile: View {
                             .lineLimit(1)
                     }
                     Spacer()
-                    if let session = monitors.session(for: machine) {
-                        LiveTileState(session: session)
-                    } else {
-                        StatusLabel(.off, "Not monitored")
-                            .font(.footnote)
-                    }
                 }
                 if let session = monitors.session(for: machine) {
                     LiveTileBars(session: session)
@@ -226,14 +220,6 @@ struct ServerTile: View {
             .rxCard()
         }
         .buttonStyle(.plain)
-    }
-}
-
-private struct LiveTileState: View {
-    @ObservedObject var session: MonitorSession
-    var body: some View {
-        StatusLabel(session.health.status, session.health.text)
-            .font(.footnote)
     }
 }
 

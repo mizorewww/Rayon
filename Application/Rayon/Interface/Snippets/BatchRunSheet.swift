@@ -123,10 +123,10 @@ struct BatchRunSheet: View {
     @ViewBuilder
     func stateLabel(_ state: BatchSnippetExecContext.MachineState) -> some View {
         switch state {
-        case .waiting: StatusLabel(.off, "Waiting").font(.system(size: 11))
-        case .running: StatusLabel(.running, "Running")
-        case .done: StatusLabel(.success, "Done")
-        case .failed: StatusLabel(.danger, "Failed")
+        case .waiting: EmptyView()
+        case .running: ProgressView().controlSize(.mini)
+        case .done: Image(systemName: "checkmark").foregroundStyle(.rxSuccess).accessibilityLabel("Done")
+        case .failed: Image(systemName: "xmark").foregroundStyle(.rxDanger).accessibilityLabel("Failed")
         }
     }
 

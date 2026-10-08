@@ -162,7 +162,6 @@ private struct ServersTable: View {
             TableHeaderLabel("Name").frame(maxWidth: .infinity, alignment: .leading)
             TableHeaderLabel("Address").frame(width: columns.address)
             if columns.showIdentity { TableHeaderLabel("Identity").frame(width: columns.identity) }
-            TableHeaderLabel("Status").frame(width: columns.status)
             if columns.showCPU { TableHeaderLabel("CPU").frame(width: columns.cpu) }
             if columns.showLastUsed { TableHeaderLabel("Last used").frame(width: columns.lastUsed) }
             Color.clear.frame(width: columns.actions, height: 1)
@@ -175,7 +174,6 @@ private struct ServersTable: View {
 struct ServerColumns {
     let address: CGFloat = 150
     let identity: CGFloat = 110
-    let status: CGFloat = 130
     let cpu: CGFloat = 110
     let lastUsed: CGFloat = 120
     let actions: CGFloat = 156
@@ -184,7 +182,7 @@ struct ServerColumns {
     let showLastUsed: Bool
 
     init(width: CGFloat) {
-        let base: CGFloat = 180 + 150 + 130 + 156 + 24
+        let base: CGFloat = 180 + 150 + 156 + 24
         showCPU = width > base + 110
         showIdentity = width > base + 110 + 110
         showLastUsed = width > base + 110 + 110 + 120
@@ -229,8 +227,6 @@ private struct ServerRow: View {
                         .lineLimit(1)
                         .frame(width: columns.identity, alignment: .leading)
                 }
-                StatusLabel(state.status, state.text)
-                    .frame(width: columns.status, alignment: .leading)
                 if columns.showCPU {
                     Group {
                         if let cpu = state.cpu {

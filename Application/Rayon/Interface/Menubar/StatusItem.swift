@@ -142,13 +142,9 @@ struct MenubarPopoverView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: RX.Space.s3) {
             HStack(spacing: RX.Space.s2) {
-                VStack(alignment: .leading, spacing: 2) {
-                    RedactableText(session.machine.name, redacted: store.machineRedacted == .all)
-                        .font(.rxBodyStrong)
-                        .foregroundStyle(.rxInk)
-                    StatusLabel(session.health.status, session.health.text)
-                        .font(.system(size: 12))
-                }
+                RedactableText(session.machine.name, redacted: store.machineRedacted == .all)
+                    .font(.rxBodyStrong)
+                    .foregroundStyle(.rxInk)
                 Spacer()
                 RXIconButton("Remove from Menu Bar", systemImage: "xmark", kind: .plain, size: .small, action: remove)
             }

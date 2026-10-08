@@ -83,20 +83,15 @@ struct SidebarView: View {
     }
 }
 
-/// A session row: SF Symbol, title, and a live dot.
+/// A session row: SF Symbol and title.
 private struct SessionLabel: View {
     let title: String
     let systemImage: String
-    let status: RXStatus
 
     var body: some View {
-        HStack(spacing: 6) {
-            Label(title, systemImage: systemImage)
-                .lineLimit(1)
-                .truncationMode(.middle)
-            Spacer(minLength: 4)
-            StatusDot(status, size: .small)
-        }
+        Label(title, systemImage: systemImage)
+            .lineLimit(1)
+            .truncationMode(.middle)
     }
 }
 
@@ -106,8 +101,7 @@ private struct TerminalSidebarRow: View {
     var body: some View {
         SessionLabel(
             title: context.remoteType == .machine ? context.machine.name : context.navigationTitle,
-            systemImage: "terminal",
-            status: context.interfaceDisabled ? .off : .success
+            systemImage: "terminal"
         )
         .contextMenu {
             if context.closed {
@@ -122,7 +116,7 @@ private struct MonitorSidebarRow: View {
     @ObservedObject var session: MonitorSession
 
     var body: some View {
-        SessionLabel(title: session.machine.name, systemImage: "waveform.path.ecg", status: session.health.status)
+        SessionLabel(title: session.machine.name, systemImage: "waveform.path.ecg")
             .contextMenu {
                 Button("Open Terminal") { AppRouter.shared.openTerminal(machine: session.machine.id) }
                 Button("Close Monitor") { MonitorCenter.shared.end(session.id) }
@@ -136,8 +130,7 @@ private struct TransferSidebarRow: View {
     var body: some View {
         SessionLabel(
             title: context.machine.name,
-            systemImage: "arrow.up.arrow.down",
-            status: context.connected ? .success : (context.processConnection ? .running : .off)
+            systemImage: "arrow.up.arrow.down"
         )
         .contextMenu {
             if !context.connected {
