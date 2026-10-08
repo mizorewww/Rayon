@@ -103,6 +103,28 @@ struct MachineManagerView: View {
                     .init(unicodeScalarLiteral: "h"),
                     modifiers: .option
                 ))
+                // Make the current privacy state discoverable on hover.
+                .help(store.machineRedacted.tooltip)
+            }
+        }
+        // When details are hidden, say so and offer a way back.
+        .safeAreaInset(edge: .top) {
+            if store.machineRedacted != .none {
+                HStack(spacing: 8) {
+                    Image(systemName: "eye.slash")
+                    Text(store.machineRedacted == .all
+                         ? "Machine details are hidden"
+                         : "Machine addresses are hidden")
+                    Button("Show") {
+                        store.machineRedacted = .none
+                    }
+                    .buttonStyle(.borderless)
+                    .foregroundColor(.accentColor)
+                }
+                .font(.system(.callout, design: .rounded))
+                .padding(8)
+                .frame(maxWidth: .infinity)
+                .background(.bar)
             }
         }
         .background(sheetEnter.hidden())
