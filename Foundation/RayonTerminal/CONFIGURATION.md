@@ -69,24 +69,12 @@ equal to the Ghostty Config catalog default. Reset removes the explicit override
 Deleting a default keybinding follows upstream export semantics: use an explicit
 `trigger=unbind` entry when the exported configuration must disable it.
 
-## Validation and review
+## Validation
 
 `swift test --package-path Foundation/RayonTerminal` covers catalog completeness,
 import merge/rollback, repeated values, palette diffs, Unicode sharing, theme
 precedence, keybinding diagnostics, compound duration and scroll codecs, simulator
-isolation, complete persistence, and live native surface/font continuity. It also
-retains the earlier UTF-8/output buffering/clipboard/worker teardown regressions.
-
-Both `bash Workflow/Scripts/build-macos.sh` and its `Release` variant build
-arm64 + x86_64 with deployment target macOS 13. Compilation was verified using
-Xcode 27 beta / Swift 6.4. Runtime checks ran on the available arm64 host; an Intel
-Mac and a macOS 13 installation have not been exercised directly.
-
-An independent subagent reviewed the upstream scope and the implementation.
-Its persistence, fractional-font, scroll-label, bare-plus, and view-reappearance
-findings were fixed and covered by regression tests. Native UI checks exercised
-theme selection/recoloring, the keybinding list/builder and simulated command
-entry, and corrected a clipping issue and bundled-icon loading.
+isolation, persistence, and live native surface/font continuity.
 
 For an isolated native UI harness, run:
 
@@ -95,18 +83,6 @@ bash Workflow/Scripts/build-configuration-preview.sh
 ```
 
 This creates `DerivedData/RayonConfigurationPreview.app` with a separate bundle
-identity and preference domain, without opening Rayon's account store. The
-application binaries produced by the main build script are ad hoc signed and
-strictly verified, including nested code and both architectures. Both main app
-configurations were launched through LaunchServices on the arm64 host, and the
-Release configuration page was opened inside the main window from the sidebar.
-The unified Settings navigation supersedes that earlier entry. Both configurations
-compile and pass strict signature verification after this change; subagent review
-found no blocking issues. The newly launched main app has not exposed a window to
-the GUI driver, so the unified-page GUI check is still pending and the earlier
-sidebar screenshot is not evidence for this final layout.
-Developer ID
-distribution signing, notarization, external SSH-server end-to-end interaction,
-and every individual standalone Ghostty setting are outside these local checks.
+identity and preference domain, without opening Rayon's account store.
 
 Catalog refresh instructions live in `Workflow/Scripts/GhosttyConfig/README.md`.
