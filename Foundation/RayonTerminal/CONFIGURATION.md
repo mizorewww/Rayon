@@ -1,9 +1,12 @@
 # Native Ghostty Config in Rayon
 
-Rayon's **Terminal Configuration** sidebar item opens a native SwiftUI page inside
-the existing main window. The **Setting** page also has a prominent entry card.
-The category list is embedded without a second navigation container; the optional
-live preview starts collapsed to fit the main window and can be shown from the toolbar.
+Rayon's single **Settings** entry contains General, Connection, and all terminal
+categories in one native SwiftUI page, with one category list and shared search.
+General and Connection retain their existing immediate persistence; terminal
+changes retain their explicit apply/discard workflow. A pending terminal draft
+remains visible when switching to General or Connection. No separate terminal
+settings entry, window, or launcher card is used in the main app.
+The optional live preview starts collapsed and is available in terminal categories.
 The editor targets macOS 13 and Swift 6 and has no web view, JavaScript runtime,
 web service, or downloaded font dependency.
 
@@ -97,9 +100,11 @@ application binaries produced by the main build script are ad hoc signed and
 strictly verified, including nested code and both architectures. Both main app
 configurations were launched through LaunchServices on the arm64 host, and the
 Release configuration page was opened inside the main window from the sidebar.
-The final Setting-card routing correction compiles in both configurations and was
-reviewed, but its repeat-navigation GUI check is pending: the subsequent launch
-waited in `SecItemCopyMatching` for system keychain access before creating a window.
+The unified Settings navigation supersedes that earlier entry. Both configurations
+compile and pass strict signature verification after this change; subagent review
+found no blocking issues. The newly launched main app has not exposed a window to
+the GUI driver, so the unified-page GUI check is still pending and the earlier
+sidebar screenshot is not evidence for this final layout.
 Developer ID
 distribution signing, notarization, external SSH-server end-to-end interaction,
 and every individual standalone Ghostty setting are outside these local checks.

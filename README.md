@@ -214,8 +214,9 @@ Copyright © 2022 Lakr Aream. All Rights Reserved.
 
 ### Native Ghostty configuration editor
 
-On macOS, open **Terminal Configuration** in the Rayon sidebar or at the top of
-**Setting**. The editor appears inside the existing main window. It edits the full
+On macOS, open **Settings** in the Rayon sidebar. General preferences, connection
+options, and terminal configuration share one category list and search field in
+the main window. The terminal categories edit the full
 Ghostty Config catalog with native SwiftUI controls, 633 theme previews, palette
 and keybinding editors, a font playground, and an in-memory terminal playground.
 Import/export and share URLs are compatible with [Ghostty Config](https://github.com/zerebos/ghostty-config).

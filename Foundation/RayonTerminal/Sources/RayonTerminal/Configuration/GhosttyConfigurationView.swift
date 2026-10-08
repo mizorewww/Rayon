@@ -2,6 +2,24 @@ import SwiftUI
 import AppKit
 import UniformTypeIdentifiers
 
+/// App-owned preferences share the editor's navigation without coupling this package to RayonStore.
+public struct ConfigHostSettingsSection: Identifiable {
+    public let id: String
+    let title: String
+    let icon: String
+    let keywords: String
+    let content: AnyView
+
+    @MainActor public init<Content: View>(id: String, title: String, icon: String, keywords: String,
+                                        @ViewBuilder content: () -> Content) {
+        self.id = id
+        self.title = title
+        self.icon = icon
+        self.keywords = keywords
+        self.content = AnyView(content())
+    }
+}
+
 /// Full native configuration editor, backed by the pinned Ghostty Config schema.
 public struct GhosttyConfigurationView: View {
     @StateObject private var model = ConfigEditorModel.shared
@@ -21,7 +39,13 @@ public struct GhosttyConfigurationView: View {
     @State private var navigating = false
     private let onApplied: ((Double?) -> Void)?
     private let embedded: Bool
-    public init(embedded: Bool = false, onApplied: ((Double?) -> Void)? = nil) {
+    private let hostSections: [ConfigHostSettingsSection]
+    private var isHostSection: Bool { hostSections.contains { $0.id == selection } && search.isEmpty }
+    public init(embedded: Bool = false, hostSections: [ConfigHostSettingsSection] = [], onApplied: ((Double?) -> Void)? = nil) {
+        self.hostSections = hostSections
+        let initialSelection = hostSections.first?.id ?? "colors"
+        _selection = State(initialValue: initialSelection)
+        _navigationHistory = State(initialValue: [initialSelection])
         self.embedded = embedded
         self.onApplied = onApplied
         _showPreview = State(initialValue: !embedded)
@@ -30,7 +54,14 @@ public struct GhosttyConfigurationView: View {
     public var body: some View {
         ConfigEditorLayout(embedded: embedded) {
             List(selection: $selection) {
-                Section("Configuration") {
+                if !hostSections.isEmpty {
+                    Section("Rayon") {
+                        ForEach(hostSections) { section in
+                            Label(section.title, systemImage: section.icon).tag(section.id)
+                        }
+                    }
+                }
+                Section(hostSections.isEmpty ? "Configuration" : "Terminal") {
                     ForEach(ConfigCatalog.shared.navigation) { panel in
                         Label(panel.name, systemImage: icon(panel.id)).tag(panel.id)
                     }
@@ -49,29 +80,31 @@ public struct GhosttyConfigurationView: View {
             VStack(spacing: 0) {
                 HSplitView {
                     content.frame(minWidth: 440, maxWidth: .infinity, maxHeight: .infinity)
-                    if showPreview { ConfigPreview(model: model).frame(minWidth: 320, idealWidth: 370, maxWidth: 480) }
+                    if showPreview && !isHostSection { ConfigPreview(model: model).frame(minWidth: 320, idealWidth: 370, maxWidth: 480) }
                 }
-                Divider()
-                HStack {
-                    Circle().fill(model.isDirty ? Color.orange : .green).frame(width: 6, height: 6)
-                    Text(model.isDirty ? "Unsaved changes" : "Saved configuration").font(.caption)
-                    Text("· \(model.document.overrides.count) overrides").font(.caption).foregroundStyle(.secondary)
-                    Spacer()
-                    Button("Discard") { model.discard() }.disabled(!model.isDirty)
-                    Button("Save & Apply") {
-                        let fontChanged = model.document.overrides["font-size"] != model.saved.overrides["font-size"]
-                        if model.save(), fontChanged { onApplied?(model.document.overrides["font-size"]?.first.flatMap(Double.init) ?? 14) }
+                if !isHostSection || model.isDirty {
+                    Divider()
+                    HStack {
+                        Circle().fill(model.isDirty ? Color.orange : .green).frame(width: 6, height: 6)
+                        Text(model.isDirty ? "Unsaved terminal changes" : "Terminal settings saved").font(.caption)
+                        Text("· \(model.document.overrides.count) overrides").font(.caption).foregroundStyle(.secondary)
+                        Spacer()
+                        Button("Discard Terminal Changes") { model.discard() }.disabled(!model.isDirty)
+                        Button("Apply Terminal Changes") {
+                            let fontChanged = model.document.overrides["font-size"] != model.saved.overrides["font-size"]
+                            if model.save(), fontChanged { onApplied?(model.document.overrides["font-size"]?.first.flatMap(Double.init) ?? 14) }
+                        }
+                            .keyboardShortcut("s", modifiers: .command).buttonStyle(.borderedProminent)
+                    }.padding(12)
+                    if !model.message.isEmpty {
+                        HStack { Text(model.message).font(.caption).textSelection(.enabled); Spacer(); Button { model.message = "" } label: { Image(systemName: "xmark") }.buttonStyle(.borderless) }
+                            .padding(10).background(Color.accentColor.opacity(0.08))
                     }
-                        .keyboardShortcut("s", modifiers: .command).buttonStyle(.borderedProminent)
-                }.padding(12)
-                if !model.message.isEmpty {
-                    HStack { Text(model.message).font(.caption).textSelection(.enabled); Spacer(); Button { model.message = "" } label: { Image(systemName: "xmark") }.buttonStyle(.borderless) }
-                        .padding(10).background(Color.accentColor.opacity(0.08))
                 }
             }
             .background(Color(nsColor: .windowBackgroundColor))
         }
-        .navigationTitle("Terminal Configuration")
+        .navigationTitle(hostSections.isEmpty ? "Terminal Configuration" : "Settings")
         .searchable(text: $search, prompt: "Search settings and documentation")
         .toolbar {
             ToolbarItemGroup(placement: .navigation) {
@@ -79,12 +112,14 @@ public struct GhosttyConfigurationView: View {
                 Button { navigate(1) } label: { Image(systemName: "chevron.right") }.disabled(navigationIndex + 1 >= navigationHistory.count).help("Forward")
             }
             ToolbarItemGroup {
-                Button { model.undo() } label: { Image(systemName: "arrow.uturn.backward") }.disabled(model.undoStack.isEmpty).help("Undo configuration edit")
-                Button { model.redo() } label: { Image(systemName: "arrow.uturn.forward") }.disabled(model.redoStack.isEmpty).help("Redo configuration edit")
-                Button { importText = ""; importSheet = true } label: { Label("Import", systemImage: "square.and.arrow.down") }
-                Button { exporting = true } label: { Label("Export", systemImage: "square.and.arrow.up") }
-                Button { shareSheet = true } label: { Label("Share", systemImage: "link") }
-                Button { showPreview.toggle() } label: { Label("Preview", systemImage: "sidebar.right") }
+                if !isHostSection {
+                    Button { model.undo() } label: { Image(systemName: "arrow.uturn.backward") }.disabled(model.undoStack.isEmpty).help("Undo configuration edit")
+                    Button { model.redo() } label: { Image(systemName: "arrow.uturn.forward") }.disabled(model.redoStack.isEmpty).help("Redo configuration edit")
+                    Button { importText = ""; importSheet = true } label: { Label("Import", systemImage: "square.and.arrow.down") }
+                    Button { exporting = true } label: { Label("Export", systemImage: "square.and.arrow.up") }
+                    Button { shareSheet = true } label: { Label("Share", systemImage: "link") }
+                    Button { showPreview.toggle() } label: { Label("Preview", systemImage: "sidebar.right") }
+                }
             }
         }
         .onChange(of: selection) { next in
@@ -115,6 +150,10 @@ public struct GhosttyConfigurationView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 12) {
                     Text("Search Results").font(.largeTitle.bold())
+                    ForEach(hostSearchResults) { section in
+                        section.content
+                        Text("Changes apply immediately.").font(.caption).foregroundStyle(.secondary)
+                    }
                     ForEach(ConfigCatalog.shared.navigation) { category in
                         let matches = searchResults.filter { setting in category.settingIDs.contains { ConfigCatalog.shared.registry[$0]?.key == setting.key } }
                         if !matches.isEmpty {
@@ -127,8 +166,15 @@ public struct GhosttyConfigurationView: View {
                             }
                         }
                     }
-                    if searchResults.isEmpty { Text("No settings match “\(search)”").foregroundStyle(.secondary) }
+                    if searchResults.isEmpty && hostSearchResults.isEmpty { Text("No settings match “\(search)”").foregroundStyle(.secondary) }
                 }.padding(24)
+            }
+        } else if let section = hostSections.first(where: { $0.id == selection }) {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    section.content
+                    Text("Changes apply immediately.").font(.caption).foregroundStyle(.secondary)
+                }.frame(maxWidth: .infinity, alignment: .leading).padding(24)
             }
         } else if selection == "playground" { ConfigFontPlayground() }
         else if selection == "transfer" { transferView }
@@ -156,6 +202,13 @@ public struct GhosttyConfigurationView: View {
                     proxy.scrollTo(jumpTarget, anchor: .top)
                 }
             }
+        }
+    }
+    private var hostSearchResults: [ConfigHostSettingsSection] {
+        let tokens = search.lowercased().split(whereSeparator: \.isWhitespace)
+        return hostSections.filter { section in
+            let text = "\(section.title) \(section.keywords)".lowercased()
+            return tokens.allSatisfy { text.contains($0) }
         }
     }
     private var searchResults: [ConfigSetting] {
