@@ -13,7 +13,7 @@ struct ConfigPreview: View {
     private var family: String { document.values("font-family").first ?? "Menlo" }
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            CardHead("Live preview") {
+            CardHead("Preview") {
                 RXSegmented(selection: $dark, options: [.init(false, "Light"), .init(true, "Dark")], caps: false)
             }
             VStack(alignment: .leading, spacing: 0) {
@@ -56,7 +56,6 @@ struct ConfigPreview: View {
                 Text("Cursor")
                 ConfigCursorPreview(document: document, dark: dark)
             }.font(.system(.caption, design: .monospaced))
-            HelpText("Preview commands run in a temporary, simulated file system. Changes show here right away; open sessions change after Apply.")
             Spacer(minLength: 0)
         }.padding(18)
     }

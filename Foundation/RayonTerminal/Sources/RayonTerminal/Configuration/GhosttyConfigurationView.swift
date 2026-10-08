@@ -116,9 +116,9 @@ public struct GhosttyConfigurationView: View {
                         Button { model.redo() } label: { Label("Redo", systemImage: "arrow.uturn.forward") }
                             .disabled(model.redoStack.isEmpty)
                     }
-                    .help("Undo or redo a terminal setting change")
+                    .help("Undo / Redo")
                     Button { resetConfirm = true } label: { Label("Reset All", systemImage: "arrow.counterclockwise") }
-                        .help("Reset every terminal setting to its default")
+                        .help("Reset All")
                     Button { showPreview.toggle() } label: { Label(showPreview ? "Hide Preview" : "Show Preview", systemImage: "sidebar.right") }
                         .help(showPreview ? "Hide Preview" : "Show Preview")
                 }
@@ -268,7 +268,7 @@ public struct GhosttyConfigurationView: View {
                         }
                     }
                     if searchResults.isEmpty && hostSearchResults.isEmpty {
-                        EmptyStateView("No settings match “\(search)”", systemImage: "magnifyingglass", message: "Try another word, or a setting's key such as font-size.")
+                        EmptyStateView("No settings match “\(search)”", systemImage: "magnifyingglass")
                             .rxCard()
                     }
                 }
@@ -291,7 +291,7 @@ public struct GhosttyConfigurationView: View {
         } else if selection == "keybinds" {
             ScrollView {
                 VStack(alignment: .leading, spacing: RX.Space.s6) {
-                    PageTitle("Keybindings", subtitle: "Shortcuts and the terminal actions they run.")
+                    PageTitle("Keybindings")
                     ConfigKeybindingList(model: model)
                 }
                 .padding(.horizontal, RX.Space.s6)
@@ -302,7 +302,7 @@ public struct GhosttyConfigurationView: View {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: RX.Space.s6) {
-                        PageTitle(panel.name, subtitle: panel.note.map(stripTags))
+                        PageTitle(panel.name)
                         ForEach(panel.groups ?? []) { group in
                             VStack(alignment: .leading, spacing: RX.Space.s2) {
                                 if !group.name.isEmpty {
@@ -333,7 +333,7 @@ public struct GhosttyConfigurationView: View {
                 }
             }
         } else {
-            EmptyStateView("Choose a category", systemImage: "slider.horizontal.3", message: "Pick a category on the left.")
+            EmptyStateView("Choose a category", systemImage: "slider.horizontal.3")
                 .frame(maxHeight: .infinity)
                 .onAppear { if hostSections.isEmpty { selection = navigation.first?.id ?? "colors" } }
         }

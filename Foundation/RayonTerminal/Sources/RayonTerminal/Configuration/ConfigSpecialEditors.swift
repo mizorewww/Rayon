@@ -33,10 +33,10 @@ struct ConfigThemePicker: View {
             HStack(spacing: RX.Space.s2) {
                 TextField("Theme name, path, or light:Name,dark:Name", text: $value)
                     .textFieldStyle(.rxMono)
-                RXSearchField("Search 633 themes", text: $search, width: 200)
+                RXSearchField("Search themes", text: $search, width: 200)
             }
             if !selected.isEmpty && ConfigCatalog.shared.themes[selected] == nil {
-                HelpText("A custom theme name or path is kept for export. Only bundled themes can be previewed and applied in Rayon.")
+                HelpText("Only bundled themes can be applied.")
             }
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: RX.Space.s2)], spacing: RX.Space.s2) {
@@ -194,7 +194,7 @@ struct ConfigKeybindingBuilder: View {
     private var parsed: ConfigKeybinding { ConfigKeybinding(raw) }
     private func edit(_ mutation: (inout ConfigKeybinding) -> Void) { var next = parsed; mutation(&next); raw = next.rendered }
     var body: some View {
-        SheetScaffold("Keybinding", lead: "Choose a trigger and the action it runs.") {
+        SheetScaffold("Keybinding") {
             VStack(alignment: .leading, spacing: 14) {
                 RXField("Scope") {
                     RXFlowLayout(spacing: 6) {

@@ -60,7 +60,7 @@ struct ConfigSettingRow: View {
                     }
                     if !summary.isEmpty {
                         HelpText(summary)
-                            .lineLimit(3)
+                            .lineLimit(1)
                     }
                     HStack(spacing: RX.Space.s2) {
                         Text(setting.key)
@@ -84,7 +84,6 @@ struct ConfigSettingRow: View {
                         Label("About \(setting.name)", systemImage: "questionmark.circle")
                     }
                     .buttonStyle(.rx(.plain, size: .small, iconOnly: true))
-                    .help("About this setting")
                     .popover(isPresented: $help) {
                         ScrollView {
                             VStack(alignment: .leading, spacing: RX.Space.s3) {

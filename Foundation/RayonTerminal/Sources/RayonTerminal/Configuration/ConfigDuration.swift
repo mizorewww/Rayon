@@ -55,7 +55,7 @@ struct ConfigDurationInput: View {
             }
             switch Result(catching: { try ConfigDuration.parse(value, allowEmpty: allowEmpty) }) {
             case let .success(segments):
-                HelpText(segments.isEmpty ? "Default" : ConfigDuration.humanize(segments))
+                if !segments.isEmpty { HelpText(ConfigDuration.humanize(segments)) }
             case let .failure(error):
                 HelpText(error.localizedDescription, isError: true)
             }
