@@ -15,75 +15,73 @@ public struct AES: Sendable {
 
     public static let shared: AES = {
         #if DEBUG
-
-            var keyBuilder = ""
+            var keyBuilder = "fdaisohfiuhfq34hifgraskhfiarhfgui34hibrfiuef"
             #if os(macOS)
                 let platformExpert = IOServiceGetMatchingService(
                     kIOMasterPortDefault,
                     IOServiceMatching("IOPlatformExpertDevice")
                 )
-                guard platformExpert > 0 else {
-                    fatalError()
+                if platformExpert > 0,
+                   let serialNumber = (
+                       IORegistryEntryCreateCFProperty(
+                           platformExpert,
+                           kIOPlatformSerialNumberKey as CFString,
+                           kCFAllocatorDefault,
+                           0
+                       )
+                       .takeUnretainedValue() as? String
+                   )
+                {
+                    keyBuilder = serialNumber
+                    IOObjectRelease(platformExpert)
                 }
-                guard let serialNumber = (
-                    IORegistryEntryCreateCFProperty(
-                        platformExpert,
-                        kIOPlatformSerialNumberKey as CFString,
-                        kCFAllocatorDefault,
-                        0
-                    )
-                    .takeUnretainedValue() as? String
-                )
-                else {
-                    fatalError()
-                }
-                IOObjectRelease(platformExpert)
-                keyBuilder = serialNumber
-            #else
-                keyBuilder = "fdaisohfiuhfq34hifgraskhfiarhfgui34hibrfiuef"
             #endif
-
-            let key = keyBuilder + keyBuilder + keyBuilder
-            guard let aes = AES(key: key, iv: key) else {
-                fatalError("Failed to initialize crypto engine for Rayon DEBUG")
-            }
-            return aes
+            return makeEngine(key: keyBuilder + keyBuilder + keyBuilder)
         #else
             let keychainServiceID = "wiki.qaq.rayon.kcAccess"
             let masterKeyID = "wiki.qaq.rayon.MasterCrypto"
             let keychain = Keychain(service: keychainServiceID)
-            var retry = 3
             var key: String?
-            repeat {
-                defer { retry -= 1 }
+            for _ in 0 ..< 3 where key == nil {
                 do {
-                    let master = try keychain.getString(masterKeyID)
-                    if let master = master, master.count > 2 {
+                    if let master = try keychain.getString(masterKeyID), master.count > 2 {
                         key = master
-                        break
                     } else {
                         try keychain.remove(masterKeyID)
                         let new = UUID().uuidString
-                        key = new
+                        // Persist before activating: assigning the key ahead of
+                        // a successful write would encrypt data under a key that
+                        // is lost on the next launch.
                         try keychain
                             .label("Rayon Master Crypto Key")
-                            .comment("Rayon requires a master crypto key to access your encrypted data on disk andprotects your accounts")
+                            .comment("Rayon requires a master crypto key to access your encrypted data on disk and protects your accounts")
                             .set(new, key: masterKeyID)
-                        break
+                        key = new
                     }
                 } catch {
-                    continue
+                    debugPrint("AES: keychain access failed: \(error.localizedDescription)")
                 }
-            } while retry > 0
+            }
             guard let key = key else {
-                fatalError("Failed to load crypto keys for Rayon")
+                // Without the persisted key, previously stored data is
+                // unreadable either way; crashing would also take the app
+                // down. Stay usable with an ephemeral key; data saved in
+                // this state will not survive a restart.
+                debugPrint("AES: no persisted master key, falling back to an ephemeral key")
+                return makeEngine(key: UUID().uuidString)
             }
-            guard let aes = AES(key: key, iv: key) else {
-                fatalError("Failed to initialize crypto engine for Rayon")
-            }
-            return aes
+            return makeEngine(key: key)
         #endif
     }()
+
+    /// Builds an engine whose key doubles as IV. The initializer pads inputs
+    /// to the required sizes, so any string of 16+ characters succeeds.
+    private static func makeEngine(key: String) -> AES {
+        guard let engine = AES(key: key, iv: key) else {
+            preconditionFailure("unreachable: key length is sufficient")
+        }
+        return engine
+    }
 
     /// 初始化 AES 引擎
     /// - Parameters:
