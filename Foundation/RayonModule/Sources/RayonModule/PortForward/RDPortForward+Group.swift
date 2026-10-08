@@ -19,7 +19,9 @@ public struct RDPortForwardGroup: Codable, Identifiable, Equatable {
     }
 
     public static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.id == rhs.id
+        // Compare content, not the group identity: edits to a forward
+        // must be observable so SwiftUI refreshes.
+        lhs.forwards == rhs.forwards
     }
 
     public mutating func insert(_ value: AssociatedType) {
