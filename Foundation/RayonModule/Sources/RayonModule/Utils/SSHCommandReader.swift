@@ -23,6 +23,10 @@ public struct SSHCommandReader: Codable, Equatable {
         guard parser.hasPrefix("ssh ") else {
             return nil
         }
+        // Collapse repeated spaces so pasting "ssh  user@host" still parses.
+        while parser.contains("  ") {
+            parser = parser.replacingOccurrences(of: "  ", with: " ")
+        }
         parser.removeFirst(4) // "ssh "
         guard let reader = parser
             .components(separatedBy: " ")

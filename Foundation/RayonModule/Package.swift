@@ -37,5 +37,9 @@ let package = Package(
                 "Keychain",
             ]
         ),
+        .testTarget(
+            name: "RayonModuleTests",
+            dependencies: ["RayonModule"]
+        ),
     ]
 )
