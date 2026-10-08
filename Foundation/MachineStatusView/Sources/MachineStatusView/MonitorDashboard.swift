@@ -162,16 +162,12 @@ public struct MonitorPlaceholder: View {
                 EmptyStateView(
                     "Cannot reach \(session.machine.name)",
                     systemImage: "exclamationmark.triangle",
-                    message: message + ". Rayon keeps trying in the background.",
+                    message: message,
                     actionTitle: retry == nil ? nil : "Try Again",
                     action: retry
                 )
             case .closed:
-                EmptyStateView(
-                    "Monitor closed",
-                    systemImage: "waveform.path.ecg",
-                    message: "Open the monitor again from Servers."
-                )
+                EmptyStateView("Monitor closed", systemImage: "waveform.path.ecg")
             default:
                 VStack(spacing: RX.Space.s3) {
                     ProgressView()

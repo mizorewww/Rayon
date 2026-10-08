@@ -100,7 +100,7 @@ public struct CoreGrid: View {
 
     public var body: some View {
         if cores.isEmpty {
-            HelpText("No per-core data yet.")
+            HelpText("No data")
         } else {
             let perRow = cores.count > 64 ? 16 : 8
             let tileHeight: CGFloat = cores.count > 64 ? 28 : 44
@@ -150,8 +150,10 @@ public struct MemoryCard: View {
                     LegendItem("Free", value: kB(Double(memory.swapFree)), color: .rxSurfaceSunken, outlined: true)
                 }
                 .padding(.top, RX.Space.s3)
-                HelpText(swapTotal > 0 ? "Swap total \(kB(swapTotal))." : "This server has no swap.")
-                    .padding(.top, RX.Space.s3)
+                if swapTotal <= 0 {
+                    HelpText("No swap")
+                        .padding(.top, RX.Space.s3)
+                }
             } else {
                 MetricView(RXFormat.oneDecimal(status.memoryUsedPercent), unit: "%")
                     .padding(.top, RX.Space.s1)
@@ -179,7 +181,7 @@ public struct MemoryCard: View {
         let swapTotal = Double(memory.swapTotal)
         let swapUsed = max(0, swapTotal - Double(memory.swapFree))
         let swap = swapTotal > 0 ? "Swap \(kB(swapUsed)) of \(kB(swapTotal))" : "No swap"
-        return "\(swap) · active and inactive pages are not counted as free."
+        return swap
     }
 
     func kB(_ value: Double) -> String {
@@ -217,11 +219,9 @@ public struct DiskCard: View {
         let elements = session.status.fileSystem.elements
         let shown = limit.map { Array(elements.prefix($0)) } ?? elements
         VStack(alignment: .leading, spacing: 0) {
-            CardHead(elements.isEmpty ? "Disks" : "Disks · \(elements.count) \(elements.count == 1 ? "mount" : "mounts")") {
-                HintText("df -h")
-            }
+            CardHead("Disks")
             if shown.isEmpty {
-                HelpText("No mounts reported yet.")
+                HelpText("No data")
                     .padding(.top, RX.Space.s2)
             } else {
                 VStack(spacing: RX.Space.s3) {
@@ -323,12 +323,6 @@ public struct ThroughputCard: View {
                 fill: isReceive ? .rxSeries2Fill : .rxAccentFill
             )
             .frame(height: height * 0.42)
-            .overlay(alignment: .topTrailing) {
-                if samples.count < 2 {
-                    HintText("Collecting samples")
-                        .padding(.trailing, RX.Space.s4)
-                }
-            }
         }
         .frame(height: height)
         .rxCardChrome()
@@ -347,11 +341,11 @@ public struct NetworkCard: View {
         let elements = status.network.elements.sorted { ($0.rxBytesPerSec + $0.txBytesPerSec) > ($1.rxBytesPerSec + $1.txBytesPerSec) }
         let peak = Double(max(1, elements.map { max($0.rxBytesPerSec, $0.txBytesPerSec) }.max() ?? 1))
         VStack(alignment: .leading, spacing: 0) {
-            CardHead("Network · per second") {
+            CardHead("Network") {
                 HintText("Total ↓ \(RXFormat.rateString(Double(status.totalReceivePerSecond)))  ↑ \(RXFormat.rateString(Double(status.totalTransmitPerSecond)))")
             }
             if elements.isEmpty {
-                HelpText("No interfaces reported yet.")
+                HelpText("No data")
                     .padding(.top, RX.Space.s2)
             } else {
                 VStack(spacing: RX.Space.s3) {
