@@ -5,6 +5,56 @@ import XCTest
 
 final class NativeTerminalTests: XCTestCase {
     @MainActor
+    func testUserClipboardActionsWorkButRemoteClipboardWriteIsDenied() async throws {
+        _ = NSApplication.shared
+        let pasteboard = NSPasteboard.general
+        // Preserve every readable representation, not just the user's text.
+        let saved = (pasteboard.pasteboardItems ?? []).map { item in
+            let copy = NSPasteboardItem()
+            for type in item.types {
+                if let data = item.data(forType: type) { copy.setData(data, forType: type) }
+            }
+            return copy
+        }
+        defer {
+            pasteboard.clearContents()
+            pasteboard.writeObjects(saved)
+        }
+        let terminal = RayonTerminalView()
+        let native = terminal.session.platformView()
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 640, height: 400),
+            styleMask: [.titled], backing: .buffered, defer: false
+        )
+        window.isReleasedWhenClosed = false
+        window.contentView = native
+        window.orderFront(nil)
+        defer { window.close() }
+        try await Task.sleep(for: .milliseconds(100))
+        terminal.write("Rayon copy marker")
+        XCTAssertTrue(terminal.session.backend.waitForPendingOutput())
+        XCTAssertTrue(native.performBindingAction("select_all"))
+        XCTAssertTrue(native.copySelectedTextToPasteboard())
+        try await Task.sleep(for: .milliseconds(100))
+        XCTAssertTrue(pasteboard.string(forType: .string)?.contains("Rayon copy marker") == true)
+
+        pasteboard.clearContents()
+        pasteboard.setString("Rayon paste 中文", forType: .string)
+        let pasted = expectation(description: "system pasteboard input")
+        terminal.setupBufferChain { text in
+            if text.contains("Rayon paste 中文") { pasted.fulfill() }
+        }
+        XCTAssertTrue(native.performBindingAction("paste_from_clipboard"))
+        await fulfillment(of: [pasted], timeout: 5)
+
+        let remote = Data("remote replacement".utf8).base64EncodedString()
+        terminal.write("\u{1B}]52;c;\(remote)\u{07}")
+        XCTAssertTrue(terminal.session.backend.waitForPendingOutput())
+        try await Task.sleep(for: .milliseconds(100))
+        XCTAssertEqual(pasteboard.string(forType: .string), "Rayon paste 中文")
+    }
+
+    @MainActor
     func testRealSurfaceInputOutputResizeFontAndWindowTransfer() async throws {
         _ = NSApplication.shared
         let terminal = RayonTerminalView()

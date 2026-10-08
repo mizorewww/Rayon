@@ -81,6 +81,11 @@ private final class TerminalPresentation: TerminalSurfaceTitleDelegate,
     TerminalSurfaceBellDelegate, TerminalSurfaceLifecycleDelegate,
     TerminalSurfaceClipboardConfirmationDelegate
 {
+    private static let controller = TerminalController(
+        configuration: TerminalConfiguration.default
+            .custom("clipboard-read", "ask")
+            .custom("clipboard-write", "ask")
+    )
     let view: AppTerminalView
     private let callbacks: TerminalCallbacks
     private let output: TerminalOutputBuffer
@@ -94,7 +99,7 @@ private final class TerminalPresentation: TerminalSurfaceTitleDelegate,
         output = session.output
         view = AppTerminalView(frame: .zero)
         view.delegate = self
-        view.controller = TerminalController.shared
+        view.controller = Self.controller
         // Never use the default .exec backend: SSH remains owned by Rayon.
         view.configuration = TerminalSurfaceOptions(
             backend: .inMemory(session.backend), fontSize: Float(callbacks.fontSize)
