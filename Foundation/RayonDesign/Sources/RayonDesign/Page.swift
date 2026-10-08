@@ -51,7 +51,7 @@ public struct EmptyStateView: View {
     public init(
         _ title: String,
         systemImage: String,
-        message: String,
+        message: String = "",
         actionTitle: String? = nil,
         action: (() -> Void)? = nil
     ) {
@@ -71,11 +71,13 @@ public struct EmptyStateView: View {
             Text(title)
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(.rxInk)
-            Text(message)
-                .font(.rxBody)
-                .foregroundStyle(.rxInkSecondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 320)
+            if !message.isEmpty {
+                Text(message)
+                    .font(.rxBody)
+                    .foregroundStyle(.rxInkSecondary)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 320)
+            }
             if let actionTitle, let action {
                 Button(actionTitle, action: action)
                     .buttonStyle(.rxPrimary)
@@ -217,7 +219,7 @@ public struct SheetScaffold<Content: View, Footer: View>: View {
 public struct ProgressHUD: View {
     let text: String
 
-    public init(_ text: String = "Operation in progress") {
+    public init(_ text: String = "Working…") {
         self.text = text
     }
 
