@@ -10,7 +10,7 @@ import SwiftUI
 enum SheetTemplate {
     typealias Confirmed = Bool
 
-    static func makeSheet(
+    @MainActor static func makeSheet(
         title: String,
         body: AnyView,
         complete: @escaping (Confirmed) -> Void
@@ -36,7 +36,7 @@ enum SheetTemplate {
     }
 
     static func makeErrorAlert(with error: Error, delay: Double = 0) {
-        mainActor(delay: delay) {
+        mainActorUI(delay: delay) {
             let alert = NSAlert()
             alert.alertStyle = .critical
             alert.messageText = error.localizedDescription

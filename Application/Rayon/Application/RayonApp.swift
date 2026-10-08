@@ -40,7 +40,7 @@ struct RayonApp: App {
 }
 
 class AppDelegate: NSObject, NSApplicationDelegate {
-    private(set) static var shared: AppDelegate!
+    nonisolated(unsafe) private(set) static var shared: AppDelegate!
 
     override init() {
         super.init()
@@ -81,7 +81,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 }
                 return !window.isKind(of: readClass.self)
             }
-            .filter(\.isVisible)
+            .filter { $0.isVisible }
         if windows.isEmpty, MenubarTool.shared.hasCat {
             NSApp.setActivationPolicy(.accessory)
         } else {

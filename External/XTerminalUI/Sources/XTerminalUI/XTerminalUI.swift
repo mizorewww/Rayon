@@ -191,8 +191,9 @@ class XTerminalCore: XTerminal {
     func requestTerminalSize() -> CGSize {
         assert(!Thread.isMainThread, "\(#function) could not be called from main thread")
         let group = DispatchGroup()
-        var col = 0
-        var row = 0
+        // Each callback finishes before group.wait() returns; preserve the blocking API.
+        nonisolated(unsafe) var col = 0
+        nonisolated(unsafe) var row = 0
         group.enter()
         let webView = associatedWebView
         DispatchQueue.main.async {

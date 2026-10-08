@@ -8,7 +8,7 @@
 import RayonModule
 import SwiftUI
 
-private var isBootstrapCompleted = false
+@MainActor private var isBootstrapCompleted = false
 
 struct MainView: View {
     @EnvironmentObject var store: RayonStore

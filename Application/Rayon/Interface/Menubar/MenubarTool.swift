@@ -19,7 +19,8 @@ class MenubarTool {
     let bootstrapLock = NSLock()
 //    var menubarAppPids = [pid_t]()
 
-    static let shared = MenubarTool()
+    // Keep the existing caller-managed queue and lock ownership.
+    nonisolated(unsafe) static let shared = MenubarTool()
 
     var statusItem: [MenubarStatusItem] = []
     var hasCat: Bool {
@@ -47,7 +48,7 @@ class MenubarTool {
 //            return nil
 //        }
 
-        func createStatusItem() -> MenubarStatusItem {
+        @MainActor func createStatusItem() -> MenubarStatusItem {
             let machine = RayonStore.shared.machineGroup[machine]
             let identity = RayonStore.shared.identityGroup[identity]
             guard machine.isNotPlaceholder(), !identity.username.isEmpty else {
@@ -69,7 +70,7 @@ class MenubarTool {
 //        return true
 //    }
 
-    func createRuncat(for machineId: RDMachine.ID) {
+    @MainActor func createRuncat(for machineId: RDMachine.ID) {
         bootstrapLock.lock()
         let copy = statusItem
         bootstrapLock.unlock()

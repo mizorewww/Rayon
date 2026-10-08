@@ -9,7 +9,7 @@
     import AppKit
 
     public class CodeEditorView: NSView, CodeEditor {
-        private let associatedCore = CodeEditorCore()
+        nonisolated(unsafe) private let associatedCore = CodeEditorCore()
 
         public required init() {
             super.init(frame: CGRect())
@@ -23,38 +23,38 @@
         }
 
         @discardableResult
-        public func onContentChange(callback: ((String) -> Void)?) -> Self {
+        nonisolated public func onContentChange(callback: ((String) -> Void)?) -> Self {
             associatedCore.onContentChange(callback: callback)
             return self
         }
 
         @discardableResult
-        public func onContentHeightChange(callback: ((Double) -> Void)?) -> Self {
+        nonisolated public func onContentHeightChange(callback: ((Double) -> Void)?) -> Self {
             associatedCore.onContentHeightChange(callback: callback)
             return self
         }
 
-        public func setDocumentData(_ data: String) {
+        nonisolated public func setDocumentData(_ data: String) {
             associatedCore.setDocumentData(data)
         }
 
-        public func setDocumentFont(size: Int) {
+        nonisolated public func setDocumentFont(size: Int) {
             associatedCore.setDocumentFont(size: size)
         }
 
-        public func setDocumentLang(_ lang: String) {
+        nonisolated public func setDocumentLang(_ lang: String) {
             associatedCore.setDocumentLang(lang)
         }
 
-        public func getAvailableLang() -> [String] {
+        nonisolated public func getAvailableLang() -> [String] {
             associatedCore.getAvailableLang()
         }
 
-        public func makeReadonly() {
+        nonisolated public func makeReadonly() {
             associatedCore.makeReadonly()
         }
 
-        public func requestHeightToSend() {
+        nonisolated public func requestHeightToSend() {
             associatedCore.requestHeightToSend()
         }
     }

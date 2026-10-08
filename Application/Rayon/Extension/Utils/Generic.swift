@@ -23,12 +23,12 @@ enum RayonUtil {
     static func selectIdentity() -> RDIdentity.ID? {
         assert(!Thread.isMainThread, "select identity must be called from background thread")
 
-        var selection: RDIdentity.ID?
+        nonisolated(unsafe) var selection: RDIdentity.ID?
         let sem = DispatchSemaphore(value: 0)
 
         debugPrint("Picking Identity")
 
-        mainActor {
+        mainActorUI {
             var panelRef: NSPanel?
             var windowRef: NSWindow?
             let controller = NSHostingController(rootView: Group {
@@ -65,12 +65,12 @@ enum RayonUtil {
     static func selectMachine(allowMany: Bool = true) -> [RDMachine.ID] {
         assert(!Thread.isMainThread, "select identity must be called from background thread")
 
-        var selection = [RDMachine.ID]()
+        nonisolated(unsafe) var selection = [RDMachine.ID]()
         let sem = DispatchSemaphore(value: 0)
 
         debugPrint("Picking Machine")
 
-        mainActor {
+        mainActorUI {
             var panelRef: NSPanel?
             var windowRef: NSWindow?
             let controller = NSHostingController(rootView: Group {

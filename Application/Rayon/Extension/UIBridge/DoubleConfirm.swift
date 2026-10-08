@@ -10,6 +10,8 @@ import SwiftUI
 
 extension UIBridge {
     static func requiresConfirmation(message: String, confirmation: @escaping (Bool) -> Void) {
+        // Keep the immediate callback when confirmation is disabled.
+        nonisolated(unsafe) let confirmation = confirmation
         if RayonStore.shared.disableConformation {
             confirmation(true)
             return
@@ -20,9 +22,10 @@ extension UIBridge {
         alert.addButton(withTitle: "Confirm")
         alert.addButton(withTitle: "Cancel")
         if let keyWindow = NSApplication.shared.keyWindow {
-            alert.beginSheetModal(for: keyWindow) { resp in
+            let responseHandler: @Sendable (NSApplication.ModalResponse) -> Void = { resp in
                 confirmation(resp == .alertFirstButtonReturn)
             }
+            alert.beginSheetModal(for: keyWindow, completionHandler: responseHandler)
         } else {
             let resp = alert.runModal()
             confirmation(resp == .alertFirstButtonReturn)

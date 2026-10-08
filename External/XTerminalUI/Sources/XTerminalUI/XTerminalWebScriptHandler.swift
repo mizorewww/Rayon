@@ -9,10 +9,10 @@ import Foundation
 import WebKit
 
 class XTerminalWebScriptHandler: NSObject, WKScriptMessageHandler {
-    var onBellChain: (() -> Void)?
-    var onTitleChain: ((String) -> Void)?
-    var onDataChain: ((String) -> Void)?
-    var onSizeChain: ((CGSize) -> Void)?
+    nonisolated(unsafe) var onBellChain: (() -> Void)?
+    nonisolated(unsafe) var onTitleChain: ((String) -> Void)?
+    nonisolated(unsafe) var onDataChain: ((String) -> Void)?
+    nonisolated(unsafe) var onSizeChain: ((CGSize) -> Void)?
 
     func userContentController(
         _: WKUserContentController,

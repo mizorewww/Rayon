@@ -25,7 +25,7 @@ class MenubarStatusItem: NSObject, Identifiable {
 
     var representedShell: NSRemoteShell?
 
-    init(machine: RDMachine, identity: RDIdentity) {
+    @MainActor init(machine: RDMachine, identity: RDIdentity) {
         self.machine = machine
         self.identity = identity
 
@@ -67,7 +67,10 @@ class MenubarStatusItem: NSObject, Identifiable {
         .frame(width: 350, height: 700)
         buildPopover.contentViewController = NSHostingController(rootView: contentView)
 
-        eventMonitor = EventMonitor(mask: [.leftMouseDown, .rightMouseDown], handler: mouseEventHandler)
+        eventMonitor = EventMonitor(mask: [.leftMouseDown, .rightMouseDown], handler: { [self] event in
+            // AppKit delivers global event-monitor callbacks on the main thread.
+            MainActor.assumeIsolated { mouseEventHandler(event) }
+        })
 
         beginShellLoop()
         beginFrameLoop()
@@ -109,7 +112,7 @@ class MenubarStatusItem: NSObject, Identifiable {
 
     var catSpeed = CatSpeed.broken
 
-    @objc func togglePopover(sender: AnyObject) {
+    @MainActor @objc func togglePopover(sender: AnyObject) {
         if popover.isShown {
             hidePopover(sender)
         } else {
@@ -124,12 +127,12 @@ class MenubarStatusItem: NSObject, Identifiable {
         }
     }
 
-    func hidePopover(_ sender: AnyObject) {
+    @MainActor func hidePopover(_ sender: AnyObject) {
         popover.performClose(sender)
         eventMonitor?.stop()
     }
 
-    func mouseEventHandler(_ event: NSEvent?) {
+    @MainActor func mouseEventHandler(_ event: NSEvent?) {
         if popover.isShown, let event = event {
             hidePopover(event)
         }

@@ -13,7 +13,7 @@ open class XMLEncoder {
     // MARK: Options
 
     /// The formatting of the output XML data.
-    public struct OutputFormatting: OptionSet {
+    public struct OutputFormatting: OptionSet, Sendable {
         /// The format's default value.
         public let rawValue: UInt
 
@@ -36,7 +36,7 @@ open class XMLEncoder {
     }
 
     /// A node's encoding type
-    public enum NodeEncoding {
+    public enum NodeEncoding: Sendable {
         case attribute
         case element
         case both
@@ -255,7 +255,7 @@ open class XMLEncoder {
             }
         }
 
-        static let defaultEncoder: XMLEncodingClosure = { codableType, _ in
+        nonisolated(unsafe) static let defaultEncoder: XMLEncodingClosure = { codableType, _ in
             guard let dynamicType = codableType as? DynamicNodeEncoding.Type else {
                 return { _ in nil }
             }

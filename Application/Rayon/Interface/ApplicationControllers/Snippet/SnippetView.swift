@@ -146,7 +146,7 @@ struct SnippetFloatingPanelView: View {
             guard machines.count > 0 else {
                 return
             }
-            mainActor {
+            mainActorUI {
                 var panelRef: NSPanel?
                 var windowRef: NSWindow?
                 let controller = NSHostingController(rootView: Group {

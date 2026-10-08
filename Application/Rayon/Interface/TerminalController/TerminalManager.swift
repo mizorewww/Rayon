@@ -10,7 +10,8 @@ import Foundation
 import RayonModule
 
 class TerminalManager: ObservableObject {
-    static let shared = TerminalManager()
+    // Keep the existing caller-managed queue and lock ownership.
+    nonisolated(unsafe) static let shared = TerminalManager()
     private init() {}
 
     @Published var sessionContexts: [Context] = []

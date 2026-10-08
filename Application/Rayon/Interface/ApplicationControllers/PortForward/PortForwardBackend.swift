@@ -10,7 +10,8 @@ import NSRemoteShell
 import RayonModule
 
 class PortForwardBackend: ObservableObject {
-    static let shared = PortForwardBackend()
+    // Keep the existing caller-managed queue and lock ownership.
+    nonisolated(unsafe) static let shared = PortForwardBackend()
 
     private init() {}
 

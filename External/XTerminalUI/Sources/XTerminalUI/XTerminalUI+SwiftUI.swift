@@ -11,9 +11,11 @@ import SwiftUI
     import AppKit
 
     public struct STerminalView: NSViewRepresentable, XTerminal {
-        public init() {}
+        nonisolated public init() {
+            correspondingView = XTerminalView()
+        }
 
-        let correspondingView = XTerminalView()
+        nonisolated(unsafe) let correspondingView: XTerminalView
 
         public func makeNSView(context _: Context) -> some NSView {
             correspondingView
@@ -22,38 +24,38 @@ import SwiftUI
         public func updateNSView(_: NSViewType, context _: Context) {}
 
         @discardableResult
-        public func setupBufferChain(callback: ((String) -> Void)?) -> Self {
+        nonisolated public func setupBufferChain(callback: ((String) -> Void)?) -> Self {
             correspondingView.setupBufferChain(callback: callback)
             return self
         }
 
         @discardableResult
-        public func setupTitleChain(callback: ((String) -> Void)?) -> Self {
+        nonisolated public func setupTitleChain(callback: ((String) -> Void)?) -> Self {
             correspondingView.setupTitleChain(callback: callback)
             return self
         }
 
         @discardableResult
-        public func setupBellChain(callback: (() -> Void)?) -> Self {
+        nonisolated public func setupBellChain(callback: (() -> Void)?) -> Self {
             correspondingView.setupBellChain(callback: callback)
             return self
         }
 
         @discardableResult
-        public func setupSizeChain(callback: ((CGSize) -> Void)?) -> Self {
+        nonisolated public func setupSizeChain(callback: ((CGSize) -> Void)?) -> Self {
             correspondingView.setupSizeChain(callback: callback)
             return self
         }
         
-        public func setTerminalFontSize(with size: Int) {
+        nonisolated public func setTerminalFontSize(with size: Int) {
             correspondingView.setTerminalFontSize(with: size)
         }
         
-        public func write(_ str: String) {
+        nonisolated public func write(_ str: String) {
             correspondingView.write(str)
         }
 
-        public func requestTerminalSize() -> CGSize {
+        nonisolated public func requestTerminalSize() -> CGSize {
             correspondingView.requestTerminalSize()
         }
     }

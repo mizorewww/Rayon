@@ -11,9 +11,11 @@ import SwiftUI
     import AppKit
 
     public struct SCodeEditor: NSViewRepresentable, CodeEditor {
-        public init() {}
+        public init() {
+            correspondingView = CodeEditorView()
+        }
 
-        let correspondingView = CodeEditorView()
+        nonisolated(unsafe) let correspondingView: CodeEditorView
 
         public func makeNSView(context _: Context) -> some NSView {
             correspondingView
@@ -22,38 +24,38 @@ import SwiftUI
         public func updateNSView(_: NSViewType, context _: Context) {}
 
         @discardableResult
-        public func onContentChange(callback: ((String) -> Void)?) -> Self {
+        nonisolated public func onContentChange(callback: ((String) -> Void)?) -> Self {
             correspondingView.onContentChange(callback: callback)
             return self
         }
 
         @discardableResult
-        public func onContentHeightChange(callback: ((Double) -> Void)?) -> Self {
+        nonisolated public func onContentHeightChange(callback: ((Double) -> Void)?) -> Self {
             correspondingView.onContentHeightChange(callback: callback)
             return self
         }
 
-        public func setDocumentData(_ data: String) {
+        nonisolated public func setDocumentData(_ data: String) {
             correspondingView.setDocumentData(data)
         }
 
-        public func setDocumentFont(size: Int) {
+        nonisolated public func setDocumentFont(size: Int) {
             correspondingView.setDocumentFont(size: size)
         }
 
-        public func setDocumentLang(_ lang: String) {
+        nonisolated public func setDocumentLang(_ lang: String) {
             correspondingView.setDocumentLang(lang)
         }
 
-        public func getAvailableLang() -> [String] {
+        nonisolated public func getAvailableLang() -> [String] {
             correspondingView.getAvailableLang()
         }
 
-        public func makeReadonly() {
+        nonisolated public func makeReadonly() {
             correspondingView.makeReadonly()
         }
 
-        public func requestHeightToSend() {
+        nonisolated public func requestHeightToSend() {
             correspondingView.requestHeightToSend()
         }
     }

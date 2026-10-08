@@ -74,7 +74,8 @@ public class RayonStore: ObservableObject {
         }
     }
 
-    public static let shared = RayonStore()
+    // Preserve legacy access from the existing UI and worker queues.
+    nonisolated(unsafe) public static let shared = RayonStore()
 
     @Published public var licenseAgreed: Bool = false {
         didSet {

@@ -9,16 +9,27 @@ import Foundation
 
 import AppKit
 
+// Legacy model callbacks retain their existing queue ownership during migration.
+func mainActor(delay: Double = 0, run: @escaping () -> Void) {
+    nonisolated(unsafe) let run = run
+    guard delay == 0, Thread.isMainThread else {
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { run() }
+        return
+    }
+    run()
+}
+
 /// Not actually a Actor but I like it
 /// - Parameter run: the job to be fired on main thread
-func mainActor(delay: Double = 0, run: @escaping () -> Void) {
+func mainActorUI(delay: Double = 0, run: @escaping @MainActor () -> Void) {
     guard delay == 0, Thread.isMainThread else {
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             run()
         }
         return
     }
-    run()
+    // The guard above establishes the existing main-thread fast path.
+    MainActor.assumeIsolated { run() }
 }
 
 enum UIBridge {
@@ -43,7 +54,7 @@ enum UIBridge {
         )
     }
 
-    static func askForInput(title: String, message: String, defaultValue: String, complete: @escaping (String) -> Void) {
+    @MainActor static func askForInput(title: String, message: String, defaultValue: String, complete: @escaping (String) -> Void) {
         let msg = NSAlert()
         msg.addButton(withTitle: "OK") // 1st button
         msg.addButton(withTitle: "Cancel") // 2nd button

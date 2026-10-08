@@ -9,7 +9,7 @@ import CommonCrypto
 import Foundation
 import Keychain
 
-public struct AES {
+public struct AES: Sendable {
     private let key: Data
     private let iv: Data
 

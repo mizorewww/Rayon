@@ -9,8 +9,8 @@ import Foundation
 import WebKit
 
 class CodeEditorScriptHandler: NSObject, WKScriptMessageHandler {
-    var onContentChange: ((String) -> Void)?
-    var onContentHeightChange: ((Double) -> Void)?
+    nonisolated(unsafe) var onContentChange: ((String) -> Void)?
+    nonisolated(unsafe) var onContentHeightChange: ((Double) -> Void)?
 
     func userContentController(
         _: WKUserContentController,

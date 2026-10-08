@@ -11,9 +11,9 @@ import Foundation
     import AppKit
 
     public class XTerminalView: NSView, XTerminal {
-        private let associatedCore = XTerminalCore()
+        nonisolated(unsafe) private let associatedCore = XTerminalCore()
 
-        public required init() {
+        nonisolated public required init() {
             super.init(frame: CGRect())
             addSubview(associatedCore.associatedWebView)
             associatedCore.associatedWebView.bindFrameToSuperviewBounds()
@@ -25,38 +25,38 @@ import Foundation
         }
 
         @discardableResult
-        public func setupBufferChain(callback: ((String) -> Void)?) -> Self {
+        nonisolated public func setupBufferChain(callback: ((String) -> Void)?) -> Self {
             associatedCore.setupBufferChain(callback: callback)
             return self
         }
 
         @discardableResult
-        public func setupTitleChain(callback: ((String) -> Void)?) -> Self {
+        nonisolated public func setupTitleChain(callback: ((String) -> Void)?) -> Self {
             associatedCore.setupTitleChain(callback: callback)
             return self
         }
 
         @discardableResult
-        public func setupBellChain(callback: (() -> Void)?) -> Self {
+        nonisolated public func setupBellChain(callback: (() -> Void)?) -> Self {
             associatedCore.setupBellChain(callback: callback)
             return self
         }
 
         @discardableResult
-        public func setupSizeChain(callback: ((CGSize) -> Void)?) -> Self {
+        nonisolated public func setupSizeChain(callback: ((CGSize) -> Void)?) -> Self {
             associatedCore.setupSizeChain(callback: callback)
             return self
         }
 
-        public func write(_ str: String) {
+        nonisolated public func write(_ str: String) {
             associatedCore.write(str)
         }
 
-        public func setTerminalFontSize(with size: Int) {
+        nonisolated public func setTerminalFontSize(with size: Int) {
             associatedCore.setTerminalFontSize(with: size)
         }
 
-        public func requestTerminalSize() -> CGSize {
+        nonisolated public func requestTerminalSize() -> CGSize {
             associatedCore.requestTerminalSize()
         }
     }

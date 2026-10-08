@@ -208,7 +208,7 @@ public extension AuthenticationUI {
     }
 }
 
-public struct AuthenticationPolicy: OptionSet {
+public struct AuthenticationPolicy: OptionSet, Sendable {
     /**
      User presence policy using Touch ID or Passcode. Touch ID does not
      have to be available or enrolled. Item is still accessible by Touch ID
@@ -1278,12 +1278,12 @@ private let AttributeAuthenticationType = String(kSecAttrAuthenticationType)
 private let AttributePort = String(kSecAttrPort)
 private let AttributePath = String(kSecAttrPath)
 
-private let SynchronizableAny = kSecAttrSynchronizableAny
+nonisolated(unsafe) private let SynchronizableAny = kSecAttrSynchronizableAny
 
 /** Search Constants */
 private let MatchLimit = String(kSecMatchLimit)
-private let MatchLimitOne = kSecMatchLimitOne
-private let MatchLimitAll = kSecMatchLimitAll
+nonisolated(unsafe) private let MatchLimitOne = kSecMatchLimitOne
+nonisolated(unsafe) private let MatchLimitAll = kSecMatchLimitAll
 
 /** Return Type Key Constants */
 private let ReturnData = String(kSecReturnData)

@@ -129,7 +129,7 @@ struct PortForwardManager: View {
     }
 
     var table: some View {
-        Table(selection: $selection, sortOrder: $sortOrder) {
+        Table(tableItems, selection: $selection, sortOrder: $sortOrder) {
             TableColumn("Action") { data in
                 Button {
                     if backend.sessionExists(withPortForwardID: data.id) {
@@ -206,10 +206,6 @@ struct PortForwardManager: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     Text(data.shortDescription())
                 }
-            }
-        } rows: {
-            ForEach(tableItems) { item in
-                TableRow(item)
             }
         }
     }

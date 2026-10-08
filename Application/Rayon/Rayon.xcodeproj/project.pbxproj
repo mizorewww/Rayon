@@ -670,7 +670,7 @@
 				PROVISIONING_PROFILE_SPECIFIER = "Rayon macOS Development";
 				SDKROOT = macosx;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Debug;
 		};
@@ -703,7 +703,7 @@
 				PROVISIONING_PROFILE_SPECIFIER = "Rayon Distribution";
 				SDKROOT = macosx;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 			};
 			name = Release;
 		};

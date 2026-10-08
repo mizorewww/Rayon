@@ -11,7 +11,8 @@ import RayonModule
 import SwiftUI
 
 class FileTransferManager: ObservableObject {
-    static let shared = FileTransferManager()
+    // Preserve the existing UI/transfer queue contract.
+    nonisolated(unsafe) static let shared = FileTransferManager()
 
     private init() {}
 

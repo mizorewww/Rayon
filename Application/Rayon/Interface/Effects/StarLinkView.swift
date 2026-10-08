@@ -5,6 +5,7 @@
 //  Created by Lakr Aream on 2022/2/9.
 //
 
+import Combine
 import SwiftUI
 
 private let starCount = 20

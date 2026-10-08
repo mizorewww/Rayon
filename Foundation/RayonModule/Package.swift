@@ -1,4 +1,4 @@
-// swift-tools-version:5.5
+// swift-tools-version: 6.0
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -25,7 +25,7 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "PropertyWrapper", path: "../PropertyWrapper"),
-        .package(name: "NSRemoteShell", path: "../NSRemoteShell"),
+        .package(name: "NSRemoteShell", path: "../../External/NSRemoteShell"),
         .package(name: "Keychain", path: "../Keychain"),
     ],
     targets: [
