@@ -9,7 +9,7 @@ import SwiftUI
 
 struct FileTransferView: View {
     @StateObject var context: FileTransferContext
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
 
     @State var searchKey: String = ""
 

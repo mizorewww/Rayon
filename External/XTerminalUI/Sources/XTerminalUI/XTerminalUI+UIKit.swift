@@ -8,7 +8,7 @@
 #if canImport(UIKit)
     import UIKit
 
-    public class XTerminalView: UIView, XTerminal {
+    public class XTerminalView: UIView, @preconcurrency XTerminal {
         private let associatedCore = XTerminalCore()
 
         public required init() {

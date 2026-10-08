@@ -45,11 +45,16 @@ public extension ServerStatus {
                 phyUsed = (
                     (total - free - memCached - memBuffers) / total
                 )
-                swapUsed = (
-                    (swapTotal - swapFree) / total
-                )
             } else {
                 phyUsed = 0
+            }
+            // Swap usage is relative to swapTotal, not physical memory,
+            // and machines without swap must not divide by zero.
+            if swapTotal != 0 {
+                swapUsed = (
+                    (swapTotal - swapFree) / swapTotal
+                )
+            } else {
                 swapUsed = 0
             }
         }

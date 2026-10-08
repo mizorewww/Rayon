@@ -154,7 +154,7 @@ struct PortForwardElementView: View {
             Divider()
             Text(forward.uuidString)
                 .textSelection(.enabled)
-                .font(.system(size: 8, weight: .light, design: .monospaced))
+                .font(.system(size: 11, weight: .regular, design: .monospaced))
         }
         .frame(maxWidth: .infinity)
         .padding()

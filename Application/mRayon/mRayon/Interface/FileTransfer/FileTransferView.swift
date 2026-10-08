@@ -9,7 +9,7 @@ import SwiftUI
 
 struct FileTransferView: View {
     @StateObject var context: FileTransferContext
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
 
     @State var openFilePicker: Bool = false
     @State var searchKey: String = ""
@@ -162,7 +162,7 @@ struct FileTransferView: View {
                         context.processShutdown()
                     } else {
                         FileTransferManager.shared.end(for: context.id)
-                        presentationMode.wrappedValue.dismiss()
+                        dismiss()
                     }
                 }
                 .foregroundColor(.red)

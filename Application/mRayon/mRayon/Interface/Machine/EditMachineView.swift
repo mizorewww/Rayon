@@ -9,7 +9,7 @@ import RayonModule
 import SwiftUI
 
 struct EditMachineView: View {
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
 
     let inEditWith: (() -> (UUID?))?
 
@@ -106,7 +106,7 @@ struct EditMachineView: View {
                         ) { confirmed in
                             if confirmed {
                                 RayonStore.shared.machineGroup.delete(identity)
-                                presentationMode.wrappedValue.dismiss()
+                                dismiss()
                             }
                         }
                     } label: {
@@ -185,7 +185,7 @@ struct EditMachineView: View {
         newMachine.fileTransferLoginPath = fileTransferLoginPath
         RayonStore.shared.machineGroup.insert(newMachine)
 
-        presentationMode.wrappedValue.dismiss()
+        dismiss()
     }
 }
 

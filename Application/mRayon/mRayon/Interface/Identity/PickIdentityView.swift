@@ -27,7 +27,7 @@ struct PickIdentityView: View {
         _selection = Binding<RDIdentity.ID?> { nil } set: { _ in }
     }
 
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
 
     @State var openCreate: Bool = false
 
@@ -89,7 +89,7 @@ struct PickIdentityView: View {
         .toolbar {
             ToolbarItem {
                 Button {
-                    presentationMode.wrappedValue.dismiss()
+                    dismiss()
                     completion?(rawSelection)
                 } label: {
                     Label("Done", systemImage: "checkmark")

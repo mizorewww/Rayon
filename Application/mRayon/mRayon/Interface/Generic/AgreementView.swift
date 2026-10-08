@@ -9,7 +9,7 @@ import RayonModule
 import SwiftUI
 
 struct AgreementView: View {
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
 //        NavigationView {
@@ -35,7 +35,7 @@ struct AgreementView: View {
                         ) { yes in
                             if yes {
                                 RayonStore.shared.licenseAgreed = true
-                                presentationMode.wrappedValue.dismiss()
+                                dismiss()
                             }
                         }
                     } label: {

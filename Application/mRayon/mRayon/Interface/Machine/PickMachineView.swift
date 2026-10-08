@@ -31,7 +31,7 @@ struct PickMachineView: View {
         _selection = Binding<[RDMachine.ID]> { [] } set: { _ in }
     }
 
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
 
     var selectionFooter: String {
         rawSelection
@@ -93,7 +93,7 @@ struct PickMachineView: View {
         .toolbar {
             ToolbarItem {
                 Button {
-                    presentationMode.wrappedValue.dismiss()
+                    dismiss()
                     completion?(rawSelection)
                 } label: {
                     Label("Done", systemImage: "checkmark")

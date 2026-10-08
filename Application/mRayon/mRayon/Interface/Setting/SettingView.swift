@@ -24,7 +24,7 @@ struct SettingView: View {
                     Label("Get Source", systemImage: "chevron.left.forwardslash.chevron.right")
                 }
             } header: {
-                Label("App", systemImage: "arrow.right")
+                Label("App", systemImage: "app.badge")
             } footer: {
                 Text("Rayon is open sourced at GitHub, any pull request are welcome!")
             }
@@ -38,7 +38,7 @@ struct SettingView: View {
                     step: 1
                 ) { _ in }
             } header: {
-                Label("Connect", systemImage: "arrow.right")
+                Label("Connect", systemImage: "network")
             }
 
             Section {
@@ -51,7 +51,7 @@ struct SettingView: View {
                     step: 1
                 ) { _ in }
             } header: {
-                Label("Interface", systemImage: "arrow.right")
+                Label("Interface", systemImage: "slider.horizontal.3")
             }
 
             Section {
@@ -92,7 +92,7 @@ struct SettingView: View {
                     Text("Software License")
                 }
             } header: {
-                Label("License", systemImage: "arrow.right")
+                Label("License", systemImage: "doc.text")
             }
         }
         .navigationTitle("Setting")

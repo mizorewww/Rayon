@@ -122,7 +122,7 @@ struct MachineView: View {
             Divider()
             Text(machine.uuidString)
                 .textSelection(.enabled)
-                .font(.system(size: 5, weight: .light, design: .monospaced))
+                .font(.system(size: 10, weight: .regular, design: .monospaced))
         }
         .animation(.interactiveSpring(), value: store.machineRedacted)
         .frame(maxWidth: .infinity)

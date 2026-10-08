@@ -10,7 +10,7 @@ import RayonModule
 import SwiftUI
 
 struct MachineCreateView: View {
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var store: RayonStore
 
     let requiresDismissAction: Bool
@@ -32,7 +32,7 @@ struct MachineCreateView: View {
             .background(
                 Button {
                     if requiresDismissAction {
-                        presentationMode.wrappedValue.dismiss()
+                        dismiss()
                     }
                 } label: {
                     Text("Dismiss")
@@ -124,7 +124,7 @@ struct MachineCreateView: View {
 
                 if requiresDismissAction {
                     Button {
-                        presentationMode.wrappedValue.dismiss()
+                        dismiss()
                     } label: {
                         Text("Cancel")
                     }
@@ -230,7 +230,7 @@ struct MachineCreateView: View {
 
     func afterSuccess() {
         if requiresDismissAction {
-            presentationMode.wrappedValue.dismiss()
+            dismiss()
         }
         mainActor(delay: 0.5) {
             UIBridge.presentAlert(with: "Successfully created a server")

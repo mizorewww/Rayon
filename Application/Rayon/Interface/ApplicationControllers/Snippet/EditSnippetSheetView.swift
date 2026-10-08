@@ -16,7 +16,7 @@ struct EditSnippetSheetView: View {
     let editor = SCodeEditor()
 
     @EnvironmentObject var store: RayonStore
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
     @Environment(\.colorScheme) private var colorScheme: ColorScheme
 
     @State var name: String = ""
@@ -29,11 +29,11 @@ struct EditSnippetSheetView: View {
 
     var body: some View {
         SheetTemplate.makeSheet(
-            title: "Select Identity",
+            title: "Edit Snippet",
             body: AnyView(sheetBody)
         ) { confirmed in
             var shouldDismiss = false
-            defer { if shouldDismiss { presentationMode.wrappedValue.dismiss() } }
+            defer { if shouldDismiss { dismiss() } }
             if !confirmed {
                 shouldDismiss = true
                 return

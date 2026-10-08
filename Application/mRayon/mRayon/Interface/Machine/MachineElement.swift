@@ -170,7 +170,7 @@ struct MachineElementView: View {
             Divider()
             Text(machine.uuidString)
                 .textSelection(.enabled)
-                .font(.system(size: 8, weight: .light, design: .monospaced))
+                .font(.system(size: 11, weight: .regular, design: .monospaced))
         }
         .animation(.interactiveSpring(), value: store.machineRedacted)
         .frame(maxWidth: .infinity)

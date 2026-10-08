@@ -36,6 +36,12 @@ struct RayonApp: App {
         .commands {
             SidebarCommands()
         }
+
+        // HIG: expose app settings through the App menu with Command-Comma.
+        Settings {
+            SettingView()
+                .environmentObject(store)
+        }
     }
 }
 

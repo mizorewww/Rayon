@@ -136,9 +136,7 @@ public struct AES: Sendable {
 
     // MARK: - INTERNAL
 
-    private func crypt(data: Data?, option: CCOperation) -> Data? {
-        guard let data = data else { return nil }
-
+    private func crypt(data: Data, option: CCOperation) -> Data? {
         let cryptLength = data.count + kCCBlockSizeAES128
         var cryptData = Data(count: cryptLength)
 

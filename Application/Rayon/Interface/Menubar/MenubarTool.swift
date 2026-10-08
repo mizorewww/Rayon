@@ -48,11 +48,14 @@ class MenubarTool {
 //            return nil
 //        }
 
-        @MainActor func createStatusItem() -> MenubarStatusItem {
+        @MainActor func createStatusItem() -> MenubarStatusItem? {
             let machine = RayonStore.shared.machineGroup[machine]
             let identity = RayonStore.shared.identityGroup[identity]
+            // Callers validate these invariants and present errors already;
+            // degrade gracefully instead of crashing the whole app.
             guard machine.isNotPlaceholder(), !identity.username.isEmpty else {
-                fatalError("Failed to load machine info for menubar creation")
+                debugPrint("failed to create status item: malformed machine or identity")
+                return nil
             }
             return .init(machine: machine, identity: identity)
         }
@@ -120,7 +123,9 @@ class MenubarTool {
 //            )
 //            return
 //        }
-        let item = compiler.createStatusItem()
+        guard let item = compiler.createStatusItem() else {
+            return
+        }
         bootstrapLock.lock()
         statusItem.append(item)
         bootstrapLock.unlock()

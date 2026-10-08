@@ -13,7 +13,7 @@ import SwiftUI
 struct MonitorView: View {
     @StateObject var context: MonitorContext
 
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         Group {
@@ -32,7 +32,7 @@ struct MonitorView: View {
                     ToolbarItem {
                         Button {
                             MonitorManager.shared.end(for: context.id)
-                            presentationMode.wrappedValue.dismiss()
+                            dismiss()
                         } label: {
                             Label("Close Monitor", systemImage: "xmark")
                         }

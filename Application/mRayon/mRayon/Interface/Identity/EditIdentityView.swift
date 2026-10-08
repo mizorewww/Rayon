@@ -9,7 +9,7 @@ import RayonModule
 import SwiftUI
 
 struct EditIdentityView: View {
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
 
     let inEditWith: (() -> (UUID?))?
 
@@ -119,7 +119,7 @@ struct EditIdentityView: View {
                         ) { confirmed in
                             if confirmed {
                                 RayonStore.shared.identityGroup.delete(identity)
-                                presentationMode.wrappedValue.dismiss()
+                                dismiss()
                             }
                         }
                     } label: {
@@ -301,7 +301,7 @@ struct EditIdentityView: View {
 
         RayonStore.shared.identityGroup.insert(newIdentity)
 
-        presentationMode.wrappedValue.dismiss()
+        dismiss()
     }
 }
 

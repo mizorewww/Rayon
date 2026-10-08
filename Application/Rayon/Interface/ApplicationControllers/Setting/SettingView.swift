@@ -39,14 +39,14 @@ struct SettingView: View {
             Slider(value: Binding<Double>.init(get: {
                 Double(store.timeout)
             }, set: { newValue in
-                store.timeout = Int(exactly: newValue) ?? 5
+                store.timeout = Int(newValue)
             }), in: 2 ... 30, step: 1) { Group {} }
             Text("SSH will report invalid connection after \(store.timeout) seconds.")
                 .font(.system(.subheadline, design: .rounded))
             Slider(value: Binding<Double>.init(get: {
                 Double(store.monitorInterval)
             }, set: { newValue in
-                store.monitorInterval = Int(exactly: newValue) ?? 5
+                store.monitorInterval = Int(newValue)
             }), in: 5 ... 60, step: 5) { Group {} }
             Text("Server monitor will update information \(store.monitorInterval) seconds after last attempt.")
                 .font(.system(.subheadline, design: .rounded))

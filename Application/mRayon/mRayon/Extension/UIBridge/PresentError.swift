@@ -31,12 +31,11 @@ extension UIBridge {
     static func presentError(with message: String, delay: Double = 0) {
         debugPrint("<InterfaceError> \(message)")
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-//            let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
-//            alert.addAction(UIAlertAction(title: "Done", style: .default, handler: nil))
-//            UIWindow.shutUpKeyWindow?.topMostViewController?.present(alert, animated: true, completion: nil)
             #if DEBUG
+                // Banner-style errors need short titles; keep debugging builds
+                // informative without crashing on long server-provided text.
                 if message.count > 25 {
-                    fatalError("message too long")
+                    assertionFailure("error message too long for banner presentation")
                 }
             #endif
             SPIndicator.present(

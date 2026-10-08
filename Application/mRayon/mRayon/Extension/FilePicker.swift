@@ -51,7 +51,7 @@ public struct FilePickerUIRepresentable: UIViewControllerRepresentable {
     public typealias UIViewControllerType = UIDocumentPickerViewController
     public typealias PickedURLsCompletionHandler = (_ urls: [URL]) -> Void
 
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
 
     public let types: [UTType]
     public let allowMultiple: Bool
@@ -85,7 +85,7 @@ public struct FilePickerUIRepresentable: UIViewControllerRepresentable {
 
         public func documentPicker(_: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
             parent.pickedCompletionHandler(urls)
-            parent.presentationMode.wrappedValue.dismiss()
+            parent.dismiss()
         }
     }
 }

@@ -49,7 +49,7 @@ struct IdentityElementView: View {
                 .font(.system(.subheadline, design: .rounded))
             Divider()
             Text(identity.uuidString)
-                .font(.system(size: 8, weight: .light, design: .rounded))
+                .font(.system(size: 11, weight: .regular, design: .rounded))
         }
         .padding()
         .background(

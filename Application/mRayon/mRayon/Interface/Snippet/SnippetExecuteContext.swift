@@ -137,11 +137,14 @@ class SnippetExecuteContext: ObservableObject {
     func moveToComplete(for mid: RDMachine.ID) {
         mainActor { [self] in
             defer { updateProgress() }
-            let index = running.firstIndex { $0.id == mid }
-            if let index = index {
+            // shellGroup is parallel to machineGroup; running shrinks as
+            // sessions complete, so its index must not be used here.
+            if let index = running.firstIndex(where: { $0.id == mid }) {
                 let get = running.remove(at: index)
                 completed.append(get)
-                shellGroup[index] = .init()
+            }
+            if let shellIndex = machineGroup.firstIndex(where: { $0.id == mid }) {
+                shellGroup[shellIndex] = .init()
             }
         }
     }

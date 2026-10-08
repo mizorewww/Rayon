@@ -9,7 +9,7 @@ import RayonModule
 import SwiftUI
 
 struct IdentityPickerSheetView: View {
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var store: RayonStore
 
     let onComplete: (RDIdentity.ID?) -> Void
@@ -24,7 +24,7 @@ struct IdentityPickerSheetView: View {
             body: AnyView(sheetBody)
         ) { confirmed in
             defer {
-                presentationMode.wrappedValue.dismiss()
+                dismiss()
             }
             if confirmed {
                 onComplete(currentSelection)
@@ -86,7 +86,7 @@ struct IdentityPickerSheetView: View {
                 .font(.system(.caption, design: .rounded))
                 Divider()
                 Text(element.id.uuidString)
-                    .font(.system(size: 8, weight: .regular, design: .monospaced))
+                    .font(.system(size: 10, weight: .regular, design: .monospaced))
             }
             .padding(10)
             .background(

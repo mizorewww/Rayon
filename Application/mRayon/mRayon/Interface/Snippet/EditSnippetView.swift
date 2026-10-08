@@ -11,7 +11,7 @@ import SwiftUI
 import SymbolPicker
 
 struct EditSnippetView: View {
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
 
     let inEditWith: (() -> (UUID?))?
 
@@ -77,7 +77,7 @@ struct EditSnippetView: View {
                         ) { confirmed in
                             if confirmed {
                                 RayonStore.shared.snippetGroup.delete(identity)
-                                presentationMode.wrappedValue.dismiss()
+                                dismiss()
                             }
                         }
                     } label: {
@@ -163,7 +163,7 @@ struct EditSnippetView: View {
 
         RayonStore.shared.snippetGroup.insert(newSnippet)
 
-        presentationMode.wrappedValue.dismiss()
+        dismiss()
     }
 }
 

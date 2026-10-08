@@ -287,7 +287,7 @@ class FileTransferContext: ObservableObject, Identifiable, Equatable {
                     break
                 }
             }
-            putInformation("Uploade Completed")
+            putInformation("Upload Completed")
             loadCurrentFileList()
         }
     }
@@ -327,7 +327,7 @@ class FileTransferContext: ObservableObject, Identifiable, Equatable {
                 self.continueCurrentProgress
             }
             if done {
-                putInformation("Uploade Completed")
+                putInformation("Delete Completed")
             } else {
                 let error = shell.getLastFileTransferError()
                 UIBridge.presentError(with: "Error Occurred")
@@ -391,7 +391,7 @@ class FileTransferContext: ObservableObject, Identifiable, Equatable {
 extension FileTransferContext {
     struct DefaultPresent: View {
         let context: FileTransferContext
-        @Environment(\.presentationMode) var presentationMode
+        @Environment(\.dismiss) private var dismiss
 
         var body: some View {
             NavigationView {
@@ -399,7 +399,7 @@ extension FileTransferContext {
                     .toolbar {
                         ToolbarItem {
                             Button {
-                                presentationMode.wrappedValue.dismiss()
+                                dismiss()
                             } label: {
                                 Image(systemName: "arrow.down.right.and.arrow.up.left")
                             }

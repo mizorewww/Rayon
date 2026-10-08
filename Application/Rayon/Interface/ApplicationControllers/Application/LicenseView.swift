@@ -8,14 +8,14 @@
 import SwiftUI
 
 struct LicenseView: View {
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         SheetTemplate.makeSheet(
             title: "License Information",
             body: AnyView(sheetBody)
         ) { _ in
-            presentationMode.wrappedValue.dismiss()
+            dismiss()
         }
     }
 

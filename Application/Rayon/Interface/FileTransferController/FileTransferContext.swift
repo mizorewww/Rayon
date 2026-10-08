@@ -270,7 +270,7 @@ class FileTransferContext: ObservableObject, Identifiable, Equatable {
                     break
                 }
             }
-            putInformation("Uploade Completed")
+            putInformation("Upload Completed")
             loadCurrentFileList()
         }
     }
@@ -310,7 +310,7 @@ class FileTransferContext: ObservableObject, Identifiable, Equatable {
                 self.continueCurrentProgress
             }
             if done {
-                putInformation("Uploade Completed")
+                putInformation("Delete Completed")
             } else {
                 let error = shell.getLastFileTransferError()
                 UIBridge.presentError(with: "Error Occurred")

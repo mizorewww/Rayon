@@ -117,7 +117,7 @@ class TerminalContext: ObservableObject, Identifiable, Equatable {
         )
         self.command = command
         title = command.command
-        remoteType = .machine
+        remoteType = .command
         DispatchQueue.global().async {
             self.processBootstrap()
         }
@@ -257,12 +257,11 @@ class TerminalContext: ObservableObject, Identifiable, Equatable {
         } withWriteDataBuffer: { [weak self] in
             self?.getBuffer() ?? ""
         } withOutputDataBuffer: { [weak self] output in
-            let sem = DispatchSemaphore(value: 0)
+            // The main queue is FIFO, so writes stay ordered without
+            // blocking the shell IO thread on the UI run loop.
             mainActor {
                 self?.termInterface.write(output)
-                sem.signal()
             }
-            sem.wait()
         } withContinuationHandler: { [weak self] in
             self?.continueDecision ?? false
         }
@@ -293,7 +292,7 @@ class TerminalContext: ObservableObject, Identifiable, Equatable {
 extension TerminalContext {
     struct DefaultPresent: View {
         let context: TerminalContext
-        @Environment(\.presentationMode) var presentationMode
+        @Environment(\.dismiss) private var dismiss
 
         var body: some View {
             NavigationView {
@@ -301,7 +300,7 @@ extension TerminalContext {
                     .toolbar {
                         ToolbarItem {
                             Button {
-                                presentationMode.wrappedValue.dismiss()
+                                dismiss()
                             } label: {
                                 Image(systemName: "arrow.down.right.and.arrow.up.left")
                             }

@@ -8,7 +8,7 @@
 #if canImport(UIKit)
     import UIKit
 
-    public class CodeEditorView: UIView, CodeEditor {
+    public class CodeEditorView: UIView, @preconcurrency CodeEditor {
         private let associatedCore = CodeEditorCore()
 
         public required init() {

@@ -197,14 +197,9 @@ class BatchSnippetExecContext: ObservableObject {
                 self.receivedBuffer[machine, default: ""].append(output)
             }
         } withContinuationHandler: {
-            let sem = DispatchSemaphore(value: 0)
-            var get = false
-            self.safeAccess {
-                defer { sem.signal() }
-                get = self.shellContinue[machine, default: false]
-            }
-            sem.wait()
-            return get
+            // safeAccess executes synchronously under the lock; wrapping it in
+            // a semaphore only adds deadlock surface without any benefit.
+            self.safeAccessShellContinue[machine] ?? false
         }
         safeAccess {
             self.shellObjects.removeValue(forKey: machine)

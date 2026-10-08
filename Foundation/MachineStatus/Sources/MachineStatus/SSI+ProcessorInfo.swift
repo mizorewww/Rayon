@@ -113,6 +113,11 @@ public extension ServerStatus {
                 let nowAll = curr.user + curr.nice + curr.system + curr.idle + curr.iowait + curr.irq + curr.softIrq + curr.steal + curr.guest
 
                 let total = nowAll - preAll
+                // /proc/stat counters may not advance between two samples on an
+                // idle machine; dividing by zero would feed NaN into the UI.
+                guard total > 0 else {
+                    return ProcessPercentInfo()
+                }
                 let privUsedTotal = priv.user + priv.nice + priv.system + priv.iowait
                 let currUsedTotal = curr.user + curr.nice + curr.system + curr.iowait
 

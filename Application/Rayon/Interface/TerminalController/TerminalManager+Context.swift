@@ -116,7 +116,7 @@ extension TerminalManager {
             )
             self.command = command
             title = command.command
-            remoteType = .machine
+            remoteType = .command
             Context.queue.async {
                 self.processBootstrap()
             }
@@ -234,12 +234,11 @@ extension TerminalManager {
             } withWriteDataBuffer: { [weak self] in
                 self?.getBuffer() ?? ""
             } withOutputDataBuffer: { [weak self] output in
-                let sem = DispatchSemaphore(value: 0)
+                // The main queue is FIFO, so writes stay ordered without
+                // blocking the shell IO thread on the UI run loop.
                 mainActor {
                     self?.termInterface.write(output)
-                    sem.signal()
                 }
-                sem.wait()
             } withContinuationHandler: { [weak self] in
                 self?.continueDecision ?? false
             }

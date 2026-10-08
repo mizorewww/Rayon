@@ -12,7 +12,7 @@ import XTerminalUI
 
 struct SnippetExecuteView: View {
     @StateObject var context: SnippetExecuteContext
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
 
     @State var widthInstructor: CGSize = .init()
 
@@ -50,7 +50,7 @@ struct SnippetExecuteView: View {
         .toolbar {
             Button {
                 if context.running.isEmpty {
-                    presentationMode.wrappedValue.dismiss()
+                    dismiss()
                     return
                 } else {
                     UIBridge.requiresConfirmation(
@@ -60,7 +60,7 @@ struct SnippetExecuteView: View {
                             for machine in context.machineGroup {
                                 context.close(for: machine.id)
                             }
-                            presentationMode.wrappedValue.dismiss()
+                            dismiss()
                         }
                     }
                 }

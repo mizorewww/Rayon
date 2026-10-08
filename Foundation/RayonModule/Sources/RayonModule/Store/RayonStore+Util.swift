@@ -116,8 +116,7 @@ public extension RayonStore {
             }
             return nil
         }
-        guard true,
-              let identityGroupEncrypted = dic[UserDefaultKey.identityGroupEncrypted.rawValue] as? Data,
+        guard let identityGroupEncrypted = dic[UserDefaultKey.identityGroupEncrypted.rawValue] as? Data,
               let machineGroupEncrypted = dic[UserDefaultKey.machineGroupEncrypted.rawValue] as? Data,
               let snippetGroupEncrypted = dic[UserDefaultKey.snippetGroupEncrypted.rawValue] as? Data,
 //            let recentRecordEncrypted = dic[UserDefaultKey.recentRecordEncrypted.rawValue] as? Data,
@@ -128,8 +127,7 @@ public extension RayonStore {
               let ig = readEncrypted(from: identityGroupEncrypted, RayonStore.shared.identityGroup.self),
               let mg = readEncrypted(from: machineGroupEncrypted, RayonStore.shared.machineGroup.self),
               let sg = readEncrypted(from: snippetGroupEncrypted, RayonStore.shared.snippetGroup.self),
-              let pg = readEncrypted(from: portForwardEncrypted, RayonStore.shared.portForwardGroup.self),
-              true
+              let pg = readEncrypted(from: portForwardEncrypted, RayonStore.shared.portForwardGroup.self)
         else {
             print("broken payload")
             return

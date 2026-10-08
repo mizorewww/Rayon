@@ -14,7 +14,7 @@ struct AuthenticateSessionView: View {
     @State var selection: RDIdentity.ID? = nil
     @EnvironmentObject var store: RayonStore
 
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         Group {
@@ -24,7 +24,7 @@ struct AuthenticateSessionView: View {
                     body: AnyView(sheetBody)
                 ) { confirmed in
                     var shouldDismiss = false
-                    defer { if shouldDismiss { presentationMode.wrappedValue.dismiss() }}
+                    defer { if shouldDismiss { dismiss() }}
                     if !confirmed {
                         shouldDismiss = true
                         return
@@ -33,7 +33,7 @@ struct AuthenticateSessionView: View {
             } else {
                 Text("")
                     .onAppear {
-                        presentationMode.wrappedValue.dismiss()
+                        dismiss()
                         UIBridge.presentError(with: "No session available for authentication")
                     }
             }

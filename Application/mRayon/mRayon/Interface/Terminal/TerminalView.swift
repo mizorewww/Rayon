@@ -21,7 +21,7 @@ struct TerminalView: View {
 
     @StateObject var store = RayonStore.shared
 
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
         Group {
@@ -76,7 +76,7 @@ struct TerminalView: View {
                     }
                     makeKeyboardFloatingButton("trash", disableWhenClosed: false) {
                         if context.closed {
-                            presentationMode.wrappedValue.dismiss()
+                            dismiss()
                             TerminalManager.shared.end(for: context.id)
                         } else {
                             UIBridge.requiresConfirmation(

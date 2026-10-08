@@ -9,7 +9,11 @@ import RayonModule
 import SwiftUI
 
 extension UIBridge {
-    static func requiresConfirmation(message: String, confirmation: @escaping (Bool) -> Void) {
+    static func requiresConfirmation(
+        message: String,
+        confirmTitle: String = "Continue",
+        confirmation: @escaping (Bool) -> Void
+    ) {
         // Keep the immediate callback when confirmation is disabled.
         nonisolated(unsafe) let confirmation = confirmation
         if RayonStore.shared.disableConformation {
@@ -17,9 +21,10 @@ extension UIBridge {
             return
         }
         let alert = NSAlert()
-        alert.alertStyle = .critical
+        // HIG: reserve caution symbols for unexpected data loss; deletion
+        // confirmations should use the default style with a specific verb title.
         alert.messageText = message
-        alert.addButton(withTitle: "Confirm")
+        alert.addButton(withTitle: confirmTitle)
         alert.addButton(withTitle: "Cancel")
         if let keyWindow = NSApplication.shared.keyWindow {
             let responseHandler: @Sendable (NSApplication.ModalResponse) -> Void = { resp in

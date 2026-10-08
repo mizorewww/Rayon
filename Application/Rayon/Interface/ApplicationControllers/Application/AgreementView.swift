@@ -9,7 +9,7 @@ import RayonModule
 import SwiftUI
 
 struct AgreementView: View {
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
 
     @State var checkBox = false
 
@@ -28,19 +28,17 @@ struct AgreementView: View {
             HStack {
                 Toggle("I fully understand the license agreements and agree with it.", isOn: $checkBox)
                 Spacer()
+                // HIG: enable the continue action only after required input is provided,
+                // instead of presenting an error alert.
                 Button {
-                    guard checkBox else {
-                        UIBridge.presentError(
-                            with: "You must agree to the license before you can use this app",
-                            delay: 0
-                        )
-                        return
-                    }
                     RayonStore.shared.licenseAgreed = true
-                    presentationMode.wrappedValue.dismiss()
+                    dismiss()
                 } label: {
                     Text("Done")
                 }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(.defaultAction)
+                .disabled(!checkBox)
             }
         }
         .padding()

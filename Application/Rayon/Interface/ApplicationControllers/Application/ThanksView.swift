@@ -10,7 +10,7 @@ import RayonModule
 import SwiftUI
 
 struct ThanksView: View {
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var store: RayonStore
 
     @State var openLicenseInfo: Bool = false
@@ -20,7 +20,7 @@ struct ThanksView: View {
             title: "Acknowledgment",
             body: AnyView(sheetBody)
         ) { _ in
-            presentationMode.wrappedValue.dismiss()
+            dismiss()
         }
         .sheet(isPresented: $openLicenseInfo, onDismiss: nil) {
             LicenseView()

@@ -49,18 +49,18 @@ struct SnippetView: View {
                         .font(.system(.headline, design: .rounded))
                     TextField("No Comment", text: $store.snippetGroup[snippet].comment)
                         .textFieldStyle(PlainTextFieldStyle())
-                        .font(.system(size: 8, weight: .regular, design: .rounded))
+                        .font(.system(size: 10, weight: .regular, design: .rounded))
                 }
             }
             Divider()
             Text(store.snippetGroup[snippet].code)
                 .textSelection(.enabled)
-                .font(.system(size: 10, weight: .light, design: .monospaced))
+                .font(.system(size: 10, weight: .regular, design: .monospaced))
                 .frame(height: 75)
             Divider()
             Text(snippet.uuidString)
                 .textSelection(.enabled)
-                .font(.system(size: 5, weight: .light, design: .monospaced))
+                .font(.system(size: 10, weight: .regular, design: .monospaced))
         }
         .frame(maxWidth: .infinity)
         .padding()

@@ -26,7 +26,7 @@ extension UIBridge {
         debugPrint("<InterfaceError> \(message)")
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
             let alert = NSAlert()
-            alert.alertStyle = .critical
+            // HIG: use caution symbols sparingly; routine errors don't warrant one.
             alert.messageText = message
             if let keyWindow = NSApplication.shared.keyWindow {
                 alert.beginSheetModal(for: keyWindow, completionHandler: nil)

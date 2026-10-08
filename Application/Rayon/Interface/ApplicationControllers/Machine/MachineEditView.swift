@@ -11,7 +11,7 @@ import SwiftUI
 struct MachineEditView: View {
     let inEditWith: RDMachine.ID
 
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var store: RayonStore
 
     @State var remoteAddress = ""
@@ -38,7 +38,7 @@ struct MachineEditView: View {
             body: AnyView(sheetBody)
         ) { confirmed in
             var shouldDismiss = false
-            defer { if shouldDismiss { presentationMode.wrappedValue.dismiss() } }
+            defer { if shouldDismiss { dismiss() } }
             if !confirmed {
                 shouldDismiss = true
                 return

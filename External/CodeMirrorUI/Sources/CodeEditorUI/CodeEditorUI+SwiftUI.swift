@@ -63,7 +63,7 @@ import SwiftUI
 
 #if canImport(UIKit)
     import UIKit
-    public struct SCodeEditor: UIViewRepresentable, CodeEditor {
+    public struct SCodeEditor: UIViewRepresentable, @preconcurrency CodeEditor {
         public init() {}
 
         let correspondingView = CodeEditorView()

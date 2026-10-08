@@ -9,7 +9,7 @@ import RayonModule
 import SwiftUI
 
 struct EditPortForwardView: View {
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
 
     let inEditWith: (() -> (UUID?))?
 
@@ -140,7 +140,7 @@ struct EditPortForwardView: View {
             object.id = edit
         }
         RayonStore.shared.portForwardGroup.insert(object)
-        presentationMode.wrappedValue.dismiss()
+        dismiss()
     }
 }
 

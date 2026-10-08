@@ -110,7 +110,7 @@ class MonitorContext: ObservableObject, Identifiable, Equatable {
 extension MonitorContext {
     struct DefaultPresent: View {
         let context: MonitorContext
-        @Environment(\.presentationMode) var presentationMode
+        @Environment(\.dismiss) private var dismiss
 
         var body: some View {
             NavigationView {
@@ -118,7 +118,7 @@ extension MonitorContext {
                     .toolbar {
                         ToolbarItem {
                             Button {
-                                presentationMode.wrappedValue.dismiss()
+                                dismiss()
                             } label: {
                                 Image(systemName: "arrow.down.right.and.arrow.up.left")
                             }

@@ -90,6 +90,13 @@ public extension ServerStatus {
                 }
                 return ret
             }
+            func stripSurroundingQuotes(_ str: String) -> String {
+                guard str.count > 2 else { return str }
+                let doubleQuoted = str.hasPrefix("\"") && str.hasSuffix("\"")
+                let singleQuoted = str.hasPrefix("'") && str.hasSuffix("'")
+                guard doubleQuoted || singleQuoted else { return str }
+                return String(str.dropFirst().dropLast())
+            }
             func buildReleaseName(intake: String) -> String {
                 var release = ""
                 var pretty: String?
@@ -104,26 +111,10 @@ public extension ServerStatus {
                     }
                 }
                 if let name = pretty {
-                    if
-                        (name.hasPrefix("\"") || name.hasPrefix("\"")) ||
-                        (name.hasSuffix("'") || name.hasSuffix("'")),
-                        name.count > 2
-                    {
-                        release = String(name.dropFirst().dropLast())
-                    } else {
-                        release = name
-                    }
+                    release = stripSurroundingQuotes(name)
                 } else {
                     if let name = name {
-                        if
-                            (name.hasPrefix("\"") || name.hasPrefix("\"")) ||
-                            (name.hasSuffix("'") || name.hasSuffix("'")),
-                            name.count > 2
-                        {
-                            release = String(name.dropFirst().dropLast())
-                        } else {
-                            release = name
-                        }
+                        release = stripSurroundingQuotes(name)
                     } else {
                         release = "Generic Linux"
                     }

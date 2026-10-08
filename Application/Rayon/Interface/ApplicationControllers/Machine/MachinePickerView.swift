@@ -9,7 +9,7 @@ import RayonModule
 import SwiftUI
 
 struct MachinePickerView: View {
-    @Environment(\.presentationMode) var presentationMode
+    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var store: RayonStore
 
     let onComplete: ([RDIdentity.ID]) -> Void
@@ -24,7 +24,7 @@ struct MachinePickerView: View {
             body: AnyView(sheetBody)
         ) { confirmed in
             var shouldDismiss = false
-            defer { if shouldDismiss { presentationMode.wrappedValue.dismiss() } }
+            defer { if shouldDismiss { dismiss() } }
             if confirmed {
                 onComplete([RDIdentity.ID](currentSelection))
             } else {

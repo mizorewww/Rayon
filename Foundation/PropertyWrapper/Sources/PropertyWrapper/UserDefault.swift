@@ -26,7 +26,7 @@ public struct UserDefaultsWrapper<Value> {
             return value ?? defaultValue
         }
         set {
-            storage.setValue(newValue, forKey: key)
+            storage.set(newValue, forKey: key)
         }
     }
 }
