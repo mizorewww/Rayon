@@ -20,9 +20,6 @@
       location = "group:External/CodeMirrorUI">
    </FileRef>
    <FileRef
-      location = "group:Foundation/Colorful">
-   </FileRef>
-   <FileRef
       location = "group:Foundation/Keychain">
    </FileRef>
    <FileRef

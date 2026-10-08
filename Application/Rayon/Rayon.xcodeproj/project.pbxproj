@@ -33,7 +33,6 @@
 		509F7FB327B3893000F28752 /* GenericComparator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509F7FB127B3893000F28752 /* GenericComparator.swift */; };
 		509F7FBA27B39BA800F28752 /* DoubleConfirm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 509F7FB827B39BA800F28752 /* DoubleConfirm.swift */; };
 		50B64CB78E0F37E8A1A88A5A /* SnippetEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4139467FBC880BA3069DD345 /* SnippetEditorSheet.swift */; };
-		50BBA54F27B8000900CE7BB1 /* Colorful in Frameworks */ = {isa = PBXBuildFile; productRef = 50BBA54E27B8000900CE7BB1 /* Colorful */; };
 		79E145B59BC76C62C81CECD5 /* MainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8C44CBEAB0F303834A85F4E /* MainView.swift */; };
 		7E4843728B54153B50791C2C /* TerminalManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BAD40D7A0E4893DA2CA2766 /* TerminalManager.swift */; };
 		7EA74C7B949D82765BD733EF /* PortForwardBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6BB4881B9FC5AB5C5F3BFF4 /* PortForwardBackend.swift */; };
@@ -103,7 +102,6 @@
 				505E326527D2625F00054573 /* MachineStatus in Frameworks */,
 				5068E44C27CE3AAE00F8B770 /* RayonModule in Frameworks */,
 				505E326B27D2642C00054573 /* MachineStatusView in Frameworks */,
-				50BBA54F27B8000900CE7BB1 /* Colorful in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -342,7 +340,6 @@
 			);
 			name = "Rayon (macOS)";
 			packageProductDependencies = (
-				50BBA54E27B8000900CE7BB1 /* Colorful */,
 				5068E44B27CE3AAE00F8B770 /* RayonModule */,
 				501FF7A427CEFF2300380D59 /* SymbolPicker */,
 				505E326027D2602600054573 /* RayonTerminal */,
@@ -701,10 +698,6 @@
 		5068E44B27CE3AAE00F8B770 /* RayonModule */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = RayonModule;
-		};
-		50BBA54E27B8000900CE7BB1 /* Colorful */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Colorful;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
