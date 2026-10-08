@@ -24,7 +24,7 @@ struct TerminalView: View {
                         context.termInterface.setTerminalFontSize(with: newValue)
                     }
                     .onAppear {
-                        context.termInterface.setTerminalFontSize(with: store.terminalFontSize)
+                        context.termInterface.setTerminalFontSize(with: store.terminalFontSize, preferConfigured: true)
                     }
             } else {
                 Text("Terminal Transfer To Another Window")

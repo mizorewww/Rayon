@@ -10,6 +10,7 @@ import SwiftUI
 
 struct SidebarView: View {
     @EnvironmentObject var store: RayonStore
+    @Environment(\.openWindow) private var openWindow
 
     @StateObject var terminalManager = TerminalManager.shared
     @StateObject var transferManager = FileTransferManager.shared
@@ -56,6 +57,12 @@ struct SidebarView: View {
                 Label("Port Forward", systemImage: "arrowshape.turn.up.right.circle.fill")
             }
             .badge(store.portForwardGroup.count)
+            Button {
+                openWindow(id: "terminal-configuration")
+            } label: {
+                Label("Terminal Configuration", systemImage: "slider.horizontal.3")
+            }
+            .buttonStyle(.plain)
             NavigationLink {
                 SettingView().requiresFrame()
             } label: {
