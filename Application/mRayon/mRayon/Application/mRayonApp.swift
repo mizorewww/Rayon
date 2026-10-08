@@ -19,6 +19,10 @@ struct mRayonApp: App {
             NSLog("\nCommand Arguments:\n" + CommandLine.arguments.joined(separator: "\n"))
         #endif
 
+        // Shared file-transfer core lives in RayonModule; register the
+        // platform UI handler it delegates to.
+        FileTransferInterface.uiHandler = IOSFileTransferUIHandler()
+
         _ = LogRedirect.shared
         _ = RayonStore.shared
 

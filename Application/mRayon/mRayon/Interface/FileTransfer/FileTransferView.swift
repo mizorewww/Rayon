@@ -5,7 +5,10 @@
 //  Created by Lakr Aream on 2022/3/18.
 //
 
+import RayonModule
+import SPIndicator
 import SwiftUI
+import UIKit
 
 struct FileTransferView: View {
     @StateObject var context: FileTransferContext
@@ -389,5 +392,48 @@ struct FileTransferView: View {
         var size: String {
             ByteCountFormatter().string(fromByteCount: Int64(truncating: file.fstat.size ?? 0))
         }
+    }
+}
+
+extension FileTransferContext {
+    struct DefaultPresent: View {
+        let context: FileTransferContext
+
+        var body: some View {
+            DefaultModalPresenter {
+                FileTransferView(context: context)
+            }
+        }
+    }
+}
+
+/// Bridges RayonModule's shared file-transfer core to UIKit UI.
+final class IOSFileTransferUIHandler: FileTransferUIHandler {
+    func presentError(_ message: String) {
+        UIBridge.presentError(with: message)
+    }
+
+    func requiresConfirmation(_ message: String, completion: @escaping (Bool) -> Void) {
+        UIBridge.requiresConfirmation(message: message, confirmation: completion)
+    }
+
+    func autoOpenInterface(_ context: FileTransferContext) {
+        let host = UIHostingController(
+            rootView: FileTransferContext.DefaultPresent(context: context)
+        )
+        host.modalTransitionStyle = .coverVertical
+        host.modalPresentationStyle = .formSheet
+        host.preferredContentSize = preferredPopOverSize
+        UIWindow.shutUpKeyWindow?
+            .topMostViewController?
+            .present(next: host)
+    }
+
+    func downloadCompleted() {
+        SPIndicator.present(
+            title: "Download Completed",
+            message: "You can access it in file.app",
+            preset: .done
+        )
     }
 }

@@ -14,8 +14,6 @@
 		500D727127CF40CC00149A43 /* EditIdentityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500D727027CF40CC00149A43 /* EditIdentityView.swift */; };
 		500D727327CF431000149A43 /* IdentityElementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500D727227CF431000149A43 /* IdentityElementView.swift */; };
 		500D727527CF43CE00149A43 /* FilePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500D727427CF43CE00149A43 /* FilePicker.swift */; };
-		5013B51527E4B14100EF01C4 /* FileTransferManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5013B51427E4B14100EF01C4 /* FileTransferManager.swift */; };
-		5013B51727E4B14800EF01C4 /* FileTransferContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5013B51627E4B14800EF01C4 /* FileTransferContext.swift */; };
 		5013B51927E4B14E00EF01C4 /* FileTransferView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5013B51827E4B14E00EF01C4 /* FileTransferView.swift */; };
 		501B334227DF0DD100EB6261 /* LogRedirect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 501B334127DF0DD100EB6261 /* LogRedirect.swift */; };
 		501B334427DF138200EB6261 /* StripedTextTable in Frameworks */ = {isa = PBXBuildFile; productRef = 501B334327DF138200EB6261 /* StripedTextTable */; };
@@ -89,8 +87,6 @@
 		500D727027CF40CC00149A43 /* EditIdentityView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditIdentityView.swift; sourceTree = "<group>"; };
 		500D727227CF431000149A43 /* IdentityElementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IdentityElementView.swift; sourceTree = "<group>"; };
 		500D727427CF43CE00149A43 /* FilePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilePicker.swift; sourceTree = "<group>"; };
-		5013B51427E4B14100EF01C4 /* FileTransferManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileTransferManager.swift; sourceTree = "<group>"; };
-		5013B51627E4B14800EF01C4 /* FileTransferContext.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileTransferContext.swift; sourceTree = "<group>"; };
 		5013B51827E4B14E00EF01C4 /* FileTransferView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileTransferView.swift; sourceTree = "<group>"; };
 		501B334127DF0DD100EB6261 /* LogRedirect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogRedirect.swift; sourceTree = "<group>"; };
 		501B334727DF16AA00EB6261 /* LogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogView.swift; sourceTree = "<group>"; };
@@ -172,8 +168,6 @@
 		5013B51327E4B12800EF01C4 /* FileTransfer */ = {
 			isa = PBXGroup;
 			children = (
-				5013B51427E4B14100EF01C4 /* FileTransferManager.swift */,
-				5013B51627E4B14800EF01C4 /* FileTransferContext.swift */,
 				5013B51827E4B14E00EF01C4 /* FileTransferView.swift */,
 			);
 			path = FileTransfer;
@@ -438,7 +432,6 @@
 			files = (
 				5082A1DA27D1B79A00C71C0F /* SnippetExecuteView.swift in Sources */,
 				50C90B0227CF146400F60B51 /* SnippetView.swift in Sources */,
-				5013B51727E4B14800EF01C4 /* FileTransferContext.swift in Sources */,
 				501B334827DF16AA00EB6261 /* LogView.swift in Sources */,
 				5082A1DE27D1ECF300C71C0F /* LicenseView.swift in Sources */,
 				50D3AEF927D0582F0085F899 /* SnippetElementView.swift in Sources */,
@@ -457,7 +450,6 @@
 				500D726A27CF1C0800149A43 /* View.swift in Sources */,
 				5047BE9D27DCCC8B008887A7 /* EditPortForwardView.swift in Sources */,
 				50C90AEC27CF119500F60B51 /* TabsView.swift in Sources */,
-				5013B51527E4B14100EF01C4 /* FileTransferManager.swift in Sources */,
 				5047BEA327DEDB77008887A7 /* SidebarView+Recent.swift in Sources */,
 				50FD853A27D0445D00F6F01A /* EditSnippetView.swift in Sources */,
 				501B334227DF0DD100EB6261 /* LogRedirect.swift in Sources */,

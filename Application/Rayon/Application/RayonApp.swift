@@ -22,7 +22,10 @@ struct RayonApp: App {
             NSLog(CommandLine.arguments.joined(separator: "\n"))
         #endif
         _ = RayonStore.shared
-//        requiresMenubarSetup = MenubarTool.shared.requireMenubarSetup()
+
+        // Shared file-transfer core lives in RayonModule; register the
+        // platform UI handler it delegates to.
+        FileTransferInterface.uiHandler = MacFileTransferUIHandler()
 
         NSLog("static main completed")
     }

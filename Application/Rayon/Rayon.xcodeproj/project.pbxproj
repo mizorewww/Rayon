@@ -28,8 +28,6 @@
 		505E762B27B4ECFC008D80F6 /* MachineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505E762927B4ECFC008D80F6 /* MachineView.swift */; };
 		505E762E27B4FFA9008D80F6 /* MachineEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505E762C27B4FFA9008D80F6 /* MachineEditView.swift */; };
 		505E763127B5053B008D80F6 /* AlignedLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505E762F27B5053B008D80F6 /* AlignedLabel.swift */; };
-		505FCE4027E831AA002A6B1D /* FileTransferManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505FCE3C27E831AA002A6B1D /* FileTransferManager.swift */; };
-		505FCE4127E831AA002A6B1D /* FileTransferContext.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505FCE3D27E831AA002A6B1D /* FileTransferContext.swift */; };
 		505FCE4227E831AA002A6B1D /* FileTransferView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505FCE3E27E831AA002A6B1D /* FileTransferView.swift */; };
 		505FCE4527E87A72002A6B1D /* FileTransferView+RemoteFileElement.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505FCE4427E87A72002A6B1D /* FileTransferView+RemoteFileElement.swift */; };
 		5068AB2327B557A000564D1D /* SnippetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5068AB2127B557A000564D1D /* SnippetView.swift */; };
@@ -99,8 +97,6 @@
 		505E762927B4ECFC008D80F6 /* MachineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineView.swift; sourceTree = "<group>"; };
 		505E762C27B4FFA9008D80F6 /* MachineEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MachineEditView.swift; sourceTree = "<group>"; };
 		505E762F27B5053B008D80F6 /* AlignedLabel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AlignedLabel.swift; sourceTree = "<group>"; };
-		505FCE3C27E831AA002A6B1D /* FileTransferManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileTransferManager.swift; sourceTree = "<group>"; };
-		505FCE3D27E831AA002A6B1D /* FileTransferContext.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileTransferContext.swift; sourceTree = "<group>"; };
 		505FCE3E27E831AA002A6B1D /* FileTransferView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FileTransferView.swift; sourceTree = "<group>"; };
 		505FCE4427E87A72002A6B1D /* FileTransferView+RemoteFileElement.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FileTransferView+RemoteFileElement.swift"; sourceTree = "<group>"; };
 		5068AB2127B557A000564D1D /* SnippetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetView.swift; sourceTree = "<group>"; };
@@ -188,8 +184,6 @@
 		505FCE3B27E831AA002A6B1D /* FileTransferController */ = {
 			isa = PBXGroup;
 			children = (
-				505FCE3C27E831AA002A6B1D /* FileTransferManager.swift */,
-				505FCE3D27E831AA002A6B1D /* FileTransferContext.swift */,
 				505FCE3E27E831AA002A6B1D /* FileTransferView.swift */,
 				505FCE4427E87A72002A6B1D /* FileTransferView+RemoteFileElement.swift */,
 			);
@@ -467,7 +461,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				505FCE4127E831AA002A6B1D /* FileTransferContext.swift in Sources */,
 				505FCE4227E831AA002A6B1D /* FileTransferView.swift in Sources */,
 				50A8A6A327B84317004F6DDC /* BatchSnippetSidebarView.swift in Sources */,
 				501017F127CE621D0079A516 /* EventMonitor.swift in Sources */,
@@ -489,7 +482,6 @@
 				50DDB33E27B4009800C471C0 /* IdentityPickerView.swift in Sources */,
 				505E762E27B4FFA9008D80F6 /* MachineEditView.swift in Sources */,
 				505E762B27B4ECFC008D80F6 /* MachineView.swift in Sources */,
-				505FCE4027E831AA002A6B1D /* FileTransferManager.swift in Sources */,
 				5027F25D27B8210300F422BB /* LicenseView.swift in Sources */,
 				50BBA54B27B7F08800CE7BB1 /* MachinePickerView.swift in Sources */,
 				50A8A6A927B84EF9004F6DDC /* BatchTerminalView.swift in Sources */,

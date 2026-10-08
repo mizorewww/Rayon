@@ -37,3 +37,14 @@ extension UIBridge {
         }
     }
 }
+
+/// Bridges RayonModule's shared file-transfer core to AppKit UI.
+final class MacFileTransferUIHandler: FileTransferUIHandler {
+    func presentError(_ message: String) {
+        UIBridge.presentError(with: message)
+    }
+
+    func requiresConfirmation(_ message: String, completion: @escaping (Bool) -> Void) {
+        UIBridge.requiresConfirmation(message: message, confirmation: completion)
+    }
+}
