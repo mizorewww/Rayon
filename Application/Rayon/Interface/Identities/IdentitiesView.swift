@@ -38,25 +38,18 @@ struct IdentitiesView: View {
         }
     }
 
-    var subtitle: String {
-        let count = store.identityGroup.count
-        guard count > 0 else { return "Usernames with a password or key pair that Rayon signs in with." }
-        let used = store.machineGroup.machines.filter { $0.associatedIdentity != nil }.count
-        return "\(count) identit\(count == 1 ? "y" : "ies") · used by \(used) server\(used == 1 ? "" : "s")"
-    }
-
     var body: some View {
         PageScaffold(search: $searchText, searchPrompt: "Search identities") {
         } trailing: {
             ToolbarAction("New Identity", systemImage: "plus", primary: true) { creating = true }
         } header: {
-            PageTitle("Identities", subtitle: subtitle)
+            PageTitle("Identities")
         } content: {
             if store.identityGroup.identities.isEmpty {
                 EmptyStateView(
                     "No identities yet",
                     systemImage: "person",
-                    message: "An identity is a username with a password or key pair. Servers and Quick Connect sign in with it.",
+                    message: "A username with a password or key.",
                     actionTitle: "New Identity"
                 ) {
                     creating = true
@@ -70,11 +63,7 @@ struct IdentitiesView: View {
                         IdentityDetail(identity: selection)
                             .id(selection)
                     } else {
-                        EmptyStateView(
-                            "Select an identity",
-                            systemImage: "person",
-                            message: "Choose an identity on the left to see and edit it."
-                        )
+                        EmptyStateView("Select an identity", systemImage: "person")
                         .rxCard()
                     }
                 }
@@ -94,7 +83,7 @@ struct IdentitiesView: View {
     var list: some View {
         VStack(spacing: 0) {
             if filtered.isEmpty {
-                EmptyStateView("No matches", systemImage: "magnifyingglass", message: "No identity matches “\(searchText)”.")
+                EmptyStateView("No matches", systemImage: "magnifyingglass")
             }
             ForEach(groups, id: \.name) { group in
                 TableGroupRow(group.name.isEmpty ? "Default" : group.name)
@@ -198,7 +187,7 @@ private struct IdentityDetail: View {
                     Text(original.username.isEmpty ? "No username" : original.username)
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(.rxInk)
-                    HelpText(usageLine)
+                    if !usageLine.isEmpty { HelpText(usageLine) }
                 }
                 Spacer()
                 Menu {
@@ -216,9 +205,6 @@ private struct IdentityDetail: View {
             IdentityForm(draft: $draft)
                 .padding(.top, RX.Space.s5)
             HStack(spacing: RX.Space.s2) {
-                if draft.differs(from: original) {
-                    HelpText("Unsaved changes")
-                }
                 Spacer()
                 Button("Revert") { draft = IdentityDraft(original) }
                     .buttonStyle(.rx)
@@ -248,13 +234,10 @@ private struct IdentityDetail: View {
 
     var usageLine: String {
         let names = usedBy
-        let used = original.lastRecentUsed.timeIntervalSince1970 > 0
-            ? " · last used \(RXFormat.relative(original.lastRecentUsed).lowercased())"
-            : ""
-        if names.isEmpty { return "Not used by any server" + used }
+        guard !names.isEmpty else { return "" }
         let shown = names.prefix(4).joined(separator: ", ")
         let more = names.count > 4 ? " and \(names.count - 4) more" : ""
-        return "Used by \(shown)\(more)\(used)"
+        return "Used by \(shown)\(more)"
     }
 }
 
@@ -348,7 +331,7 @@ struct IdentityForm: View {
                         expectation: "PRIVATE KEY"
                     )
                 }
-                RXField("Public key", help: "Optional. Some servers need it alongside the private key.") {
+                RXField("Public key", help: "Optional") {
                     KeyField(
                         text: $draft.publicKey,
                         masked: false,
@@ -357,7 +340,7 @@ struct IdentityForm: View {
                         expectation: "ssh-"
                     )
                 }
-                RXField("Password (optional, unlocks the key)") {
+                RXField("Passphrase") {
                     SecureField("None", text: $draft.password)
                         .textFieldStyle(.rx)
                 }
@@ -374,7 +357,7 @@ struct IdentityForm: View {
             Hairline()
             SwitchRow(
                 "Authenticate automatically",
-                description: "Tried when a server has no identity set. Required for Quick Connect.",
+                description: "Required for Quick Connect.",
                 isOn: $draft.automatic
             )
         }
@@ -460,7 +443,7 @@ struct IdentityEditorSheet: View {
     @State private var draft = IdentityDraft()
 
     var body: some View {
-        SheetScaffold(identity == nil ? "New Identity" : "Edit Identity", lead: "A username with a password or key pair.") {
+        SheetScaffold(identity == nil ? "New Identity" : "Edit Identity", ) {
             IdentityForm(draft: $draft)
         } footer: {
             Spacer()

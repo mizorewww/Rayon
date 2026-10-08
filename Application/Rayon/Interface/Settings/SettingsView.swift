@@ -21,14 +21,12 @@ struct SettingsView: View {
                 ConfigHostSettingsSection(
                     id: SettingsCategory.general,
                     title: "General",
-                    subtitle: "Rayon's own preferences",
                     icon: "gearshape",
                     keywords: "appearance dark light confirmation ask closing recent record quick connect open sessions ssh timeout monitor refresh interval font size"
                 ) { GeneralSettings() },
                 ConfigHostSettingsSection(
                     id: SettingsCategory.about,
                     title: "About",
-                    subtitle: "Version, source, license and acknowledgements",
                     icon: "info.circle",
                     keywords: "version build license source github acknowledgements libraries"
                 ) { AboutSettings() },
@@ -69,8 +67,8 @@ private struct GeneralSettings: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: RX.Space.s6) {
-            RXFormSection("Appearance") {
-                RXFormRow("Appearance", description: "Follow the system, or keep Rayon light or dark.") {
+            RXFormSection {
+                RXFormRow("Appearance") {
                     RXSegmented(selection: $appearance, options: [
                         .init(AppearancePreference.system.rawValue, "System"),
                         .init(AppearancePreference.light.rawValue, "Light"),
@@ -81,49 +79,42 @@ private struct GeneralSettings: View {
             RXFormSection("Behavior") {
                 SwitchRow(
                     "Ask before closing",
-                    description: "Confirm before closing a running session, deleting or duplicating items.",
                     isOn: Binding(get: { !store.disableConformation }, set: { store.disableConformation = !$0 })
                 )
                 SwitchRow(
                     "Remember recent servers",
-                    description: "Shows recently used servers and Quick Connect commands on Home.",
                     isOn: $store.storeRecent
                 )
                 NumberFieldRow(
                     "Recent items to keep",
-                    description: "Older entries are dropped first.",
                     value: $recentLimit,
                     in: 1 ... 50
                 )
                 .disabled(!store.storeRecent)
                 SwitchRow(
                     "Record Quick Connect commands",
-                    description: "Keeps commands you typed so Quick Connect can suggest them.",
                     isOn: $store.saveTemporarySession
                 )
                 SwitchRow(
                     "Open sessions when connected",
-                    description: "Switch to a new terminal or file transfer as soon as it opens.",
                     isOn: $store.openInterfaceAutomatically
                 )
             }
-            RXFormSection("Connection", footer: "Changes apply immediately.") {
+            RXFormSection("Connection") {
                 SliderRow(
                     "SSH timeout",
-                    description: "Report a connection as failed after this long (2–30 s).",
                     value: Binding(get: { Double(store.timeout) }, set: { store.timeout = Int($0) }),
                     in: 2 ... 30
                 ) { "\(Int($0)) s" }
                 SliderRow(
                     "Monitor refresh",
-                    description: "Wait this long between reads of a server's status (5–60 s).",
                     value: Binding(get: { Double(max(5, store.monitorInterval)) }, set: { store.monitorInterval = Int($0) }),
                     in: 5 ... 60,
                     step: 5
                 ) { "\(Int($0)) s" }
                 NumberFieldRow(
                     "Terminal font size",
-                    description: "Default size for sessions; change it per session with ⌘+ and ⌘−.",
+                    description: "Change per session with ⌘+ and ⌘−.",
                     value: $store.terminalFontSize,
                     in: 4 ... 30,
                     unit: "pt"
@@ -164,13 +155,13 @@ private struct AboutSettings: View {
                         .foregroundStyle(.rxInkSecondary)
                         .textSelection(.enabled)
                 }
-                RXFormRow("Source code", description: "Rayon is open source.") {
+                RXFormRow("Source code") {
                     Link(destination: URL(string: "https://github.com/Lakr233/Rayon")!) {
                         Label("GitHub", systemImage: "arrow.up.right.square")
                     }
                     .buttonStyle(.rx)
                 }
-                RXFormRow("License", description: "MIT License, Lakr's Edition.") {
+                RXFormRow("License") {
                     Button("View License…") { document = .license }
                         .buttonStyle(.rx)
                 }
@@ -253,7 +244,7 @@ struct AgreementSheet: View {
     @State private var agreed = false
 
     var body: some View {
-        SheetScaffold("Welcome to Rayon", lead: "Please read and accept the license to continue.") {
+        SheetScaffold("Welcome to Rayon") {
             VStack(alignment: .leading, spacing: RX.Space.s3) {
                 ScrollView {
                     Text(AboutDocument.agreement.text)

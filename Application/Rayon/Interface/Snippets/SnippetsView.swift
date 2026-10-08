@@ -47,20 +47,19 @@ struct SnippetsView: View {
         } trailing: {
             ToolbarAction("New Snippet", systemImage: "plus", primary: true) { creating = true }
         } header: {
-            PageTitle("Snippets", subtitle: "Shell commands you run on one or many servers")
+            PageTitle("Snippets")
         } content: {
             if store.snippetGroup.snippets.isEmpty {
                 EmptyStateView(
                     "No snippets yet",
                     systemImage: "chevron.left.forwardslash.chevron.right",
-                    message: "Save commands you run often, then run them on several servers at once.",
                     actionTitle: "New Snippet"
                 ) {
                     creating = true
                 }
                 .rxCard()
             } else if filtered.isEmpty {
-                EmptyStateView("No matches", systemImage: "magnifyingglass", message: "No snippet matches your search.")
+                EmptyStateView("No matches", systemImage: "magnifyingglass")
                     .rxCard()
             } else {
                 LazyVGrid(
@@ -125,7 +124,6 @@ private struct SnippetTile: View {
         .contentShape(RoundedRectangle(cornerRadius: RX.Radius.card, style: .continuous))
         .onHover { hovered = $0 }
         .onTapGesture(count: 2, perform: edit)
-        .help("Double-click to edit")
         .contextMenu {
             Button("Run…") { SnippetActions.run(snippet.id) }
             Button("Edit…", action: edit)
@@ -147,7 +145,7 @@ enum SnippetActions {
         }
         ServerPickerPanel.present(
             title: "Run \(snippet.name)",
-            lead: "Runs with the shell of each server you pick. Servers need an identity set.",
+            lead: "Servers need an identity set.",
             confirmTitle: "Run",
             allowsMany: true
         ) { machines in
@@ -170,7 +168,6 @@ enum SnippetActions {
         let snippet = RayonStore.shared.snippetGroup[id]
         UIBridge.requiresConfirmation(
             message: "Delete \(snippet.name.isEmpty ? "this snippet" : snippet.name)?",
-            informative: "The command is removed from Rayon.",
             confirmTitle: "Delete",
             destructive: true
         ) { confirmed in

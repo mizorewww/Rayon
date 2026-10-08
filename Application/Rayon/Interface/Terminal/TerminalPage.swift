@@ -92,7 +92,6 @@ struct TerminalPage: View {
             EmptyStateView(
                 "Terminal moved to another window",
                 systemImage: "macwindow",
-                message: "This session is open in another window.",
                 actionTitle: "Bring Back Here"
             ) {
                 context.interfaceToken = interfaceToken
@@ -103,10 +102,8 @@ struct TerminalPage: View {
 
     var disconnectedBanner: some View {
         HStack(spacing: RX.Space.s2) {
-            Text("Connection closed.")
+            Text("Connection closed")
                 .foregroundStyle(.rxTerminalForeground)
-            Text("Reconnect uses the details from when this session started.")
-                .foregroundStyle(.rxTerminalMuted)
             Spacer()
         }
         .font(.rxBody)
@@ -209,7 +206,6 @@ private struct TerminalStatusBar: View {
             if let session = monitors.session(for: context.machine.id) {
                 LiveFigures(session: session)
             }
-            Text("\(store.terminalFontSize) pt")
         }
         .font(.system(size: 11).monospacedDigit())
         .foregroundStyle(.rxInkSecondary)
@@ -240,7 +236,6 @@ enum TerminalSessionActions {
         if manager.sessionAlive(forContext: context.id) {
             UIBridge.requiresConfirmation(
                 message: "Close the session on \(context.remoteType == .machine ? context.machine.name : context.navigationTitle)?",
-                informative: "Anything running in it is stopped.",
                 confirmTitle: "Close Session",
                 destructive: true
             ) { confirmed in

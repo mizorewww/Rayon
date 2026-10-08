@@ -39,12 +39,9 @@ struct ServerEditorSheet: View {
     }
 
     var body: some View {
-        SheetScaffold(
-            isNew ? "New Server" : "Edit Server",
-            lead: isNew ? "Rayon connects over SSH and reads /proc to monitor the server." : nil
-        ) {
+        SheetScaffold(isNew ? "New Server" : "Edit Server") {
             VStack(alignment: .leading, spacing: 14) {
-                RXField("Name", help: isNew ? "Defaults to the address." : nil) {
+                RXField("Name") {
                     TextField(address.isEmpty ? "prod-web-01" : address, text: $name)
                         .textFieldStyle(.rx)
                 }
@@ -90,7 +87,7 @@ struct ServerEditorSheet: View {
                         }
                     }
                 }
-                RXField("SFTP start folder", help: "File transfers open here.") {
+                RXField("SFTP start folder") {
                     TextField("/", text: $startFolder)
                         .textFieldStyle(.rxMono)
                         .disableAutocorrection(true)
@@ -100,8 +97,8 @@ struct ServerEditorSheet: View {
                         .textFieldStyle(.rx)
                 }
                 if !isNew {
-                    RXField("Last banner", help: "Captured on connect.") {
-                        RXValueField(banner, placeholder: "Not captured yet", monospaced: true)
+                    RXField("Last banner") {
+                        RXValueField(banner, placeholder: "None", monospaced: true)
                     }
                 }
                 if let error {

@@ -65,7 +65,7 @@ struct FileTransferPage: View {
                     EmptyStateView(
                         "Connection closed",
                         systemImage: "bolt.horizontal",
-                        message: context.currentHint.isEmpty ? "The file transfer is no longer connected." : context.currentHint,
+                        message: context.currentHint == "Connection Closed" ? "" : context.currentHint,
                         actionTitle: context.destroyedSession ? nil : "Reconnect"
                     ) {
                         context.processBootstrap()
@@ -113,15 +113,7 @@ struct FileTransferPage: View {
     }
 
     var subtitle: String {
-        var parts = ["SFTP"]
-        if store.machineRedacted == .none {
-            parts.append(context.machine.getCommand(insertLeadingSSH: false))
-        }
-        if context.connected {
-            parts.append("\(files.count) item\(files.count == 1 ? "" : "s")")
-            parts.append("drag files here to upload")
-        }
-        return parts.joined(separator: " · ")
+        store.machineRedacted == .none ? context.machine.getCommand(insertLeadingSSH: false) : ""
     }
 
     // MARK: Table
@@ -143,7 +135,7 @@ struct FileTransferPage: View {
                 EmptyStateView(
                     filter.isEmpty ? "Empty folder" : "No matches",
                     systemImage: "folder",
-                    message: filter.isEmpty ? "Drag files here to upload them." : "No file matches “\(filter)”."
+                    message: ""
                 )
                 Spacer(minLength: 0)
             } else {

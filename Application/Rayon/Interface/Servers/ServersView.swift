@@ -34,13 +34,6 @@ struct ServersView: View {
         }
     }
 
-    var subtitle: String {
-        let count = store.machineGroup.count
-        let groupCount = Set(store.machineGroup.machines.map(\.group)).count
-        guard count > 0 else { return "Servers you add appear here." }
-        return "\(count) server\(count == 1 ? "" : "s") in \(groupCount) group\(groupCount == 1 ? "" : "s") · double-click to connect"
-    }
-
     var body: some View {
         PageScaffold(search: $searchText, searchPrompt: "Search servers") {
         } trailing: {
@@ -52,7 +45,7 @@ struct ServersView: View {
             }
         } header: {
             VStack(alignment: .leading, spacing: RX.Space.s3) {
-                PageTitle("Servers", subtitle: subtitle)
+                PageTitle("Servers")
                 if store.machineRedacted != .none {
                     RedactionBanner()
                 }
@@ -62,18 +55,13 @@ struct ServersView: View {
                 EmptyStateView(
                     "No servers yet",
                     systemImage: "server.rack",
-                    message: "Add a server to monitor it, open terminals and transfer files.",
                     actionTitle: "New Server"
                 ) {
                     router.presentNewServer = true
                 }
                 .rxCard()
             } else if filtered.isEmpty {
-                EmptyStateView(
-                    "No matches",
-                    systemImage: "magnifyingglass",
-                    message: "No server matches “\(searchText)”."
-                )
+                EmptyStateView("No matches", systemImage: "magnifyingglass")
                 .rxCard()
             } else {
                 ServersTable(groups: groups, selection: $selection)
@@ -122,7 +110,7 @@ struct RedactionBanner: View {
         HStack(spacing: RX.Space.s2) {
             Image(systemName: "eye.slash")
                 .foregroundStyle(.rxInkSecondary)
-            Text(store.machineRedacted == .all ? "Server names and addresses are hidden for screen sharing." : "Server addresses are hidden for screen sharing.")
+            Text(store.machineRedacted == .all ? "Names and addresses hidden" : "Addresses hidden")
                 .font(.rxBody)
                 .foregroundStyle(.rxInkSecondary)
             Button("Show") { store.machineRedacted = .none }

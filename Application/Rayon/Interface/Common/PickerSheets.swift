@@ -64,7 +64,6 @@ struct ServerPickerSheet: View {
                         EmptyStateView(
                             store.machineGroup.machines.isEmpty ? "No servers yet" : "No matches",
                             systemImage: "server.rack",
-                            message: store.machineGroup.machines.isEmpty ? "Add a server first." : "No server matches “\(searchText)”."
                         )
                     } else {
                         RXDividedStack {
@@ -86,9 +85,11 @@ struct ServerPickerSheet: View {
                 )
             }
         } footer: {
-            Text(allowsMany ? "\(selection.count) selected" : (selection.isEmpty ? "None selected" : "1 selected"))
-                .font(.rxBody.monospacedDigit())
-                .foregroundStyle(.rxInkSecondary)
+            if allowsMany {
+                Text("\(selection.count) selected")
+                    .font(.rxBody.monospacedDigit())
+                    .foregroundStyle(.rxInkSecondary)
+            }
             Spacer()
             Button("Cancel") { onComplete(nil) }
                 .buttonStyle(.rx)
@@ -152,13 +153,12 @@ struct IdentityPickerSheet: View {
     @State private var creating = false
 
     var body: some View {
-        SheetScaffold("Choose Identity", lead: "The identity Rayon signs in with on this server.") {
+        SheetScaffold("Choose Identity") {
             ScrollView {
                 if store.identityGroup.identities.isEmpty {
                     EmptyStateView(
                         "No identities yet",
                         systemImage: "person",
-                        message: "Create a username with a password or key pair.",
                         actionTitle: "New Identity"
                     ) {
                         creating = true

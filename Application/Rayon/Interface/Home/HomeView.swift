@@ -258,14 +258,7 @@ struct ServerTile: View {
                             .font(.system(size: 12))
                             .foregroundStyle(.rxInkSecondary)
                     }
-                    HStack {
-                        CapsLabel("Group")
-                        Spacer()
-                        Text(read.group.isEmpty ? "Default" : read.group)
-                            .font(.system(size: 12))
-                            .foregroundStyle(.rxInkSecondary)
-                            .lineLimit(1)
-                    }
+
                 }
             }
         }
@@ -277,7 +270,7 @@ struct ServerTile: View {
         .gesture(TapGesture(count: 2).onEnded { AppRouter.shared.openTerminal(machine: machine) })
         .simultaneousGesture(TapGesture(count: 1).onEnded { AppRouter.shared.openMonitor(machine: machine) })
         .contextMenu { ServerContextMenu(machine: machine) }
-        .help("Click for the monitor, double-click to open a terminal")
+        .help("Double-click to open a terminal")
     }
 
     func tileBar(_ title: String, percent: Double, color: Color) -> some View {

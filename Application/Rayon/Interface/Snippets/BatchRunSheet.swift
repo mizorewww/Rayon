@@ -35,7 +35,7 @@ struct BatchRunSheet: View {
     var finished: Bool { completedCount >= machines.count }
 
     var body: some View {
-        SheetScaffold("Run \(snippet.name)", lead: "\(machines.count) server\(machines.count == 1 ? "" : "s") · \(summary)") {
+        SheetScaffold("Run \(snippet.name)") {
             VStack(alignment: .leading, spacing: RX.Space.s3) {
                 HStack(alignment: .top, spacing: RX.Space.s3) {
                     serverList
@@ -60,7 +60,6 @@ struct BatchRunSheet: View {
                 } else {
                     UIBridge.requiresConfirmation(
                         message: "Stop running \(snippet.name)?",
-                        informative: "Commands still running on servers are interrupted.",
                         confirmTitle: "Stop and Close",
                         destructive: true
                     ) { confirmed in
@@ -75,12 +74,6 @@ struct BatchRunSheet: View {
         }
         .frame(width: 820)
         .onReceive(timer) { tick = $0 }
-    }
-
-    var summary: String {
-        let failed = machines.filter { if case .failed = context.state(for: $0) { return true } else { return false } }.count
-        if finished { return failed > 0 ? "finished, \(failed) failed" : "finished" }
-        return "running"
     }
 
     var serverList: some View {

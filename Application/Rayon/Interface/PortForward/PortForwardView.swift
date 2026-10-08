@@ -33,11 +33,6 @@ struct PortForwardView: View {
         }
     }
 
-    var subtitle: String {
-        let running = backend.container.count
-        return "\(running) running · traffic goes through each server's SSH connection"
-    }
-
     var body: some View {
         PageScaffold(search: $searchText, searchPrompt: "Search forwards") {
         } trailing: {
@@ -51,20 +46,19 @@ struct PortForwardView: View {
                 editor = EditorTarget(forward: nil)
             }
         } header: {
-            PageTitle("Port Forward", subtitle: subtitle)
+            PageTitle("Port Forward")
         } content: {
             if store.portForwardGroup.forwards.isEmpty {
                 EmptyStateView(
                     "No port forwards",
                     systemImage: "arrow.right",
-                    message: "Reach a port on a server, or expose a local port to it, through the server's SSH connection.",
                     actionTitle: "New Port Forward"
                 ) {
                     editor = EditorTarget(forward: nil)
                 }
                 .rxCard()
             } else if filtered.isEmpty {
-                EmptyStateView("No matches", systemImage: "magnifyingglass", message: "No forward matches “\(searchText)”.")
+                EmptyStateView("No matches", systemImage: "magnifyingglass")
                     .rxCard()
             } else {
                 table
@@ -159,7 +153,7 @@ private struct PortForwardRow: View {
             .controlSize(.small)
             .tint(.rxAccent)
             .disabled(!forward.isValid())
-            .help(forward.isValid() ? (running ? "Stop" : "Start") : "Complete the forward before starting it")
+            .help(forward.isValid() ? (running ? "Stop" : "Start") : "Incomplete")
             .frame(width: 52, alignment: .trailing)
         }
         .padding(.horizontal, RX.Space.s3)
@@ -214,7 +208,6 @@ enum PortForwardActions {
         let forward = RayonStore.shared.portForwardGroup[id]
         UIBridge.requiresConfirmation(
             message: "Delete the forward on port \(forward.bindPort)?",
-            informative: "It stops if it is running.",
             confirmTitle: "Delete",
             destructive: true
         ) { confirmed in
@@ -250,9 +243,7 @@ struct PortForwardEditorSheet: View {
     var body: some View {
         SheetScaffold(
             forward == nil ? "New Port Forward" : "Edit Port Forward",
-            lead: orientation == .listenLocal
-                ? "Connections to the bind port on this Mac go through the server to the target."
-                : "Connections to the bind port on the server come back through this Mac to the target."
+            lead: orientation == .listenLocal ? "This Mac :port → server → target" : "Server :port → this Mac → target"
         ) {
             VStack(alignment: .leading, spacing: 14) {
                 RXField("Orientation") {

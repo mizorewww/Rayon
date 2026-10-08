@@ -23,7 +23,6 @@ enum ServerActions {
         guard original.isNotPlaceholder() else { return }
         UIBridge.requiresConfirmation(
             message: "Duplicate \(original.name)?",
-            informative: "The copy keeps the address, identity and group.",
             confirmTitle: "Duplicate"
         ) { confirmed in
             guard confirmed else { return }
@@ -42,7 +41,7 @@ enum ServerActions {
             : "Delete \(machines.count) servers?"
         UIBridge.requiresConfirmation(
             message: message,
-            informative: "Open sessions stay open. Port forwards through it stop working.",
+            informative: "Port forwards through it stop working.",
             confirmTitle: "Delete",
             destructive: true
         ) { confirmed in

@@ -34,7 +34,7 @@ struct SnippetEditorSheet: View {
     var isNew: Bool { snippet == nil }
 
     var body: some View {
-        SheetScaffold(isNew ? "New Snippet" : "Edit Snippet", lead: "Runs with the shell of each server you pick.") {
+        SheetScaffold(isNew ? "New Snippet" : "Edit Snippet", ) {
             VStack(alignment: .leading, spacing: 14) {
                 HStack(alignment: .top, spacing: RX.Space.s4) {
                     RXField("Name") {

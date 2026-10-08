@@ -25,7 +25,6 @@ class TerminalManager: ObservableObject {
         if index != nil, !force {
             UIBridge.requiresConfirmation(
                 message: "\(machine.name) already has a terminal open",
-                informative: "Open another terminal for this server?",
                 confirmTitle: "Open Another"
             ) { confirmed in
                 if confirmed {

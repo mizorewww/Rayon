@@ -101,7 +101,6 @@ final class AppRouter: ObservableObject {
     func batchStartup() {
         ServerPickerPanel.present(
             title: "Batch Startup",
-            lead: "Open a terminal for each server you pick.",
             confirmTitle: "Open Terminals",
             allowsMany: true
         ) { machines in
