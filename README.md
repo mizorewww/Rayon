@@ -31,7 +31,7 @@ Verified on 2026-10-08 with Xcode 27.0 (27A5209h), Swift 6.4 and an arm64
 macOS 27.2 host: both Debug and Release builds succeeded in Swift 6 language mode,
 and `lipo` confirmed both architectures in each executable. Both shared packages
 also resolved their dependencies independently. The locally signed Debug and Release applications were subsequently launched
-through LaunchServices on this host, and the Release configuration window was
+through LaunchServices on this host, and the Release configuration page was
 opened from the main sidebar. SSH integration, Intel runtime, macOS 13 runtime
 and iOS builds have not been tested. The native
 Ghostty terminal was exercised separately by the tests described below. Existing
@@ -214,7 +214,8 @@ Copyright © 2022 Lakr Aream. All Rights Reserved.
 
 ### Native Ghostty configuration editor
 
-On macOS, open **Terminal Configuration** in the Rayon sidebar to edit the full
+On macOS, open **Terminal Configuration** in the Rayon sidebar or at the top of
+**Setting**. The editor appears inside the existing main window. It edits the full
 Ghostty Config catalog with native SwiftUI controls, 633 theme previews, palette
 and keybinding editors, a font playground, and an in-memory terminal playground.
 Import/export and share URLs are compatible with [Ghostty Config](https://github.com/zerebos/ghostty-config).

@@ -20,10 +20,15 @@ public struct GhosttyConfigurationView: View {
     @State private var navigationIndex = 0
     @State private var navigating = false
     private let onApplied: ((Double?) -> Void)?
-    public init(onApplied: ((Double?) -> Void)? = nil) { self.onApplied = onApplied }
+    private let embedded: Bool
+    public init(embedded: Bool = false, onApplied: ((Double?) -> Void)? = nil) {
+        self.embedded = embedded
+        self.onApplied = onApplied
+        _showPreview = State(initialValue: !embedded)
+    }
     private var panel: ConfigPanel? { ConfigCatalog.shared.navigation.first { $0.id == selection } }
     public var body: some View {
-        NavigationSplitView {
+        ConfigEditorLayout(embedded: embedded) {
             List(selection: $selection) {
                 Section("Configuration") {
                     ForEach(ConfigCatalog.shared.navigation) { panel in
@@ -103,7 +108,7 @@ public struct GhosttyConfigurationView: View {
         .sheet(isPresented: $importSheet) { importView }
         .sheet(isPresented: $shareSheet) { ConfigShareView(model: model) }
         .confirmationDialog("Reset every setting to its default?", isPresented: $resetConfirm) { Button("Reset All", role: .destructive) { model.edit { $0 = ConfigDocument() } } }
-        .frame(minWidth: 960, minHeight: 650)
+        .frame(minWidth: embedded ? 740 : 960, minHeight: 650)
     }
     @ViewBuilder private var content: some View {
         if !search.isEmpty {
@@ -255,6 +260,28 @@ struct ConfigCustomSettings: View {
                     VStack(alignment: .leading) { HStack { Text(key).font(.headline); Spacer(); Button("Remove") { model.reset(key) } }; ConfigRepeatableEditor(model: model, key: key) }.padding().background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
                 }
             }.padding(24)
+        }
+    }
+}
+
+/// Avoid a nested navigation container inside Rayon's existing main navigation.
+private struct ConfigEditorLayout<Sidebar: View, Detail: View>: View {
+    let embedded: Bool
+    let sidebar: Sidebar
+    let detail: Detail
+    init(embedded: Bool, @ViewBuilder sidebar: () -> Sidebar, @ViewBuilder detail: () -> Detail) {
+        self.embedded = embedded
+        self.sidebar = sidebar()
+        self.detail = detail()
+    }
+    var body: some View {
+        if embedded {
+            HSplitView {
+                sidebar.frame(minWidth: 175, idealWidth: 205, maxWidth: 250)
+                detail
+            }
+        } else {
+            NavigationSplitView { sidebar } detail: { detail }
         }
     }
 }

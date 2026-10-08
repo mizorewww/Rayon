@@ -9,11 +9,28 @@ import RayonModule
 import SwiftUI
 
 struct SettingView: View {
+    let openTerminalConfiguration: () -> Void
     @EnvironmentObject var store: RayonStore
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
+                Button(action: openTerminalConfiguration) {
+                    HStack(spacing: 12) {
+                        Image(systemName: "terminal").font(.title)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Terminal Configuration").font(.headline)
+                            Text("Ghostty themes, fonts, colors, keybindings, import and export.")
+                                .font(.subheadline).foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                    }
+                    .padding()
+                    .background(Color.accentColor.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+                }
+                .buttonStyle(.plain)
+                Divider().padding(.vertical, 6)
                 Section {
                     Toggle("Reduced Effect", isOn: $store.reducedViewEffects)
                         .font(.system(.headline, design: .rounded))

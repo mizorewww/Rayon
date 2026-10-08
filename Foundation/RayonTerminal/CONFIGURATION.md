@@ -1,6 +1,9 @@
 # Native Ghostty Config in Rayon
 
-Rayon's **Terminal Configuration** sidebar item opens a native SwiftUI window.
+Rayon's **Terminal Configuration** sidebar item opens a native SwiftUI page inside
+the existing main window. The **Setting** page also has a prominent entry card.
+The category list is embedded without a second navigation container; the optional
+live preview starts collapsed to fit the main window and can be shown from the toolbar.
 The editor targets macOS 13 and Swift 6 and has no web view, JavaScript runtime,
 web service, or downloaded font dependency.
 
@@ -93,7 +96,11 @@ identity and preference domain, without opening Rayon's account store. The
 application binaries produced by the main build script are ad hoc signed and
 strictly verified, including nested code and both architectures. Both main app
 configurations were launched through LaunchServices on the arm64 host, and the
-Release configuration window was opened from the main sidebar. Developer ID
+Release configuration page was opened inside the main window from the sidebar.
+The final Setting-card routing correction compiles in both configurations and was
+reviewed, but its repeat-navigation GUI check is pending: the subsequent launch
+waited in `SecItemCopyMatching` for system keychain access before creating a window.
+Developer ID
 distribution signing, notarization, external SSH-server end-to-end interaction,
 and every individual standalone Ghostty setting are outside these local checks.
 

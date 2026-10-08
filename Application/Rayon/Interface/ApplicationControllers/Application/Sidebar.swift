@@ -6,11 +6,13 @@
 //
 
 import RayonModule
+import RayonTerminal
 import SwiftUI
 
 struct SidebarView: View {
     @EnvironmentObject var store: RayonStore
-    @Environment(\.openWindow) private var openWindow
+
+    @State private var showTerminalConfiguration = false
 
     @StateObject var terminalManager = TerminalManager.shared
     @StateObject var transferManager = FileTransferManager.shared
@@ -57,14 +59,13 @@ struct SidebarView: View {
                 Label("Port Forward", systemImage: "arrowshape.turn.up.right.circle.fill")
             }
             .badge(store.portForwardGroup.count)
-            Button {
-                openWindow(id: "terminal-configuration")
+            NavigationLink(isActive: $showTerminalConfiguration) {
+                GhosttyConfigurationView(embedded: true)
             } label: {
                 Label("Terminal Configuration", systemImage: "slider.horizontal.3")
             }
-            .buttonStyle(.plain)
             NavigationLink {
-                SettingView().requiresFrame()
+                SettingView { showTerminalConfiguration = true }.requiresFrame()
             } label: {
                 Label("Setting", systemImage: "gearshape.fill")
             }

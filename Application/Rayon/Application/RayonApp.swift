@@ -36,10 +36,6 @@ struct RayonApp: App {
         .commands {
             SidebarCommands()
         }
-        Window("Terminal Configuration", id: "terminal-configuration") {
-            GhosttyConfigurationView()
-        }
-        .defaultSize(width: 1280, height: 820)
     }
 }
 
