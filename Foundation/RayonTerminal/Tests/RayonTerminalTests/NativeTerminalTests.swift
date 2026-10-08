@@ -88,6 +88,9 @@ final class NativeTerminalTests: XCTestCase {
             window.orderFront(nil)
         }
         try await Task.sleep(for: .milliseconds(100))
+        owner.session!.output.write(Data("live teardown surface".utf8))
+        XCTAssertTrue(owner.session!.backend.waitForPendingOutput())
+        XCTAssertTrue(owner.session!.backend.readViewportText()?.contains("live teardown surface") == true)
         window.contentView = nil
         window.close()
         await Task.detached { owner.releaseSession() }.value
