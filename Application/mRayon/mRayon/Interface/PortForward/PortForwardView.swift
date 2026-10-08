@@ -2,7 +2,7 @@
 //  PortForwardView.swift
 //  mRayon
 //
-//  Created by Lakr Aream on 2022/3/2.
+//  Created by Lakr Aream on 2022/3/10.
 //
 
 import RayonModule
@@ -10,90 +10,130 @@ import SwiftUI
 
 struct PortForwardView: View {
     @EnvironmentObject var store: RayonStore
-
-    @State var openEditView: Bool = false
-
-    @State var searchKey: String = ""
-
-    var content: [RDPortForward.ID] {
-        if searchKey.isEmpty {
-            return store
-                .portForwardGroup
-                .forwards
-                .map(\.id)
-        }
-        let searchText = searchKey.lowercased()
-        return store
-            .portForwardGroup
-            .forwards
-            .filter { object in
-                if searchText.count == 0 {
-                    return true
-                }
-                if object.targetHost.lowercased().contains(searchText) {
-                    return true
-                }
-                if String(object.targetPort).contains(searchText) {
-                    return true
-                }
-                if String(object.bindPort).contains(searchText) {
-                    return true
-                }
-                return false
-            }
-            .map(\.id)
-    }
-
-    var columns: [GridItem] {
-        [GridItem(.adaptive(minimum: 280, maximum: 500), spacing: 10)]
-    }
+    @ObservedObject var backend = PortForwardBackend.shared
+    @State private var openCreate = false
 
     var body: some View {
         Group {
             if store.portForwardGroup.forwards.isEmpty {
-                PlaceholderView("No Forward Available", img: .connectionBroken)
-            } else {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Label("\(content.count) forward(s) available, tap for option.", systemImage: "arrow.left.arrow.right.circle.fill")
-                            .font(.system(.footnote, design: .rounded))
-                        Divider()
-                        LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
-                            ForEach(content, id: \.self) { forwardId in
-                                PortForwardElementView(forward: forwardId)
-                            }
-                        }
-                        Divider()
-                        Label("EOF", systemImage: "text.append")
-                            .font(.system(.footnote, design: .rounded))
-                    }
-                    .padding()
+                EmptyStateView(
+                    "No port forwards",
+                    systemImage: "arrow.right",
+                    message: "Reach a port on a server, or expose a local port to it, through the server's SSH connection.",
+                    actionTitle: "New Port Forward"
+                ) {
+                    openCreate = true
                 }
-                .searchable(text: $searchKey)
+                .frame(maxHeight: .infinity)
+                .background(RXBackdrop().ignoresSafeArea())
+            } else {
+                List {
+                    Section {
+                        ForEach(store.portForwardGroup.forwards) { forward in
+                            PortForwardRow(forward: forward)
+                                .rxListRow()
+                        }
+                    } header: {
+                        RXSectionHeader("\(backend.container.count) running")
+                    } footer: {
+                        Text("Traffic goes through each server's SSH connection.")
+                    }
+                }
+                .rxGroupedList()
             }
         }
-        .animation(.interactiveSpring(), value: content)
-        .animation(.interactiveSpring(), value: searchKey)
-        .background(navigationSheet)
         .navigationTitle("Port Forward")
         .toolbar {
             ToolbarItem {
                 Button {
-                    openEditView = true
+                    openCreate = true
                 } label: {
-                    Label("Create Forward", systemImage: "plus")
+                    Label("New Port Forward", systemImage: "plus")
                 }
             }
         }
+        .sheet(isPresented: $openCreate) {
+            NavigationStack { EditPortForwardView() }
+        }
+    }
+}
+
+private struct PortForwardRow: View {
+    let forward: RDPortForward
+    @EnvironmentObject var store: RayonStore
+    @ObservedObject var backend = PortForwardBackend.shared
+    @State private var openEdit = false
+
+    var running: Bool { backend.sessionExists(withPortForwardID: forward.id) }
+
+    var status: (RXStatus, String) {
+        switch backend.lastHint[forward.id] {
+        case "awaiting connect", "opening channel": return (.running, "Connecting")
+        case "forward running": return running ? (.success, "Running") : (.off, "Stopped")
+        case "failed connect": return (.danger, "Failed · could not connect")
+        case "failed authenticate": return (.danger, "Failed · could not sign in")
+        case "forward stopped": return running ? (.danger, "Failed · forward ended") : (.off, "Stopped")
+        default: return running ? (.running, "Starting") : (.off, "Stopped")
+        }
     }
 
-    var navigationSheet: some View {
-        Group {
-            NavigationLink(isActive: $openEditView) {
-                EditPortForwardView()
-            } label: {
-                Group {}
+    var body: some View {
+        HStack(spacing: RX.Space.s3) {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    RXTag(forward.forwardOrientation == .listenLocal ? "Listen local" : "Listen remote")
+                    Text(":\(forward.bindPort)")
+                        .font(.rxCode)
+                        .foregroundStyle(.rxInk)
+                }
+                Text("\(forward.getMachineName() ?? "No server") → \(forward.targetHost):\(forward.targetPort)")
+                    .font(.rxCode)
+                    .foregroundStyle(.rxInkSecondary)
+                    .lineLimit(1)
+                StatusLabel(status.0, status.1)
+                    .font(.caption)
             }
+            Spacer()
+            Toggle("Running", isOn: Binding(get: { running }, set: { on in
+                if on {
+                    backend.createSession(withPortForwardID: forward.id)
+                } else {
+                    backend.endSession(withPortForwardID: forward.id)
+                }
+            }))
+            .labelsHidden()
+            .tint(.rxAccent)
+            .disabled(!forward.isValid())
+        }
+        .contentShape(Rectangle())
+        .onTapGesture { if !running { openEdit = true } }
+        .swipeActions {
+            Button(role: .destructive) {
+                UIBridge.requiresConfirmation(message: "Delete the forward on port \(forward.bindPort)?") { confirmed in
+                    guard confirmed else { return }
+                    backend.endSession(withPortForwardID: forward.id)
+                    store.portForwardGroup.delete(forward.id)
+                }
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+        .contextMenu {
+            Button {
+                UIBridge.sendPasteboard(str: forward.getCommand() ?? "")
+            } label: {
+                Label("Copy Command", systemImage: "doc.on.doc")
+            }
+            Button {
+                var copy = forward
+                copy.id = .init()
+                store.portForwardGroup.insert(copy)
+            } label: {
+                Label("Duplicate", systemImage: "plus.square.on.square")
+            }
+        }
+        .sheet(isPresented: $openEdit) {
+            NavigationStack { EditPortForwardView { forward.id } }
         }
     }
 }

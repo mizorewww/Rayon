@@ -1,209 +1,364 @@
-import SwiftUI
 import AppKit
-import UniformTypeIdentifiers
+import RayonDesign
+import SwiftUI
 
 /// App-owned preferences share the editor's navigation without coupling this package to RayonStore.
 public struct ConfigHostSettingsSection: Identifiable {
     public let id: String
     let title: String
+    let subtitle: String?
     let icon: String
     let keywords: String
     let content: AnyView
 
-    @MainActor public init<Content: View>(id: String, title: String, icon: String, keywords: String,
+    @MainActor public init<Content: View>(id: String, title: String, subtitle: String? = nil, icon: String, keywords: String,
                                         @ViewBuilder content: () -> Content) {
         self.id = id
         self.title = title
+        self.subtitle = subtitle
         self.icon = icon
         self.keywords = keywords
         self.content = AnyView(content())
     }
 }
 
-/// Full native configuration editor, backed by the pinned Ghostty Config schema.
+/// The terminal settings Rayon applies, drawn with the Rayon design system: a
+/// category column, then the selected category's settings as grouped cards.
+/// Settings that only matter to standalone Ghostty are not shown.
 public struct GhosttyConfigurationView: View {
     @StateObject private var model = ConfigEditorModel.shared
-    @State private var selection: String? = "colors"
+    @Binding private var selectionBinding: String
+    @State private var localSelection: String
     @State private var search = ""
     @State private var jumpTarget: String?
     @State private var showPreview = true
-    @State private var importing = false
-    @State private var exporting = false
-    @State private var importSheet = false
-    @State private var importText = ""
-    @State private var importError = ""
-    @State private var shareSheet = false
     @State private var resetConfirm = false
     @State private var navigationHistory = ["colors"]
     @State private var navigationIndex = 0
     @State private var navigating = false
     private let onApplied: ((Double?) -> Void)?
     private let embedded: Bool
+    private let usesExternalSelection: Bool
     private let hostSections: [ConfigHostSettingsSection]
+
+    private var selection: String {
+        get { usesExternalSelection ? selectionBinding : localSelection }
+        nonmutating set {
+            if usesExternalSelection { selectionBinding = newValue } else { localSelection = newValue }
+        }
+    }
+
     private var isHostSection: Bool { hostSections.contains { $0.id == selection } && search.isEmpty }
-    public init(embedded: Bool = false, hostSections: [ConfigHostSettingsSection] = [], onApplied: ((Double?) -> Void)? = nil) {
+    private var navigation: [ConfigPanel] { ConfigCatalog.shared.rayonNavigation }
+
+    public init(
+        embedded: Bool = false,
+        hostSections: [ConfigHostSettingsSection] = [],
+        selection: Binding<String>? = nil,
+        onApplied: ((Double?) -> Void)? = nil
+    ) {
         self.hostSections = hostSections
-        let initialSelection = hostSections.first?.id ?? "colors"
-        _selection = State(initialValue: initialSelection)
+        let initialSelection = selection?.wrappedValue ?? hostSections.first?.id ?? "colors"
+        _localSelection = State(initialValue: initialSelection)
+        _selectionBinding = selection ?? .constant(initialSelection)
+        usesExternalSelection = selection != nil
         _navigationHistory = State(initialValue: [initialSelection])
         self.embedded = embedded
         self.onApplied = onApplied
         _showPreview = State(initialValue: !embedded)
     }
-    private var panel: ConfigPanel? { ConfigCatalog.shared.navigation.first { $0.id == selection } }
+
+    private var panel: ConfigPanel? { navigation.first { $0.id == selection } }
+
     public var body: some View {
-        ConfigEditorLayout(embedded: embedded) {
-            List(selection: $selection) {
-                if !hostSections.isEmpty {
-                    Section("Rayon") {
-                        ForEach(hostSections) { section in
-                            Label(section.title, systemImage: section.icon).tag(section.id)
-                        }
-                    }
-                }
-                Section(hostSections.isEmpty ? "Configuration" : "Terminal") {
-                    ForEach(ConfigCatalog.shared.navigation) { panel in
-                        Label(panel.name, systemImage: icon(panel.id)).tag(panel.id)
-                    }
-                }
-                Section("Tools") {
-                    Label("Font Playground", systemImage: "textformat").tag("playground")
-                    Label("Import & Export", systemImage: "arrow.up.arrow.down.doc").tag("transfer")
-                    Label("Custom Settings", systemImage: "curlybraces").tag("custom")
-                }
-                Section {
-                    Link("Ghostty Config on GitHub", destination: URL(string: "https://github.com/zerebos/ghostty-config")!)
-                    Text("200 settings · 633 themes").font(.caption).foregroundStyle(.secondary)
-                }
-            }.navigationSplitViewColumnWidth(min: 175, ideal: 205, max: 260)
-        } detail: {
+        HStack(spacing: 0) {
+            categoryColumn
+                .frame(width: 200)
             VStack(spacing: 0) {
-                HSplitView {
-                    content.frame(minWidth: 440, maxWidth: .infinity, maxHeight: .infinity)
-                    if showPreview && !isHostSection { ConfigPreview(model: model).frame(minWidth: 320, idealWidth: 370, maxWidth: 480) }
+                HStack(alignment: .top, spacing: RX.Space.s4) {
+                    content
+                        .frame(minWidth: 440, maxWidth: .infinity, maxHeight: .infinity)
+                    if showPreview && !isHostSection && search.isEmpty {
+                        ScrollView {
+                            ConfigPreview(model: model)
+                                .rxCard(padding: 0)
+                                .padding(.bottom, RX.Space.s6)
+                        }
+                        .frame(minWidth: 300, idealWidth: 340, maxWidth: 400)
+                        .padding(.trailing, RX.Space.s6)
+                        .padding(.top, RX.Space.s3)
+                    }
                 }
                 if !isHostSection || model.isDirty {
-                    Divider()
-                    HStack {
-                        Circle().fill(model.isDirty ? Color.orange : .green).frame(width: 6, height: 6)
-                        Text(model.isDirty ? "Unsaved terminal changes" : "Terminal settings saved").font(.caption)
-                        Text("· \(model.document.overrides.count) overrides").font(.caption).foregroundStyle(.secondary)
-                        Spacer()
-                        Button("Discard Terminal Changes") { model.discard() }.disabled(!model.isDirty)
-                        Button("Apply Terminal Changes") {
-                            let fontChanged = model.document.overrides["font-size"] != model.saved.overrides["font-size"]
-                            if model.save(), fontChanged { onApplied?(model.document.overrides["font-size"]?.first.flatMap(Double.init) ?? 14) }
-                        }
-                            .keyboardShortcut("s", modifiers: .command).buttonStyle(.borderedProminent)
-                    }.padding(12)
-                    if !model.message.isEmpty {
-                        HStack { Text(model.message).font(.caption).textSelection(.enabled); Spacer(); Button { model.message = "" } label: { Image(systemName: "xmark") }.buttonStyle(.borderless) }
-                            .padding(10).background(Color.accentColor.opacity(0.08))
-                    }
+                    applyBar
                 }
             }
-            .background(Color(nsColor: .windowBackgroundColor))
         }
-        .navigationTitle(hostSections.isEmpty ? "Terminal Configuration" : "Settings")
-        .searchable(text: $search, prompt: "Search settings and documentation")
-        .toolbar {
-            ToolbarItemGroup(placement: .navigation) {
-                Button { navigate(-1) } label: { Image(systemName: "chevron.left") }.disabled(navigationIndex == 0).help("Back")
-                Button { navigate(1) } label: { Image(systemName: "chevron.right") }.disabled(navigationIndex + 1 >= navigationHistory.count).help("Forward")
+        .background(RXWindowBackground().ignoresSafeArea())
+        .toolbarBackground(.hidden, for: .windowToolbar)
+        .modifier(ConfigToolbar(leading: {
+            ControlGroup {
+                    Button { navigate(-1) } label: { Label("Back", systemImage: "chevron.left") }
+                        .disabled(navigationIndex == 0)
+                    Button { navigate(1) } label: { Label("Forward", systemImage: "chevron.right") }
+                        .disabled(navigationIndex + 1 >= navigationHistory.count)
             }
-            ToolbarItemGroup {
+        }, trailing: {
+            Group {
                 if !isHostSection {
-                    Button { model.undo() } label: { Image(systemName: "arrow.uturn.backward") }.disabled(model.undoStack.isEmpty).help("Undo configuration edit")
-                    Button { model.redo() } label: { Image(systemName: "arrow.uturn.forward") }.disabled(model.redoStack.isEmpty).help("Redo configuration edit")
-                    Button { importText = ""; importSheet = true } label: { Label("Import", systemImage: "square.and.arrow.down") }
-                    Button { exporting = true } label: { Label("Export", systemImage: "square.and.arrow.up") }
-                    Button { shareSheet = true } label: { Label("Share", systemImage: "link") }
-                    Button { showPreview.toggle() } label: { Label("Preview", systemImage: "sidebar.right") }
+                    ControlGroup {
+                        Button { model.undo() } label: { Label("Undo", systemImage: "arrow.uturn.backward") }
+                            .disabled(model.undoStack.isEmpty)
+                        Button { model.redo() } label: { Label("Redo", systemImage: "arrow.uturn.forward") }
+                            .disabled(model.redoStack.isEmpty)
+                    }
+                    .help("Undo or redo a terminal setting change")
+                    Button { resetConfirm = true } label: { Label("Reset All", systemImage: "arrow.counterclockwise") }
+                        .help("Reset every terminal setting to its default")
+                    Button { showPreview.toggle() } label: { Label(showPreview ? "Hide Preview" : "Show Preview", systemImage: "sidebar.right") }
+                        .help(showPreview ? "Hide Preview" : "Show Preview")
                 }
             }
-        }
+        }))
+        .searchable(text: $search, placement: .toolbar, prompt: "Search settings")
         .onChange(of: selection) { next in
-            guard let next else { return }
             if navigating { navigating = false; return }
             navigationHistory = Array(navigationHistory.prefix(navigationIndex + 1)) + [next]
             navigationIndex = navigationHistory.count - 1
         }
-        .fileImporter(isPresented: $importing, allowedContentTypes: [.plainText, .data]) { result in
-            do {
-                let url = try result.get()
-                let access = url.startAccessingSecurityScopedResource()
-                defer { if access { url.stopAccessingSecurityScopedResource() } }
-                importText = try String(contentsOf: url, encoding: .utf8)
-                importError = ""; importSheet = true
-            } catch { model.message = error.localizedDescription }
+        .confirmationDialog("Reset every terminal setting to its default?", isPresented: $resetConfirm) {
+            Button("Reset All", role: .destructive) { model.edit { $0 = ConfigDocument() } }
         }
-        .fileExporter(isPresented: $exporting, document: ConfigTextFile(text: model.document.serialized()), contentType: .plainText, defaultFilename: "ghostty-config") { result in
-            if case let .failure(error) = result { model.message = error.localizedDescription }
-        }
-        .sheet(isPresented: $importSheet) { importView }
-        .sheet(isPresented: $shareSheet) { ConfigShareView(model: model) }
-        .confirmationDialog("Reset every setting to its default?", isPresented: $resetConfirm) { Button("Reset All", role: .destructive) { model.edit { $0 = ConfigDocument() } } }
-        .frame(minWidth: embedded ? 740 : 960, minHeight: 650)
+        .frame(minWidth: embedded ? 700 : 960, minHeight: 560)
     }
+
+    // MARK: Category column
+
+    private var categoryColumn: some View {
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 2) {
+                if !hostSections.isEmpty {
+                    categorySection("Rayon")
+                    ForEach(hostSections) { section in
+                        categoryRow(section.title, icon: section.icon, id: section.id)
+                    }
+                }
+                categorySection("Terminal")
+                ForEach(navigation) { panel in
+                    categoryRow(panel.name, icon: icon(panel.id), id: panel.id)
+                }
+            }
+            .padding(.horizontal, RX.Space.s2)
+            .padding(.top, RX.Space.s3)
+            .padding(.bottom, RX.Space.s4)
+        }
+    }
+
+    private func categorySection(_ title: String) -> some View {
+        Text(title)
+            .font(.rxSectionLabel)
+            .foregroundStyle(.rxInkSecondary)
+            .padding(.horizontal, RX.Space.s3)
+            .padding(.top, RX.Space.s4)
+            .padding(.bottom, RX.Space.s1)
+    }
+
+    private func categoryRow(_ title: String, icon: String, id: String) -> some View {
+        let selected = selection == id && search.isEmpty
+        return Button {
+            search = ""
+            selection = id
+        } label: {
+            HStack(spacing: RX.Space.s2) {
+                Image(systemName: icon)
+                    .font(.system(size: 13))
+                    .foregroundStyle(selected ? Color.rxAccent : Color.rxInkSecondary)
+                    .frame(width: 18)
+                Text(title)
+                    .font(.system(size: 13, weight: selected ? .medium : .regular))
+                    .foregroundStyle(.rxInk)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+                if let count = modifiedCount(id), count > 0 {
+                    Text("\(count)")
+                        .font(.system(size: 11).monospacedDigit())
+                        .foregroundStyle(.rxAccent)
+                        .help("\(count) changed from the default")
+                }
+            }
+            .padding(.horizontal, RX.Space.s3)
+            .frame(height: 30)
+            .background(
+                Capsule()
+                    .fill(selected ? Color.primary.opacity(0.09) : .clear)
+            )
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func modifiedCount(_ panelID: String) -> Int? {
+        guard let panel = navigation.first(where: { $0.id == panelID }) else { return nil }
+        let keys = Set(panel.settingIDs.compactMap { ConfigCatalog.shared.registry[$0]?.key })
+        return model.document.overrides.keys.filter { keys.contains($0) }.count
+    }
+
+    // MARK: Apply bar
+
+    private var applyBar: some View {
+        VStack(alignment: .leading, spacing: RX.Space.s2) {
+            HStack(spacing: RX.Space.s2) {
+                StatusDot(model.isDirty ? .warning : .success)
+                Text(model.isDirty ? "Unsaved terminal changes" : "Terminal settings applied")
+                    .font(.rxBody)
+                    .foregroundStyle(.rxInk)
+                Spacer()
+                Button("Discard") { model.discard() }
+                    .rxGlassAction()
+                    .disabled(!model.isDirty)
+                Button("Apply") {
+                    let fontChanged = model.document.overrides["font-size"] != model.saved.overrides["font-size"]
+                    if model.save(), fontChanged { onApplied?(model.document.overrides["font-size"]?.first.flatMap(Double.init) ?? 14) }
+                }
+                .rxPrimaryAction()
+                .keyboardShortcut("s", modifiers: .command)
+                .disabled(!model.isDirty)
+            }
+            if !model.message.isEmpty {
+                HStack(spacing: RX.Space.s2) {
+                    HelpText(model.message)
+                        .textSelection(.enabled)
+                    Spacer()
+                    Button { model.message = "" } label: { Image(systemName: "xmark") }
+                        .buttonStyle(.borderless)
+                        .accessibilityLabel("Dismiss")
+                }
+            }
+        }
+        .padding(.horizontal, RX.Space.s4)
+        .padding(.vertical, RX.Space.s3)
+        .background(Color.clear.rxCard(padding: 0))
+        .padding(.horizontal, RX.Space.s6)
+        .padding(.bottom, RX.Space.s4)
+    }
+
+    // MARK: Content
+
     @ViewBuilder private var content: some View {
         if !search.isEmpty {
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 12) {
-                    Text("Search Results").font(.largeTitle.bold())
+                LazyVStack(alignment: .leading, spacing: RX.Space.s6) {
+                    PageTitle("Search Results", subtitle: searchSubtitle)
                     ForEach(hostSearchResults) { section in
                         section.content
-                        Text("Changes apply immediately.").font(.caption).foregroundStyle(.secondary)
                     }
-                    ForEach(ConfigCatalog.shared.navigation) { category in
+                    ForEach(navigation) { category in
                         let matches = searchResults.filter { setting in category.settingIDs.contains { ConfigCatalog.shared.registry[$0]?.key == setting.key } }
                         if !matches.isEmpty {
-                            Text(category.name).font(.title3.bold()).padding(.top, 12)
-                            ForEach(matches) { setting in
-                                VStack(alignment: .leading) {
-                                    Button("Show in \(category.name)") { jumpTarget = setting.key; selection = category.id; search = "" }.buttonStyle(.link)
-                                    ConfigSettingRow(model: model, setting: setting, query: search)
+                            VStack(alignment: .leading, spacing: RX.Space.s2) {
+                                HStack {
+                                    CapsLabel(category.name)
+                                    Spacer()
+                                    Button("Show in \(category.name)") {
+                                        jumpTarget = matches.first?.key
+                                        selection = category.id
+                                        search = ""
+                                    }
+                                    .buttonStyle(.link)
+                                    .font(.rxHelp)
                                 }
+                                .padding(.leading, RX.Space.s4)
+                                RXDividedStack {
+                                    ForEach(matches) { setting in
+                                        ConfigSettingRow(model: model, setting: setting, query: search)
+                                    }
+                                }
+                                .padding(.horizontal, RX.Space.s4)
+                                .background(Color.clear.rxCard(padding: 0))
                             }
                         }
                     }
-                    if searchResults.isEmpty && hostSearchResults.isEmpty { Text("No settings match “\(search)”").foregroundStyle(.secondary) }
-                }.padding(24)
+                    if searchResults.isEmpty && hostSearchResults.isEmpty {
+                        EmptyStateView("No settings match “\(search)”", systemImage: "magnifyingglass", message: "Try another word, or a setting's key such as font-size.")
+                            .rxCard()
+                    }
+                }
+                .padding(.horizontal, RX.Space.s6)
+                .padding(.top, RX.Space.s3)
+                .padding(.bottom, RX.Space.s6)
             }
         } else if let section = hostSections.first(where: { $0.id == selection }) {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: RX.Space.s6) {
+                    PageTitle(section.title, subtitle: section.subtitle)
                     section.content
-                    Text("Changes apply immediately.").font(.caption).foregroundStyle(.secondary)
-                }.frame(maxWidth: .infinity, alignment: .leading).padding(24)
+                }
+                .frame(maxWidth: 760, alignment: .leading)
+                .padding(.horizontal, RX.Space.s6)
+                .padding(.top, RX.Space.s3)
+                .padding(.bottom, RX.Space.s6)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-        } else if selection == "playground" { ConfigFontPlayground() }
-        else if selection == "transfer" { transferView }
-        else if selection == "custom" { ConfigCustomSettings(model: model) }
-        else if selection == "keybinds" {
-            ScrollView { VStack(alignment: .leading, spacing: 16) { Text("Keybindings").font(.largeTitle.bold()); ConfigKeybindingList(model: model) }.padding(24) }
+        } else if selection == "keybinds" {
+            ScrollView {
+                VStack(alignment: .leading, spacing: RX.Space.s6) {
+                    PageTitle("Keybindings", subtitle: "Shortcuts and the terminal actions they run.")
+                    ConfigKeybindingList(model: model)
+                }
+                .padding(.horizontal, RX.Space.s6)
+                .padding(.top, RX.Space.s3)
+                .padding(.bottom, RX.Space.s6)
+            }
         } else if let panel {
             ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 14) {
-                    Text(panel.name).font(.largeTitle.bold())
-                    if let note = panel.note { Text(note).foregroundStyle(.secondary) }
-                    ForEach(panel.groups ?? []) { group in
-                        if !group.name.isEmpty { Text(group.name).font(.title3.weight(.semibold)).padding(.top, 14) }
-                        if let note = group.note { Text(note.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)).font(.caption).foregroundStyle(.secondary) }
-                        ForEach(group.settings, id: \.self) { id in
-                            if let setting = ConfigCatalog.shared.registry[id] { ConfigSettingRow(model: model, setting: setting).id(setting.key) }
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: RX.Space.s6) {
+                        PageTitle(panel.name, subtitle: panel.note.map(stripTags))
+                        ForEach(panel.groups ?? []) { group in
+                            VStack(alignment: .leading, spacing: RX.Space.s2) {
+                                if !group.name.isEmpty {
+                                    CapsLabel(group.name)
+                                        .padding(.leading, RX.Space.s4)
+                                }
+                                RXDividedStack {
+                                    ForEach(group.settings, id: \.self) { id in
+                                        if let setting = ConfigCatalog.shared.registry[id] {
+                                            ConfigSettingRow(model: model, setting: setting).id(setting.key)
+                                        }
+                                    }
+                                }
+                                .padding(.horizontal, RX.Space.s4)
+                                .background(Color.clear.rxCard(padding: 0))
+                            }
                         }
                     }
-                }.padding(24)
-            }.id(panel.id)
+                    .padding(.horizontal, RX.Space.s6)
+                    .padding(.top, RX.Space.s3)
+                    .padding(.bottom, RX.Space.s6)
+                }
+                .id(panel.id)
                 .task(id: jumpTarget) {
                     guard let jumpTarget else { return }
                     await Task.yield()
                     proxy.scrollTo(jumpTarget, anchor: .top)
                 }
             }
+        } else {
+            EmptyStateView("Choose a category", systemImage: "slider.horizontal.3", message: "Pick a category on the left.")
+                .frame(maxHeight: .infinity)
+                .onAppear { if hostSections.isEmpty { selection = navigation.first?.id ?? "colors" } }
         }
     }
+
+    private var searchSubtitle: String {
+        let count = searchResults.count + hostSearchResults.count
+        return count == 0 ? "Nothing found" : "\(count) match\(count == 1 ? "" : "es") for “\(search)”"
+    }
+
+    private func stripTags(_ text: String) -> String {
+        text.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+    }
+
     private var hostSearchResults: [ConfigHostSettingsSection] {
         let tokens = search.lowercased().split(whereSeparator: \.isWhitespace)
         return hostSections.filter { section in
@@ -211,130 +366,50 @@ public struct GhosttyConfigurationView: View {
             return tokens.allSatisfy { text.contains($0) }
         }
     }
+
     private var searchResults: [ConfigSetting] {
         let tokens = search.lowercased().split(whereSeparator: \.isWhitespace)
-        return ConfigCatalog.shared.settings.filter { setting in
-            let category = ConfigCatalog.shared.navigation.first { panel in panel.settingIDs.contains { ConfigCatalog.shared.registry[$0]?.key == setting.key } }
+        return ConfigCatalog.shared.rayonSettings.filter { setting in
+            let category = navigation.first { panel in panel.settingIDs.contains { ConfigCatalog.shared.registry[$0]?.key == setting.key } }
             let group = category?.groups?.first { $0.settings.contains { ConfigCatalog.shared.registry[$0]?.key == setting.key } }
-            let haystack = [setting.key, setting.name, setting.description, setting.note ?? "", category?.name ?? "", group?.name ?? "", group?.note ?? ""].joined(separator: " ").lowercased()
+            let haystack = [setting.key, setting.name, setting.description, category?.name ?? "", group?.name ?? ""].joined(separator: " ").lowercased()
             return tokens.allSatisfy { haystack.contains($0) }
         }
     }
-    private var transferView: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Import & Export").font(.largeTitle.bold())
-            Text("Only changes from the Ghostty Config defaults are exported. Import merges into your current draft; palette entries merge by index and keybindings append.").foregroundStyle(.secondary)
-            HStack {
-                Button("Import file…") { importing = true }
-                Button("Paste config or share URL…") { importText = NSPasteboard.general.string(forType: .string) ?? ""; importSheet = true }
-                Button("Copy") { copy(model.document.serialized()); model.message = "Configuration copied." }
-                Button("Download…") { exporting = true }
-            }
-            ScrollView([.vertical, .horizontal]) { Text(model.document.serialized()).font(.system(.body, design: .monospaced)).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading).padding() }
-                .background(Color(nsColor: .textBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
-            HStack { Button("Share selected settings…") { shareSheet = true }; Spacer(); Button("Reset all…", role: .destructive) { resetConfirm = true } }
-        }.padding(24)
-    }
-    private var importView: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Import Configuration").font(.title2.bold())
-            Text("Paste Ghostty configuration or a ghostty.zerebos.com share URL. Review the merged preview before importing.").foregroundStyle(.secondary)
-            TextEditor(text: $importText).font(.system(.body, design: .monospaced)).frame(height: 200)
-            HStack {
-                Button("Choose file…") { importSheet = false; importing = true }
-                Button("Preview merge") {
-                    do { var result = model.document; try result.merge(importText); importError = result.serialized() }
-                    catch { importError = error.localizedDescription }
-                }
-            }
-            if !importError.isEmpty { ScrollView { Text(importError).font(.system(.caption, design: .monospaced)).textSelection(.enabled).frame(maxWidth: .infinity, alignment: .leading) }.frame(maxHeight: 150) }
-            HStack {
-                Spacer(); Button("Cancel") { importSheet = false }.keyboardShortcut(.cancelAction)
-                Button("Merge into draft") { do { try model.importConfig(importText); importSheet = false; model.message = "Imported into draft. Save & Apply when ready." } catch { importError = error.localizedDescription } }.keyboardShortcut(.defaultAction)
-            }
-        }.padding(24).frame(width: 680)
-    }
+
     private func navigate(_ delta: Int) {
         let next = navigationIndex + delta
         guard navigationHistory.indices.contains(next) else { return }
         navigating = true; navigationIndex = next; selection = navigationHistory[next]
     }
+
     private func icon(_ id: String) -> String {
-        ["application": "app", "terminal": "terminal", "clipboard": "doc.on.clipboard", "window": "macwindow", "colors": "paintpalette", "fonts": "textformat", "keybinds": "keyboard", "mouse": "computermouse", "gtk": "square.grid.2x2", "linux": "desktopcomputer", "macos": "apple.logo"][id] ?? "slider.horizontal.3"
+        ["application": "app", "terminal": "terminal", "clipboard": "doc.on.clipboard", "window": "rectangle.inset.filled", "colors": "paintpalette", "fonts": "textformat", "keybinds": "keyboard", "mouse": "computermouse"][id] ?? "slider.horizontal.3"
     }
 }
 
-struct ConfigTextFile: FileDocument {
-    static let readableContentTypes: [UTType] = [.plainText]
-    var text: String
-    init(text: String) { self.text = text }
-    init(configuration: ReadConfiguration) throws {
-        guard let data = configuration.file.regularFileContents, let text = String(data: data, encoding: .utf8) else { throw ConfigError.message("Expected a UTF-8 text file") }
-        self.text = text
-    }
-    func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper { FileWrapper(regularFileWithContents: Data(text.utf8)) }
-}
-@MainActor private func copy(_ text: String) { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(text, forType: .string) }
+/// Navigation at the leading edge, actions at the trailing edge of the window toolbar.
+private struct ConfigToolbar<Leading: View, Trailing: View>: ViewModifier {
+    let leading: Leading
+    let trailing: Trailing
 
-struct ConfigShareView: View {
-    @ObservedObject var model: ConfigEditorModel
-    @Environment(\.dismiss) private var dismiss
-    @State private var selected: Set<String> = []
-    @State private var status = ""
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Text("Share Configuration").font(.title2.bold())
-            Text("Choose the overrides to include. Links are compatible with Ghostty Config on the web.").foregroundStyle(.secondary)
-            HStack { Button("Select all") { selected = Set(model.document.overrides.keys) }; Button("Clear selection") { selected = [] } }
-            List(model.document.overrides.keys.sorted(), id: \.self, selection: $selected) { key in Text(key).tag(key) }.frame(height: 180)
-            let text = model.document.shareURL(only: selected) ?? model.document.serialized(only: selected)
-            Text(model.document.shareURL(only: selected) == nil ? "Over 1,800 characters: sharing configuration text instead." : "Ready to share as a URL.").font(.caption)
-            ScrollView { Text(text).font(.system(.caption, design: .monospaced)).textSelection(.enabled) }.frame(height: 100)
-            Text(status).font(.caption)
-            HStack { Button("Copy") { copy(text); status = "Copied." }; ShareLink(item: text); Spacer(); Button("Done") { dismiss() }.keyboardShortcut(.defaultAction) }
-        }.padding(24).frame(width: 600).onAppear { selected = Set(model.document.overrides.keys) }
+    init(@ViewBuilder leading: () -> Leading, @ViewBuilder trailing: () -> Trailing) {
+        self.leading = leading()
+        self.trailing = trailing()
     }
-}
-struct ConfigCustomSettings: View {
-    @ObservedObject var model: ConfigEditorModel
-    @State private var key = ""
-    @State private var value = ""
-    @State private var error = ""
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text("Custom Settings").font(.largeTitle.bold())
-                Text("Preserve new Ghostty keys that are not in this catalog. Custom settings are exported; only supported keys are applied to Rayon.").foregroundStyle(.secondary)
-                HStack { TextField("setting-name", text: $key); TextField("value", text: $value); Button("Add") {
-                    do { try model.importConfig("\(key) = \(value)"); key = ""; value = ""; error = "" } catch { self.error = error.localizedDescription }
-                } }
-                Text(error).foregroundStyle(.red)
-                ForEach(model.document.overrides.keys.filter { ConfigCatalog.shared.setting(key: $0) == nil }.sorted(), id: \.self) { key in
-                    VStack(alignment: .leading) { HStack { Text(key).font(.headline); Spacer(); Button("Remove") { model.reset(key) } }; ConfigRepeatableEditor(model: model, key: key) }.padding().background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
-                }
-            }.padding(24)
-        }
-    }
-}
 
-/// Avoid a nested navigation container inside Rayon's existing main navigation.
-private struct ConfigEditorLayout<Sidebar: View, Detail: View>: View {
-    let embedded: Bool
-    let sidebar: Sidebar
-    let detail: Detail
-    init(embedded: Bool, @ViewBuilder sidebar: () -> Sidebar, @ViewBuilder detail: () -> Detail) {
-        self.embedded = embedded
-        self.sidebar = sidebar()
-        self.detail = detail()
-    }
-    var body: some View {
-        if embedded {
-            HSplitView {
-                sidebar.frame(minWidth: 175, idealWidth: 205, maxWidth: 250)
-                detail
+    func body(content: Content) -> some View {
+        if #available(macOS 26.0, *) {
+            content.toolbar {
+                ToolbarItemGroup(placement: .navigation) { leading }
+                ToolbarSpacer(.flexible)
+                ToolbarItemGroup(placement: .automatic) { trailing }
             }
         } else {
-            NavigationSplitView { sidebar } detail: { detail }
+            content.toolbar {
+                ToolbarItemGroup(placement: .navigation) { leading }
+                ToolbarItemGroup(placement: .automatic) { trailing }
+            }
         }
     }
 }

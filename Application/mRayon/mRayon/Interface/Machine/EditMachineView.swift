@@ -35,7 +35,7 @@ struct EditMachineView: View {
                 TextField("Name", text: $name)
                 TextField("Comment (Optional)", text: $comment)
             } header: {
-                Label("Name", systemImage: "mail.and.text.magnifyingglass")
+                RXSectionHeader("Name")
             }
 
             Section {
@@ -51,7 +51,7 @@ struct EditMachineView: View {
                     .textInputAutocapitalization(.never)
                     .keyboardType(.numberPad)
             } header: {
-                Label("Address", systemImage: "link")
+                RXSectionHeader("Address")
             }
 
             Section {
@@ -67,7 +67,7 @@ struct EditMachineView: View {
                         .foregroundColor(.accentColor)
                 }
             } header: {
-                Label("Identity", systemImage: "person")
+                RXSectionHeader("Identity")
             } footer: {
                 if let aid = associatedIdentity {
                     Text(RayonStore.shared.identityGroup[aid].shortDescription())
@@ -76,14 +76,14 @@ struct EditMachineView: View {
                 }
             }
 
-//                Group is not available on iOS, :P
-//                Section {
-//                    TextField("Group", text: $group)
-//                } header: {
-//                    Label("Group", systemImage: "square.stack.3d.down.right")
-//                } footer: {
-//                    Text("")
-//                }
+            Section {
+                TextField("Default", text: $group)
+                    .textInputAutocapitalization(.never)
+            } header: {
+                RXSectionHeader("Group")
+            } footer: {
+                Text("Items with the same group are listed together.")
+            }
 
             Section {
                 HStack {
@@ -93,7 +93,7 @@ struct EditMachineView: View {
                         .textInputAutocapitalization(.never)
                 }
             } header: {
-                Label("SFTP", systemImage: "doc.text.magnifyingglass")
+                RXSectionHeader("SFTP")
             } footer: {
                 Text("Customization about SFTP features")
             }
@@ -102,7 +102,7 @@ struct EditMachineView: View {
                 Section {
                     Button {
                         UIBridge.requiresConfirmation(
-                            message: "Are you sure you want to delete this machine?"
+                            message: "Delete this server?"
                         ) { confirmed in
                             if confirmed {
                                 RayonStore.shared.machineGroup.delete(identity)
@@ -110,7 +110,7 @@ struct EditMachineView: View {
                             }
                         }
                     } label: {
-                        Label("Delete Machine", systemImage: "trash")
+                        Label("Delete Server", systemImage: "trash")
                             .foregroundColor(.red)
                     }
                 }
@@ -140,13 +140,14 @@ struct EditMachineView: View {
                 }
             }
         }
-        .navigationTitle("Edit Machine")
+        .rxGroupedList()
+        .navigationTitle(inEditWith?() == nil ? "New Server" : "Edit Server")
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button {
                     completeSheet()
                 } label: {
-                    Label("Done", systemImage: "checkmark")
+                    Text("Save").bold()
                 }
             }
         }

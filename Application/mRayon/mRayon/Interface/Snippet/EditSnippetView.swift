@@ -44,9 +44,10 @@ struct EditSnippetView: View {
                         Label("Select SF Symbol", systemImage: avatar.isEmpty ? "square.dashed" : avatar)
                     }
                 }
+                TextField("Group (Optional)", text: $group)
                 TextField("Comment (Optional)", text: $comment)
             } header: {
-                Label("Name", systemImage: "tag")
+                RXSectionHeader("Name")
             } footer: {
                 Text(avatar.isEmpty ? "No Symbol Selected" : avatar)
                     .textSelection(.enabled)
@@ -66,14 +67,14 @@ struct EditSnippetView: View {
                     .onContentChange { code = $0 }
                     .frame(height: 250)
             } header: {
-                Label("Code", systemImage: "chevron.left.forwardslash.chevron.right")
+                RXSectionHeader("Code")
             }
 
             if let identity = inEditWith?() {
                 Section {
                     Button {
                         UIBridge.requiresConfirmation(
-                            message: "Are you sure you want to delete this snippet?"
+                            message: "Delete this snippet?"
                         ) { confirmed in
                             if confirmed {
                                 RayonStore.shared.snippetGroup.delete(identity)
@@ -112,13 +113,14 @@ struct EditSnippetView: View {
         .sheet(isPresented: $openSymbolPicker, onDismiss: nil) {
             SymbolPicker(symbol: $avatar)
         }
-        .navigationTitle("Edit Snippet")
+        .rxGroupedList()
+        .navigationTitle(inEditWith?() == nil ? "New Snippet" : "Edit Snippet")
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button {
                     completeSheet()
                 } label: {
-                    Label("Done", systemImage: "checkmark")
+                    Text("Save").bold()
                 }
             }
         }

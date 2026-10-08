@@ -45,7 +45,7 @@ struct PickIdentityView: View {
                     Label("Not Selected", systemImage: "questionmark.square.dashed")
                 }
             } header: {
-                Label("Selected Identity", systemImage: "arrow.right")
+                RXSectionHeader("Selected Identity")
             }
 
             Section {
@@ -73,7 +73,7 @@ struct PickIdentityView: View {
                     }
                 }
             } header: {
-                Label("Available Identities", systemImage: "person.3")
+                RXSectionHeader("Available Identities")
             }
 
             Section {
@@ -85,14 +85,15 @@ struct PickIdentityView: View {
                 .disabled(rawSelection == nil)
             }
         }
-        .navigationTitle("Pick Identity")
+        .rxGroupedList()
+        .navigationTitle("Choose Identity")
         .toolbar {
             ToolbarItem {
                 Button {
                     dismiss()
                     completion?(rawSelection)
                 } label: {
-                    Label("Done", systemImage: "checkmark")
+                    Text("Save").bold()
                 }
             }
         }

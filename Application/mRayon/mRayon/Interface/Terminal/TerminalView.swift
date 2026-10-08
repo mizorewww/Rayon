@@ -27,7 +27,7 @@ struct TerminalView: View {
         Group {
             if context.interfaceToken == interfaceToken {
                 GeometryReader { r in
-                    VStack {
+                    VStack(spacing: 0) {
                         context.termInterface
                             .onChange(of: r.size) { _ in
                                 guard context.interfaceToken == interfaceToken else {
@@ -43,15 +43,21 @@ struct TerminalView: View {
                                 context.termInterface.setTerminalFontSize(with: newValue)
                             }
                             .padding(r.size.width > 600 ? 8 : 2)
+                            .background(Color.rxTerminalBackground)
                         if !context.destroyedSession {
                             buttonGroup
                         }
                     }
                 }
             } else {
-                PlaceholderView("Terminal Transfer To Another Window", img: .emptyWindow)
+                EmptyStateView(
+                    "Terminal moved to another window",
+                    systemImage: "macwindow",
+                    message: "This session is open in another window."
+                )
             }
         }
+        .background(Color.rxTerminalBackground.ignoresSafeArea())
         .disabled(context.destroyedSession)
         .onAppear {
             debugPrint("set interface token \(interfaceToken)")
@@ -61,57 +67,30 @@ struct TerminalView: View {
         .navigationBarTitleDisplayMode(.inline)
     }
 
+    /// The key bar above the keyboard: esc, tab, ctrl, arrows, paste.
     var buttonGroup: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: 5) {
-                Group {
-                    if context.closed {
-                        makeKeyboardFloatingButton("arrow.counterclockwise", disableWhenClosed: false) {
-                            DispatchQueue.global().async {
-                                context.putInformation("[i] Reconnect will use the information you provide previously,")
-                                context.putInformation("    if the machine was edited, create a new terminal.")
-                                context.processBootstrap()
-                            }
-                        }
-                    }
-                    makeKeyboardFloatingButton("trash", disableWhenClosed: false) {
-                        if context.closed {
-                            dismiss()
-                            TerminalManager.shared.end(for: context.id)
-                        } else {
-                            UIBridge.requiresConfirmation(
-                                message: "Are you sure you want to close this session?"
-                            ) { yes in
-                                if yes { context.processShutdown() }
-                            }
-                        }
-                    }
-                    .foregroundColor(.red)
-                    makeKeyboardFloatingButton("doc.on.clipboard") {
-                        guard let str = UIPasteboard.general.string else {
-                            UIBridge.presentError(with: "Empty Pasteboard")
-                            return
-                        }
-                        UIBridge.requiresConfirmation(
-                            message: "Are you sure you want to paste following string?\n\n\(str)"
-                        ) { yes in
-                            if yes { self.safeWrite(str) }
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 6) {
+                if context.closed {
+                    keyButton(systemImage: "arrow.clockwise", label: "Reconnect", disableWhenClosed: false) {
+                        DispatchQueue.global().async {
+                            context.putInformation("[i] Reconnecting with the details from when this session started.")
+                            context.putInformation("    If the server was edited, open a new terminal instead.")
+                            context.processBootstrap()
                         }
                     }
                 }
-                Divider().frame(height: 20)
-                Group {
-                    makeKeyboardFloatingButton("arrow.right.to.line.compact") {
-                        safeWriteBase64("CQ==")
-                    }
-                    makeKeyboardFloatingButton("control") {
-                        openControlKeyPopover = true
-                    }
+                keyButton(text: "esc") { safeWriteBase64("Gw==") }
+                keyButton(text: "tab") { safeWriteBase64("CQ==") }
+                keyButton(text: "ctrl") { openControlKeyPopover = true }
                     .popover(isPresented: $openControlKeyPopover) {
-                        HStack(spacing: 2) {
-                            Text("Ctrl + ")
-                            TextField("Key To Send", text: $controlKey)
+                        HStack(spacing: RX.Space.s2) {
+                            Text("ctrl +")
+                                .font(.rxCode)
+                            TextField("Key", text: $controlKey)
+                                .textInputAutocapitalization(.characters)
                                 .disableAutocorrection(true)
+                                .frame(width: 48)
                                 .onChange(of: controlKey) { newValue in
                                     guard let f = newValue.uppercased().last else {
                                         if !controlKey.isEmpty { controlKey = "" }
@@ -121,41 +100,52 @@ struct TerminalView: View {
                                         controlKey = String(f)
                                     }
                                 }
-                                .onSubmit {
-                                    sendCtrl()
-                                }
-                            Button {
-                                sendCtrl()
-                            } label: {
-                                Image(systemName: "return")
-                            }
+                                .onSubmit { sendCtrl() }
+                            Button("Send") { sendCtrl() }
+                                .buttonStyle(.rxPrimary)
                         }
-                        .font(.system(size: 14, weight: .semibold, design: .rounded))
                         .padding()
-                        .frame(width: 200, height: 40)
+                        .modifier(CompactPopover())
                     }
-                    makeKeyboardFloatingButton("escape") {
-                        safeWriteBase64("Gw==")
+                Rectangle().fill(Color.white.opacity(0.15)).frame(width: 1, height: 20)
+                keyButton(systemImage: "arrow.left", label: "Left") { safeWriteBase64("G1tE") }
+                keyButton(systemImage: "arrow.up", label: "Up") { safeWriteBase64("G1tB") }
+                keyButton(systemImage: "arrow.down", label: "Down") { safeWriteBase64("G1tC") }
+                keyButton(systemImage: "arrow.right", label: "Right") { safeWriteBase64("G1tD") }
+                Rectangle().fill(Color.white.opacity(0.15)).frame(width: 1, height: 20)
+                keyButton(systemImage: "doc.on.clipboard", label: "Paste") {
+                    guard let str = UIPasteboard.general.string else {
+                        UIBridge.presentError(with: "Empty Pasteboard")
+                        return
+                    }
+                    UIBridge.requiresConfirmation(
+                        message: "Paste into the terminal?",
+                        informative: str.count > 200 ? String(str.prefix(200)) + "…" : str,
+                        confirmTitle: "Paste",
+                        destructive: false
+                    ) { yes in
+                        if yes { self.safeWrite(str) }
                     }
                 }
-                Divider().frame(height: 20)
-                Group {
-                    makeKeyboardFloatingButton("arrow.left.circle.fill") {
-                        safeWriteBase64("G1tE")
-                    }
-                    makeKeyboardFloatingButton("arrow.right.circle.fill") {
-                        safeWriteBase64("G1tD")
-                    }
-                    makeKeyboardFloatingButton("arrow.up.circle.fill") {
-                        safeWriteBase64("G1tB")
-                    }
-                    makeKeyboardFloatingButton("arrow.down.circle.fill") {
-                        safeWriteBase64("G1tC")
+                keyButton(systemImage: "xmark", label: "Close Session", disableWhenClosed: false) {
+                    if context.closed {
+                        dismiss()
+                        TerminalManager.shared.end(for: context.id)
+                    } else {
+                        UIBridge.requiresConfirmation(
+                            message: "Close this session?",
+                            informative: "Anything running in it is stopped.",
+                            confirmTitle: "Close Session"
+                        ) { yes in
+                            if yes { context.processShutdown() }
+                        }
                     }
                 }
             }
-            .padding()
+            .padding(.horizontal, RX.Space.s3)
+            .padding(.vertical, RX.Space.s2)
         }
+        .background(Color.rxTerminalBackground)
     }
 
     func sendCtrl() {
@@ -209,18 +199,35 @@ struct TerminalView: View {
         context.insertBuffer(str)
     }
 
-    func makeKeyboardFloatingButton(_ image: String, disableWhenClosed: Bool = true, block: @escaping () -> Void) -> some View {
+    func keyButton(
+        text: String? = nil,
+        systemImage: String? = nil,
+        label: String? = nil,
+        disableWhenClosed: Bool = true,
+        block: @escaping () -> Void
+    ) -> some View {
         Button {
             if context.closed, disableWhenClosed { return }
             block()
         } label: {
-            Image(systemName: image)
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                .frame(width: 20, height: 20)
+            Group {
+                if let systemImage {
+                    Image(systemName: systemImage)
+                        .font(.system(size: 14, weight: .medium))
+                } else {
+                    Text(text ?? "")
+                        .font(.system(size: 14, weight: .medium, design: .monospaced))
+                }
+            }
+            .foregroundStyle(.rxTerminalForeground)
+            .frame(minWidth: 40, minHeight: 34)
+            .padding(.horizontal, 4)
+            .background(RoundedRectangle(cornerRadius: 6, style: .continuous).fill(Color.white.opacity(0.1)))
         }
-        .buttonStyle(.bordered)
-        .animation(.spring(), value: context.interfaceDisabled)
+        .buttonStyle(.plain)
+        .accessibilityLabel(label ?? text ?? "")
         .disabled(disableWhenClosed && context.interfaceDisabled)
+        .opacity(disableWhenClosed && context.interfaceDisabled ? 0.4 : 1)
     }
 
     func updateTerminalSize() {
@@ -243,6 +250,17 @@ struct TerminalView: View {
                     context.shell.explicitRequestStatusPickup()
                 }
             }
+        }
+    }
+}
+
+/// Keeps the ctrl popover a popover on iPhone.
+private struct CompactPopover: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 16.4, *) {
+            content.presentationCompactAdaptation(.popover)
+        } else {
+            content
         }
     }
 }

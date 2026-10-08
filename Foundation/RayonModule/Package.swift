@@ -6,9 +6,8 @@ import PackageDescription
 let package = Package(
     name: "RayonModule",
     platforms: [
-        .macOS(.v11),
-        .iOS(.v13),
-        .watchOS(.v7),
+        .macOS(.v13),
+        .iOS(.v16),
     ],
     products: [
         .library(
@@ -27,6 +26,7 @@ let package = Package(
         .package(name: "PropertyWrapper", path: "../PropertyWrapper"),
         .package(name: "NSRemoteShell", path: "../../External/NSRemoteShell"),
         .package(name: "Keychain", path: "../Keychain"),
+        .package(name: "RayonDesign", path: "../RayonDesign"),
     ],
     targets: [
         .target(
@@ -35,6 +35,7 @@ let package = Package(
                 "PropertyWrapper",
                 "NSRemoteShell",
                 "Keychain",
+                "RayonDesign",
             ]
         ),
         .testTarget(

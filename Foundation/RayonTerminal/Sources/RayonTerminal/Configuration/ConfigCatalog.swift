@@ -17,6 +17,26 @@ struct ConfigCatalog: Decodable, Sendable {
 
     var settings: [ConfigSetting] { registry.values.sorted { $0.key < $1.key } }
     func setting(key: String) -> ConfigSetting? { settings.first { $0.key == key } }
+
+    /// Settings that take effect in Rayon's terminal. Everything else in the
+    /// upstream catalog (windows, tabs, GTK, Linux, app icons, quick terminal…)
+    /// belongs to standalone Ghostty and is not shown.
+    static let rayonKeys: Set<String> = RayonTerminalConfiguration.supportedKeys.subtracting(["freetype-load-flags"])
+
+    var rayonSettings: [ConfigSetting] { settings.filter { Self.rayonKeys.contains($0.key) } }
+
+    /// The upstream navigation reduced to Rayon's settings; empty groups and panels are dropped.
+    var rayonNavigation: [ConfigPanel] {
+        navigation.compactMap { panel in
+            let groups = (panel.groups ?? []).compactMap { group -> ConfigGroup? in
+                let ids = group.settings.filter { registry[$0].map { Self.rayonKeys.contains($0.key) } ?? false }
+                guard !ids.isEmpty else { return nil }
+                return ConfigGroup(id: group.id, name: group.name, note: group.note, preview: group.preview, settings: ids)
+            }
+            guard !groups.isEmpty || panel.id == "keybinds" else { return nil }
+            return ConfigPanel(id: panel.id, name: panel.name, note: panel.note, groups: groups, pages: nil)
+        }
+    }
 }
 
 struct ConfigSetting: Decodable, Identifiable, Sendable {

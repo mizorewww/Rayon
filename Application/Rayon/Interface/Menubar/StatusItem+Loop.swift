@@ -6,7 +6,7 @@
 //
 
 import AppKit
-import NSRemoteShell
+import MachineStatusView
 import RayonModule
 import SwiftUI
 
@@ -31,18 +31,53 @@ extension MenubarStatusItem {
         thread.start()
     }
 
-    func beginShellLoop() {
-        let thread = Thread { [weak self] in
-            while self?.loopContinue ?? false {
-                usleep(100)
-                guard let self = self else {
-                    return
-                }
-                self.updateServerStatusInfo()
+    /// The cat's pace follows CPU load; the title shows upload and download speed.
+    func observeSession() {
+        // objectWillChange fires before the change lands; the short debounce on
+        // the main run loop reads the new values.
+        session.objectWillChange
+            .debounce(for: .milliseconds(50), scheduler: RunLoop.main)
+            .sink { [weak self] _ in self?.refreshFromSession() }
+            .store(in: &cancellables)
+    }
+
+    func refreshFromSession() {
+        let speed: CatSpeed
+        if session.phase != .connected || !session.status.hasData {
+            speed = .broken
+        } else {
+            let cpu = session.status.processor.summary.sumUsed
+            switch cpu {
+            case ..<5: speed = .hang
+            case ..<20: speed = .walk
+            case ..<50: speed = .run
+            case ..<80: speed = .fast
+            default: speed = .light
             }
-            debugPrint("\(#function) end")
         }
-        thread.start()
+        accessLock.lock()
+        catSpeed = speed
+        accessLock.unlock()
+
+        guard let button = statusItem.button else { return }
+        if session.phase == .connected, session.status.hasData {
+            let up = RXFormat.rateString(Double(session.status.totalTransmitPerSecond))
+            let down = RXFormat.rateString(Double(session.status.totalReceivePerSecond))
+            let paragraph = NSMutableParagraphStyle()
+            paragraph.alignment = .right
+            paragraph.maximumLineHeight = 10
+            paragraph.minimumLineHeight = 10
+            button.attributedTitle = NSAttributedString(
+                string: "↑ \(up)\n↓ \(down)",
+                attributes: [
+                    .font: NSFont.monospacedDigitSystemFont(ofSize: 9, weight: .medium),
+                    .paragraphStyle: paragraph,
+                    .baselineOffset: -5,
+                ]
+            )
+        } else {
+            button.attributedTitle = NSAttributedString(string: "")
+        }
     }
 
     func switchNextFrame() {
@@ -76,39 +111,5 @@ extension MenubarStatusItem {
                 return
             }
         }
-    }
-
-    func updateServerStatusInfo() {
-        catSpeed = .broken
-        let shell = NSRemoteShell.configured(for: machine, timeout: RayonStore.shared.timeoutNumber)
-        shell.requestConnectAndWait()
-        representedShell = shell
-        identity.callAuthenticationWith(remote: shell)
-        while loopContinue, shell.isConnected, shell.isAuthenticated {
-            statusInfo.requestInfoAndWait(with: shell)
-            let cpuPercent = statusInfo.processor.summary.sumUsed
-            var newSpeed = CatSpeed.broken
-            if false {
-            } else if cpuPercent < 5 {
-                newSpeed = .hang
-            } else if cpuPercent < 20 {
-                newSpeed = .walk
-            } else if cpuPercent < 50 {
-                newSpeed = .run
-            } else if cpuPercent < 80 {
-                newSpeed = .fast
-            } else {
-                newSpeed = .light
-            }
-            if newSpeed != catSpeed {
-                print("switching cat speed to \(newSpeed.rawValue)")
-                accessLock.lock()
-                catSpeed = newSpeed
-                accessLock.unlock()
-            }
-            sleep(UInt32(exactly: RayonStore.shared.monitorInterval) ?? 5)
-        }
-        catSpeed = .broken
-        sleep(5)
     }
 }

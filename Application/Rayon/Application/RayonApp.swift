@@ -35,15 +35,38 @@ struct RayonApp: App {
             MainView()
                 .environmentObject(store)
         }
-        .windowToolbarStyle(.unifiedCompact)
+        .windowToolbarStyle(.unified(showsTitle: false))
         .commands {
             SidebarCommands()
+            RayonCommands()
         }
+    }
+}
 
-        // HIG: expose app settings through the App menu with Command-Comma.
-        Settings {
-            SettingView()
-                .environmentObject(store)
+/// Menu commands: New Server, Settings (Settings is a sidebar destination), navigation.
+struct RayonCommands: Commands {
+    var body: some Commands {
+        CommandGroup(replacing: .appSettings) {
+            Button("Settings…") { AppRouter.shared.openSettings() }
+                .keyboardShortcut(",", modifiers: .command)
+        }
+        CommandGroup(after: .newItem) {
+            Button("New Server…") { AppRouter.shared.presentNewServer = true }
+                .keyboardShortcut("n", modifiers: [.command, .shift])
+            Button("Batch Startup…") { AppRouter.shared.batchStartup() }
+        }
+        CommandGroup(after: .sidebar) {
+            Button("Home") { AppRouter.shared.route = .home }
+                .keyboardShortcut("1", modifiers: .command)
+            Button("Servers") { AppRouter.shared.route = .servers }
+                .keyboardShortcut("2", modifiers: .command)
+            Button("Identities") { AppRouter.shared.route = .identities }
+                .keyboardShortcut("3", modifiers: .command)
+            Button("Snippets") { AppRouter.shared.route = .snippets }
+                .keyboardShortcut("4", modifiers: .command)
+            Button("Port Forward") { AppRouter.shared.route = .portForward }
+                .keyboardShortcut("5", modifiers: .command)
+            Divider()
         }
     }
 }
@@ -67,10 +90,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         CFRunLoopAddTimer(CFRunLoopGetMain(), timer, .commonModes)
     }
 
+    func applicationDidFinishLaunching(_: Notification) {
+        AppearancePreference.applyStored()
+    }
+
     func applicationShouldTerminate(_: NSApplication) -> NSApplication.TerminateReply {
         if !TerminalManager.shared.sessionContexts.isEmpty {
             UIBridge.requiresConfirmation(
-                message: "One or more session is running, do you want to close them all?"
+                message: "Quit Rayon?",
+                informative: "Open terminal sessions will be closed.",
+                confirmTitle: "Quit",
+                destructive: true
             ) { confirmed in
                 guard confirmed else { return }
                 TerminalManager.shared.closeAll()

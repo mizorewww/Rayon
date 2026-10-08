@@ -1,3 +1,4 @@
+import RayonDesign
 import SwiftUI
 
 struct ConfigThemePicker: View {
@@ -17,57 +18,99 @@ struct ConfigThemePicker: View {
         } else { value = name }
     }
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Toggle("Light / dark pair", isOn: Binding(get: { dual }, set: { enabled in value = enabled ? "light:\(value),dark:\(value)" : selected }))
-                if dual { Picker("Mode", selection: $darkSide) { Text("Light").tag(false); Text("Dark").tag(true) }.pickerStyle(.segmented).frame(width: 160) }
+        VStack(alignment: .leading, spacing: RX.Space.s3) {
+            HStack(spacing: RX.Space.s3) {
+                Toggle("Separate light and dark themes", isOn: Binding(get: { dual }, set: { enabled in value = enabled ? "light:\(value),dark:\(value)" : selected }))
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    .tint(.rxAccent)
+                    .font(.rxBody)
+                if dual {
+                    RXSegmented(selection: $darkSide, options: [.init(false, "Light"), .init(true, "Dark")], caps: false)
+                }
+                Spacer()
             }
-            TextField("Theme name, path, or light:Name,dark:Name", text: $value)
+            HStack(spacing: RX.Space.s2) {
+                TextField("Theme name, path, or light:Name,dark:Name", text: $value)
+                    .textFieldStyle(.rxMono)
+                RXSearchField("Search 633 themes", text: $search, width: 200)
+            }
             if !selected.isEmpty && ConfigCatalog.shared.themes[selected] == nil {
-                Text("Custom theme name/path is preserved for export. Only bundled themes can be previewed and applied in Rayon.").font(.caption).foregroundStyle(.secondary)
+                HelpText("A custom theme name or path is kept for export. Only bundled themes can be previewed and applied in Rayon.")
             }
-            TextField("Search 633 themes", text: $search).textFieldStyle(.roundedBorder)
             ScrollView {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 145))], spacing: 8) {
+                LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: RX.Space.s2)], spacing: RX.Space.s2) {
                     ForEach(ConfigCatalog.shared.themes.keys.sorted().filter { search.isEmpty || $0.localizedCaseInsensitiveContains(search) }, id: \.self) { name in
                         let theme = ConfigCatalog.shared.themes[name]!
                         Button { select(name) } label: {
                             VStack(alignment: .leading, spacing: 6) {
-                                Text(name).font(.caption).lineLimit(1)
-                                HStack(spacing: 2) { ForEach(0..<min(theme.palette.count, 8), id: \.self) { i in Rectangle().fill(Color(configHex: theme.palette[i])).frame(height: 8) } }
+                                Text(name).font(.system(size: 11, weight: .medium)).lineLimit(1)
+                                HStack(spacing: 2) {
+                                    ForEach(0 ..< min(theme.palette.count, 8), id: \.self) { i in
+                                        Rectangle().fill(Color(configHex: theme.palette[i])).frame(height: 8)
+                                    }
+                                }
+                                .clipShape(RoundedRectangle(cornerRadius: 2))
                                 Text("❯ rayon ~/project").font(.system(size: 10, design: .monospaced))
-                            }.foregroundStyle(Color(configHex: theme.foreground ?? "#ffffff"))
-                                .padding(10).background(Color(configHex: theme.background ?? "#000000"), in: RoundedRectangle(cornerRadius: 6))
-                                .overlay(RoundedRectangle(cornerRadius: 6).stroke(selected == name ? Color.accentColor : .clear, lineWidth: 2))
-                        }.buttonStyle(.plain)
+                            }
+                            .foregroundStyle(Color(configHex: theme.foreground ?? "#ffffff"))
+                            .padding(10)
+                            .background(Color(configHex: theme.background ?? "#000000"), in: RoundedRectangle(cornerRadius: RX.Radius.md, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: RX.Radius.md, style: .continuous)
+                                    .strokeBorder(selected == name ? Color.rxAccent : Color.rxHairline, lineWidth: selected == name ? 2 : 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(name)
                     }
-                }.padding(3)
-            }.frame(height: 260)
+                }
+                .padding(3)
+            }
+            .frame(height: 280)
         }
     }
 }
+
+/// The 16 (or 256) palette swatches: a color well, its hex value and a reset.
 struct ConfigPaletteEditor: View {
     @ObservedObject var model: ConfigEditorModel
     @Environment(\.colorScheme) private var scheme
     @State private var extended = false
     var body: some View {
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: RX.Space.s3) {
             Toggle("Show all 256 colors", isOn: $extended)
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 110))], spacing: 10) {
-                ForEach(0..<(extended ? 256 : 16), id: \.self) { index in
-                    VStack {
-                        HStack {
-                            Text("\(index)").font(.caption.monospacedDigit())
-                            ColorPicker("Color \(index)", selection: Binding(get: { Color(configHex: model.document.effectivePalette(index, dark: scheme == .dark)) }, set: { color in model.edit { $0.setPalette(index, color: color.configHex) } }), supportsOpacity: false).labelsHidden()
-                            Button { model.edit { $0.setPalette(index, color: nil) } } label: { Image(systemName: "arrow.counterclockwise") }.buttonStyle(.borderless).disabled(model.document.paletteOverrides[index] == nil)
+                .toggleStyle(.switch)
+                .controlSize(.small)
+                .tint(.rxAccent)
+                .font(.rxBody)
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: RX.Space.s2)], spacing: RX.Space.s2) {
+                ForEach(0 ..< (extended ? 256 : 16), id: \.self) { index in
+                    HStack(spacing: 6) {
+                        Text("\(index)")
+                            .font(.system(size: 11).monospacedDigit())
+                            .foregroundStyle(.rxInkSecondary)
+                            .frame(width: 22, alignment: .trailing)
+                        ColorPicker("Color \(index)", selection: Binding(get: { Color(configHex: model.document.effectivePalette(index, dark: scheme == .dark)) }, set: { color in model.edit { $0.setPalette(index, color: color.configHex) } }), supportsOpacity: false)
+                            .labelsHidden()
+                            .frame(width: 40)
+                        TextField("Color", text: Binding(get: { model.document.effectivePalette(index, dark: scheme == .dark) }, set: { color in model.edit { $0.setPalette(index, color: color) } }))
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 11, design: .monospaced))
+                        RXIconButton("Reset Color \(index)", systemImage: "arrow.counterclockwise", kind: .plain, size: .small) {
+                            model.edit { $0.setPalette(index, color: nil) }
                         }
-                        TextField("Color", text: Binding(get: { model.document.effectivePalette(index, dark: scheme == .dark) }, set: { color in model.edit { $0.setPalette(index, color: color) } })).font(.system(.caption, design: .monospaced))
+                        .disabled(model.document.paletteOverrides[index] == nil)
                     }
+                    .padding(.horizontal, 6)
+                    .frame(height: 34)
+                    .background(RoundedRectangle(cornerRadius: RX.Radius.md, style: .continuous).fill(Color.rxSurfaceSunken))
                 }
             }
         }
     }
 }
+
 struct ConfigKeybindingList: View {
     @ObservedObject var model: ConfigEditorModel
     @State private var selected: Set<Int> = []
@@ -78,32 +121,59 @@ struct ConfigKeybindingList: View {
     @State private var confirmReset = false
     private var entries: [String] { model.document.values("keybind") }
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                TextField("Search bindings", text: $filter)
-                Button("Add") { editIndex = nil; raw = "super+k=ignore"; editing = true }
-                Button("Delete selected") { model.edit { $0.set("keybind", entries.enumerated().filter { !selected.contains($0.offset) }.map(\.element)) }; selected.removeAll() }.disabled(selected.isEmpty)
-                Button("Reset") { confirmReset = true }
+        VStack(alignment: .leading, spacing: RX.Space.s3) {
+            HStack(spacing: RX.Space.s2) {
+                RXSearchField("Search bindings", text: $filter, width: 220)
+                Spacer()
+                Button("Delete Selected") {
+                    model.edit { $0.set("keybind", entries.enumerated().filter { !selected.contains($0.offset) }.map(\.element)) }
+                    selected.removeAll()
+                }
+                .buttonStyle(.rx)
+                .disabled(selected.isEmpty)
+                Button("Reset…") { confirmReset = true }
+                    .buttonStyle(.rx)
+                Button {
+                    editIndex = nil; raw = "super+k=ignore"; editing = true
+                } label: {
+                    Label("New Keybinding", systemImage: "plus")
+                }
+                .buttonStyle(.rxPrimary)
             }
-            Text("Terminal input and scrolling actions can be applied in Rayon. Window, tab, global and application actions are exported for standalone Ghostty.")
-                .font(.caption).foregroundStyle(.secondary)
-            ForEach(Array(entries.enumerated()).filter { filter.isEmpty || $0.element.localizedCaseInsensitiveContains(filter) }, id: \.offset) { index, entry in
-                let parsed = ConfigKeybinding(entry)
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        Toggle("Select", isOn: Binding(get: { selected.contains(index) }, set: { if $0 { selected.insert(index) } else { selected.remove(index) } })).labelsHidden()
-                        Text(entry).font(.system(.body, design: .monospaced)).textSelection(.enabled).lineLimit(2)
+            RXDividedStack {
+                ForEach(Array(entries.enumerated()).filter { filter.isEmpty || $0.element.localizedCaseInsensitiveContains(filter) }, id: \.offset) { index, entry in
+                    let parsed = ConfigKeybinding(entry)
+                    HStack(spacing: RX.Space.s3) {
+                        Toggle("Select", isOn: Binding(get: { selected.contains(index) }, set: { if $0 { selected.insert(index) } else { selected.remove(index) } }))
+                            .labelsHidden()
+                            .toggleStyle(.checkbox)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(entry)
+                                .font(.rxCode)
+                                .foregroundStyle(.rxInk)
+                                .textSelection(.enabled)
+                                .lineLimit(2)
+                            if !parsed.errors.isEmpty {
+                                HelpText(parsed.errors.joined(separator: "; "), isError: true)
+                            }
+                        }
                         Spacer()
+                        if entries.filter({ ConfigKeybinding($0).canonical == parsed.canonical }).count > 1 {
+                            RXTag("Duplicate trigger", style: .warning)
+                        }
                         Button("Edit") { editIndex = index; raw = entry; editing = true }
+                            .buttonStyle(.rx(size: .small))
                     }
-                    if !parsed.errors.isEmpty { Text(parsed.errors.joined(separator: "; ")).font(.caption).foregroundStyle(.red) }
-                    if entries.filter({ ConfigKeybinding($0).canonical == parsed.canonical }).count > 1 {
-                        Text("Duplicate trigger").font(.caption).foregroundStyle(.orange)
-                    }
-                }.padding(8).background(Color.primary.opacity(0.035), in: RoundedRectangle(cornerRadius: 6))
+                    .padding(.vertical, 6)
+                    .frame(minHeight: RX.tableRowHeight)
+                }
             }
+            .padding(.horizontal, RX.Space.s4)
+            .background(Color.clear.rxCard(padding: 0))
         }
-        .confirmationDialog("Reset all keybindings to defaults?", isPresented: $confirmReset) { Button("Reset", role: .destructive) { model.reset("keybind") } }
+        .confirmationDialog("Reset all keybindings to their defaults?", isPresented: $confirmReset) {
+            Button("Reset", role: .destructive) { model.reset("keybind") }
+        }
         .sheet(isPresented: $editing) {
             ConfigKeybindingBuilder(raw: $raw) {
                 model.edit { doc in
@@ -116,6 +186,7 @@ struct ConfigKeybindingList: View {
         }
     }
 }
+
 struct ConfigKeybindingBuilder: View {
     @Binding var raw: String
     let save: () -> Void
@@ -123,56 +194,95 @@ struct ConfigKeybindingBuilder: View {
     private var parsed: ConfigKeybinding { ConfigKeybinding(raw) }
     private func edit(_ mutation: (inout ConfigKeybinding) -> Void) { var next = parsed; mutation(&next); raw = next.rendered }
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Keybinding Builder").font(.title2.bold())
-            HStack {
-                ForEach(["all", "global", "unconsumed", "performable"], id: \.self) { prefix in
-                    Toggle(prefix, isOn: Binding(get: { parsed.prefixes.contains(prefix) }, set: { enabled in edit {
-                        if enabled { $0.prefixes.append(prefix); if prefix == "all" || prefix == "global" { $0.steps = Array($0.steps.prefix(1)) } }
-                        else { $0.prefixes.removeAll { $0 == prefix } }
-                    } }))
-                }
-            }
-            ForEach(Array(parsed.steps.enumerated()), id: \.offset) { index, _ in
-                VStack(alignment: .leading) {
-                HStack {
-                    Text("Step \(index + 1)")
-                    TextField("super+k", text: Binding(get: { parsed.steps.indices.contains(index) ? parsed.steps[index] : "" }, set: { text in edit { $0.steps[index] = text } }))
-                    Menu("Key") { ForEach(ConfigKeybindingCatalog.shared.keys, id: \.self) { key in Button(key) { edit { $0.steps[index] = key } } } }
-                    if parsed.steps.count > 1 { Button("Remove") { edit { $0.steps.remove(at: index) } } }
-                }
-                HStack {
-                    ForEach(["super", "ctrl", "alt", "shift"], id: \.self) { modifier in
-                        Toggle(modifier, isOn: Binding(get: {
-                            ConfigKeybinding.splitStep(parsed.steps[index]).0.contains(modifier)
-                        }, set: { enabled in edit {
-                            var (modifiers, key) = ConfigKeybinding.splitStep($0.steps[index])
-                            modifiers.removeAll { $0 == modifier }
-                            if enabled { modifiers.append(modifier) }
-                            $0.steps[index] = (modifiers.sorted() + [key]).joined(separator: "+")
-                        } }))
+        SheetScaffold("Keybinding", lead: "Choose a trigger and the action it runs.") {
+            VStack(alignment: .leading, spacing: 14) {
+                RXField("Scope") {
+                    RXFlowLayout(spacing: 6) {
+                        ForEach(["all", "global", "unconsumed", "performable"], id: \.self) { prefix in
+                            RXChip(prefix, isOn: parsed.prefixes.contains(prefix)) {
+                                edit {
+                                    if $0.prefixes.contains(prefix) {
+                                        $0.prefixes.removeAll { $0 == prefix }
+                                    } else {
+                                        $0.prefixes.append(prefix)
+                                        if prefix == "all" || prefix == "global" { $0.steps = Array($0.steps.prefix(1)) }
+                                    }
+                                }
+                            }
+                        }
                     }
-                }.font(.caption)
                 }
-            }
-            Button("Add sequence step") { edit { $0.steps.append("k") } }
-                .disabled(parsed.steps.count >= 4 || parsed.prefixes.contains("all") || parsed.prefixes.contains("global"))
-            Picker("Action", selection: Binding(get: { parsed.action }, set: { name in edit { $0.action = name; $0.argument = nil } })) {
-                ForEach(ConfigKeybindingCatalog.shared.actions) { action in Text(action.name).tag(action.name) }
-            }
-            if let action = ConfigKeybindingCatalog.shared.actions.first(where: { $0.name == parsed.action }) {
-                Text(action.description ?? "").font(.caption).foregroundStyle(.secondary)
-                if let options = action.options {
-                    Picker("Argument", selection: Binding(get: { parsed.argument ?? "" }, set: { arg in edit { $0.argument = arg.isEmpty ? nil : arg } })) {
-                        Text("None").tag(""); ForEach(options, id: \.self) { Text($0).tag($0) }
+                ForEach(Array(parsed.steps.enumerated()), id: \.offset) { index, _ in
+                    RXField(parsed.steps.count > 1 ? "Trigger · step \(index + 1)" : "Trigger") {
+                        VStack(alignment: .leading, spacing: RX.Space.s2) {
+                            HStack(spacing: RX.Space.s2) {
+                                TextField("super+k", text: Binding(get: { parsed.steps.indices.contains(index) ? parsed.steps[index] : "" }, set: { text in edit { $0.steps[index] = text } }))
+                                    .textFieldStyle(.rxMono)
+                                Menu("Key") {
+                                    ForEach(ConfigKeybindingCatalog.shared.keys, id: \.self) { key in Button(key) { edit { $0.steps[index] = key } } }
+                                }
+                                .fixedSize()
+                                if parsed.steps.count > 1 {
+                                    Button("Remove") { edit { $0.steps.remove(at: index) } }
+                                        .buttonStyle(.rx)
+                                }
+                            }
+                            RXFlowLayout(spacing: 6) {
+                                ForEach(["super", "ctrl", "alt", "shift"], id: \.self) { modifier in
+                                    RXChip(modifier, isOn: ConfigKeybinding.splitStep(parsed.steps[index]).0.contains(modifier)) {
+                                        edit {
+                                            var (modifiers, key) = ConfigKeybinding.splitStep($0.steps[index])
+                                            if modifiers.contains(modifier) { modifiers.removeAll { $0 == modifier } } else { modifiers.append(modifier) }
+                                            $0.steps[index] = (modifiers.sorted() + [key]).joined(separator: "+")
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
-                } else if action.type != "none" {
-                    TextField("Argument", text: Binding(get: { parsed.argument ?? "" }, set: { arg in edit { $0.argument = arg } }))
+                }
+                Button("Add Sequence Step") { edit { $0.steps.append("k") } }
+                    .buttonStyle(.rx)
+                    .disabled(parsed.steps.count >= 4 || parsed.prefixes.contains("all") || parsed.prefixes.contains("global"))
+                RXField("Action") {
+                    Picker("Action", selection: Binding(get: { parsed.action }, set: { name in edit { $0.action = name; $0.argument = nil } })) {
+                        ForEach(ConfigKeybindingCatalog.shared.actions.filter { RayonTerminalConfiguration.supportedActions.contains($0.name) }) { action in
+                            Text(action.name).tag(action.name)
+                        }
+                    }
+                    .labelsHidden()
+                }
+                if let action = ConfigKeybindingCatalog.shared.actions.first(where: { $0.name == parsed.action }) {
+                    if let description = action.description { HelpText(description) }
+                    if let options = action.options {
+                        RXField("Argument") {
+                            Picker("Argument", selection: Binding(get: { parsed.argument ?? "" }, set: { arg in edit { $0.argument = arg.isEmpty ? nil : arg } })) {
+                                Text("None").tag(""); ForEach(options, id: \.self) { Text($0).tag($0) }
+                            }
+                            .labelsHidden()
+                        }
+                    } else if action.type != "none" {
+                        RXField("Argument") {
+                            TextField("Argument", text: Binding(get: { parsed.argument ?? "" }, set: { arg in edit { $0.argument = arg } }))
+                                .textFieldStyle(.rxMono)
+                        }
+                    }
+                }
+                RXField("Raw binding", error: parsed.errors.isEmpty ? nil : parsed.errors.joined(separator: "\n")) {
+                    TextField("Raw binding", text: $raw)
+                        .textFieldStyle(.rxMono)
                 }
             }
-            TextField("Raw binding", text: $raw).font(.system(.body, design: .monospaced))
-            Text(parsed.errors.joined(separator: "\n")).foregroundStyle(.red).font(.caption)
-            HStack { Spacer(); Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction); Button("Save", action: save).keyboardShortcut(.defaultAction).disabled(!parsed.errors.isEmpty) }
-        }.padding(24).frame(width: 580)
+        } footer: {
+            Spacer()
+            Button("Cancel") { dismiss() }
+                .buttonStyle(.rx)
+                .keyboardShortcut(.cancelAction)
+            Button("Save", action: save)
+                .buttonStyle(.rxPrimary)
+                .keyboardShortcut(.defaultAction)
+                .disabled(!parsed.errors.isEmpty)
+        }
+        .frame(width: 580)
     }
 }

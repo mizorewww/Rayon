@@ -40,15 +40,12 @@ struct DefaultModalPresenter<Content: View>: View {
         NavigationStack {
             content()
                 .toolbar {
-                    ToolbarItem {
-                        Button {
-                            dismiss()
-                        } label: {
-                            Image(systemName: "arrow.down.right.and.arrow.up.left")
-                        }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { dismiss() }
                     }
                 }
         }
+        .tint(.rxAccent)
     }
 }
 

@@ -10,86 +10,53 @@ import SwiftUI
 
 struct SnippetView: View {
     @EnvironmentObject var store: RayonStore
+    @State private var searchKey = ""
+    @State private var openCreate = false
 
-    @State var openEditView: Bool = false
-
-    @State var searchKey: String = ""
-
-    var content: [RDIdentity.ID] {
-        if searchKey.isEmpty {
-            return store
-                .snippetGroup
-                .snippets
-                .map(\.id)
-        }
-        let key = searchKey.lowercased()
-        return store
-            .snippetGroup
-            .snippets
-            .filter { object in
-                object.isQualifiedForSearch(text: key)
-            }
-            .map(\.id)
-    }
-
-    var columns: [GridItem] {
-        [GridItem(.adaptive(minimum: 280, maximum: 500), spacing: 10)]
+    var filtered: [RDSnippet] {
+        let all = store.snippetGroup.snippets.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        guard !searchKey.isEmpty else { return all }
+        return all.filter { $0.isQualifiedForSearch(text: searchKey.lowercased()) }
     }
 
     var body: some View {
         Group {
             if store.snippetGroup.snippets.isEmpty {
-                PlaceholderView("No Snippet Available", img: .ghost)
+                EmptyStateView(
+                    "No snippets yet",
+                    systemImage: "chevron.left.forwardslash.chevron.right",
+                    message: "Save commands you run often, then run them on several servers at once.",
+                    actionTitle: "New Snippet"
+                ) {
+                    openCreate = true
+                }
+                .frame(maxHeight: .infinity)
+                .background(RXBackdrop().ignoresSafeArea())
             } else {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 10) {
-                        Label("\(content.count) snippet(s) available, tap for option.", systemImage: "chevron.left.forwardslash.chevron.right")
-                            .font(.system(.footnote, design: .rounded))
-                        Divider()
-                        LazyVGrid(columns: columns, alignment: .leading, spacing: 10) {
-                            ForEach(content, id: \.self) { snippetId in
-                                SnippetElementView(identity: snippetId)
-                            }
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 280), spacing: RX.Space.s3, alignment: .top)], spacing: RX.Space.s3) {
+                        ForEach(filtered) { snippet in
+                            SnippetElementView(identity: snippet.id)
                         }
-                        Divider()
-                        Label("EOF", systemImage: "text.append")
-                            .font(.system(.footnote, design: .rounded))
                     }
-                    .padding()
+                    .padding(RX.Space.s4)
                 }
-                .searchable(text: $searchKey)
+                .background(RXBackdrop().ignoresSafeArea())
+                .searchable(text: $searchKey, prompt: "Search snippets")
             }
         }
-        .animation(.interactiveSpring(), value: content)
-        .animation(.interactiveSpring(), value: searchKey)
-        .background(navigationSheet)
-        .navigationTitle("Snippet")
+        .navigationTitle("Snippets")
         .toolbar {
             ToolbarItem {
                 Button {
-                    openEditView = true
+                    openCreate = true
                 } label: {
-                    Label("Create Snippet", systemImage: "plus")
+                    Label("New Snippet", systemImage: "plus")
                 }
             }
         }
-    }
-
-    var navigationSheet: some View {
-        Group {
-            NavigationLink(isActive: $openEditView) {
-                EditSnippetView()
-            } label: {
-                Group {}
-            }
-        }
-    }
-}
-
-struct SnippetView_Previews: PreviewProvider {
-    static var previews: some View {
-        createPreview {
-            AnyView(SnippetView())
+        .sheet(isPresented: $openCreate) {
+            NavigationStack { EditSnippetView() }
         }
     }
 }

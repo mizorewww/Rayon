@@ -1,136 +1,268 @@
-import SwiftUI
 import AppKit
+import RayonDesign
+import SwiftUI
 
+/// A setting drawn with the settings-row vocabulary: name and the catalog's first
+/// sentence on the left, the control right-aligned. Wide editors sit underneath.
 struct ConfigSettingRow: View {
     @ObservedObject var model: ConfigEditorModel
     let setting: ConfigSetting
     var query = ""
+    @State private var help = false
+
     private var highlightedName: AttributedString {
         var text = AttributedString(setting.name)
         for token in query.split(whereSeparator: \.isWhitespace) {
-            if let range = text.range(of: String(token), options: .caseInsensitive) { text[range].foregroundColor = .accentColor; text[range].underlineStyle = .single }
+            if let range = text.range(of: String(token), options: .caseInsensitive) {
+                text[range].foregroundColor = Color.rxAccent
+                text[range].underlineStyle = .single
+            }
         }
         return text
     }
-    @State private var help = false
-    @Environment(\.colorScheme) private var colorScheme
+
+    private var widgetType: String {
+        setting.widget?.type ?? (setting.repeatable == true ? "repeatable-text" : "text")
+    }
+
+    /// Editors that need the full row width.
+    private var stacked: Bool {
+        if setting.key == "keybind" { return true }
+        return ["theme", "palette", "repeatable-text", "feature-list"].contains(widgetType)
+    }
+
+    private var isModified: Bool { model.document.overrides[setting.key] != nil }
+
+    /// The catalog description's first sentence, without markdown.
+    private var summary: String {
+        let plain = setting.description
+            .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+            .replacingOccurrences(of: "`", with: "")
+            .replacingOccurrences(of: "**", with: "")
+        let firstLine = plain.split(separator: "\n", omittingEmptySubsequences: true).first.map(String.init) ?? plain
+        if let range = firstLine.range(of: ". ") {
+            return String(firstLine[..<range.lowerBound]) + "."
+        }
+        return firstLine
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack {
-                Text(highlightedName).font(.headline)
-                if model.document.overrides[setting.key] != nil { Circle().fill(Color.accentColor).frame(width: 6, height: 6).help("Modified") }
-                Spacer()
-                Button { help.toggle() } label: { Image(systemName: "questionmark.circle") }.buttonStyle(.borderless)
+        VStack(alignment: .leading, spacing: RX.Space.s3) {
+            HStack(alignment: stacked ? .top : .center, spacing: RX.Space.s6) {
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Text(highlightedName)
+                            .font(.rxBody)
+                            .foregroundStyle(.rxInk)
+                        if isModified {
+                            StatusDot(.running, size: .small)
+                                .help("Changed from the default")
+                        }
+                        if setting.deprecated != nil {
+                            RXTag("Deprecated", style: .warning)
+                        }
+                    }
+                    if !summary.isEmpty {
+                        HelpText(summary)
+                            .lineLimit(3)
+                    }
+                    HStack(spacing: RX.Space.s2) {
+                        Text(setting.key)
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(.rxInkTertiary)
+                            .textSelection(.enabled)
+                        if let platform = setting.platform {
+                            Text(platform.joined(separator: " / "))
+                                .font(.rxHelp)
+                                .foregroundStyle(.rxInkTertiary)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: RX.Space.s2) {
+                    if !stacked {
+                        ConfigWidgetView(model: model, setting: setting)
+                            .disabled(setting.disabled == true)
+                    }
+                    Button { help.toggle() } label: {
+                        Label("About \(setting.name)", systemImage: "questionmark.circle")
+                    }
+                    .buttonStyle(.rx(.plain, size: .small, iconOnly: true))
+                    .help("About this setting")
                     .popover(isPresented: $help) {
                         ScrollView {
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text(setting.name).font(.title2)
-                                Text(.init(setting.description))
+                            VStack(alignment: .leading, spacing: RX.Space.s3) {
+                                Text(setting.name).font(.rxSheetTitle)
+                                Text(.init(setting.description)).font(.rxBody)
+                                if let note = setting.note {
+                                    HelpText(note.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression))
+                                }
                                 Link("Ghostty documentation", destination: URL(string: "https://ghostty.org/docs/config/reference#" + setting.key)!)
-                            }.padding().frame(width: 430)
-                        }.frame(maxHeight: 500)
+                            }
+                            .padding(RX.Space.s4)
+                            .frame(width: 430, alignment: .leading)
+                        }
+                        .frame(maxHeight: 500)
                     }
-                Button { model.reset(setting.key) } label: { Image(systemName: "arrow.counterclockwise") }
-                    .buttonStyle(.borderless).disabled(model.document.overrides[setting.key] == nil).help("Reset to default")
+                    Button { model.reset(setting.key) } label: {
+                        Label("Reset to Default", systemImage: "arrow.counterclockwise")
+                    }
+                    .buttonStyle(.rx(.plain, size: .small, iconOnly: true))
+                    .disabled(!isModified)
+                    .help("Reset to default")
+                }
             }
-            HStack(spacing: 8) {
-                Text(setting.key).font(.system(.caption, design: .monospaced)).textSelection(.enabled)
-                if let platform = setting.platform { Text(platform.joined(separator: " / ")) }
-                if let since = setting.since { Text("≥ \(since)") }
-                if setting.deprecated != nil { Text("Deprecated").foregroundStyle(.orange) }
-            }.font(.caption).foregroundStyle(.secondary)
-            if let note = setting.note {
-                Text(note.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)).font(.caption).foregroundStyle(.secondary)
-            }
-            ConfigWidgetView(model: model, setting: setting).disabled(setting.disabled == true)
-            if !RayonTerminalConfiguration.supportedKeys.contains(setting.key) {
-                Text("Standalone Ghostty · editable and exported; managed separately by Rayon.").font(.caption2).foregroundStyle(.secondary)
+            if stacked {
+                ConfigWidgetView(model: model, setting: setting)
+                    .disabled(setting.disabled == true)
             }
         }
-        .padding(16).background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 10))
-        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.primary.opacity(0.07)))
+        .padding(.vertical, 12)
+        .frame(minHeight: RX.formRowMinHeight)
     }
 }
 
+/// How every widget type in the catalog is drawn (see the design system's SettingControls).
 struct ConfigWidgetView: View {
     @ObservedObject var model: ConfigEditorModel
     let setting: ConfigSetting
     @Environment(\.colorScheme) private var scheme
     private var value: Binding<String> { model.binding(setting.key) }
     private var widget: ConfigWidget? { setting.widget }
+    private var effective: String {
+        value.wrappedValue.isEmpty ? setting.defaultValue.values.first ?? "" : value.wrappedValue
+    }
+
     @ViewBuilder var body: some View {
-        switch widget?.type ?? (setting.repeatable == true ? "repeatable-text" : "text") {
-        case "switch":
-            Toggle("Enabled", isOn: Binding(get: { value.wrappedValue.lowercased() == "true" }, set: { value.wrappedValue = String($0) })).toggleStyle(.switch)
-        case "range":
-            HStack {
-                Slider(value: Binding(get: { Double(value.wrappedValue) ?? widget?.min ?? 0 }, set: { value.wrappedValue = String(format: "%g", $0) }),
-                       in: (widget?.min ?? 0)...(widget?.max ?? 1), step: widget?.step ?? 0.01)
-                TextField("Value", text: value).frame(width: 75)
-            }
-        case "dropdown", "pill":
-            HStack {
-                Picker("Value", selection: value) {
-                    Text("Default / Unset").tag("")
-                    ForEach(widget?.options ?? []) { option in Text(option.name).tag(option.value).disabled(option.disabled == true) }
-                    if !value.wrappedValue.isEmpty && !(widget?.options ?? []).contains(where: { $0.value == value.wrappedValue }) { Text(value.wrappedValue).tag(value.wrappedValue) }
-                }.labelsHidden()
-                TextField("Custom value", text: value).frame(maxWidth: 200)
-            }
-        case "color": colorInput
-        case "custom-color", "custom-number":
-            HStack {
-                Menu("Presets") {
-                    ForEach(widget?.presets ?? []) { option in Button(option.name) { value.wrappedValue = option.value } }
-                }.fixedSize()
-                if widget?.type == "custom-color" { colorInput } else { numericInput }
-            }
-        case "number": numericInput
-        case "theme": ConfigThemePicker(value: value)
-        case "palette": ConfigPaletteEditor(model: model)
-        case "repeatable-text": ConfigRepeatableEditor(model: model, key: setting.key)
-        case "feature-list":
-            VStack(alignment: .leading) {
-                ForEach(widget?.features ?? []) { feature in
-                    Toggle(feature.label, isOn: Binding(get: { featureValue(feature) }, set: { enabled in
-                        var state = Dictionary(uniqueKeysWithValues: (widget?.features ?? []).map { ($0.id, featureValue($0)) })
-                        state[feature.id] = enabled
-                        value.wrappedValue = (widget?.features ?? []).filter { state[$0.id] != $0.defaultValue }
-                            .map { state[$0.id] == true ? $0.id : "no-" + $0.id }.joined(separator: ",")
-                    })).help(feature.description ?? "")
+            switch widget?.type ?? (setting.repeatable == true ? "repeatable-text" : "text") {
+            case "switch":
+                Toggle(setting.name, isOn: Binding(get: { effective.lowercased() == "true" }, set: { value.wrappedValue = String($0) }))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    .tint(.rxAccent)
+            case "range":
+                HStack(spacing: RX.Space.s2) {
+                    Slider(value: Binding(get: { Double(effective) ?? widget?.min ?? 0 }, set: { value.wrappedValue = String(format: "%g", $0) }),
+                           in: (widget?.min ?? 0) ... (widget?.max ?? 1), step: widget?.step ?? 0.01)
+                        .labelsHidden()
+                        .controlSize(.small)
+                        .tint(.rxAccent)
+                        .frame(width: 200)
+                    Text(effective.isEmpty ? "—" : effective)
+                        .font(.system(size: 13, weight: .semibold).monospacedDigit())
+                        .foregroundStyle(.rxInk)
+                        .frame(width: 52, alignment: .trailing)
                 }
-                TextField("Raw value", text: value)
+            case "pill" where (widget?.options ?? []).count <= 4 && !(widget?.options ?? []).isEmpty:
+                RXSegmented(
+                    selection: Binding(get: { effective }, set: { value.wrappedValue = $0 }),
+                    options: (widget?.options ?? []).map { .init($0.value, $0.name) },
+                    caps: false
+                )
+            case "dropdown", "pill":
+                optionPicker
+            case "color": colorInput
+            case "custom-color", "custom-number":
+                HStack(spacing: RX.Space.s2) {
+                    Menu {
+                        ForEach(widget?.presets ?? []) { option in Button(option.name) { value.wrappedValue = option.value } }
+                    } label: {
+                        Label("Presets", systemImage: "list.bullet")
+                    }
+                    .menuStyle(.button)
+                    .menuIndicator(.hidden)
+                    .buttonStyle(.rx(iconOnly: true))
+                    .fixedSize()
+                    .help("Presets")
+                    if widget?.type == "custom-color" { colorInput } else { numericInput }
+                }
+            case "number": numericInput
+            case "theme": ConfigThemePicker(value: value)
+            case "palette": ConfigPaletteEditor(model: model)
+            case "repeatable-text": ConfigRepeatableEditor(model: model, key: setting.key)
+            case "feature-list":
+                RXFlowLayout(spacing: 6) {
+                    ForEach(widget?.features ?? []) { feature in
+                        RXChip(feature.label, isOn: featureValue(feature)) {
+                            var state = Dictionary(uniqueKeysWithValues: (widget?.features ?? []).map { ($0.id, featureValue($0)) })
+                            state[feature.id] = !featureValue(feature)
+                            value.wrappedValue = (widget?.features ?? []).filter { state[$0.id] != $0.defaultValue }
+                                .map { state[$0.id] == true ? $0.id : "no-" + $0.id }.joined(separator: ",")
+                        }
+                        .help(feature.description ?? "")
+                    }
+                }
+            case "dual-number", "scroll-multiplier": ConfigPairInput(value: value, scroll: widget?.type == "scroll-multiplier", labels: widget?.labels ?? ["First", "Second"])
+            case "duration": ConfigDurationInput(value: value, allowEmpty: widget?.allowEmpty == true)
+            case "number-units": ConfigUnitInput(value: value, units: ["px", "%"])
+            default:
+                if setting.key == "keybind" {
+                    ConfigKeybindingList(model: model)
+                } else {
+                    TextField(widget?.placeholder ?? "Not set", text: value)
+                        .textFieldStyle(.rx)
+                        .frame(width: 240)
+                }
             }
-        case "dual-number", "scroll-multiplier": ConfigPairInput(value: value, scroll: widget?.type == "scroll-multiplier", labels: widget?.labels ?? ["First", "Second"])
-        case "duration": ConfigDurationInput(value: value, allowEmpty: widget?.allowEmpty == true)
-        case "number-units": ConfigUnitInput(value: value, units: ["px", "%"])
-        default:
-            if setting.key == "keybind" { ConfigKeybindingList(model: model) }
-            else { TextField(widget?.placeholder ?? "Value (empty uses default)", text: value).textFieldStyle(.roundedBorder) }
-        }
     }
+
+    private var optionPicker: some View {
+        Picker(setting.name, selection: value) {
+            Text("Default").tag("")
+            Divider()
+            ForEach(widget?.options ?? []) { option in Text(option.name).tag(option.value).disabled(option.disabled == true) }
+            if !value.wrappedValue.isEmpty && !(widget?.options ?? []).contains(where: { $0.value == value.wrappedValue }) {
+                Text(value.wrappedValue).tag(value.wrappedValue)
+            }
+        }
+        .labelsHidden()
+        .fixedSize()
+    }
+
     private var numericInput: some View {
-        HStack {
-            TextField(widget?.placeholder ?? "Default", text: value).frame(maxWidth: 160)
-            Stepper("Adjust", onIncrement: { step(1) }, onDecrement: { step(-1) }).labelsHidden()
-            if let min = widget?.min { Text("min \(min.formatted())").font(.caption).foregroundStyle(.secondary) }
-            if let max = widget?.max { Text("max \(max.formatted())").font(.caption).foregroundStyle(.secondary) }
+        HStack(spacing: RX.Space.s1) {
+            TextField(widget?.placeholder ?? (setting.defaultValue.values.first ?? "Default"), text: value)
+                .multilineTextAlignment(.trailing)
+                .textFieldStyle(.rx)
+                .frame(width: 96)
+            Stepper(setting.name, onIncrement: { step(1) }, onDecrement: { step(-1) })
+                .labelsHidden()
+                .help(rangeHelp)
         }
     }
+
+    private var rangeHelp: String {
+        switch (widget?.min, widget?.max) {
+        case let (min?, max?): return "From \(min.formatted()) to \(max.formatted())"
+        case let (min?, nil): return "At least \(min.formatted())"
+        case let (nil, max?): return "At most \(max.formatted())"
+        default: return "Adjust"
+        }
+    }
+
     private func step(_ sign: Double) {
         let next = min(widget?.max ?? .greatestFiniteMagnitude, max(widget?.min ?? -.greatestFiniteMagnitude,
-            (Double(value.wrappedValue) ?? 0) + sign * (widget?.step ?? 1)))
+            (Double(effective) ?? 0) + sign * (widget?.step ?? 1)))
         value.wrappedValue = String(format: "%g", next)
     }
+
     private var colorInput: some View {
-        HStack {
-            ColorPicker("Color", selection: Binding(get: { Color(configHex: model.document.effectiveColor(setting.key, dark: scheme == .dark)) }, set: { value.wrappedValue = $0.configHex }), supportsOpacity: false).labelsHidden()
-            TextField("#RRGGBB or named color", text: Binding(get: {
+        HStack(spacing: RX.Space.s2) {
+            Text(model.document.overrides[setting.key] != nil ? "Custom" : model.document.effectiveTheme(dark: scheme == .dark) != nil ? "Theme" : "Default")
+                .font(.rxHelp)
+                .foregroundStyle(.rxInkSecondary)
+            ColorPicker(setting.name, selection: Binding(get: { Color(configHex: model.document.effectiveColor(setting.key, dark: scheme == .dark)) }, set: { value.wrappedValue = $0.configHex }), supportsOpacity: false)
+                .labelsHidden()
+                .frame(width: 44)
+            TextField("#RRGGBB", text: Binding(get: {
                 widget?.type == "color" ? model.document.effectiveColor(setting.key, dark: scheme == .dark) : value.wrappedValue
-            }, set: { value.wrappedValue = $0 })).textFieldStyle(.roundedBorder)
-            Text(model.document.overrides[setting.key] != nil ? "Override" : model.document.effectiveTheme(dark: scheme == .dark) != nil ? "Theme" : "Default").font(.caption).foregroundStyle(.secondary)
+            }, set: { value.wrappedValue = $0 }))
+                .textFieldStyle(.rxMono)
+                .frame(width: 96)
         }
     }
+
     private func featureValue(_ feature: ConfigFeature) -> Bool {
         let raw = value.wrappedValue
         if raw == "true" || raw == "false" { return raw == "true" }
@@ -161,12 +293,14 @@ struct ConfigUnitInput: View {
     private var unit: String { units.first(where: { value.hasSuffix($0) }) ?? units[0] }
     private var number: String { units.first(where: { value.hasSuffix($0) }).map { String(value.dropLast($0.count)) } ?? value }
     var body: some View {
-        HStack {
-            TextField("Default", text: Binding(get: { number }, set: { value = $0.isEmpty ? "" : $0 + (unit == "px" ? "" : unit) })).frame(width: 130)
+        HStack(spacing: RX.Space.s2) {
+            TextField("Default", text: Binding(get: { number }, set: { value = $0.isEmpty ? "" : $0 + (unit == "px" ? "" : unit) }))
+                .multilineTextAlignment(.trailing)
+                .textFieldStyle(.rx)
+                .frame(width: 96)
             Picker("Unit", selection: Binding(get: { unit }, set: { value = number.isEmpty ? "" : number + ($0 == "px" ? "" : $0) })) {
                 ForEach(units, id: \.self) { Text($0).tag($0) }
-            }.labelsHidden().frame(width: 85)
-            TextField("Raw value", text: $value).help("Preserves compound durations and custom values")
+            }.labelsHidden().fixedSize()
         }
     }
 }
@@ -177,10 +311,18 @@ struct ConfigPairInput: View {
     private var parts: [String] { ConfigPairCodec.parse(value, scroll: scroll).values }
     private var linked: Bool { ConfigPairCodec.parse(value, scroll: scroll).linked }
     var body: some View {
-        HStack {
+        HStack(spacing: RX.Space.s2) {
             TextField(scroll ? "Precision" : labels[0], text: Binding(get: { parts[0] }, set: { write($0, linked ? $0 : parts[1], linked) }))
-            Button { write(parts[0], parts[1], !linked) } label: { Image(systemName: linked ? "link" : "link.badge.plus") }.help("Link / unlink values")
+                .multilineTextAlignment(.trailing)
+                .textFieldStyle(.rx)
+                .frame(width: 72)
+            RXIconButton(linked ? "Unlink Values" : "Link Values", systemImage: linked ? "link" : "link.badge.plus", kind: .plain) {
+                write(parts[0], parts[1], !linked)
+            }
             TextField(scroll ? "Discrete" : labels[1], text: Binding(get: { parts[1] }, set: { write(linked ? $0 : parts[0], $0, linked) }))
+                .multilineTextAlignment(.trailing)
+                .textFieldStyle(.rx)
+                .frame(width: 72)
         }
     }
     private func write(_ a: String, _ b: String, _ linked: Bool) { value = linked ? a : scroll ? "precision:\(a),discrete:\(b)" : "\(a),\(b)" }
@@ -189,18 +331,43 @@ struct ConfigRepeatableEditor: View {
     @ObservedObject var model: ConfigEditorModel
     let key: String
     var body: some View {
-        VStack(alignment: .leading) {
+        VStack(spacing: 0) {
             ForEach(Array(model.document.values(key).enumerated()), id: \.offset) { index, _ in
-                HStack {
+                HStack(spacing: RX.Space.s1) {
                     TextField("Value", text: Binding(get: { let a = model.document.values(key); return a.indices.contains(index) ? a[index] : "" }, set: { text in
                         model.edit { var a = $0.values(key); guard a.indices.contains(index) else { return }; a[index] = text; $0.set(key, a) }
                     }))
-                    Button { model.edit { var a = $0.values(key); a.swapAt(index, index - 1); $0.set(key, a) } } label: { Image(systemName: "arrow.up") }.disabled(index == 0)
-                    Button { model.edit { var a = $0.values(key); a.remove(at: index); $0.set(key, a) } } label: { Image(systemName: "minus.circle") }
+                    .textFieldStyle(.plain)
+                    .font(.rxCode)
+                    RXIconButton("Move Up", systemImage: "arrow.up", kind: .plain, size: .small) {
+                        model.edit { var a = $0.values(key); a.swapAt(index, index - 1); $0.set(key, a) }
+                    }
+                    .disabled(index == 0)
+                    RXIconButton("Remove", systemImage: "minus.circle", kind: .plain, size: .small) {
+                        model.edit { var a = $0.values(key); a.remove(at: index); $0.set(key, a) }
+                    }
                 }
+                .padding(.horizontal, RX.Space.s2)
+                .frame(height: RX.controlHeight)
+                Hairline()
             }
-            Button("Add value", systemImage: "plus") { model.edit { $0.set(key, $0.values(key) + [""]) } }
+            Button {
+                model.edit { $0.set(key, $0.values(key) + [""]) }
+            } label: {
+                Label("Add Value", systemImage: "plus")
+                    .font(.rxBody)
+                    .foregroundStyle(.rxInkSecondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, RX.Space.s2)
+                    .frame(height: RX.controlHeight)
+                    .background(Color.rxSurfaceSunken)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
+        .frame(maxWidth: 420)
+        .clipShape(RoundedRectangle(cornerRadius: RX.Radius.md, style: .continuous))
+        .rxFieldBackground()
     }
 }
 

@@ -48,7 +48,7 @@ struct PickMachineView: View {
                     Label("\(rawSelection.count) Selected", systemImage: "server.rack")
                 }
             } header: {
-                Label("Selected Machine", systemImage: "arrow.right")
+                RXSectionHeader("Selected")
             } footer: {
                 if !selectionFooter.isEmpty {
                     Text(selectionFooter)
@@ -59,7 +59,7 @@ struct PickMachineView: View {
 
             Section {
                 if store.machineGroup.machines.isEmpty {
-                    Label("No Machine Available", systemImage: "questionmark.square.dashed")
+                    Label("No servers yet", systemImage: "questionmark.square.dashed")
                 } else {
                     ForEach(store.machineGroup.machines) { machine in
                         Button {
@@ -77,7 +77,7 @@ struct PickMachineView: View {
                     }
                 }
             } header: {
-                Label("Available Machines", systemImage: "square.stack.3d.down.forward")
+                RXSectionHeader("Servers")
             }
 
             Section {
@@ -89,14 +89,15 @@ struct PickMachineView: View {
                 .disabled(rawSelection.isEmpty)
             }
         }
-        .navigationTitle("Pick Machine")
+        .rxGroupedList()
+        .navigationTitle("Choose Servers")
         .toolbar {
             ToolbarItem {
                 Button {
                     dismiss()
                     completion?(rawSelection)
                 } label: {
-                    Label("Done", systemImage: "checkmark")
+                    Text("Save").bold()
                 }
             }
         }

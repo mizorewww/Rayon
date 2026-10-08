@@ -106,3 +106,23 @@ public struct RDIdentity: Codable, Identifiable, Equatable {
         }
     }
 }
+
+public extension RDIdentity {
+    /// "Key pair · ed25519", "Password" style description.
+    var authDescription: String {
+        if !privateKey.isEmpty {
+            if let type = keyAlgorithm { return "Key pair · \(type)" }
+            return "Key pair"
+        }
+        if !password.isEmpty { return "Password" }
+        return "No credentials"
+    }
+
+    var keyAlgorithm: String? {
+        let source = publicKey.isEmpty ? privateKey : publicKey
+        for (marker, name) in [("ssh-ed25519", "ed25519"), ("ecdsa-sha2", "ecdsa"), ("ssh-rsa", "rsa"), ("BEGIN RSA", "rsa"), ("BEGIN EC", "ecdsa")] {
+            if source.contains(marker) { return name }
+        }
+        return nil
+    }
+}

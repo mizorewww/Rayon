@@ -77,7 +77,7 @@ public enum RayonTerminalConfiguration {
         return result
     }()
 
-    static let supportedKeys: Set<String> = [
+    nonisolated static let supportedKeys: Set<String> = [
         "background", "foreground", "background-opacity", "background-blur", "background-opacity-cells",
         "selection-background", "selection-foreground", "selection-clear-on-typing", "selection-clear-on-copy",
         "cursor-color", "cursor-text", "cursor-style", "cursor-style-blink", "cursor-opacity", "cursor-click-to-move",
@@ -94,7 +94,7 @@ public enum RayonTerminalConfiguration {
         "copy-on-select", "clipboard-trim-trailing-spaces", "clipboard-paste-protection", "clipboard-paste-bracketed-safe",
         "link-url", "image-storage-limit", "title", "vt-kam-allowed", "enquiry-response"
     ]
-    static let supportedActions: Set<String> = [
+    nonisolated static let supportedActions: Set<String> = [
         "ignore", "unbind", "csi", "esc", "text", "cursor_key", "reset", "copy_to_clipboard", "paste_from_clipboard",
         "paste_from_selection", "copy_url_to_clipboard", "copy_title_to_clipboard", "increase_font_size", "decrease_font_size",
         "reset_font_size", "set_font_size", "clear_screen", "select_all", "scroll_to_top", "scroll_to_bottom",

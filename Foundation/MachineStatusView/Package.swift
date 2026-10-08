@@ -6,9 +6,8 @@ import PackageDescription
 let package = Package(
     name: "MachineStatusView",
     platforms: [
-        .macOS(.v11),
-        .iOS(.v14),
-        .watchOS(.v7),
+        .macOS(.v13),
+        .iOS(.v16),
     ],
     products: [
         // Products define the executables and libraries a package produces, and make them visible to other packages.
@@ -19,11 +18,13 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "MachineStatus", path: "../MachineStatus"),
+        .package(name: "RayonModule", path: "../RayonModule"),
     ],
     targets: [
         .target(
             name: "MachineStatusView",
-            dependencies: ["MachineStatus"]
+            dependencies: ["MachineStatus", "RayonModule"],
+            swiftSettings: [.swiftLanguageMode(.v5)]
         ),
     ]
 )

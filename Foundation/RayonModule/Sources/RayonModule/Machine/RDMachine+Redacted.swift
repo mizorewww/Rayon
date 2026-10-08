@@ -16,15 +16,15 @@ public extension RDMachine {
 }
 
 public extension RDMachine.RedactedLevel {
-    /// Hover tooltip describing the current state and what a click does next.
+    /// Hover tooltip describing the current redaction state.
     var tooltip: String {
         switch self {
         case .none:
-            return "Machine details are visible. Click to hide addresses."
+            return "Redaction: server names and addresses are visible"
         case .sensitive:
-            return "Addresses are hidden. Click to hide all details."
+            return "Redaction: server addresses are hidden"
         case .all:
-            return "All machine details are hidden. Click to show everything."
+            return "Redaction: server names and addresses are hidden"
         }
     }
 }

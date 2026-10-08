@@ -68,6 +68,6 @@ public struct RDSnippet: Codable, Identifiable, Equatable {
         {
             return avatar
         }
-        return "arrow.right.doc.on.clipboard"
+        return "terminal"
     }
 }

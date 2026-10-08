@@ -19,92 +19,80 @@ enum RayonUtil {
         }
         return nil
     }
+}
 
-    static func selectIdentity() -> RDIdentity.ID? {
-        assert(!Thread.isMainThread, "select identity must be called from background thread")
-
-        nonisolated(unsafe) var selection: RDIdentity.ID?
-        let sem = DispatchSemaphore(value: 0)
-
-        debugPrint("Picking Identity")
-
-        mainActorUI {
-            var panelRef: NSPanel?
-            var windowRef: NSWindow?
-            let controller = NSHostingController(rootView: Group {
-                IdentityPickerSheetView {
-                    selection = $0
-                    if let panel = panelRef {
-                        if let windowRef = windowRef {
-                            windowRef.endSheet(panel)
-                        } else {
-                            panel.close()
-                        }
-                    }
-                    sem.signal()
-                }
-                .environmentObject(RayonStore.shared)
-                .frame(width: 700, height: 400)
-            })
-            let panel = NSPanel(contentViewController: controller)
-            panelRef = panel
-            panel.title = ""
-            panel.titleVisibility = .hidden
-
-            if let keyWindow = findWindow() {
-                windowRef = keyWindow
-                keyWindow.beginSheet(panel) { _ in }
+/// Presents SwiftUI content as a sheet on the frontmost window from code that
+/// has no view to hang a `.sheet` on (router actions, menu bar).
+enum SheetPresenter {
+    @MainActor
+    static func present<Content: View>(
+        size: CGSize? = nil,
+        @ViewBuilder content: @escaping (_ dismiss: @escaping () -> Void) -> Content
+    ) {
+        var panelRef: NSPanel?
+        var windowRef: NSWindow?
+        let dismiss = {
+            guard let panel = panelRef else { return }
+            if let window = windowRef {
+                window.endSheet(panel)
             } else {
-                sem.signal()
+                panel.close()
+            }
+            panelRef = nil
+        }
+        let root = content(dismiss)
+            .environmentObject(RayonStore.shared)
+            .frame(width: size?.width, height: size?.height)
+        let controller = NSHostingController(rootView: root)
+        let panel = NSPanel(contentViewController: controller)
+        panel.title = ""
+        panel.titleVisibility = .hidden
+        panelRef = panel
+        if let window = RayonUtil.findWindow() {
+            windowRef = window
+            window.beginSheet(panel) { _ in }
+        } else {
+            panel.center()
+            panel.makeKeyAndOrderFront(nil)
+        }
+    }
+}
+
+enum ServerPickerPanel {
+    /// The multi-select server picker used by Batch Startup, Run snippet and Port Forward.
+    @MainActor
+    static func present(
+        title: String,
+        lead: String? = nil,
+        confirmTitle: String,
+        allowsMany: Bool,
+        preselected: Set<RDMachine.ID> = [],
+        onComplete: @escaping ([RDMachine.ID]) -> Void
+    ) {
+        SheetPresenter.present { dismiss in
+            ServerPickerSheet(
+                title: title,
+                lead: lead,
+                confirmTitle: confirmTitle,
+                allowsMany: allowsMany,
+                initialSelection: preselected
+            ) { selection in
+                dismiss()
+                guard let selection, !selection.isEmpty else { return }
+                onComplete(selection)
             }
         }
-        sem.wait()
-        return selection
     }
+}
 
-    static func selectMachine(allowMany: Bool = true) -> [RDMachine.ID] {
-        assert(!Thread.isMainThread, "select identity must be called from background thread")
-
-        nonisolated(unsafe) var selection = [RDMachine.ID]()
-        let sem = DispatchSemaphore(value: 0)
-
-        debugPrint("Picking Machine")
-
-        mainActorUI {
-            var panelRef: NSPanel?
-            var windowRef: NSWindow?
-            let controller = NSHostingController(rootView: Group {
-                MachinePickerView(onComplete: {
-                    selection = $0
-                    if let panel = panelRef {
-                        if let windowRef = windowRef {
-                            windowRef.endSheet(panel)
-                        } else {
-                            panel.close()
-                        }
-                    }
-                    sem.signal()
-                }, allowSelectMany: allowMany)
-                    .environmentObject(RayonStore.shared)
-                    .frame(width: 700, height: 400)
-            })
-            let panel = NSPanel(contentViewController: controller)
-            panelRef = panel
-            panel.title = ""
-            panel.titleVisibility = .hidden
-
-            if let keyWindow = findWindow() {
-                windowRef = keyWindow
-                keyWindow.beginSheet(panel) { _ in }
-            } else {
-                sem.signal()
+enum IdentityPickerPanel {
+    @MainActor
+    static func present(onComplete: @escaping (RDIdentity.ID?) -> Void) {
+        SheetPresenter.present { dismiss in
+            IdentityPickerSheet { selection in
+                dismiss()
+                onComplete(selection)
             }
         }
-        sem.wait()
-        return selection
-    }
-
-    static func selectOneMachine() -> RDMachine.ID? {
-        selectMachine(allowMany: false).first
     }
 }

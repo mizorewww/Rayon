@@ -50,7 +50,7 @@ struct EditPortForwardView: View {
                 }
                 .pickerStyle(MenuPickerStyle())
             } header: {
-                Label("Forward Orientation", systemImage: forwardOrientation == .listenLocal ? "arrow.right" : "arrow.left")
+                RXSectionHeader("Orientation")
             } footer: {
                 Text("Indicate where should we listen on.")
             }
@@ -65,7 +65,7 @@ struct EditPortForwardView: View {
                 .textInputAutocapitalization(.never)
                 .keyboardType(.numberPad)
             } header: {
-                Label("Forward Basic", systemImage: "sensor.tag.radiowaves.forward")
+                RXSectionHeader("Forward Basic")
             } footer: {
                 Text("You should be able to access target using this port on \(forwardOrientation == .listenLocal ? "local host" : "remote host").")
             }
@@ -83,7 +83,7 @@ struct EditPortForwardView: View {
                 .textInputAutocapitalization(.never)
                 .keyboardType(.numberPad)
             } header: {
-                Label("Target Host", systemImage: "circle.hexagongrid.circle")
+                RXSectionHeader("Target Host")
             } footer: {
                 Text("The target host and port you want to access, using this ssh tunnel.")
             }
@@ -101,7 +101,7 @@ struct EditPortForwardView: View {
                         .foregroundColor(.accentColor)
                 }
             } header: {
-                Label("Machine", systemImage: "server.rack")
+                RXSectionHeader("Machine")
             } footer: {
                 Text("We will use this machine to create tunnel for you.")
             }
@@ -122,13 +122,14 @@ struct EditPortForwardView: View {
                 }
             }
         }
+        .rxGroupedList()
         .navigationTitle("Edit Forward")
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button {
                     completeSheet()
                 } label: {
-                    Label("Done", systemImage: "checkmark")
+                    Text("Save").bold()
                 }
             }
         }

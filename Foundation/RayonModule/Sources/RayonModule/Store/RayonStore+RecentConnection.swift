@@ -76,7 +76,9 @@ public extension RayonStore {
         storeRecentIfNeeded(from: .machine(machine: machine))
     }
 
+    /// Quick Connect commands are kept only while "Record command" is on.
     func storeRecentIfNeeded(from command: SSHCommandReader) {
+        guard saveTemporarySession else { return }
         storeRecentIfNeeded(from: .command(command: command))
     }
 }

@@ -5,6 +5,7 @@
 //  Created by Lakr Aream on 2022/3/4.
 //
 
+import RayonModule
 import SwiftUI
 
 struct LicenseView: View {
@@ -14,15 +15,13 @@ struct LicenseView: View {
                 Divider().hidden()
                 Text(loadLicense())
                     .textSelection(.enabled)
-                    .font(.system(.caption, design: .monospaced))
+                    .font(.footnote)
+                    .foregroundStyle(.rxInkSecondary)
             }
             .padding(.bottom)
             .padding(.horizontal)
         }
-        .background(
-            Color(UIColor.systemGray6)
-                .ignoresSafeArea()
-        )
+        .background(RXBackdrop().ignoresSafeArea())
         .navigationTitle("License")
     }
 

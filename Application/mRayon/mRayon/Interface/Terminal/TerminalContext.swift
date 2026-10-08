@@ -153,7 +153,8 @@ class TerminalContext: ObservableObject, Identifiable, Equatable {
             )
 //            host.isModalInPresentation = true
             host.modalTransitionStyle = .coverVertical
-            host.modalPresentationStyle = .formSheet
+            // iPhone: the terminal is full screen with the key bar above the keyboard.
+            host.modalPresentationStyle = UIDevice.current.userInterfaceIdiom == .phone ? .fullScreen : .formSheet
             host.preferredContentSize = preferredPopOverSize
             UIWindow.shutUpKeyWindow?
                 .topMostViewController?

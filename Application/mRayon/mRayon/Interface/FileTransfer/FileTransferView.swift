@@ -34,9 +34,9 @@ struct FileTransferView: View {
     var body: some View {
         Group {
             if context.destroyedSession {
-                PlaceholderView("Connection Closed", img: .connectionBroken)
+                EmptyStateView("Connection closed", systemImage: "bolt.horizontal", message: "This file transfer is no longer connected.")
             } else {
-                VStack(spacing: 6) {
+                VStack(spacing: RX.Space.s3) {
                     mainView
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     bottomToolbar
@@ -46,8 +46,9 @@ struct FileTransferView: View {
                 }
             }
         }
-        .padding(.horizontal)
-        .padding(.bottom)
+        .padding(.horizontal, RX.Space.s4)
+        .padding(.bottom, RX.Space.s3)
+        .background(RXBackdrop().ignoresSafeArea())
         .animation(.interactiveSpring(), value: context.currentFileList)
         .animation(.interactiveSpring(), value: context.currentHint)
         .animation(.interactiveSpring(), value: context.currentProgress)
@@ -55,7 +56,7 @@ struct FileTransferView: View {
         .animation(.interactiveSpring(), value: context.currentProcessingFile)
 //        .animation(.interactiveSpring(), value: context.currentProgressCancelable)
         .animation(.interactiveSpring(), value: context.processConnection)
-        .navigationTitle("SFTP - " + context.navigationTitle)
+        .navigationTitle(context.machine.name)
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -64,7 +65,15 @@ struct FileTransferView: View {
             if context.isProgressRunning || context.processConnection {
                 progressView
             } else if !context.connected {
-                PlaceholderView("Connection Closed", img: .connectionBroken)
+                EmptyStateView(
+                    "Connection closed",
+                    systemImage: "bolt.horizontal",
+                    message: context.currentHint.isEmpty ? "The file transfer is no longer connected." : context.currentHint,
+                    actionTitle: "Reconnect"
+                ) {
+                    context.processBootstrap()
+                }
+                .rxCard()
             } else {
                 fileListView
             }
@@ -74,77 +83,54 @@ struct FileTransferView: View {
     var hintView: some View {
         Group {
             if !context.currentHint.isEmpty {
-                HStack {
-                    Image(systemName: "info.circle.fill")
-                        .font(.system(.caption, design: .rounded))
-                        .foregroundColor(.accentColor)
-                    Text(context.currentHint)
-                        .font(.system(.subheadline, design: .rounded))
-                        .foregroundColor(.accentColor)
-                    Spacer()
-                }
-                .padding(6)
-                .background(Color.gray.opacity(0.167)) // sh*t
-                .cornerRadius(6)
+                HelpText(context.currentHint)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
 
     var progressView: some View {
-        VStack(spacing: 12) {
-            ProgressView()
-                .progressViewStyle(.circular)
-                .scaleEffect(1.5)
-                .padding()
-            if context.totalProgress.totalUnitCount > 0 {
-                ProgressView(context.totalProgress)
-                    .progressViewStyle(.linear)
-            }
-            if context.currentProgress.totalUnitCount > 0 {
-                ProgressView(context.currentProgress)
-                    .progressViewStyle(.linear)
-            }
-            if !context.currentProcessingFile.isEmpty {
-                if context.currentSpeed > 0 {
-                    HStack {
-                        Text(URL(fileURLWithPath: context.currentProcessingFile).lastPathComponent)
-                        Spacer()
-                        Text(ByteCountFormatter().string(fromByteCount: Int64(context.currentSpeed)))
-                            .monospacedDigit()
-                    }
-                } else {
-                    // usually delete
-                    Text(URL(fileURLWithPath: context.currentProcessingFile).path)
-                }
-            }
-            if context.currentProgressCancelable, context.continueCurrentProgress {
-                makeFloatingButton("xmark") {
-                    context.continueCurrentProgress = false
-                }
-                .foregroundColor(.red)
-            }
+        let total = context.totalProgress
+        let current = context.currentProgress
+        let fraction: Double? = total.totalUnitCount > 0
+            ? total.fractionCompleted
+            : (current.totalUnitCount > 0 ? current.fractionCompleted : nil)
+        let name = context.currentProcessingFile.isEmpty
+            ? (context.currentHint.isEmpty ? "Working…" : context.currentHint)
+            : URL(fileURLWithPath: context.currentProcessingFile).lastPathComponent
+        return VStack(alignment: .leading, spacing: RX.Space.s2) {
+            CardHead("Transfer")
+            ProgressRowView(
+                title: name,
+                detail: context.currentSpeed > 0 ? RXFormat.rateString(Double(context.currentSpeed)) : "",
+                fraction: fraction,
+                cancel: context.currentProgressCancelable && context.continueCurrentProgress
+                    ? { context.continueCurrentProgress = false }
+                    : nil
+            )
         }
-        .font(.system(.subheadline, design: .rounded))
-        .frame(maxWidth: 400, maxHeight: .infinity)
+        .rxCard()
+        .frame(maxHeight: .infinity, alignment: .top)
+        .padding(.top, RX.Space.s3)
     }
 
     var fileListView: some View {
         Group {
             if context.currentFileList.isEmpty {
-                PlaceholderView("Nothing Available", img: .ghost)
+                EmptyStateView("Empty folder", systemImage: "folder", message: "Upload files with the arrow button below.")
             } else {
                 ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 4) {
-                        HStack {
-                            Label("\(fileList.count) file(s) available", systemImage: "doc.on.doc")
-                                .font(.system(.caption, design: .rounded))
-                            Spacer()
+                    VStack(alignment: .leading, spacing: RX.Space.s2) {
+                        CapsLabel("\(fileList.count) item\(fileList.count == 1 ? "" : "s")")
+                            .padding(.leading, RX.Space.s2)
+                        RXDividedStack {
+                            ForEach(fileList) { file in
+                                RemoteFileElement(file: file, context: context)
+                            }
                         }
-                        Divider()
-                        ForEach(fileList) { file in
-                            RemoteFileElement(file: file, context: context)
-                        }
+                        .rxCard(padding: RX.Space.s2)
                     }
+                    .padding(.top, RX.Space.s3)
                 }
                 .searchable(text: $searchKey)
             }
@@ -160,7 +146,7 @@ struct FileTransferView: View {
                         context.processBootstrap()
                     }
                 }
-                makeFloatingButton("trash") {
+                makeFloatingButton("xmark") {
                     if context.connected {
                         context.processShutdown()
                     } else {
@@ -168,7 +154,6 @@ struct FileTransferView: View {
                         dismiss()
                     }
                 }
-                .foregroundColor(.red)
                 Divider().frame(height: 20)
                 makeFloatingButton("doc.viewfinder") {
                     UIBridge.openFileContainer()
@@ -234,14 +219,15 @@ struct FileTransferView: View {
                     rollToPath(with: idx)
                 } label: {
                     Text(context.currentUrl.pathComponents[idx])
-                        .font(.system(size: 12, weight: .semibold, design: .monospaced))
-                        .frame(height: 20)
+                        .font(.system(size: 13, weight: idx == context.currentUrl.pathComponents.count - 1 ? .semibold : .regular))
+                        .foregroundStyle(idx == context.currentUrl.pathComponents.count - 1 ? Color.rxInk : Color.rxInkSecondary)
+                        .frame(height: 28)
                 }
-                .buttonStyle(.bordered)
+                .buttonStyle(.plain)
                 if idx != context.currentUrl.pathComponents.count - 1 {
-                    Image(systemName: "arrowtriangle.forward.fill")
-                        .font(.system(size: 6, weight: .semibold, design: .rounded))
-                        .foregroundColor(.accentColor)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.rxInkTertiary)
                 }
             }
         }
@@ -263,10 +249,10 @@ struct FileTransferView: View {
             block()
         } label: {
             Image(systemName: image)
-                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                .frame(width: 20, height: 20)
+                .font(.system(size: 15))
+                .frame(width: 36, height: 32)
         }
-        .buttonStyle(.bordered)
+        .buttonStyle(.rx(iconOnly: false))
     }
 
     struct RemoteFileElement: View {
@@ -352,31 +338,27 @@ struct FileTransferView: View {
         }
 
         var content: some View {
-            HStack {
+            HStack(spacing: RX.Space.s3) {
                 Image(systemName: sfAvatar)
-                    .frame(width: 25)
-                VStack(alignment: .leading, spacing: 6) {
+                    .foregroundStyle(file.fstat.isDirectory ? Color.rxAccent : Color.rxInkSecondary)
+                    .frame(width: 24)
+                VStack(alignment: .leading, spacing: 2) {
                     Text(file.name)
-                        .font(.system(.headline, design: .rounded))
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        Text(
-                            file.fstat.permissionDescription +
-                                " size: " + size +
-                                " uid: \(file.fstat.ownerUID)" +
-                                " gid: \(file.fstat.ownerGID)"
-                        )
-                        .font(.system(.caption, design: .monospaced))
-                        .opacity(0.5)
-                    }
+                        .foregroundStyle(.rxInk)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                    Text(file.fstat.isDirectory ? file.fstat.permissionDescription : "\(size) · \(file.fstat.permissionDescription)")
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundStyle(.rxInkSecondary)
+                        .lineLimit(1)
                 }
                 Spacer()
                 Image(systemName: "ellipsis")
-                    .padding(.trailing)
+                    .foregroundStyle(.rxInkTertiary)
             }
-            .font(.system(.headline, design: .rounded))
-            .padding(6)
-            .background(Color.gray.opacity(0.167)) // sh*t
-            .cornerRadius(6)
+            .padding(.horizontal, RX.Space.s2)
+            .frame(minHeight: 48)
+            .contentShape(Rectangle())
         }
 
         var sfAvatar: String {
@@ -386,11 +368,11 @@ struct FileTransferView: View {
             if file.fstat.isLink {
                 return "link"
             }
-            return "doc.text"
+            return "doc"
         }
 
         var size: String {
-            ByteCountFormatter().string(fromByteCount: Int64(truncating: file.fstat.size ?? 0))
+            RXFormat.bytesString(Double(truncating: file.fstat.size ?? 0))
         }
     }
 }

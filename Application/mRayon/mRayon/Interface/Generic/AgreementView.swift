@@ -24,14 +24,18 @@ struct AgreementView: View {
                 Divider().hidden()
                 Text(loadLicense())
                     .textSelection(.enabled)
-                    .font(.system(.caption, design: .monospaced))
+                    .font(.footnote)
+                    .foregroundStyle(.rxInkSecondary)
                 Divider().hidden()
 
                 HStack {
                     Spacer()
                     Button {
                         UIBridge.requiresConfirmation(
-                            message: "I fully understand the license agreements and agree with it."
+                            message: "Accept the license?",
+                            informative: "You have read and agree to the license agreement.",
+                            confirmTitle: "Agree",
+                            destructive: false
                         ) { yes in
                             if yes {
                                 RayonStore.shared.licenseAgreed = true
@@ -39,20 +43,16 @@ struct AgreementView: View {
                             }
                         }
                     } label: {
-                        Text("Agree License")
-                            .bold()
-                            .frame(width: 250)
+                        Text("I Agree")
+                            .frame(maxWidth: .infinity)
                     }
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(.rxPrimary)
                     Spacer()
                 }
             }
             .padding()
         }
-        .background(
-            Color(UIColor.systemGray6)
-                .ignoresSafeArea()
-        )
+        .background(RXBackdrop().ignoresSafeArea())
 //        .navigationTitle("Agreement")
         .navigationBarTitleDisplayMode(.inline)
     }

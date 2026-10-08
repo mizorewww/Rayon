@@ -36,7 +36,7 @@ struct EditIdentityView: View {
                     .textInputAutocapitalization(.never)
                     .disableAutocorrection(true)
             } header: {
-                Label("Username", systemImage: "person")
+                RXSectionHeader("Username")
             } footer: {
                 Text("Username is identical to the parameter used during ssh login.")
             }
@@ -64,7 +64,7 @@ struct EditIdentityView: View {
                     }
                 }
             } header: {
-                Label("Password", systemImage: "key")
+                RXSectionHeader("Password")
             } footer: {
                 Text("Password is used to either authenticate the session or decrypt the private key. It's optional.")
             }
@@ -72,7 +72,7 @@ struct EditIdentityView: View {
             Section {
                 privateKeyButtons
             } header: {
-                Label("Private Key", systemImage: "lock.doc.fill")
+                RXSectionHeader("Private Key")
             } footer: {
                 Text(privateKeyDescription)
             }
@@ -80,42 +80,42 @@ struct EditIdentityView: View {
             Section {
                 publicKeyButtons
             } header: {
-                Label("Public Key", systemImage: "lock.doc")
+                RXSectionHeader("Public Key")
             } footer: {
                 Text(publicKeyDescription)
             }
 
             Section {
                 Toggle(isOn: $autoAuth) {
-                    Label("Allow Auto Auth", systemImage: "a.circle.fill")
+                    Text("Authenticate automatically")
                 }
             } header: {
-                Label("Auto Auth", systemImage: "bolt.badge.a.fill")
+                RXSectionHeader("Automatic")
             } footer: {
-                Text("Use this key to authenticate server session automatically when needed.")
+                Text("Tried when a server has no identity set. Required for Quick Connect.")
             }
 
             Section {
                 TextField("Comment (Optional)", text: $comment)
             } header: {
-                Label("Comment", systemImage: "bubble.left")
+                RXSectionHeader("Comment")
             } footer: {
                 Text("Comment does not take any effect in authenticate, but keep you remember this identity.")
             }
 
-//                Group is not available on iOS, :P
-//                Section {
-//                    TextField("Group", text: $group)
-//                } header: {
-//                    Label("Group", systemImage: "square.stack.3d.down.right")
-//                } footer: {
-//                    Text("")
-//                }
+            Section {
+                TextField("Default", text: $group)
+                    .textInputAutocapitalization(.never)
+            } header: {
+                RXSectionHeader("Group")
+            } footer: {
+                Text("Items with the same group are listed together.")
+            }
             if let identity = inEditWith?() {
                 Section {
                     Button {
                         UIBridge.requiresConfirmation(
-                            message: "Are you sure you want to delete this identity?"
+                            message: "Delete this identity?"
                         ) { confirmed in
                             if confirmed {
                                 RayonStore.shared.identityGroup.delete(identity)
@@ -140,6 +140,7 @@ struct EditIdentityView: View {
                     privateKey = read.privateKey
                     publicKey = read.publicKey
                     comment = read.comment
+                    group = read.group
                     autoAuth = read.authenticAutomatically
                 }
                 if comment.isEmpty {
@@ -147,13 +148,14 @@ struct EditIdentityView: View {
                 }
             }
         }
-        .navigationTitle("Edit Identity")
+        .rxGroupedList()
+        .navigationTitle(inEditWith?() == nil ? "New Identity" : "Edit Identity")
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button {
                     completeSheet()
                 } label: {
-                    Label("Done", systemImage: "checkmark")
+                    Text("Save").bold()
                 }
             }
         }

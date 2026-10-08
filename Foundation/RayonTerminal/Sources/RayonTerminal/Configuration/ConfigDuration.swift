@@ -1,4 +1,5 @@
 import Foundation
+import RayonDesign
 import SwiftUI
 
 struct ConfigDuration {
@@ -29,26 +30,45 @@ struct ConfigDuration {
 struct ConfigDurationInput: View {
     @Binding var value: String
     let allowEmpty: Bool
-    @State private var amount = "1"
-    @State private var unit = "s"
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            TextField("e.g. 1h30m", text: $value)
-            HStack {
-                TextField("Amount", text: $amount).frame(width: 80)
-                Picker("Unit", selection: $unit) { ForEach(ConfigDuration.units, id: \.self) { Text(ConfigDuration.names[$0] ?? $0).tag($0) } }.labelsHidden().frame(width: 140)
-                Button("Set component") {
-                    guard let number = Int(amount), number >= 0 else { return }
-                    var segments = (try? ConfigDuration.parse(value, allowEmpty: true)) ?? []
-                    segments.removeAll { $0.1 == unit }; segments.append((number, unit))
-                    value = segments.map { "\($0.0)\($0.1)" }.joined()
+        VStack(alignment: .trailing, spacing: 4) {
+            HStack(spacing: RX.Space.s2) {
+                TextField("e.g. 1h30m", text: $value)
+                    .textFieldStyle(.rxMono)
+                    .frame(width: 140)
+                Menu {
+                    ForEach(ConfigDuration.units, id: \.self) { unit in
+                        Button("Add 1 \(ConfigDuration.names[unit] ?? unit)") { add(1, unit) }
+                    }
+                    if allowEmpty {
+                        Divider()
+                        Button("Unset") { value = "" }
+                    }
+                } label: {
+                    Label("Units", systemImage: "clock")
                 }
-                if allowEmpty { Button("Unset") { value = "" } }
+                .menuStyle(.button)
+                .menuIndicator(.hidden)
+                .buttonStyle(.rx(iconOnly: true))
+                .fixedSize()
+                .help("Add a unit")
             }
             switch Result(catching: { try ConfigDuration.parse(value, allowEmpty: allowEmpty) }) {
-            case let .success(segments): Text(segments.isEmpty ? "Default / Unset" : ConfigDuration.humanize(segments)).font(.caption).foregroundStyle(.secondary)
-            case let .failure(error): Text(error.localizedDescription).font(.caption).foregroundStyle(.red)
+            case let .success(segments):
+                HelpText(segments.isEmpty ? "Default" : ConfigDuration.humanize(segments))
+            case let .failure(error):
+                HelpText(error.localizedDescription, isError: true)
             }
         }
+    }
+
+    private func add(_ number: Int, _ unit: String) {
+        var segments = (try? ConfigDuration.parse(value, allowEmpty: true)) ?? []
+        if let index = segments.firstIndex(where: { $0.1 == unit }) {
+            segments[index].0 += number
+        } else {
+            segments.append((number, unit))
+        }
+        value = segments.map { "\($0.0)\($0.1)" }.joined()
     }
 }
