@@ -12,7 +12,7 @@ import AppKit
 
 extension UIBridge {
     static func presentAlert(with message: String) {
-        mainActor {
+        onMainThread {
             let alert = NSAlert()
             alert.messageText = message
             if let keyWindow = NSApplication.shared.keyWindow {

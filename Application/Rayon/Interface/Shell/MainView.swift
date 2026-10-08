@@ -40,7 +40,7 @@ struct MainView: View {
             AgreementSheet()
         }
         .onAppear {
-            mainActor(delay: 0.5) {
+            onMainThread(delay: 0.5) {
                 if !store.licenseAgreed { openLicenseAgreement = true }
             }
         }

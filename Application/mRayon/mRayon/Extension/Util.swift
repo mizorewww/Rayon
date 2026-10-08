@@ -31,7 +31,7 @@ enum RayonUtil {
                 .deviceOwnerAuthentication,
                 localizedReason: reason
             ) { success, error in
-                mainActor {
+                onMainThread {
                     if success {
                         debugPrint(#function, "success")
                         onComplete(true)
@@ -65,7 +65,7 @@ enum RayonUtil {
 
         debugPrint("Picking Identity")
 
-        mainActor {
+        onMainThread {
             let picker = NavigationStack {
                 PickIdentityView {
                     selection = $0
@@ -89,7 +89,7 @@ enum RayonUtil {
 
         debugPrint("Picking Machine")
 
-        mainActor {
+        onMainThread {
             let picker = NavigationStack {
                 PickMachineView(completion: {
                     selection = $0
@@ -117,7 +117,7 @@ enum RayonUtil {
                 return
             }
             // so that picker is closed
-            mainActor(delay: 0.6) {
+            onMainThread(delay: 0.6) {
                 let runner = NavigationStack {
                     let context = SnippetExecuteContext(snippet: snippet, machineGroup: machineIds.map { machineId in
                         RayonStore.shared.machineGroup[machineId]

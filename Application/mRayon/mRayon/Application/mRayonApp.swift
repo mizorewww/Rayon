@@ -62,7 +62,7 @@ struct mRayonApp: App {
         host.isModalInPresentation = true
         host.modalTransitionStyle = .coverVertical
         host.modalPresentationStyle = .formSheet
-        mainActor(delay: 0.5) {
+        onMainThread(delay: 0.5) {
             UIWindow.shutUpKeyWindow?
                 .topMostViewController?
                 .present(next: host)

@@ -51,7 +51,7 @@ public class FileTransferManager: ObservableObject {
     }
 
     public func end(for contextId: UUID) {
-        mainActor { [self] in
+        onMainThread { [self] in
             debugPrint("\(self) \(#function) \(contextId)")
             let index = transfers.firstIndex { $0.id == contextId }
             guard let index = index else { return }

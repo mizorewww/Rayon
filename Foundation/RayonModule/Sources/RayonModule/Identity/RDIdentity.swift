@@ -101,7 +101,7 @@ public struct RDIdentity: Codable, Identifiable, Equatable {
         fmt.dateStyle = .full
         fmt.timeStyle = .full
         debugPrint("Identity \(id) was used to authentic session at \(fmt.string(from: date))")
-        mainActor {
+        onMainThread {
             RayonStore.shared.identityGroup[id].lastRecentUsed = date
         }
     }

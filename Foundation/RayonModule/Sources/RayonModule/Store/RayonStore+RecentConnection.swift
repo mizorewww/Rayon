@@ -52,7 +52,7 @@ public extension RayonStore {
                 case let .machine(machine): return machineGroup[machine].isNotPlaceholder()
                 }
             }
-        mainActor {
+        onMainThread {
             self.recentRecord = build
         }
     }
@@ -61,7 +61,7 @@ public extension RayonStore {
         guard storeRecent else {
             return
         }
-        mainActor {
+        onMainThread {
             for lookup in self.recentRecord where lookup == recent {
                 return
             }

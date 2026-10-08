@@ -57,7 +57,7 @@ class SnippetExecuteContext: ObservableObject {
     }
 
     func updateProgress() {
-        mainActor { [self] in
+        onMainThread { [self] in
             debugPrint("\(self) \(completed.count)")
             completedProgress = Float(completed.count)
             totalProgress = Float(machineGroup.count)
@@ -65,7 +65,7 @@ class SnippetExecuteContext: ObservableObject {
     }
 
     func reportError() {
-        mainActor { self.hasError = true }
+        onMainThread { self.hasError = true }
     }
 
     func createExecute(for machine: RDMachine, shell: NSRemoteShell, term: STerminalView) {
@@ -119,7 +119,7 @@ class SnippetExecuteContext: ObservableObject {
     }
 
     func moveToComplete(for mid: RDMachine.ID) {
-        mainActor { [self] in
+        onMainThread { [self] in
             defer { updateProgress() }
             // shellGroup is parallel to machineGroup; running shrinks as
             // sessions complete, so its index must not be used here.
@@ -134,7 +134,7 @@ class SnippetExecuteContext: ObservableObject {
     }
 
     func close(for mid: RDMachine.ID) {
-        mainActor { [self] in
+        onMainThread { [self] in
             defer { updateProgress() }
             let index = machineGroup.firstIndex { $0.id == mid }
             if let index = index {

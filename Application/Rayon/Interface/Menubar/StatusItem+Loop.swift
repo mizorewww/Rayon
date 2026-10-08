@@ -91,7 +91,7 @@ extension MenubarStatusItem {
         }
         let interval = catSpeed.rawValue
         if interval <= 0 {
-            mainActor { [self] in
+            onMainThread { [self] in
                 statusItem.button?.image = NSImage(named: "cat_frame_crash")
             }
             return
@@ -101,7 +101,7 @@ extension MenubarStatusItem {
             currentImageIndex = 0
         }
         let image = frames[currentImageIndex]
-        mainActor { [self] in
+        onMainThread { [self] in
             statusItem.button?.image = image
 
             // check if already deleted

@@ -88,7 +88,7 @@ struct EditSnippetView: View {
         .onAppear {
             if initializedOnce { return }
             initializedOnce = true
-            mainActor(delay: 0.1) { // <-- SwiftUI bug here, don't remove
+            onMainThread(delay: 0.1) { // <-- SwiftUI bug here, don't remove
                 if let edit = inEditWith?() {
                     let read = RayonStore.shared.snippetGroup[edit]
                     name = read.name

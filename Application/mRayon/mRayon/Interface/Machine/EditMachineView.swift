@@ -58,7 +58,7 @@ struct EditMachineView: View {
                 Button {
                     DispatchQueue.global().async {
                         let identity = RayonUtil.selectIdentity()
-                        mainActor {
+                        onMainThread {
                             self.associatedIdentity = identity
                         }
                     }
@@ -115,7 +115,7 @@ struct EditMachineView: View {
         .onAppear {
             if initializedOnce { return }
             initializedOnce = true
-            mainActor(delay: 0.1) { // <-- SwiftUI bug here, don't remove
+            onMainThread(delay: 0.1) { // <-- SwiftUI bug here, don't remove
                 if let edit = inEditWith?() {
                     let read = RayonStore.shared.machineGroup[edit]
                     remoteAddress = read.remoteAddress

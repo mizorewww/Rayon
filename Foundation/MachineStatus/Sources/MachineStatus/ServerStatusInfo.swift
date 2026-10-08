@@ -10,9 +10,10 @@ import Foundation
 import NSRemoteShell
 import XMLCoder
 
-/// Not actually a Actor but I like it
-/// - Parameter run: the job to be fired on main thread
-func mainActor(delay: Double = 0, run: @escaping () -> Void) {
+/// Mirror of RayonModule's `onMainThread`; MachineStatus sits below
+/// RayonModule in the package graph and cannot import it.
+/// - Parameter run: the job to be fired on the main thread
+func onMainThread(delay: Double = 0, run: @escaping () -> Void) {
     // Preserve the legacy model callbacks without claiming the models are Sendable.
     nonisolated(unsafe) let run = run
     guard delay == 0, Thread.isMainThread else {
@@ -124,7 +125,7 @@ public class ServerStatus: ObservableObject, Equatable {
         queue.async { [weak self] in
             defer { group.leave() }
             let info = ProcessorInfo(withRemote: remote) ?? .init()
-            mainActor { [weak self] in
+            onMainThread { [weak self] in
                 self?.processor = info
             }
         }
@@ -132,7 +133,7 @@ public class ServerStatus: ObservableObject, Equatable {
         queue.async { [weak self] in
             defer { group.leave() }
             let info = FileSystemInfo(withRemote: remote) ?? .init()
-            mainActor { [weak self] in
+            onMainThread { [weak self] in
                 self?.fileSystem = info
             }
         }
@@ -140,7 +141,7 @@ public class ServerStatus: ObservableObject, Equatable {
         queue.async { [weak self] in
             defer { group.leave() }
             let info = MemoryInfo(withRemote: remote) ?? .init()
-            mainActor { [weak self] in
+            onMainThread { [weak self] in
                 self?.memory = info
             }
         }
@@ -148,7 +149,7 @@ public class ServerStatus: ObservableObject, Equatable {
         queue.async { [weak self] in
             defer { group.leave() }
             let info = SystemInfo(withRemote: remote) ?? .init()
-            mainActor { [weak self] in
+            onMainThread { [weak self] in
                 self?.system = info
             }
         }
@@ -156,7 +157,7 @@ public class ServerStatus: ObservableObject, Equatable {
         queue.async { [weak self] in
             defer { group.leave() }
             let info = NetworkInfo(withRemote: remote) ?? .init()
-            mainActor { [weak self] in
+            onMainThread { [weak self] in
                 self?.network = info
             }
         }
@@ -164,7 +165,7 @@ public class ServerStatus: ObservableObject, Equatable {
         queue.async { [weak self] in
             defer { group.leave() }
             let info = GraphicsInfo(withRemote: remote)
-            mainActor { [weak self] in
+            onMainThread { [weak self] in
                 self?.graphics = info
             }
         }

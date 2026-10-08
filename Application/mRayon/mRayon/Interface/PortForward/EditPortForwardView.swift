@@ -86,7 +86,7 @@ struct EditPortForwardView: View {
                 Button {
                     DispatchQueue.global().async {
                         let machine = RayonUtil.selectOneMachine()
-                        mainActor {
+                        onMainThread {
                             usingMachine = machine.first
                         }
                     }
@@ -103,7 +103,7 @@ struct EditPortForwardView: View {
         .onAppear {
             if initializedOnce { return }
             initializedOnce = true
-            mainActor(delay: 0.1) { // <-- SwiftUI bug here, don't remove
+            onMainThread(delay: 0.1) { // <-- SwiftUI bug here, don't remove
                 if let edit = inEditWith?() {
                     let read = RayonStore.shared.portForwardGroup[edit]
                     forwardOrientation = read.forwardOrientation

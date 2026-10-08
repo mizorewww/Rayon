@@ -191,7 +191,7 @@ struct ServerEditorSheet: View {
             let shell = NSRemoteShell.configured(host: host, port: port, timeout: RayonStore.shared.timeoutNumber)
             shell.requestConnectAndWait()
             guard shell.isConnected else {
-                mainActor {
+                onMainThread {
                     connecting = false
                     error = "Could not reach \(host) on port \(port)."
                 }
@@ -211,7 +211,7 @@ struct ServerEditorSheet: View {
             }
             let banner = shell.remoteBanner ?? ""
             shell.requestDisconnectAndWait()
-            mainActor {
+            onMainThread {
                 connecting = false
                 if let authenticatedWith {
                     finishCreation(banner: banner, identity: authenticatedWith)
@@ -232,7 +232,7 @@ struct ServerEditorSheet: View {
     func finishCreation(banner: String, identity: RDIdentity.ID) {
         let created = save(banner: banner, identity: identity)
         finish()
-        mainActor(delay: 0.2) {
+        onMainThread(delay: 0.2) {
             AppRouter.shared.openTerminal(machine: created.id)
         }
     }

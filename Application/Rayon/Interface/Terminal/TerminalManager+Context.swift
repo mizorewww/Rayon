@@ -26,7 +26,7 @@ extension TerminalManager {
 
         private var title: String = "" {
             didSet {
-                mainActor {
+                onMainThread {
                     self.navigationSubtitle = self.title
                 }
             }
@@ -81,7 +81,7 @@ extension TerminalManager {
 
         var continueDecision: Bool = true {
             didSet {
-                mainActor {
+                onMainThread {
                     self.interfaceDisabled = !self.continueDecision
                 }
             }
@@ -136,7 +136,7 @@ extension TerminalManager {
 
         func processBootstrap() {
             defer {
-                mainActor { self.processShutdown(exitFromShell: true) }
+                onMainThread { self.processShutdown(exitFromShell: true) }
             }
 
             setupShellData()
@@ -184,14 +184,6 @@ extension TerminalManager {
                     putInformation(hintText)
                 }
                 putInformation("")
-                // user may get confused if multiple session opened the picker
-//                if !shell.isAuthenticated,
-//                   let identity = RayonUtil.selectIdentity()
-//                {
-//                    RayonStore.shared
-//                        .identityGroup[identity]
-//                        .callAuthenticationWith(remote: shell)
-//                }
             }
 
             guard shell.isConnected, shell.isAuthenticated else {
@@ -200,7 +192,7 @@ extension TerminalManager {
                 return
             }
 
-            mainActor {
+            onMainThread {
                 guard self.remoteType == .machine else {
                     return
                 }
@@ -225,7 +217,7 @@ extension TerminalManager {
             } withOutputDataBuffer: { [weak self] output in
                 // The main queue is FIFO, so writes stay ordered without
                 // blocking the shell IO thread on the UI run loop.
-                mainActor {
+                onMainThread {
                     self?.termInterface.write(output)
                 }
             } withContinuationHandler: { [weak self] in

@@ -144,7 +144,7 @@ struct QuickConnectHero: View {
         }
         .frame(maxWidth: .infinity)
         .onAppear {
-            mainActor(delay: 0.2) { focused = true }
+            onMainThread(delay: 0.2) { focused = true }
         }
     }
 

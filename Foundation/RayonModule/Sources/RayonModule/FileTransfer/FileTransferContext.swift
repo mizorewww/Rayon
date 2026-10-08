@@ -93,13 +93,13 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable {
     }
 
     public func putInformation(_ str: String) {
-        mainActor {
+        onMainThread {
             self.currentHint = str
         }
     }
 
     public func processBootstrap() {
-        mainActor {
+        onMainThread {
             guard self.firstConnect else { return }
             self.firstConnect = false
             guard RayonStore.shared.openInterfaceAutomatically else { return }
@@ -112,15 +112,15 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable {
 
     func callConnect() {
         putInformation("Connecting...")
-        mainActor { self.processConnection = true }
-        defer { mainActor { self.processConnection = false } }
+        onMainThread { self.processConnection = true }
+        defer { onMainThread { self.processConnection = false } }
         setupShellData()
 
         debugPrint("\(self) \(#function) \(machine.id)")
         shell.requestConnectAndWait()
         guard shell.isConnected else {
             putInformation("Unable to connect for \(machine.remoteAddress):\(machine.remotePort)")
-            mainActor { self.processShutdown() }
+            onMainThread { self.processShutdown() }
             return
         }
 
@@ -136,20 +136,20 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable {
 
         guard shell.isConnected, shell.isAuthenticated else {
             putInformation("Failed to authenticate connection, did you forget to add identity or enable auto authentication?")
-            mainActor { self.processShutdown() }
+            onMainThread { self.processShutdown() }
             return
         }
 
         shell.requestConnectFileTransferAndWait()
         guard shell.isConnectedFileTransfer else {
             putInformation("Failed to setup file transfer protocol")
-            mainActor { self.processShutdown() }
+            onMainThread { self.processShutdown() }
             return
         }
 
         debugPrint("sftp session for \(machine.name) is now connected")
         // don't tag progress because we will tag it at loadCurrentFileList
-        mainActor { self.connected = true }
+        onMainThread { self.connected = true }
         loadCurrentFileList()
     }
 
@@ -158,7 +158,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable {
         // you are in charge to cancel sftp operation at interface level
         // because sftp operations are in control blocks which are not canceled during fly
         // I may add a control later tho
-        mainActor {
+        onMainThread {
             self.connected = false
             self.currentFileList = []
             self.processConnection = false
@@ -182,7 +182,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable {
     }
 
     func resetCurrentProgress() {
-        mainActor { [self] in
+        onMainThread { [self] in
             totalProgress = .init()
             currentProcessingFile = ""
             currentProgress = .init()
@@ -198,14 +198,14 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable {
         let currentUrl = currentUrl
         DispatchQueue.global().async { [self] in
             putInformation("Loading... \(currentDir)")
-            mainActor { self.isProgressRunning = true }
+            onMainThread { self.isProgressRunning = true }
             let files = shell.requestFileList(at: self.currentDir)
             var builder = [RemoteFile]()
             for file in files ?? [] {
                 builder.append(.init(base: currentUrl, name: file.name, fstat: file))
             }
             putInformation("Load Complete")
-            mainActor {
+            onMainThread {
                 self.isProgressRunning = false
                 self.currentFileList = builder
             }
@@ -217,7 +217,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable {
         let url = currentUrl.appendingPathComponent(name)
         DispatchQueue.global().async { [self] in
             putInformation("Creating Folder \(url.path)...")
-            mainActor { self.isProgressRunning = true }
+            onMainThread { self.isProgressRunning = true }
             let done = shell.requestCreateDirAndWait(url.path)
             if done {
                 putInformation("Folder Created")
@@ -241,7 +241,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable {
         let base = currentUrl
         continueCurrentProgress = true
         DispatchQueue.global().async { [self] in
-            mainActor {
+            onMainThread {
                 self.isProgressRunning = true
                 self.currentProgressCancelable = true
             }
@@ -250,7 +250,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable {
             putInformation("Uploading...")
             for url in urls {
                 defer { current += 1 }
-                mainActor {
+                onMainThread {
                     let progress = Progress(totalUnitCount: Int64(total))
                     progress.completedUnitCount = Int64(current)
                     self.totalProgress = progress
@@ -281,7 +281,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable {
         guard connectionAvailableCheckPassed() else { return }
         DispatchQueue.global().async { [self] in
             putInformation("Renaming...")
-            mainActor { self.isProgressRunning = true }
+            onMainThread { self.isProgressRunning = true }
             let done = shell.requestRenameFileAndWait(from.path, withNewPath: to.path)
             if done {
                 putInformation("Renamed Successfully")
@@ -298,7 +298,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable {
         guard connectionAvailableCheckPassed() else { return }
         continueCurrentProgress = true
         DispatchQueue.global().async { [self] in
-            mainActor {
+            onMainThread {
                 self.isProgressRunning = true
                 self.currentProgressCancelable = true
                 self.currentProcessingFile = item.path
@@ -339,7 +339,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable {
         guard connectionAvailableCheckPassed() else { return }
         continueCurrentProgress = true
         DispatchQueue.global().async { [self] in
-            mainActor {
+            onMainThread {
                 self.isProgressRunning = true
                 self.currentProgressCancelable = true
             }
@@ -356,7 +356,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable {
             }
             if done {
                 putInformation("Download Completed")
-                mainActor {
+                onMainThread {
                     FileTransferInterface.uiHandler.downloadCompleted()
                 }
             } else {

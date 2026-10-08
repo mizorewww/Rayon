@@ -149,7 +149,7 @@ enum SnippetActions {
             confirmTitle: "Run",
             allowsMany: true
         ) { machines in
-            mainActor(delay: 0.3) {
+            onMainThread(delay: 0.3) {
                 SheetPresenter.present { dismiss in
                     BatchRunSheet(snippet: snippet, machines: machines, close: dismiss)
                 }

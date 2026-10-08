@@ -254,7 +254,7 @@ enum ServerActions {
     static func batchStartup() {
         DispatchQueue.global().async {
             let machines = RayonUtil.selectMachine()
-            mainActor(delay: 0.6) {
+            onMainThread(delay: 0.6) {
                 for machine in machines {
                     TerminalManager.shared.begin(for: machine, force: true)
                 }

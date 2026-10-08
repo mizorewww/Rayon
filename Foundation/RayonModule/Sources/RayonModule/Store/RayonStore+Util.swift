@@ -102,7 +102,6 @@ public extension RayonStore {
             print("unexpected format")
             return
         }
-        debugPrint(dic)
         guard let aes = AES(key: key, iv: key) else {
             print("failed to load crypto engine")
             return
@@ -119,11 +118,7 @@ public extension RayonStore {
         guard let identityGroupEncrypted = dic[UserDefaultKey.identityGroupEncrypted.rawValue] as? Data,
               let machineGroupEncrypted = dic[UserDefaultKey.machineGroupEncrypted.rawValue] as? Data,
               let snippetGroupEncrypted = dic[UserDefaultKey.snippetGroupEncrypted.rawValue] as? Data,
-//            let recentRecordEncrypted = dic[UserDefaultKey.recentRecordEncrypted.rawValue] as? Data,
               let portForwardEncrypted = dic[UserDefaultKey.portForwardEncrypted.rawValue] as? Data,
-//            let machineRedacted = dic[UserDefaultKey.machineRedacted.rawValue] as? Data,
-//            let licenseAgreed = dic[UserDefaultKey.licenseAgreed.rawValue] as? Data,
-//            let openInterfaceAutomatically = dic[UserDefaultKey.openInterfaceAutomatically.rawValue] as? Data
               let ig = readEncrypted(from: identityGroupEncrypted, RayonStore.shared.identityGroup.self),
               let mg = readEncrypted(from: machineGroupEncrypted, RayonStore.shared.machineGroup.self),
               let sg = readEncrypted(from: snippetGroupEncrypted, RayonStore.shared.snippetGroup.self),
@@ -144,7 +139,7 @@ public extension RayonStore {
                 .standard
                 .set(encrypt, forKey: key.rawValue)
         }
-        mainActor {
+        onMainThread {
             RayonStore.shared.identityGroup = ig
             RayonStore.shared.machineGroup = mg
             RayonStore.shared.snippetGroup = sg

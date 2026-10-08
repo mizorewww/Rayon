@@ -63,7 +63,7 @@ class TerminalManager: ObservableObject {
     }
 
     func end(for contextId: UUID) {
-        mainActor { [self] in
+        onMainThread { [self] in
             debugPrint("\(self) \(#function) \(contextId)")
             let index = terminals.firstIndex { $0.id == contextId }
             guard let index = index else { return }

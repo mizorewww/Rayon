@@ -36,7 +36,7 @@ class PortForwardBackend: ObservableObject {
                 self.shell.requestDisconnectAndWait()
                 self.shell.destroyPermanently()
             }
-            mainActor {
+            onMainThread {
                 self.closed = true
             }
         }
@@ -103,7 +103,7 @@ class PortForwardBackend: ObservableObject {
         }
 
         func putHint(_ with: String) {
-            mainActor {
+            onMainThread {
                 PortForwardBackend.shared.lastHint[self.info.id] = with
             }
         }

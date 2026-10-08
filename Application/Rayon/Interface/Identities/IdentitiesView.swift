@@ -415,7 +415,7 @@ private struct KeyField: View {
             if string.contains(expectation) {
                 text = string
             } else {
-                mainActor(delay: 0.3) {
+                onMainThread(delay: 0.3) {
                     UIBridge.requiresConfirmation(
                         message: "This file does not look like a \(masked ? "private" : "public") key",
                         informative: "Load it anyway?",

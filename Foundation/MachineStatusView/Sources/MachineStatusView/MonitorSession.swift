@@ -117,13 +117,13 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
         var failures = 0
         while loopContinue {
             if !(shell.isConnected && shell.isAuthenticated) {
-                mainActor { if self.phase != .connected { self.phase = .connecting } }
+                onMainThread { if self.phase != .connected { self.phase = .connecting } }
                 connectAndAuthenticate()
             }
             guard loopContinue else { break }
             if shell.isConnected, shell.isAuthenticated {
                 failures = 0
-                mainActor {
+                onMainThread {
                     self.phase = .connected
                     self.isRefreshing = true
                     var read = RayonStore.shared.machineGroup[self.machine.id]
@@ -135,7 +135,7 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
                 }
                 status.requestInfoAndWait(with: shell)
                 // The status updates were queued on main; record after them.
-                mainActor {
+                onMainThread {
                     self.history.record(self.status)
                     self.lastUpdate = Date()
                     self.isRefreshing = false
@@ -143,7 +143,7 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
             } else {
                 failures += 1
                 let message = shell.getLastError() ?? "Unable to connect or authenticate"
-                mainActor { self.phase = .failed(message) }
+                onMainThread { self.phase = .failed(message) }
             }
             let wait = failures > 0 ? min(30, 5 * failures) : refreshInterval
             var slept = 0
@@ -152,7 +152,7 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
                 slept += 1
             }
         }
-        mainActor { self.phase = .closed }
+        onMainThread { self.phase = .closed }
     }
 
     private func connectAndAuthenticate() {

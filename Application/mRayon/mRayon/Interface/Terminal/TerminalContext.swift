@@ -34,7 +34,7 @@ class TerminalContext: ObservableObject, Identifiable, Equatable {
 
     private var title: String = "" {
         didSet {
-            mainActor {
+            onMainThread {
                 self.navigationSubtitle = self.title
             }
         }
@@ -87,7 +87,7 @@ class TerminalContext: ObservableObject, Identifiable, Equatable {
 
     var continueDecision: Bool = true {
         didSet {
-            mainActor {
+            onMainThread {
                 self.interfaceDisabled = !self.continueDecision
             }
         }
@@ -137,12 +137,12 @@ class TerminalContext: ObservableObject, Identifiable, Equatable {
 
     func processBootstrap() {
         defer {
-            mainActor { self.processShutdown(exitFromShell: true) }
+            onMainThread { self.processShutdown(exitFromShell: true) }
         }
 
         termInterface.setTerminalFontSize(with: RayonStore.shared.terminalFontSize)
 
-        mainActor {
+        onMainThread {
             guard self.firstConnect else {
                 return
             }
@@ -222,7 +222,7 @@ class TerminalContext: ObservableObject, Identifiable, Equatable {
             return
         }
 
-        mainActor {
+        onMainThread {
             guard self.remoteType == .machine else {
                 return
             }
@@ -249,7 +249,7 @@ class TerminalContext: ObservableObject, Identifiable, Equatable {
         } withOutputDataBuffer: { [weak self] output in
             // The main queue is FIFO, so writes stay ordered without
             // blocking the shell IO thread on the UI run loop.
-            mainActor {
+            onMainThread {
                 self?.termInterface.write(output)
             }
         } withContinuationHandler: { [weak self] in

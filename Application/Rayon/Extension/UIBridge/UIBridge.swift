@@ -10,7 +10,7 @@ import Foundation
 import AppKit
 import RayonModule
 
-// mainActor(delay:run:) is provided by RayonModule.
+// onMainThread(delay:run:) is provided by RayonModule.
 
 /// Not actually a Actor but I like it
 /// - Parameter run: the job to be fired on main thread

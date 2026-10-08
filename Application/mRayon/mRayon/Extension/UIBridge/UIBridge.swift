@@ -8,7 +8,7 @@
 import RayonModule
 import UIKit
 
-// mainActor(delay:run:) is provided by RayonModule.
+// onMainThread(delay:run:) is provided by RayonModule.
 
 enum UIBridge {
     static func sendPasteboard(str: String) {

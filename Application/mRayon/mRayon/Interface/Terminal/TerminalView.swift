@@ -240,7 +240,7 @@ struct TerminalView: View {
                 return
             }
             if newSize != origSize {
-                mainActor {
+                onMainThread {
                     guard context.interfaceToken == interfaceToken else {
                         debugPrint("interface token mismatch")
                         return

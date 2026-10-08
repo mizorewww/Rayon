@@ -52,7 +52,7 @@ class PortForwardBackend: ObservableObject {
     }
 
     func putHint(for pid: RDPortForward.ID, with: String) {
-        mainActor {
+        onMainThread {
             self.lastHint[pid] = with
         }
     }
