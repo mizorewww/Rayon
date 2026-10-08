@@ -11,7 +11,8 @@ let package = Package(
     targets: [
         .target(
             name: "RayonTerminal",
-            dependencies: [.product(name: "GhosttyTerminal", package: "libghostty-spm")]
+            dependencies: [.product(name: "GhosttyTerminal", package: "libghostty-spm")],
+            resources: [.process("Configuration/Resources")]
         ),
         .testTarget(name: "RayonTerminalTests", dependencies: ["RayonTerminal"]),
     ]

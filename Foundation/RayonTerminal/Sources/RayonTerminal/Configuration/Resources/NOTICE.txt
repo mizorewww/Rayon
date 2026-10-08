@@ -1,0 +1,17 @@
+Ghostty Config native port for Rayon
+
+Settings registry, navigation, theme metadata and keybinding definitions are adapted
+from https://github.com/zerebos/ghostty-config
+Revision: fa7489fdb50015571d15375c2a3806f2ba1f6bf3
+Copyright the Ghostty Config contributors. Licensed under Apache-2.0;
+see GhosttyConfig-LICENSE.txt in this resource bundle.
+
+Native Swift implementation and adaptations by Rayon contributors:
+- macOS default for quit-after-last-window-closed
+- theme thumbnails drawn natively rather than SVG data URIs
+- explicit overrides and unknown keys preserved
+- malformed imports produce diagnostics instead of partially mutating the draft
+
+Theme color metadata originates from the upstream generated themes.ts, which is
+synchronized from Ghostty's iTerm2-Color-Schemes collection. Theme names retain
+their original attribution; no font binaries are redistributed.
