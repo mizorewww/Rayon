@@ -61,25 +61,7 @@ public extension ServerStatus {
 
         public init?(withRemote shell: NSRemoteShell) {
             let downloadResult = downloadResultFrom(shell: shell, command: .obtainMemoryInfo)
-            var info = [String: Float]()
-            for line in downloadResult.components(separatedBy: "\n") where line.count > 0 {
-                var line = line
-                while line.contains("  ") {
-                    line = line.replacingOccurrences(of: "  ", with: " ")
-                }
-                line = line.replacingOccurrences(of: ":", with: "")
-                let cut = line.components(separatedBy: " ")
-                switch cut.count {
-                case 2:
-                    continue
-                case 3:
-                    if cut[2].uppercased() == "KB" {
-                        info[cut[0].uppercased()] = Float(cut[1])
-                    }
-                default:
-                    continue
-                }
-            }
+            let info = ProcParsers.parseMeminfo(downloadResult)
             self.init(
                 total: info["MemTotal".uppercased()] ?? 0,
                 free: info["MemFree".uppercased()] ?? 0,

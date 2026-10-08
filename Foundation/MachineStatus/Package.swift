@@ -26,5 +26,9 @@ let package = Package(
             name: "MachineStatus",
             dependencies: ["NSRemoteShell", "XMLCoder"]
         ),
+        .testTarget(
+            name: "MachineStatusTests",
+            dependencies: ["MachineStatus"]
+        ),
     ]
 )

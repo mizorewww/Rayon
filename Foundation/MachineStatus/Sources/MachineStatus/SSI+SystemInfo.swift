@@ -64,63 +64,6 @@ public extension ServerStatus {
                 }
                 return val
             }
-            func buildLoadStatus(intake: String) -> SystemLoadInternal {
-                var ret = SystemLoadInternal()
-                var get = intake
-                while get.contains("  ") {
-                    get = get.replacingOccurrences(of: "  ", with: " ")
-                }
-                let cut = get.components(separatedBy: " ")
-                if cut.count != 5 {
-                    return .init()
-                } else {
-                    if let l1 = Float(cut[0]), l1 != .infinity { ret.load1avg = l1 } else { return .init() }
-                    if let l5 = Float(cut[1]), l5 != .infinity { ret.load5avg = l5 } else { return .init() }
-                    if let l15 = Float(cut[2]), l15 != .infinity { ret.load15avg = l15 } else { return .init() }
-                    let process = cut[3].components(separatedBy: "/")
-                    if process.count == 2,
-                       let running = Int(process[0]), // string
-                       let total = Int(process[1]) // string
-                    {
-                        ret.runningProcess = running
-                        ret.totalProcess = total
-                    } else {
-                        return .init()
-                    }
-                }
-                return ret
-            }
-            func stripSurroundingQuotes(_ str: String) -> String {
-                guard str.count > 2 else { return str }
-                let doubleQuoted = str.hasPrefix("\"") && str.hasSuffix("\"")
-                let singleQuoted = str.hasPrefix("'") && str.hasSuffix("'")
-                guard doubleQuoted || singleQuoted else { return str }
-                return String(str.dropFirst().dropLast())
-            }
-            func buildReleaseName(intake: String) -> String {
-                var release = ""
-                var pretty: String?
-                var name: String?
-                for item in intake.components(separatedBy: "\n") {
-                    if item.hasPrefix("PRETTY_NAME=") {
-                        pretty = String(item.dropFirst("PRETTY_NAME=".count))
-                        break
-                    }
-                    if item.hasPrefix("NAME=") {
-                        name = String(item.dropFirst("NAME=".count))
-                    }
-                }
-                if let name = pretty {
-                    release = stripSurroundingQuotes(name)
-                } else {
-                    if let name = name {
-                        release = stripSurroundingQuotes(name)
-                    } else {
-                        release = "Generic Linux"
-                    }
-                }
-                return release
-            }
 
             let group = DispatchGroup()
 
@@ -150,7 +93,7 @@ public extension ServerStatus {
             DispatchQueue.global().async {
                 defer { group.leave() }
                 let intake = downloadResultFrom(shell: shell, command: .obtainLoadavg)
-                let get = buildLoadStatus(intake: intake)
+                let get = ProcParsers.parseLoadavg(intake)
                 runningProcess = get.runningProcess
                 totalProcess = get.totalProcess
                 load1avg = get.load1avg
@@ -163,7 +106,7 @@ public extension ServerStatus {
             DispatchQueue.global().async {
                 defer { group.leave() }
                 let intake = downloadResultFrom(shell: shell, command: .obtainRelease)
-                release = buildReleaseName(intake: intake)
+                release = ProcParsers.parseOsReleaseName(intake)
             }
 
             group.wait()

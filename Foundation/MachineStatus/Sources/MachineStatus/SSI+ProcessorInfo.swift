@@ -55,89 +55,26 @@ public extension ServerStatus {
             let comp = downloadResultFrom(shell: shell, command: .obtainProcessInfo)
                 .components(separatedBy: outputSeparator)
             guard comp.count == 2 else { return nil }
-            let priv = comp[0]
-            let curr = comp[1]
 
-            func createFrom(raw: String) -> (ProcessInfoElement?, [String: ProcessInfoElement]) {
-                var result = [String: ProcessInfoElement]()
-                var summary: ProcessInfoElement?
-                for line in raw.components(separatedBy: "\n") {
-                    var line = line.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard line.hasPrefix("cpu") else {
-                        continue
-                    }
-                    while line.contains("  ") {
-                        line = line.replacingOccurrences(of: "  ", with: " ")
-                    }
-                    let lineElement = line.components(separatedBy: " ")
-                    guard lineElement.count == 11 else {
-                        continue
-                    }
-                    let key = lineElement[0]
-                    let element = ProcessInfoElement(
-                        user: Float(lineElement[1]) ?? 0,
-                        nice: Float(lineElement[2]) ?? 0,
-                        system: Float(lineElement[3]) ?? 0,
-                        idle: Float(lineElement[4]) ?? 0,
-                        iowait: Float(lineElement[5]) ?? 0,
-                        irq: Float(lineElement[6]) ?? 0,
-                        softIrq: Float(lineElement[7]) ?? 0,
-                        steal: Float(lineElement[8]) ?? 0,
-                        guest: Float(lineElement[9]) ?? 0
-                    )
-                    if key == "cpu" {
-                        summary = element
-                    } else {
-                        result[key] = element
-                    }
-                }
-                return (summary, result)
-            }
+            let resultPriv = ProcParsers.parseProcStat(comp[0])
+            let resultCurr = ProcParsers.parseProcStat(comp[1])
 
-            let resultPriv = createFrom(raw: priv)
-            let resultCurr = createFrom(raw: curr)
-
-            guard let privSum = resultPriv.0,
-                  let currSum = resultCurr.0
+            guard let privSum = resultPriv.summary,
+                  let currSum = resultCurr.summary
             else {
                 return nil
             }
-            let privAll = resultPriv.1
-            let currAll = resultCurr.1
+            let privAll = resultPriv.cores
+            let currAll = resultCurr.cores
 
-            func calculateInfo(priv: ProcessInfoElement,
-                               curr: ProcessInfoElement)
-                -> ProcessPercentInfo
-            {
-                let preAll = priv.user + priv.nice + priv.system + priv.idle + priv.iowait + priv.irq + priv.softIrq + priv.steal + priv.guest
-                let nowAll = curr.user + curr.nice + curr.system + curr.idle + curr.iowait + curr.irq + curr.softIrq + curr.steal + curr.guest
-
-                let total = nowAll - preAll
-                // /proc/stat counters may not advance between two samples on an
-                // idle machine; dividing by zero would feed NaN into the UI.
-                guard total > 0 else {
-                    return ProcessPercentInfo()
-                }
-                let privUsedTotal = priv.user + priv.nice + priv.system + priv.iowait
-                let currUsedTotal = curr.user + curr.nice + curr.system + curr.iowait
-
-                return ProcessPercentInfo(
-                    system: (curr.system - priv.system) / total * 100,
-                    user: (curr.user - priv.user) / total * 100,
-                    iowait: (curr.iowait - priv.iowait) / total * 100,
-                    nice: (curr.nice - priv.nice) / total * 100,
-                    sum: (currUsedTotal - privUsedTotal) / total * 100
-                )
-            }
-
-            let sum: ProcessPercentInfo = calculateInfo(priv: privSum, curr: currSum)
+            let sum = ProcParsers.calculatePercent(priv: privSum, curr: currSum)
             var resultPerCore = [String: ProcessPercentInfo]()
 
             for (key, priv) in privAll {
                 guard let curr = currAll[key] else {
                     continue
                 }
-                resultPerCore[key] = calculateInfo(priv: priv, curr: curr)
+                resultPerCore[key] = ProcParsers.calculatePercent(priv: priv, curr: curr)
             }
 
             self.init(summary: sum, cores: resultPerCore)
