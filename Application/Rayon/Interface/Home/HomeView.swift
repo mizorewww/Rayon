@@ -13,68 +13,37 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject var store: RayonStore
     @ObservedObject var router = AppRouter.shared
-    @ObservedObject var terminals = TerminalManager.shared
-    @ObservedObject var monitors = MonitorCenter.shared
-    @ObservedObject var forwards = PortForwardBackend.shared
 
     var body: some View {
-        PageScaffold {
+        ScrollView {
+            VStack(spacing: RX.Space.s6) {
+                QuickConnectHero()
+                    .padding(.top, 72)
+                    .padding(.bottom, RX.Space.s6)
+                serversSection
+            }
+            .padding(.horizontal, RX.Space.s6)
+            .padding(.bottom, RX.Space.s6)
+            .frame(maxWidth: .infinity)
+        }
+        .pageChrome()
+        .pageToolbar {
         } trailing: {
+            ToolbarAction("Batch Startup", systemImage: "wind") { router.batchStartup() }
+                .disabled(store.machineGroup.machines.isEmpty)
             ToolbarAction("New Server", systemImage: "plus", primary: true) {
                 router.presentNewServer = true
-            }
-        } header: {
-            VStack(alignment: .leading, spacing: RX.Space.s5) {
-                PageTitle("Home")
-                FactsRow([
-                    .init("Servers", value: "\(store.machineGroup.count)"),
-                    .init("Monitored", value: "\(monitors.sessions.count)"),
-                    .init("Sessions", value: terminals.sessionContexts.isEmpty ? "None" : "\(terminals.sessionContexts.count) open"),
-                    .init("Port forwards", value: forwards.container.isEmpty ? "None running" : "\(forwards.container.count) running"),
-                ])
-            }
-        } content: {
-            VStack(alignment: .leading, spacing: 0) {
-                QuickConnectView()
-                serversSection
-                if store.storeRecent {
-                    recentSection
-                }
             }
         }
     }
 
-    func count(_ value: Int, _ noun: String) -> String {
-        "\(value) \(noun)\(value == 1 ? "" : "s")"
-    }
-
-    // MARK: Servers
-
-    var serversSection: some View {
-        VStack(alignment: .leading, spacing: RX.Space.s3) {
-            SectionTitle("Servers", count: store.machineGroup.count) {
-                if !store.machineGroup.machines.isEmpty {
-                    Button {
-                        router.batchStartup()
-                    } label: {
-                        Label("Batch Startup", systemImage: "wind")
-                    }
-                    .buttonStyle(.rx)
+    @ViewBuilder var serversSection: some View {
+        if !store.machineGroup.machines.isEmpty {
+            VStack(alignment: .leading, spacing: RX.Space.s3) {
+                SectionTitle("Servers") {
                     Button("View All") { router.route = .servers }
                         .buttonStyle(.rxPlain)
                 }
-            }
-            if store.machineGroup.machines.isEmpty {
-                EmptyStateView(
-                    "No servers yet",
-                    systemImage: "server.rack",
-                    message: "Add a server to monitor it, open terminals and transfer files.",
-                    actionTitle: "New Server"
-                ) {
-                    router.presentNewServer = true
-                }
-                .rxCard()
-            } else {
                 LazyVGrid(
                     columns: [GridItem(.adaptive(minimum: 290), spacing: RX.Space.s4)],
                     spacing: RX.Space.s4
@@ -86,120 +55,97 @@ struct HomeView: View {
                 }
             }
         }
-        .padding(.top, RX.Space.s6)
-    }
-
-    // MARK: Recent
-
-    var recentSection: some View {
-        VStack(alignment: .leading, spacing: RX.Space.s3) {
-            SectionTitle("Recent") {
-                if !store.recentRecord.isEmpty {
-                    Button {
-                        UIBridge.requiresConfirmation(
-                            message: "Clear recent connections?",
-                            informative: "Servers and saved commands are kept.",
-                            confirmTitle: "Clear Recent",
-                            destructive: true
-                        ) { confirmed in
-                            if confirmed { store.recentRecord = [] }
-                        }
-                    } label: {
-                        Label("Clear Recent", systemImage: "trash")
-                    }
-                    .buttonStyle(.rxPlain)
-                }
-            }
-            if store.recentRecord.isEmpty {
-                HelpText("Servers you connect to and Quick Connect commands show up here.")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .rxCard()
-            } else {
-                RXDividedStack {
-                    ForEach(store.recentRecord) { record in
-                        RecentRow(record: record)
-                    }
-                }
-                .rxCard(padding: RX.Space.s2)
-            }
-        }
-        .padding(.top, RX.Space.s6)
     }
 }
 
 // MARK: - Quick Connect
 
-/// Type `ssh user@host -p port` and press ⌘↩.
-struct QuickConnectView: View {
+/// The big, fast way in: type `user@host` and press Return. Focused on open.
+struct QuickConnectHero: View {
     @EnvironmentObject var store: RayonStore
     @State private var command = ""
     @State private var suggestion: String?
     @FocusState private var focused: Bool
 
-    /// Accepts the command with or without the leading `ssh`.
     var parsed: SSHCommandReader? {
         let trimmed = command.trimmingCharacters(in: .whitespaces)
         return SSHCommandReader(command: trimmed) ?? SSHCommandReader(command: "ssh " + trimmed)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: RX.Space.s3) {
-            HStack(spacing: RX.Space.s2) {
+        VStack(spacing: RX.Space.s4) {
+            HStack(spacing: RX.Space.s3) {
                 Image(systemName: "terminal")
-                    .font(.system(size: 15))
+                    .font(.system(size: 22, weight: .regular))
                     .foregroundStyle(.rxInkSecondary)
                 TextField("ssh user@host -p 22", text: $command)
                     .textFieldStyle(.plain)
-                    .font(.system(size: 14, design: .monospaced))
+                    .font(.system(size: 22, weight: .regular, design: .monospaced))
                     .disableAutocorrection(true)
                     .focused($focused)
                     .onSubmit(connect)
                     .onChange(of: command) { newValue in
-                        if newValue.hasPrefix("ssh ssh ") {
-                            command.removeFirst("ssh ".count)
-                        }
+                        if newValue.hasPrefix("ssh ssh ") { command.removeFirst("ssh ".count) }
                         refreshSuggestion()
                     }
-                KeyHint("↩")
-                Button("Connect", action: connect)
-                    .buttonStyle(.rxPrimary)
-                    .disabled(parsed == nil)
+                Button(action: connect) {
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.rxOnAccent)
+                        .frame(width: 40, height: 40)
+                        .background(Circle().fill(Color.rxAccent))
+                }
+                .buttonStyle(.plain)
+                .disabled(parsed == nil)
+                .opacity(parsed == nil ? 0.35 : 1)
+                .accessibilityLabel("Connect")
             }
-            .padding(.leading, RX.Space.s2)
+            .padding(.leading, RX.Space.s5)
+            .padding(.trailing, RX.Space.s2)
+            .frame(height: 64)
+            .background(
+                Capsule()
+                    .fill(.thickMaterial)
+                    .overlay(Capsule().fill(Color.rxSurface.opacity(0.35)))
+                    .shadow(color: .black.opacity(0.18), radius: 18, y: 8)
+            )
+            .frame(maxWidth: 640)
+
             if let suggestion {
                 Button {
                     command = suggestion
+                    connect()
                 } label: {
-                    HStack(spacing: RX.Space.s2) {
-                        Image(systemName: "lightbulb")
-                            .foregroundStyle(.rxInkSecondary)
-                        Text("Did you mean ")
-                            .foregroundColor(.rxInkSecondary)
-                            + Text(suggestion).font(.system(size: 12, weight: .semibold, design: .monospaced))
-                            + Text("?").foregroundColor(.rxInkSecondary)
+                    HStack(spacing: 6) {
+                        Image(systemName: "arrow.turn.down.right")
+                        Text(suggestion).font(.system(size: 13, design: .monospaced))
                         KeyHint("⌘↩")
                     }
-                    .font(.rxBody)
+                    .foregroundStyle(.rxInkSecondary)
                 }
                 .buttonStyle(.plain)
                 .keyboardShortcut(.return, modifiers: .command)
-                .transition(.opacity)
             }
-            HStack(spacing: RX.Space.s4) {
-                Toggle("Record command", isOn: $store.saveTemporarySession)
-                    .toggleStyle(.checkbox)
-                    .font(.rxBody)
-                    .foregroundStyle(.rxInkSecondary)
-                Spacer()
-                if store.identityGroupForAutoAuth.isEmpty {
-                    HelpText("Quick Connect needs an identity that authenticates automatically.", isError: true)
-                } else {
-                    HelpText("Uses identities that authenticate automatically.")
+
+            if store.identityGroupForAutoAuth.isEmpty {
+                Text("Needs an identity that authenticates automatically.")
+                    .font(.rxHelp)
+                    .foregroundStyle(.rxWarning)
+            }
+
+            if store.storeRecent, !store.recentRecord.isEmpty {
+                RXFlowLayout(spacing: RX.Space.s2, alignment: .center) {
+                    ForEach(store.recentRecord) { record in
+                        RecentChip(record: record)
+                    }
                 }
+                .frame(maxWidth: 640)
             }
         }
-        .animation(.easeOut(duration: 0.2), value: suggestion)
-        .rxCard()
+        .frame(maxWidth: .infinity)
+        .onAppear {
+            mainActor(delay: 0.2) { focused = true }
+        }
     }
 
     func connect() {
@@ -213,14 +159,65 @@ struct QuickConnectView: View {
             suggestion = nil
             return
         }
+        let typed = command.hasPrefix("ssh ") ? command : "ssh " + command
         suggestion = store.recentRecord
             .lazy
             .map(\.equivalentSSHCommand)
-            .first { candidate in
-                guard !candidate.isEmpty else { return false }
-                let typed = command.hasPrefix("ssh ") ? command : "ssh " + command
-                return candidate.hasPrefix(typed) && candidate != typed
+            .first { !$0.isEmpty && $0.hasPrefix(typed) && $0 != typed }
+    }
+}
+
+/// A recent server or command; one click connects.
+struct RecentChip: View {
+    let record: RayonStore.RecentConnection
+    @EnvironmentObject var store: RayonStore
+    @State private var hovered = false
+
+    var title: String {
+        switch record {
+        case let .command(command): return command.command.replacingOccurrences(of: "ssh ", with: "")
+        case let .machine(id):
+            let machine = store.machineGroup[id]
+            return machine.isNotPlaceholder() ? machine.name : "Deleted server"
+        }
+    }
+
+    var body: some View {
+        Button(action: connect) {
+            HStack(spacing: 6) {
+                Image(systemName: isCommand ? "terminal" : "server.rack")
+                    .font(.system(size: 11))
+                RedactableText(title, redacted: !isCommand && store.machineRedacted == .all)
+                    .font(.system(size: 12, design: isCommand ? .monospaced : .default))
+                    .lineLimit(1)
             }
+            .foregroundStyle(.rxInk)
+            .padding(.horizontal, 12)
+            .frame(height: 28)
+            .background(Capsule().fill(Color.primary.opacity(hovered ? 0.12 : 0.07)))
+            .contentShape(Capsule())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovered = $0 }
+        .contextMenu {
+            Button("Copy Command") { UIBridge.sendPasteboard(str: record.equivalentSSHCommand) }
+            Divider()
+            Button("Remove from Recent", role: .destructive) {
+                store.recentRecord.removeAll { $0.id == record.id }
+            }
+        }
+    }
+
+    var isCommand: Bool {
+        if case .command = record { return true }
+        return false
+    }
+
+    func connect() {
+        switch record {
+        case let .command(command): AppRouter.shared.openTerminal(command: command)
+        case let .machine(machine): AppRouter.shared.openTerminal(machine: machine)
+        }
     }
 }
 
@@ -317,71 +314,5 @@ struct NewServerTile: View {
         }
         .buttonStyle(.plain)
         .onHover { hovered = $0 }
-    }
-}
-
-// MARK: - Recent
-
-struct RecentRow: View {
-    let record: RayonStore.RecentConnection
-    @EnvironmentObject var store: RayonStore
-    @State private var hovered = false
-
-    var body: some View {
-        HStack(spacing: RX.Space.s3) {
-            switch record {
-            case let .command(command):
-                SymbolTile("terminal", size: 24, tinted: false)
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(command.command)
-                        .font(.rxCode)
-                        .foregroundStyle(.rxInk)
-                        .lineLimit(1)
-                    Text("Quick Connect command")
-                        .font(.rxHelp)
-                        .foregroundStyle(.rxInkSecondary)
-                }
-            case let .machine(id):
-                let machine = store.machineGroup[id]
-                SymbolTile("server.rack", size: 24, tinted: false)
-                VStack(alignment: .leading, spacing: 1) {
-                    RedactableText(machine.isNotPlaceholder() ? machine.name : "Deleted server", redacted: store.machineRedacted == .all)
-                        .font(.rxBody)
-                        .foregroundStyle(.rxInk)
-                        .lineLimit(1)
-                    RedactableText(machine.remoteAddress, redacted: store.machineRedacted != .none)
-                        .font(.rxHelp)
-                        .foregroundStyle(.rxInkSecondary)
-                        .lineLimit(1)
-                }
-                Spacer(minLength: RX.Space.s2)
-                Text(RXFormat.relative(machine.lastConnection))
-                    .frame(minWidth: 80, alignment: .trailing)
-                    .font(.system(size: 12))
-                    .foregroundStyle(.rxInkSecondary)
-            }
-            Spacer(minLength: RX.Space.s2)
-            Button("Connect", action: connect)
-                .buttonStyle(.rx(size: .small))
-        }
-        .padding(.horizontal, RX.Space.s2)
-        .frame(height: RX.tableRowHeight)
-        .rxRowBackground(selected: false, hovered: hovered)
-        .onHover { hovered = $0 }
-        .contextMenu {
-            Button("Connect", action: connect)
-            Button("Copy Command") { UIBridge.sendPasteboard(str: record.equivalentSSHCommand) }
-            Divider()
-            Button("Remove from Recent", role: .destructive) {
-                store.recentRecord.removeAll { $0.id == record.id }
-            }
-        }
-    }
-
-    func connect() {
-        switch record {
-        case let .command(command): AppRouter.shared.openTerminal(command: command)
-        case let .machine(machine): AppRouter.shared.openTerminal(machine: machine)
-        }
     }
 }

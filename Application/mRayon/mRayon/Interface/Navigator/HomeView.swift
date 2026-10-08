@@ -2,7 +2,7 @@
 //  HomeView.swift
 //  mRayon
 //
-//  Home: Quick Connect, server tiles, Recent.
+//  Home: a big Quick Connect, recent connections, server tiles.
 //
 
 import MachineStatusView
@@ -20,6 +20,15 @@ struct HomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: RX.Space.s6) {
                 QuickConnectCard()
+                if store.storeRecent, !store.recentRecord.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: RX.Space.s2) {
+                            ForEach(store.recentRecord) { record in
+                                RecentRow(record: record)
+                            }
+                        }
+                    }
+                }
                 VStack(alignment: .leading, spacing: RX.Space.s3) {
                     SectionTitle("Servers", count: store.machineGroup.count) {
                         if !store.machineGroup.machines.isEmpty {
@@ -47,24 +56,6 @@ struct HomeView: View {
                                 ServerTile(machine: machine.id)
                             }
                         }
-                    }
-                }
-                if store.storeRecent, !store.recentRecord.isEmpty {
-                    VStack(alignment: .leading, spacing: RX.Space.s3) {
-                        SectionTitle("Recent") {
-                            Button("Clear") {
-                                UIBridge.requiresConfirmation(message: "Clear recent connections?") { confirmed in
-                                    if confirmed { store.recentRecord = [] }
-                                }
-                            }
-                            .buttonStyle(.rx(.plain, size: .small))
-                        }
-                        RXDividedStack {
-                            ForEach(store.recentRecord) { record in
-                                RecentRow(record: record)
-                            }
-                        }
-                        .rxCard(padding: RX.Space.s2)
                     }
                 }
                 Text(appVersion)
@@ -103,11 +94,13 @@ struct QuickConnectCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: RX.Space.s3) {
-            CardHead("Quick Connect")
+        VStack(spacing: RX.Space.s3) {
             HStack(spacing: RX.Space.s2) {
+                Image(systemName: "terminal")
+                    .font(.system(size: 18))
+                    .foregroundStyle(.rxInkSecondary)
                 TextField("ssh user@host -p 22", text: $command)
-                    .font(.system(size: 15, design: .monospaced))
+                    .font(.system(size: 19, design: .monospaced))
                     .textInputAutocapitalization(.never)
                     .disableAutocorrection(true)
                     .keyboardType(.URL)
@@ -117,36 +110,44 @@ struct QuickConnectCard: View {
                         if newValue.hasPrefix("ssh ssh ") { command.removeFirst("ssh ".count) }
                         refreshSuggestion()
                     }
-                    .padding(.horizontal, 10)
-                    .frame(height: 40)
-                    .rxFieldBackground()
-                Button("Connect", action: connect)
-                    .buttonStyle(.rxPrimary)
-                    .disabled(parsed == nil)
-                    .simultaneousGesture(LongPressGesture().onEnded { _ in importFromPasteboard() })
+                Button(action: connect) {
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundStyle(.rxOnAccent)
+                        .frame(width: 40, height: 40)
+                        .background(Circle().fill(Color.rxAccent))
+                }
+                .disabled(parsed == nil)
+                .opacity(parsed == nil ? 0.35 : 1)
+                .simultaneousGesture(LongPressGesture().onEnded { _ in importFromPasteboard() })
+                .accessibilityLabel("Connect")
             }
+            .padding(.leading, RX.Space.s4)
+            .padding(.trailing, 6)
+            .frame(height: 56)
+            .background(
+                Capsule()
+                    .fill(.thickMaterial)
+                    .shadow(color: .black.opacity(0.12), radius: 14, y: 6)
+            )
             if let suggestion {
                 Button {
                     command = suggestion
+                    connect()
                 } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "lightbulb")
-                        Text(suggestion).font(.system(size: 13, design: .monospaced)).lineLimit(1)
-                    }
-                    .foregroundStyle(.rxAccent)
+                    Label(suggestion, systemImage: "arrow.turn.down.right")
+                        .font(.system(size: 13, design: .monospaced))
+                        .foregroundStyle(.rxInkSecondary)
+                        .lineLimit(1)
                 }
             }
-            HStack {
-                Toggle("Record command", isOn: $store.saveTemporarySession)
-                    .font(.subheadline)
-                    .tint(.rxAccent)
+            if store.identityGroupForAutoAuth.isEmpty {
+                Text("Needs an identity that authenticates automatically.")
+                    .font(.footnote)
+                    .foregroundStyle(.rxWarning)
             }
-            HelpText(store.identityGroupForAutoAuth.isEmpty
-                ? "Quick Connect needs an identity that authenticates automatically."
-                : "Uses identities that authenticate automatically.",
-                isError: store.identityGroupForAutoAuth.isEmpty)
         }
-        .rxCard()
+        .padding(.vertical, RX.Space.s5)
     }
 
     func connect() {
@@ -245,40 +246,31 @@ private struct LiveTileBars: View {
     }
 }
 
+/// A recent server or command as a chip; a tap connects.
 struct RecentRow: View {
     let record: RayonStore.RecentConnection
     @EnvironmentObject var store: RayonStore
 
     var body: some View {
         Button(action: connect) {
-            HStack(spacing: RX.Space.s3) {
+            HStack(spacing: 6) {
                 switch record {
                 case let .command(command):
-                    SymbolTile("terminal", size: 28, tinted: false)
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text(command.command).font(.rxCode).foregroundStyle(.rxInk).lineLimit(1)
-                        Text("Quick Connect command").font(.caption).foregroundStyle(.rxInkSecondary)
-                    }
+                    Image(systemName: "terminal")
+                    Text(command.command.replacingOccurrences(of: "ssh ", with: ""))
+                        .font(.system(size: 13, design: .monospaced))
                 case let .machine(id):
                     let machine = store.machineGroup[id]
-                    SymbolTile("server.rack", size: 28, tinted: false)
-                    VStack(alignment: .leading, spacing: 1) {
-                        RedactableText(machine.isNotPlaceholder() ? machine.name : "Deleted server", redacted: store.machineRedacted == .all)
-                            .foregroundStyle(.rxInk)
-                            .lineLimit(1)
-                        RedactableText(machine.remoteAddress, redacted: store.machineRedacted != .none)
-                            .font(.caption)
-                            .foregroundStyle(.rxInkSecondary)
-                    }
+                    Image(systemName: "server.rack")
+                    RedactableText(machine.isNotPlaceholder() ? machine.name : "Deleted server", redacted: store.machineRedacted == .all)
+                        .font(.system(size: 13))
                 }
-                Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.rxInkTertiary)
             }
-            .padding(.horizontal, RX.Space.s2)
-            .frame(minHeight: 48)
-            .contentShape(Rectangle())
+            .lineLimit(1)
+            .foregroundStyle(.rxInk)
+            .padding(.horizontal, 12)
+            .frame(height: 32)
+            .background(Capsule().fill(.regularMaterial))
         }
         .buttonStyle(.plain)
         .contextMenu {
