@@ -46,4 +46,7 @@
    <FileRef
       location = "group:Foundation/XMLCoder">
    </FileRef>
+   <FileRef
+      location = "group:Foundation/RayonTerminal">
+   </FileRef>
 </Workspace>

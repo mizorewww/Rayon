@@ -22,7 +22,7 @@
 		5027F25D27B8210300F422BB /* LicenseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5027F25B27B8210300F422BB /* LicenseView.swift */; };
 		5038AAAC27B5297F00BFDF55 /* EditSnippetSheetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5038AAAA27B5297F00BFDF55 /* EditSnippetSheetView.swift */; };
 		5042072F287D953D00D62044 /* CodeEditorUI in Frameworks */ = {isa = PBXBuildFile; productRef = 5042072E287D953D00D62044 /* CodeEditorUI */; };
-		505E326127D2602600054573 /* XTerminalUI in Frameworks */ = {isa = PBXBuildFile; productRef = 505E326027D2602600054573 /* XTerminalUI */; };
+		505E326127D2602600054573 /* RayonTerminal in Frameworks */ = {isa = PBXBuildFile; productRef = 505E326027D2602600054573 /* RayonTerminal */; };
 		505E326527D2625F00054573 /* MachineStatus in Frameworks */ = {isa = PBXBuildFile; productRef = 505E326427D2625F00054573 /* MachineStatus */; };
 		505E326B27D2642C00054573 /* MachineStatusView in Frameworks */ = {isa = PBXBuildFile; productRef = 505E326A27D2642C00054573 /* MachineStatusView */; };
 		505E762B27B4ECFC008D80F6 /* MachineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 505E762927B4ECFC008D80F6 /* MachineView.swift */; };
@@ -145,7 +145,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				501FF7A527CEFF2300380D59 /* SymbolPicker in Frameworks */,
-				505E326127D2602600054573 /* XTerminalUI in Frameworks */,
+				505E326127D2602600054573 /* RayonTerminal in Frameworks */,
 				5042072F287D953D00D62044 /* CodeEditorUI in Frameworks */,
 				505E326527D2625F00054573 /* MachineStatus in Frameworks */,
 				5068E44C27CE3AAE00F8B770 /* RayonModule in Frameworks */,
@@ -407,7 +407,7 @@
 				50BBA54E27B8000900CE7BB1 /* Colorful */,
 				5068E44B27CE3AAE00F8B770 /* RayonModule */,
 				501FF7A427CEFF2300380D59 /* SymbolPicker */,
-				505E326027D2602600054573 /* XTerminalUI */,
+				505E326027D2602600054573 /* RayonTerminal */,
 				505E326427D2625F00054573 /* MachineStatus */,
 				505E326A27D2642C00054573 /* MachineStatusView */,
 				5042072E287D953D00D62044 /* CodeEditorUI */,
@@ -573,7 +573,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -630,7 +630,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRESERVE_DEAD_CODE_INITS_AND_TERMS = NO;
@@ -663,7 +663,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 2.4;
 				PRODUCT_BUNDLE_IDENTIFIER = wiki.qaq.ray0n.debug;
 				PRODUCT_NAME = Rayon;
@@ -696,7 +696,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MACOSX_DEPLOYMENT_TARGET = 12.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 2.4;
 				PRODUCT_BUNDLE_IDENTIFIER = wiki.qaq.ray0n;
 				PRODUCT_NAME = Rayon;
@@ -739,9 +739,9 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = CodeEditorUI;
 		};
-		505E326027D2602600054573 /* XTerminalUI */ = {
+		505E326027D2602600054573 /* RayonTerminal */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = XTerminalUI;
+			productName = RayonTerminal;
 		};
 		505E326427D2625F00054573 /* MachineStatus */ = {
 			isa = XCSwiftPackageProductDependency;

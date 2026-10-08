@@ -7,8 +7,8 @@
 
 import Combine
 import RayonModule
+import RayonTerminal
 import SwiftUI
-import XTerminalUI
 
 struct BatchTerminalView: View {
     let machine: RDMachine.ID
@@ -22,7 +22,7 @@ struct BatchTerminalView: View {
 
     // change both or stay steady
     let terminalId = UUID()
-    let terminalView = STerminalView()
+    let terminalView = RayonTerminalView()
 
     var body: some View {
         GeometryReader { r in

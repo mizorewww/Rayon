@@ -8,8 +8,8 @@
 import AppKit
 import CodeEditorUI
 import RayonModule
+import RayonTerminal
 import SwiftUI
-import XTerminalUI
 
 @main
 struct RayonApp: App {

@@ -1,6 +1,6 @@
 # Rayon
 
-A server monitor tool for linux based machines using remote proc file system with script execution. Available for macOS 12+ & iOS 15+.
+A server monitor tool for linux based machines using remote proc file system with script execution. Available for macOS 13+ & iOS 15+.
 
 The project has completed my requirements without serious defects and is now archived. If there are minor issues, please consider fixing them yourself. If there are serious problems, please consider writing me an email. (I do fix them)
 
@@ -9,7 +9,8 @@ The project has completed my requirements without serious defects and is now arc
 ## Building on macOS
 
 Install the full Xcode application and select its developer directory. Command Line
-Tools alone are not sufficient. A Swift 6-capable Xcode is required. Open
+Tools alone are not sufficient. Swift 6.2 or later is required by the Ghostty
+dependency (Xcode 26 or later). Open
 `App.xcworkspace` and select the `Rayon` scheme
 for the macOS app; `mRayon` is the separate iOS app.
 
@@ -30,7 +31,8 @@ Verified on 2026-10-08 with Xcode 27.0 (27A5209h), Swift 6.4 and an arm64
 macOS 27.2 host: both Debug and Release builds succeeded in Swift 6 language mode,
 and `lipo` confirmed both architectures in each executable. Both shared packages
 also resolved their dependencies independently. No application launch, SSH
-integration, Intel runtime, macOS 12 runtime or iOS build was tested. Existing
+integration, Intel runtime, macOS 13 runtime or iOS build was tested. The native
+Ghostty terminal was exercised separately by the tests described below. Existing
 warnings include missing app icons, deprecated APIs and legacy SDK actor-isolation
 warnings. Explicit Combine imports were added to four timer-using
 views to remove the current compiler's implicit-import warnings.
@@ -42,18 +44,68 @@ Use disposable test credentials: the legacy Debug encryption is derived from the
 machine serial number, not a random secret. Release also has unresolved security
 issues described below. Building successfully is not a security or runtime audit.
 
+## Native Ghostty terminal
+
+The macOS interactive SSH terminal and batch-command output use
+`Foundation/RayonTerminal`, backed by
+[libghostty-spm](https://github.com/Lakr233/libghostty-spm/) version
+**2.2.2026100703** (exact pin, revision
+`cffef22c16dd61d22ebef539ae2ff1624db77363`). Its binary XCFramework checksum is
+verified by SwiftPM; package and workspace locks also pin DisplayLink 3.0.1. This requires
+**macOS 13+**, on both arm64 and x86_64. The macOS app no longer links XTerminalUI;
+the legacy package remains for the unchanged iOS app. CodeEditorUI still uses
+WebKit for the code editor.
+
+Ghostty runs with `InMemoryTerminalSession`, never the default local-shell/PTY
+backend. Rayon still owns SSH connection/authentication, reconnection, input
+buffering and remote window-size updates. The SSH terminal type remains `xterm`,
+so no new remote `xterm-ghostty` terminfo installation is required. Titles, bells,
+font controls and the 80-by-40 initial grid connect to the existing callbacks.
+The renderer, font metrics, colors, keyboard/IME and selection implementation
+are now Ghostty's native implementation, rather than xterm.js.
+
+Each SSH context retains one native view and surface across window transfers.
+Font changes use `set_font_size` instead of recreating the surface. Output received
+before attachment is queued without Ghostty's 1 MiB pre-attachment truncation;
+UTF-8 input split across callbacks is reassembled before entering the existing
+String-based SSH API. Native surface destruction is main-actor isolated even
+when the last session reference is released by an SSH worker. Protected clipboard
+operations are explicitly routed through the host: user paste is allowed, while
+program-requested clipboard read/write confirmation is denied.
+
+Run the adapter's tests (three tests briefly open native terminal windows; no SSH
+connection, credentials, or Rayon account store is used). The clipboard test
+temporarily writes test content and restores the previous pasteboard items:
+
+```sh
+swift test --package-path Foundation/RayonTerminal
+```
+
+Six tests passed on the host above, covering split UTF-8/control sequences,
+startup output above 1 MiB, main-thread input/resize callbacks, a real Ghostty
+surface's ANSI/Unicode output, Enter input, OSC title, bell, grid resize, font
+changes, scrollback across window transfer, background last-reference release,
+native selection copy, system-pasteboard paste, and rejection of remote OSC 52
+clipboard writes. The lifecycle test verifies a live surface before releasing it.
+Independent subagent review identified the teardown requirement and verified its
+fix. Real SSH/full-screen applications, interactive Chinese IME, physical Cmd+V,
+Intel runtime and macOS 13 runtime still require acceptance testing.
+
 ## Swift 6 migration
 
-The macOS app uses `SWIFT_VERSION = 6.0`. Its ten local Swift dependencies use
-Swift tools 6.0 and the default Swift 6 language mode: RayonModule, MachineStatus,
+The macOS app uses `SWIFT_VERSION = 6.0`. Its local Swift dependencies also use
+Swift 6 language mode: RayonModule, MachineStatus,
 MachineStatusView, PropertyWrapper, Keychain, XMLCoder, Colorful, SymbolPicker,
-CodeEditorUI and XTerminalUI. Actual Release compiler invocations were checked
-for `-swift-version 6` for all eleven modules. The macOS app deployment target
-remains 12.0. The Objective-C NSRemoteShell and binary CSSH targets are unchanged.
+CodeEditorUI and RayonTerminal. RayonTerminal and Ghostty require Swift tools 6.2;
+the other local packages use tools 6.0. The original eleven-module Swift 6
+migration was verified before the separate Ghostty migration. The macOS app
+deployment target is now 13.0 for Ghostty. The Objective-C NSRemoteShell and binary
+CSSH targets are unchanged.
 Packages not in the macOS dependency graph and the iOS app target were not migrated
 or validated; shared package changes will also affect a future iOS build.
 
-This is a behavior-preserving language migration. SSH operations, encryption and
+The language migration preserved existing behavior; the subsequent terminal
+backend replacement is described above. SSH operations, encryption and
 storage formats, confirmation shortcuts, retry counts, blocking waits and GCD
 queue scheduling retain their existing logic. Value types with Sendable storage
 now explicitly conform to Sendable. Local `nonisolated(unsafe)` declarations
@@ -115,15 +167,16 @@ existing issues, not fixes included in the build compatibility patch:
    migration is complete for the macOS build, but legacy concurrency boundaries
    remain. In a separate behavior-changing project, audit ownership and remove
    unsafe exemptions, isolate UI state and SSH sessions, and replace blocking
-   WebKit/semaphore bridges with bounded, cancellable asynchronous operations.
+   remaining editor WebKit/semaphore bridges with bounded, cancellable asynchronous operations.
 6. **Platform acceptance:** exercise terminal, SFTP, monitoring, forwarding,
    reconnection, Keychain failures and host-key changes on real macOS systems.
    Verify iOS and Apple Silicon simulators separately before claiming support.
    Review multi-window presentation and WebKit file access. Restore the missing
    app-icon assets and update deprecated APIs before a release.
 
-The scheme currently has no test targets. Compiler success alone does not verify
-these workflows, old-system runtime compatibility, credential migration or signing.
+The app scheme currently has no test targets; RayonTerminal has separate package
+tests. Compiler success alone does not verify these workflows, old-system runtime
+compatibility, credential migration or signing.
 
 ## Preview
 
@@ -136,7 +189,7 @@ these workflows, old-system runtime compatibility, credential migration or signi
 - [x] libssh2 capable host connections
 - [x] Linux proc file system status information
 - [x] authenticate with password, key, etc...
-- [x] terminal with xterm support
+- [x] native Ghostty terminal on macOS; xterm terminal on iOS
 - [x] Port Forward support
 - [x] code snippet with batch execution
 - [x] Nvidia GPU status monitor

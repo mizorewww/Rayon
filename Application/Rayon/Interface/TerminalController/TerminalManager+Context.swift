@@ -8,8 +8,8 @@
 import Foundation
 import NSRemoteShell
 import RayonModule
+import RayonTerminal
 import SwiftUI
-import XTerminalUI
 
 extension TerminalManager {
     class Context: ObservableObject, Identifiable, Equatable {
@@ -89,7 +89,7 @@ extension TerminalManager {
 
         // MARK: SHELL CONTEXT -
 
-        let termInterface: STerminalView = .init()
+        let termInterface: RayonTerminalView = .init()
 
         private static let queue = DispatchQueue(
             label: "wiki.qaq.terminal",

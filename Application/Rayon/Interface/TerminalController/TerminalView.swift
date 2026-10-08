@@ -6,8 +6,8 @@
 //
 
 import RayonModule
+import RayonTerminal
 import SwiftUI
-import XTerminalUI
 
 struct TerminalView: View {
     @StateObject var context: TerminalManager.Context
