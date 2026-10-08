@@ -109,19 +109,6 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
         lhs.id == rhs.id
     }
 
-    /// The word and dot for this session, from connection and CPU load.
-    public var health: (status: RXStatus, text: String) {
-        switch phase {
-        case .connecting: return (.running, "Connecting")
-        case .failed: return (.danger, "Failed")
-        case .closed: return (.off, "Closed")
-        case .connected:
-            if !status.hasData { return (.running, "Connecting") }
-            if status.processor.summary.sumUsed >= 85 { return (.warning, "High load") }
-            return (.success, "Connected")
-        }
-    }
-
     public var refreshInterval: Int {
         max(1, RayonStore.shared.monitorInterval)
     }
