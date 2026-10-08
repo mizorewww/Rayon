@@ -27,6 +27,16 @@ Both commands build a universal `arm64` / `x86_64` application. The output is
 another build directory. The script works from any working directory and does not
 modify the project's distribution signing settings.
 
+To build Release and install it to `/Applications` in one step:
+
+```sh
+bash Workflow/Scripts/install-macos.sh
+```
+
+The install script reuses the Release build, replaces any existing copy in
+`/Applications` (via the Trash when available), and clears the quarantine
+attribute. Override `INSTALL_DIR` to install elsewhere.
+
 Verified on 2026-10-08 with Xcode 27.0 (27A5209h), Swift 6.4 and an arm64
 macOS 27.2 host: both Debug and Release builds succeeded in Swift 6 language mode,
 and `lipo` confirmed both architectures in each executable. Both shared packages
