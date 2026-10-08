@@ -78,23 +78,11 @@ public struct SymbolPicker: View {
     @ViewBuilder
     private var searchableSymbolGrid: some View {
         #if os(iOS) || os(tvOS)
-            if #available(iOS 15.0, *) {
-                symbolGrid
-                    .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
-            } else {
-                VStack {
-                    TextField(LocalizedString("search_placeholder"), text: $searchText)
-                        .padding(8)
-                        .padding(.horizontal, 8)
-                        .background(systemGray5)
-                        .cornerRadius(8.0)
-                        .padding(.horizontal, 16.0)
-                        .autocapitalization(.none)
-                        .disableAutocorrection(true)
-                    symbolGrid
-                        .padding()
-                }
-            }
+            // Minimum deployment is iOS 15, so .searchable is always available.
+            // (The former `if #available` branch tripped the parameter-pack
+            // ViewBuilder path that requires an iOS 26 runtime.)
+            symbolGrid
+                .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
         #elseif os(macOS)
             VStack(spacing: 10) {
                 TextField(LocalizedString("search_placeholder"), text: $searchText)
