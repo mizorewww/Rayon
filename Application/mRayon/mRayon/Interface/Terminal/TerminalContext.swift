@@ -124,10 +124,7 @@ class TerminalContext: ObservableObject, Identifiable, Equatable {
     }
 
     func setupShellData() {
-        shell
-            .setupConnectionHost(machine.remoteAddress)
-            .setupConnectionPort(NSNumber(value: Int(machine.remotePort) ?? 0))
-            .setupConnectionTimeout(RayonStore.shared.timeoutNumber)
+        shell.applyConnection(for: machine, timeout: RayonStore.shared.timeoutNumber)
     }
 
     static func == (lhs: TerminalContext, rhs: TerminalContext) -> Bool {
@@ -202,18 +199,10 @@ class TerminalContext: ObservableObject, Identifiable, Equatable {
             }
             identity.callAuthenticationWith(remote: shell)
         } else {
-            var previousUsername: String?
-            for identity in RayonStore.shared.identityGroupForAutoAuth {
-                putInformation("[i] trying to authenticate with \(identity.shortDescription())")
-                if let prev = previousUsername, prev != identity.username {
-                    shell.requestDisconnectAndWait()
-                    shell.requestConnectAndWait()
-                }
-                previousUsername = identity.username
-                identity.callAuthenticationWith(remote: shell)
-                if shell.isConnected, shell.isAuthenticated {
-                    break
-                }
+            shell.authenticateWithAutoIdentities(
+                RayonStore.shared.identityGroupForAutoAuth
+            ) { [self] hintText in
+                putInformation(hintText)
             }
             putInformation("")
             // user may get confused if multiple session opened the picker

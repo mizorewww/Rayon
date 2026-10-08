@@ -39,10 +39,7 @@ class MonitorContext: ObservableObject, Identifiable, Equatable {
 
         title = machine.name
 
-        shell = .init()
-            .setupConnectionHost(machine.remoteAddress)
-            .setupConnectionPort(NSNumber(value: Int(machine.remotePort) ?? 0))
-            .setupConnectionTimeout(6)
+        shell = NSRemoteShell.configured(for: machine, timeout: 6)
 
         MonitorContext.queue.async {
             self.processBootstrap()

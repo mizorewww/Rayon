@@ -6,6 +6,7 @@
 //
 
 import Combine
+import RayonModule
 import SwiftUI
 
 private let starCount = 20

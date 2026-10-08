@@ -35,12 +35,7 @@ class SnippetExecuteContext: ObservableObject {
         }
         terminalGroup = buildTermUI
         shellGroup = machineGroup
-            .map {
-                NSRemoteShell()
-                    .setupConnectionHost($0.remoteAddress)
-                    .setupConnectionPort(NSNumber(value: Int($0.remotePort) ?? 0))
-                    .setupConnectionTimeout(6)
-            }
+            .map { NSRemoteShell.configured(for: $0, timeout: 6) }
     }
 
     deinit {
@@ -99,18 +94,7 @@ class SnippetExecuteContext: ObservableObject {
             }
             identity.callAuthenticationWith(remote: shell)
         } else {
-            var previousUsername: String?
-            for identity in RayonStore.shared.identityGroupForAutoAuth {
-                if let prev = previousUsername, prev != identity.username {
-                    shell.requestDisconnectAndWait()
-                    shell.requestConnectAndWait()
-                }
-                previousUsername = identity.username
-                identity.callAuthenticationWith(remote: shell)
-                if shell.isConnected, shell.isAuthenticated {
-                    break
-                }
-            }
+            shell.authenticateWithAutoIdentities(RayonStore.shared.identityGroupForAutoAuth)
         }
         guard shell.isConnected, shell.isAuthenticated else {
             term.write("[E] failed to authenticate session\r\n")

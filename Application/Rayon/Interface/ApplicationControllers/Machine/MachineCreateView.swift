@@ -151,10 +151,8 @@ struct MachineCreateView: View {
             mainActorProgressView(show: true)
 
             func createRemote() -> NSRemoteShell {
-                let shell = NSRemoteShell()
-                    .setupConnectionHost(serverLocation)
-                    .setupConnectionPort(NSNumber(value: Int(serverPort) ?? 0))
-                    .setupConnectionTimeout(RayonStore.shared.timeoutNumber)
+                let shell = NSRemoteShell
+                    .configured(host: serverLocation, port: serverPort, timeout: RayonStore.shared.timeoutNumber)
                 shell.requestConnectAndWait()
                 return shell
             }
@@ -203,10 +201,8 @@ struct MachineCreateView: View {
         mainActorProgressView(show: true)
         DispatchQueue.global().async {
             // we don't hold session, so we can re-auth with different username
-            let remote = NSRemoteShell()
-                .setupConnectionHost(serverLocation)
-                .setupConnectionPort(NSNumber(value: Int(serverPort) ?? 0))
-                .setupConnectionTimeout(RayonStore.shared.timeoutNumber)
+            let remote = NSRemoteShell
+                .configured(host: serverLocation, port: serverPort, timeout: RayonStore.shared.timeoutNumber)
             remote.requestConnectAndWait()
             identity.callAuthenticationWith(remote: remote)
             debugPrint(remote.isAuthenticated)

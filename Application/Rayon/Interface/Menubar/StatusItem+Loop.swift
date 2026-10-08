@@ -80,10 +80,7 @@ extension MenubarStatusItem {
 
     func updateServerStatusInfo() {
         catSpeed = .broken
-        let shell = NSRemoteShell()
-            .setupConnectionHost(machine.remoteAddress)
-            .setupConnectionPort(NSNumber(value: Int(machine.remotePort) ?? 0))
-            .setupConnectionTimeout(RayonStore.shared.timeoutNumber)
+        let shell = NSRemoteShell.configured(for: machine, timeout: RayonStore.shared.timeoutNumber)
         shell.requestConnectAndWait()
         representedShell = shell
         identity.callAuthenticationWith(remote: shell)

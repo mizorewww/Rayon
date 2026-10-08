@@ -61,9 +61,7 @@ class PortForwardBackend: ObservableObject {
         DispatchQueue.global().async {
             self.putHint(for: context.info.id, with: "awaiting connect")
             context.shell
-                .setupConnectionHost(context.machine.remoteAddress)
-                .setupConnectionPort(NSNumber(value: Int(context.machine.remotePort) ?? 0))
-                .setupConnectionTimeout(RayonStore.shared.timeoutNumber)
+                .applyConnection(for: context.machine, timeout: RayonStore.shared.timeoutNumber)
                 .requestConnectAndWait()
             guard context.shell.isConnected else {
                 self.putHint(for: context.info.id, with: "failed connect")

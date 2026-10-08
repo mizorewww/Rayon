@@ -54,9 +54,7 @@ class PortForwardBackend: ObservableObject {
         func contextRunRound() {
             putHint("awaiting connect")
             shell
-                .setupConnectionHost(machine.remoteAddress)
-                .setupConnectionPort(NSNumber(value: Int(machine.remotePort) ?? 0))
-                .setupConnectionTimeout(RayonStore.shared.timeoutNumber)
+                .applyConnection(for: machine, timeout: RayonStore.shared.timeoutNumber)
                 .requestConnectAndWait()
             guard shell.isConnected else {
                 putHint("failed connect")

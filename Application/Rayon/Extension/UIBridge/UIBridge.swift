@@ -8,16 +8,9 @@
 import Foundation
 
 import AppKit
+import RayonModule
 
-// Legacy model callbacks retain their existing queue ownership during migration.
-func mainActor(delay: Double = 0, run: @escaping () -> Void) {
-    nonisolated(unsafe) let run = run
-    guard delay == 0, Thread.isMainThread else {
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { run() }
-        return
-    }
-    run()
-}
+// mainActor(delay:run:) is provided by RayonModule.
 
 /// Not actually a Actor but I like it
 /// - Parameter run: the job to be fired on main thread

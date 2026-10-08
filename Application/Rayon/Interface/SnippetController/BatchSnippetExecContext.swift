@@ -25,10 +25,8 @@ class BatchSnippetExecContext: ObservableObject {
                 receivedBuffer[machine] = "\r\n[*] Malformed Machine Info\r\n"
                 continue
             }
-            shellObjects[object.id] = NSRemoteShell()
-                .setupConnectionHost(object.remoteAddress)
-                .setupConnectionPort(NSNumber(value: Int(object.remotePort) ?? 0))
-                .setupConnectionTimeout(RayonStore.shared.timeoutNumber)
+            shellObjects[object.id] = NSRemoteShell
+                .configured(for: object, timeout: RayonStore.shared.timeoutNumber)
             shellContinue[object.id] = true
             if let identity = object.associatedIdentity,
                let rid = UUID(uuidString: identity)
