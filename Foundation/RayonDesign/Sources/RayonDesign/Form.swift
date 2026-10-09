@@ -130,7 +130,58 @@ public struct SwitchRow: View {
     }
 }
 
-/// A bounded number: 200pt slider plus the value in a fixed 52pt column so values line up.
+/// A bounded number: a 200pt continuous slider plus the value in a fixed 52pt column
+/// so values line up. The value snaps to `step` but the track draws no tick marks,
+/// and the binding is written once, when the drag ends, so a drag does not flood
+/// observers (and undo) with intermediate values.
+public struct RXSlider: View {
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+    let step: Double
+    let format: (Double) -> String
+    @State private var draft: Double?
+
+    public init(value: Binding<Double>, in range: ClosedRange<Double>, step: Double = 1, format: @escaping (Double) -> String) {
+        _value = value
+        self.range = range
+        self.step = step
+        self.format = format
+    }
+
+    private var current: Double { draft ?? value }
+
+    private func snap(_ raw: Double) -> Double {
+        guard step > 0 else { return raw }
+        let snapped = ((raw - range.lowerBound) / step).rounded() * step + range.lowerBound
+        return min(range.upperBound, max(range.lowerBound, snapped))
+    }
+
+    public var body: some View {
+        HStack(spacing: RX.Space.s2) {
+            Slider(
+                value: Binding(get: { current }, set: { draft = snap($0) }),
+                in: range
+            ) { editing in
+                guard !editing, let draft else { return }
+                if draft != value { value = draft }
+                self.draft = nil
+            }
+            .labelsHidden()
+            .tint(.rxAccent)
+            .frame(width: 200)
+            #if os(macOS)
+            .controlSize(.small)
+            #endif
+            Text(format(current))
+                .font(.system(size: 13, weight: .semibold).monospacedDigit())
+                .foregroundStyle(.rxInk)
+                .frame(width: 52, alignment: .trailing)
+                .contentTransition(.numericText())
+        }
+    }
+}
+
+/// A settings row with an `RXSlider`.
 public struct SliderRow: View {
     let title: String
     let description: String?
@@ -157,19 +208,7 @@ public struct SliderRow: View {
 
     public var body: some View {
         RXFormRow(title, description: description) {
-            HStack(spacing: RX.Space.s2) {
-                Slider(value: Binding(get: { value }, set: { value = (($0 - range.lowerBound) / step).rounded() * step + range.lowerBound }), in: range)
-                    .labelsHidden()
-                    .tint(.rxAccent)
-                    .frame(width: 200)
-                    #if os(macOS)
-                    .controlSize(.small)
-                    #endif
-                Text(format(value))
-                    .font(.system(size: 13, weight: .semibold).monospacedDigit())
-                    .foregroundStyle(.rxInk)
-                    .frame(width: 52, alignment: .trailing)
-            }
+            RXSlider(value: $value, in: range, step: step, format: format)
         }
     }
 }

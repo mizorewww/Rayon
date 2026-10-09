@@ -137,18 +137,11 @@ struct ConfigWidgetView: View {
                     .controlSize(.small)
                     .tint(.rxAccent)
             case "range":
-                HStack(spacing: RX.Space.s2) {
-                    Slider(value: Binding(get: { Double(effective) ?? widget?.min ?? 0 }, set: { value.wrappedValue = String(format: "%g", $0) }),
-                           in: (widget?.min ?? 0) ... (widget?.max ?? 1), step: widget?.step ?? 0.01)
-                        .labelsHidden()
-                        .controlSize(.small)
-                        .tint(.rxAccent)
-                        .frame(width: 200)
-                    Text(effective.isEmpty ? "—" : effective)
-                        .font(.system(size: 13, weight: .semibold).monospacedDigit())
-                        .foregroundStyle(.rxInk)
-                        .frame(width: 52, alignment: .trailing)
-                }
+                RXSlider(
+                    value: Binding(get: { Double(effective) ?? widget?.min ?? 0 }, set: { value.wrappedValue = String(format: "%g", $0) }),
+                    in: (widget?.min ?? 0) ... (widget?.max ?? 1),
+                    step: widget?.step ?? 0.01
+                ) { String(format: "%g", $0) }
             case "pill" where (widget?.options ?? []).count <= 4 && !(widget?.options ?? []).isEmpty:
                 RXSegmented(
                     selection: Binding(get: { effective }, set: { value.wrappedValue = $0 }),

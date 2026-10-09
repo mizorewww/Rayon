@@ -101,17 +101,25 @@ private struct GeneralSettings: View {
                 )
             }
             RXFormSection("Connection") {
-                SliderRow(
+                NumberFieldRow(
                     "SSH timeout",
-                    value: Binding(get: { Double(store.timeout) }, set: { store.timeout = Int($0) }),
-                    in: 2 ... 30
-                ) { "\(Int($0)) s" }
-                SliderRow(
-                    "Monitor refresh",
-                    value: Binding(get: { Double(max(5, store.monitorInterval)) }, set: { store.monitorInterval = Int($0) }),
-                    in: 5 ... 60,
-                    step: 5
-                ) { "\(Int($0)) s" }
+                    description: "How long to wait for a server before giving up.",
+                    value: $store.timeout,
+                    in: 2 ... 30,
+                    unit: "s"
+                )
+                RXFormRow("Monitor refresh", description: "How often an open monitor reads the server.") {
+                    Picker("Monitor refresh", selection: Binding(get: { max(5, store.monitorInterval) }, set: { store.monitorInterval = $0 })) {
+                        ForEach([5, 10, 15, 30, 60], id: \.self) { seconds in
+                            Text("Every \(seconds) s").tag(seconds)
+                        }
+                        if ![5, 10, 15, 30, 60].contains(max(5, store.monitorInterval)) {
+                            Text("Every \(store.monitorInterval) s").tag(store.monitorInterval)
+                        }
+                    }
+                    .labelsHidden()
+                    .fixedSize()
+                }
                 NumberFieldRow(
                     "Terminal font size",
                     description: "Change per session with ⌘+ and ⌘−.",
