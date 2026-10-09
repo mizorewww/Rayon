@@ -137,7 +137,10 @@ public struct GhosttyConfigurationView: View {
             }
             .readWidth($detailWidth)
         }
-        .background(RXWindowBackground().ignoresSafeArea())
+        // Embedded in Rayon, the window material is drawn behind every page.
+        .background {
+            if !embedded { RXWindowBackground().ignoresSafeArea() }
+        }
         .toolbarBackground(.hidden, for: .windowToolbar)
         .modifier(ConfigToolbar(leading: {
             ControlGroup {

@@ -24,6 +24,8 @@ struct MainView: View {
             // Pages cross-fade with a slight rise, so the eye follows the change
             // of place instead of seeing the content column jump.
             ZStack {
+                RXWindowBackground()
+                    .ignoresSafeArea()
                 content
                     .id(router.route)
                     .transition(.asymmetric(
@@ -33,6 +35,9 @@ struct MainView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .animation(.easeOut(duration: 0.2), value: router.route)
+            // Set here, outside the page transition, so the toolbar never falls
+            // back to its opaque background while one page fades into another.
+            .toolbarBackground(.hidden, for: .windowToolbar)
         }
         .frame(minWidth: 940, minHeight: 600)
         .modifier(HiddenWindowTitle())

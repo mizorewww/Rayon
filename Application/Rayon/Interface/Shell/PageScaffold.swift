@@ -86,10 +86,11 @@ extension PageScaffold where Header == EmptyView {
 }
 
 extension View {
-    /// The translucent window behind a page; the toolbar floats over it.
+    /// Lets the toolbar float over the window material. The material itself is
+    /// drawn once, behind every page, by MainView: a page that drew its own would
+    /// fade with the page during a transition and flash the plain window colour.
     func pageChrome() -> some View {
-        background(RXWindowBackground().ignoresSafeArea())
-            .toolbarBackground(.hidden, for: .windowToolbar)
+        toolbarBackground(.hidden, for: .windowToolbar)
     }
 }
 
