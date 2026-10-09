@@ -122,24 +122,33 @@ enum ServerTool: CaseIterable, Identifiable {
 /// Copy SSH Command, Delete.
 struct ServerContextMenu: View {
     let machine: RDMachine.ID
+    /// False where the tools already sit beside the menu (a tile's ⋯ button).
+    var includesTools = true
 
     var body: some View {
         let router = AppRouter.shared
         Group {
+            if includesTools {
+                Button {
+                    ServerTool.terminal.show(machine)
+                } label: {
+                    Label("Open Terminal", systemImage: ServerTool.terminal.systemImage)
+                }
+                Button {
+                    ServerTool.files.show(machine)
+                } label: {
+                    Label("Open Files", systemImage: ServerTool.files.systemImage)
+                }
+                Button {
+                    ServerTool.monitor.show(machine)
+                } label: {
+                    Label("Open Monitor", systemImage: ServerTool.monitor.systemImage)
+                }
+            }
             Button {
                 router.openTerminal(machine: machine)
             } label: {
-                Label("New Terminal", systemImage: ServerTool.terminal.systemImage)
-            }
-            Button {
-                ServerTool.files.show(machine)
-            } label: {
-                Label("Open Files", systemImage: ServerTool.files.systemImage)
-            }
-            Button {
-                ServerTool.monitor.show(machine)
-            } label: {
-                Label("Open Monitor", systemImage: ServerTool.monitor.systemImage)
+                Label("New Terminal", systemImage: "plus.rectangle")
             }
             Button {
                 router.showInMenuBar(machine: machine)
@@ -173,7 +182,6 @@ struct ServerContextMenu: View {
             } label: {
                 Label("Delete…", systemImage: "trash")
             }
-            .keyboardShortcut(.delete, modifiers: .command)
         }
     }
 }

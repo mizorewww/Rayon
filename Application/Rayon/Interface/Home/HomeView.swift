@@ -29,12 +29,8 @@ struct HomeView: View {
             .animation(.easeInOut(duration: 0.25), value: store.machineGroup.machines.map(\.id))
         }
         .pageChrome()
-        .pageToolbar {
-        } trailing: {
-            ToolbarAction("New Server", systemImage: "plus", primary: true) {
-                router.presentNewServer = true
-            }
-        }
+        // No toolbar "+": the grid ends in the New Server tile (and the empty
+        // state offers it), so a second button would do the same thing.
     }
 
     @ViewBuilder var serversSection: some View {
@@ -51,11 +47,9 @@ struct HomeView: View {
             .rxCard()
         } else {
             VStack(alignment: .leading, spacing: RX.Space.s3) {
-                SectionTitle("Servers", count: store.machineGroup.count) {
-                    Button("Show All") { router.route = .servers }
-                        .buttonStyle(.rxPlain)
-                        .help("Show every server in a table")
-                }
+                // Every server is in the grid; the sidebar's Servers has the
+                // count and the table.
+                SectionTitle("Servers")
                 LazyVGrid(
                     columns: [GridItem(.adaptive(minimum: 310), spacing: RX.Space.s4)],
                     spacing: RX.Space.s4
@@ -187,11 +181,13 @@ struct QuickConnectHero: View {
                 .foregroundStyle(.rxWarning)
             }
 
-            if store.storeRecent, !store.recentRecord.isEmpty {
+            if store.storeRecent, store.recentRecord.contains(where: \.isCommand) {
                 VStack(spacing: RX.Space.s2) {
                     CapsLabel("Recent")
                     RXFlowLayout(spacing: RX.Space.s2, alignment: .center) {
-                        ForEach(store.recentRecord) { record in
+                        // Saved servers are in the grid below; Recent keeps the
+                        // Quick Connect commands, which have nowhere else.
+                        ForEach(store.recentRecord.filter(\.isCommand)) { record in
                             RecentChip(record: record)
                         }
                     }
@@ -395,8 +391,9 @@ struct ServerTile: View {
 
     var actions: some View {
         HStack(spacing: RX.Space.s1) {
+            // Named like the page switcher: Terminal, Files, Monitor.
             Button(action: connect) {
-                Label("Connect", systemImage: ServerTool.terminal.systemImage)
+                Label(ServerTool.terminal.title, systemImage: ServerTool.terminal.systemImage)
             }
             .buttonStyle(.rx(.primary, size: .small))
             .help(ServerTool.terminal.help)
@@ -404,7 +401,7 @@ struct ServerTile: View {
             toolButton(.monitor)
             Spacer(minLength: 0)
             Menu {
-                ServerContextMenu(machine: machine)
+                ServerContextMenu(machine: machine, includesTools: false)
             } label: {
                 Label("More", systemImage: "ellipsis")
             }
@@ -426,8 +423,9 @@ struct ServerTile: View {
         .help(tool.help)
     }
 
+    /// Shows the server's terminal, opening one if none is open.
     func connect() {
-        AppRouter.shared.openTerminal(machine: machine)
+        ServerTool.terminal.show(machine)
     }
 
     func identityName(_ machine: RDMachine) -> String {
@@ -495,5 +493,13 @@ struct NewServerTile: View {
         .onHover { hovered = $0 }
         .animation(.spring(response: 0.25, dampingFraction: 0.7), value: hovered)
         .help("Add a server")
+    }
+}
+
+extension RayonStore.RecentConnection {
+    /// A Quick Connect command rather than a saved server.
+    var isCommand: Bool {
+        if case .command = self { return true }
+        return false
     }
 }

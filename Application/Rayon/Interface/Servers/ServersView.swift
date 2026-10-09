@@ -246,7 +246,7 @@ private struct ServerRow: View {
                             .buttonStyle(.rx(.plain, size: .small))
                             .help(tool.help)
                     }
-                    Button("Connect") { AppRouter.shared.openTerminal(machine: machine) }
+                    Button(ServerTool.terminal.title) { ServerTool.terminal.show(machine) }
                         .buttonStyle(.rx(size: .small))
                         .help(ServerTool.terminal.help)
                 }
