@@ -5,7 +5,7 @@ struct ConfigDocument: Codable, Equatable, Sendable {
     var overrides: [String: [String]] = [:]
 
     func values(_ key: String, catalog: ConfigCatalog = .shared) -> [String] {
-        overrides[key] ?? catalog.setting(key: key)?.defaultValue.values ?? []
+        overrides[key] ?? RayonTerminalConfiguration.runtimeDefaults[key] ?? catalog.setting(key: key)?.defaultValue.values ?? []
     }
     func text(_ key: String) -> String { values(key).first ?? "" }
 

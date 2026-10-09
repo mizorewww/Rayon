@@ -93,6 +93,20 @@ public enum RayonTerminalConfiguration {
         return result
     }()
 
+    /// Values Rayon's terminal starts from where they differ from Ghostty's own
+    /// defaults (font size 14, thickened text, blinking block cursor). The editor
+    /// shows these as the defaults, because they are what the terminal uses.
+    nonisolated static let runtimeDefaults: [String: [String]] = {
+        var result: [String: [String]] = [:]
+        for line in TerminalConfiguration.default.rendered.components(separatedBy: "\n") {
+            guard let eq = line.firstIndex(of: "=") else { continue }
+            let key = line[..<eq].trimmingCharacters(in: .whitespaces)
+            let value = line[line.index(after: eq)...].trimmingCharacters(in: .whitespaces)
+            result[key, default: []].append(value)
+        }
+        return result
+    }()
+
     nonisolated static let supportedKeys: Set<String> = [
         "background", "foreground", "background-opacity", "background-blur", "background-opacity-cells",
         "selection-background", "selection-foreground", "selection-clear-on-typing", "selection-clear-on-copy",

@@ -11,6 +11,13 @@ final class ConfigurationTests: XCTestCase {
         XCTAssertEqual(ids.count, Set(ids).count)
         XCTAssertEqual(catalog.registry["quitAfterLastWindowClosed"]?.defaultValue, .scalar("false"))
     }
+    func testEditorShowsRayonRuntimeDefaults() {
+        let document = ConfigDocument()
+        XCTAssertEqual(document.text("font-size"), "14")
+        XCTAssertEqual(document.text("font-thicken"), "true")
+        XCTAssertEqual(document.text("cursor-style-blink"), "true")
+        XCTAssertEqual(document.text("minimum-contrast"), ConfigCatalog.shared.setting(key: "minimum-contrast")?.defaultValue.text)
+    }
     func testImportMergePaletteRepeatableAndScalar() throws {
         var draft = ConfigDocument()
         try draft.merge("font-size = 17\nfont-family = Mono\nfont-family = 日本語\npalette = 2=#112233\nkeybind = ctrl+k=text:a=b:c")
