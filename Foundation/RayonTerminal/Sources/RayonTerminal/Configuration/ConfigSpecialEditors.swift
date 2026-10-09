@@ -40,7 +40,7 @@ struct ConfigThemePicker: View {
             }
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: RX.Space.s2)], spacing: RX.Space.s2) {
-                    ForEach(ConfigCatalog.shared.themes.keys.sorted().filter { search.isEmpty || $0.localizedCaseInsensitiveContains(search) }, id: \.self) { name in
+                    ForEach(ConfigCatalog.shared.themeNames.filter { search.isEmpty || $0.localizedCaseInsensitiveContains(search) }, id: \.self) { name in
                         let theme = ConfigCatalog.shared.themes[name]!
                         Button { select(name) } label: {
                             VStack(alignment: .leading, spacing: 6) {

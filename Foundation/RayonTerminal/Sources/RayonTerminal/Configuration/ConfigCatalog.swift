@@ -7,6 +7,19 @@ struct ConfigCatalog: Decodable, Sendable {
     let navigation: [ConfigPanel]
     let themes: [String: ConfigTheme]
 
+    // Derived once at decode time: views read these on every render.
+    let settings: [ConfigSetting]
+    /// Settings that take effect in Rayon's terminal. Everything else in the
+    /// upstream catalog (windows, tabs, GTK, Linux, app icons, quick terminal…)
+    /// belongs to standalone Ghostty and is not shown.
+    let rayonSettings: [ConfigSetting]
+    /// The upstream navigation reduced to Rayon's settings; empty groups and panels are dropped.
+    let rayonNavigation: [ConfigPanel]
+    let themeNames: [String]
+    private let byKey: [String: ConfigSetting]
+    /// Setting key → the Rayon panel and group that show it.
+    private let placement: [String: (panel: ConfigPanel, group: ConfigGroup)]
+
     static let shared: ConfigCatalog = {
         guard let url = Bundle.module.url(forResource: "catalog", withExtension: "json"),
               let data = try? Data(contentsOf: url),
@@ -15,19 +28,23 @@ struct ConfigCatalog: Decodable, Sendable {
         return catalog
     }()
 
-    var settings: [ConfigSetting] { registry.values.sorted { $0.key < $1.key } }
-    func setting(key: String) -> ConfigSetting? { settings.first { $0.key == key } }
-
-    /// Settings that take effect in Rayon's terminal. Everything else in the
-    /// upstream catalog (windows, tabs, GTK, Linux, app icons, quick terminal…)
-    /// belongs to standalone Ghostty and is not shown.
     static let rayonKeys: Set<String> = RayonTerminalConfiguration.supportedKeys.subtracting(["freetype-load-flags"])
 
-    var rayonSettings: [ConfigSetting] { settings.filter { Self.rayonKeys.contains($0.key) } }
+    private enum CodingKeys: String, CodingKey { case revision, registry, navigation, themes }
 
-    /// The upstream navigation reduced to Rayon's settings; empty groups and panels are dropped.
-    var rayonNavigation: [ConfigPanel] {
-        navigation.compactMap { panel in
+    init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        revision = try c.decode(String.self, forKey: .revision)
+        registry = try c.decode([String: ConfigSetting].self, forKey: .registry)
+        navigation = try c.decode([ConfigPanel].self, forKey: .navigation)
+        themes = try c.decode([String: ConfigTheme].self, forKey: .themes)
+
+        settings = registry.values.sorted { $0.key < $1.key }
+        rayonSettings = settings.filter { Self.rayonKeys.contains($0.key) }
+        byKey = Dictionary(settings.map { ($0.key, $0) }, uniquingKeysWith: { first, _ in first })
+        themeNames = themes.keys.sorted()
+        let registry = registry
+        rayonNavigation = navigation.compactMap { panel in
             let groups = (panel.groups ?? []).compactMap { group -> ConfigGroup? in
                 let ids = group.settings.filter { registry[$0].map { Self.rayonKeys.contains($0.key) } ?? false }
                 guard !ids.isEmpty else { return nil }
@@ -36,7 +53,20 @@ struct ConfigCatalog: Decodable, Sendable {
             guard !groups.isEmpty || panel.id == "keybinds" else { return nil }
             return ConfigPanel(id: panel.id, name: panel.name, note: panel.note, groups: groups, pages: nil)
         }
+        var placement: [String: (panel: ConfigPanel, group: ConfigGroup)] = [:]
+        for panel in rayonNavigation {
+            for group in panel.groups ?? [] {
+                for id in group.settings {
+                    if let key = registry[id]?.key, placement[key] == nil { placement[key] = (panel, group) }
+                }
+            }
+        }
+        self.placement = placement
     }
+
+    func setting(key: String) -> ConfigSetting? { byKey[key] }
+    func panel(containing key: String) -> ConfigPanel? { placement[key]?.panel }
+    func group(containing key: String) -> ConfigGroup? { placement[key]?.group }
 }
 
 struct ConfigSetting: Decodable, Identifiable, Sendable {

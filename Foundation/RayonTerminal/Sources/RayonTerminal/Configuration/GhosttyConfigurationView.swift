@@ -203,9 +203,8 @@ public struct GhosttyConfigurationView: View {
     }
 
     private func modifiedCount(_ panelID: String) -> Int? {
-        guard let panel = navigation.first(where: { $0.id == panelID }) else { return nil }
-        let keys = Set(panel.settingIDs.compactMap { ConfigCatalog.shared.registry[$0]?.key })
-        return model.document.overrides.keys.filter { keys.contains($0) }.count
+        guard navigation.contains(where: { $0.id == panelID }) else { return nil }
+        return model.document.overrides.keys.filter { ConfigCatalog.shared.panel(containing: $0)?.id == panelID }.count
     }
 
     // MARK: Errors
@@ -241,8 +240,9 @@ public struct GhosttyConfigurationView: View {
                     ForEach(hostSearchResults) { section in
                         section.content
                     }
+                    let results = searchResults
                     ForEach(navigation) { category in
-                        let matches = searchResults.filter { setting in category.settingIDs.contains { ConfigCatalog.shared.registry[$0]?.key == setting.key } }
+                        let matches = results.filter { ConfigCatalog.shared.panel(containing: $0.key)?.id == category.id }
                         if !matches.isEmpty {
                             VStack(alignment: .leading, spacing: RX.Space.s2) {
                                 HStack {
@@ -267,7 +267,7 @@ public struct GhosttyConfigurationView: View {
                             }
                         }
                     }
-                    if searchResults.isEmpty && hostSearchResults.isEmpty {
+                    if results.isEmpty && hostSearchResults.isEmpty {
                         EmptyStateView("No settings match “\(search)”", systemImage: "magnifyingglass")
                             .rxCard()
                     }
@@ -358,9 +358,10 @@ public struct GhosttyConfigurationView: View {
 
     private var searchResults: [ConfigSetting] {
         let tokens = search.lowercased().split(whereSeparator: \.isWhitespace)
-        return ConfigCatalog.shared.rayonSettings.filter { setting in
-            let category = navigation.first { panel in panel.settingIDs.contains { ConfigCatalog.shared.registry[$0]?.key == setting.key } }
-            let group = category?.groups?.first { $0.settings.contains { ConfigCatalog.shared.registry[$0]?.key == setting.key } }
+        let catalog = ConfigCatalog.shared
+        return catalog.rayonSettings.filter { setting in
+            let category = catalog.panel(containing: setting.key)
+            let group = catalog.group(containing: setting.key)
             let haystack = [setting.key, setting.name, setting.description, category?.name ?? "", group?.name ?? ""].joined(separator: " ").lowercased()
             return tokens.allSatisfy { haystack.contains($0) }
         }
