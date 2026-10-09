@@ -157,7 +157,8 @@ struct ServerEditorSheet: View {
 
     @discardableResult
     func save(banner capturedBanner: String? = nil, identity resolvedIdentity: RDIdentity.ID? = nil) -> RDMachine {
-        var target = machine.map { store.machineGroup[$0] } ?? RDMachine()
+        // A new server has never been connected to; RXFormat shows the epoch as "Never".
+        var target = machine.map { store.machineGroup[$0] } ?? RDMachine(lastConnection: Date(timeIntervalSince1970: 0))
         let trimmedAddress = address.trimmingCharacters(in: .whitespaces)
         target.remoteAddress = trimmedAddress
         target.remotePort = port
