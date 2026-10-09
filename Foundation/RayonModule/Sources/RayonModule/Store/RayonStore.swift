@@ -16,11 +16,9 @@ public class RayonStore: ObservableObject {
             debugPrint("RayonStore init completed")
         }
 
-        licenseAgreed = UserDefaults
-            .standard
-            .value(
-                forKey: UserDefaultKey.licenseAgreed.rawValue
-            ) as? Bool ?? false
+        // bool(forKey:) also reads "YES"/"1" from the argument domain
+        // (`-licenseAgreed YES`), and is false when the key is missing.
+        licenseAgreed = UserDefaults.standard.bool(forKey: UserDefaultKey.licenseAgreed.rawValue)
         storeRecent = UDStoreRecent
         saveTemporarySession = UDSaveTemporarySession
         timeout = UDTimeout
