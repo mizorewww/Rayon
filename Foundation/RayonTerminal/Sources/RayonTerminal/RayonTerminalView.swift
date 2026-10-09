@@ -29,6 +29,11 @@ public struct RayonTerminalView {
 
     nonisolated public func requestTerminalSize() -> CGSize { session.callbacks.terminalSize }
 
+    /// For a terminal kept mounted while another page is shown: a hidden
+    /// terminal stops rendering and gives up keyboard focus (so typing never
+    /// lands in a session you can't see); shown again, it takes focus back.
+    @MainActor public func setActive(_ active: Bool) { session.setActive(active) }
+
     @discardableResult
     nonisolated public func setupBufferChain(callback: ((String) -> Void)?) -> Self {
         session.callbacks.setInput(callback)
@@ -93,6 +98,22 @@ final class RayonTerminalSession: @unchecked Sendable {
     }
 
     @MainActor func applyFontSize(preferConfigured: Bool) { presentation?.applyFontSize(preferConfigured: preferConfigured) }
+
+    @MainActor func setActive(_ active: Bool) {
+        let view = platformView()
+        view.setSurfaceVisible(active)
+        #if os(macOS)
+            if active {
+                // After SwiftUI has shown the page, so the view is in its window.
+                DispatchQueue.main.async { view.window?.makeFirstResponder(view) }
+            } else if view.window?.firstResponder === view {
+                view.window?.makeFirstResponder(nil)
+            }
+        #else
+            // Taking focus would raise the software keyboard; only let it go.
+            if !active, view.isFirstResponder { view.resignFirstResponder() }
+        #endif
+    }
 }
 
 @MainActor
