@@ -1,0 +1,25 @@
+# UI tests for the iOS app (mRayon). They drive the installed app by bundle
+# identifier, so install mRayon on the simulator first; see README.md here.
+# Regenerate the project with: xcodegen generate
+name: mRayonUITests
+options:
+  bundleIdPrefix: wiki.qaq.ray0n
+  deploymentTarget:
+    iOS: "16.0"
+targets:
+  mRayonUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [Tests]
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "6.0"
+        CODE_SIGNING_ALLOWED: NO
+schemes:
+  mRayonUITests:
+    build:
+      targets:
+        mRayonUITests: [test]
+    test:
+      targets: [mRayonUITests]
