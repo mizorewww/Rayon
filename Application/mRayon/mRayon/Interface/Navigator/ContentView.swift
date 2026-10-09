@@ -290,7 +290,7 @@ struct MoreView: View {
                     .rxListRow()
                 NavigationLink { LicenseView() } label: { moreRow("License", "doc.text") }
                     .rxListRow()
-                Link(destination: URL(string: "https://github.com/Lakr233/Rayon")!) {
+                Link(destination: URL(string: "https://github.com/mizorewww/Rayon")!) {
                     moreRow("Source Code", "chevron.left.forwardslash.chevron.right")
                 }
                 .rxListRow()

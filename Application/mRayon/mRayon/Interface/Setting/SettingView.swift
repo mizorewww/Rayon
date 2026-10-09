@@ -83,7 +83,7 @@ struct SettingView: View {
             .rxListRow()
 
             Section {
-                Link(destination: URL(string: "https://github.com/Lakr233/Rayon")!) {
+                Link(destination: URL(string: "https://github.com/mizorewww/Rayon")!) {
                     Label("Source Code", systemImage: "chevron.left.forwardslash.chevron.right")
                 }
                 NavigationLink {

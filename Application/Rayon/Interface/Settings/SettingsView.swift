@@ -195,9 +195,15 @@ private struct AboutSettings: View {
                     .foregroundStyle(.rxInkSecondary)
                     .textSelection(.enabled)
             }
-            RXFormRow("Source code") {
-                Link(destination: URL(string: "https://github.com/Lakr233/Rayon")!) {
+            RXFormRow("Source code", description: "mizorewww/Rayon on GitHub") {
+                Link(destination: URL(string: "https://github.com/mizorewww/Rayon")!) {
                     Label("GitHub", systemImage: "arrow.up.right.square")
+                }
+                .buttonStyle(.rx)
+            }
+            RXFormRow("Report a problem", description: "Bugs and ideas go to the project's issue tracker.") {
+                Link(destination: URL(string: "https://github.com/mizorewww/Rayon/issues")!) {
+                    Label("Issues", systemImage: "arrow.up.right.square")
                 }
                 .buttonStyle(.rx)
             }
@@ -219,7 +225,10 @@ private struct AboutSettings: View {
 private struct AcknowledgementSettings: View {
     var body: some View {
         RXDividedStack {
-            RXFormRow("Made by", description: "Lakr Aream (@Lakr233) with @__oquery, @zlind0, @unixzii, @82flex and @xnth97.") {
+            RXFormRow("Maintained by", description: "mizorewww, continuing Rayon after the original repository was archived.") {
+                EmptyView()
+            }
+            RXFormRow("Originally created by", description: "Lakr Aream (@Lakr233) with @__oquery, @zlind0, @unixzii, @82flex and @xnth97. This version is not affiliated with or endorsed by them.") {
                 EmptyView()
             }
             RXFormRow("Terminal", description: "Ghostty, its configuration catalog and app icon presets (MIT, Ghostty contributors).") {

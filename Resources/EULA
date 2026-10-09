@@ -3,6 +3,7 @@ Rayon Application
 Please scroll down to view the full license agreement.
 
 Copyright (c) 2022 Lakr Aream <license@qaq.wiki>
+Copyright (c) 2026 mizorewww and Rayon contributors <https://github.com/mizorewww/Rayon>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +27,7 @@ standards to maximize compatibility and reduce the risk of potential damage to
 the SSH host. However, it still remains possibility of unexpected damage to your
 host, including but not limited to misunderstanding server status shown by the
 software, damage to system and data of the SSH server, or physical damage.
-We are not responsible for any consequences. You have fully understood and
+The authors, maintainers and contributors are not responsible for any consequences. You have fully understood and
 acknowledged this risk, to behave and take the possible risks on your own.
 
 ================================================================================
