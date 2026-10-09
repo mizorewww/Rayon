@@ -31,6 +31,10 @@ public struct GhosttyConfigurationView: View {
     @State private var navigationHistory = ["general"]
     @State private var navigationIndex = 0
     @State private var navigating = false
+    /// Width beside the category column; the preview sits beside the settings
+    /// only when both fit, and above them otherwise.
+    @State private var detailWidth: CGFloat = 1200
+    private var previewBeside: Bool { detailWidth >= 1000 }
     private let onApplied: ((Double?) -> Void)?
     private let embedded: Bool
     private let usesExternalSelection: Bool
@@ -91,7 +95,7 @@ public struct GhosttyConfigurationView: View {
                 HStack(alignment: .top, spacing: RX.Space.s4) {
                     content
                         .frame(minWidth: 440, maxWidth: .infinity, maxHeight: .infinity)
-                    if showPreview, search.isEmpty, category?.previews == true {
+                    if showPreview, previewBeside, search.isEmpty, category?.previews == true {
                         ScrollView {
                             ConfigPreview(model: model)
                                 .rxCard(padding: 0)
@@ -107,6 +111,7 @@ public struct GhosttyConfigurationView: View {
                     errorBar
                 }
             }
+            .readWidth($detailWidth)
         }
         .background(RXWindowBackground().ignoresSafeArea())
         .toolbarBackground(.hidden, for: .windowToolbar)
@@ -270,6 +275,11 @@ public struct GhosttyConfigurationView: View {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: RX.Space.s6) {
                         PageTitle(category.title)
+                        if showPreview, !previewBeside, category.previews {
+                            ConfigPreview(model: model)
+                                .rxCard(padding: 0)
+                                .transition(.opacity)
+                        }
                         if category.id == "keyboard" {
                             ConfigKeybindingList(model: model)
                         } else {
