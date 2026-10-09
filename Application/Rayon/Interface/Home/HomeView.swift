@@ -2,8 +2,9 @@
 //  HomeView.swift
 //  Rayon (macOS)
 //
-//  Start page: status pills, title with counts, Quick Connect, the Servers grid with
-//  Batch Startup, and Recent (servers and Quick Connect commands).
+//  Start page: Quick Connect (the typed command parsed into user, host and port),
+//  Recent, then the Servers grid. Every tile is the same size and names its
+//  actions: Connect, Files, Monitor.
 //
 
 import MachineStatusView
@@ -25,12 +26,11 @@ struct HomeView: View {
             .padding(.horizontal, RX.Space.s6)
             .padding(.bottom, RX.Space.s6)
             .frame(maxWidth: .infinity)
+            .animation(.easeInOut(duration: 0.25), value: store.machineGroup.machines.map(\.id))
         }
         .pageChrome()
         .pageToolbar {
         } trailing: {
-            ToolbarAction("Batch Startup", systemImage: "wind") { router.openTerminals() }
-                .disabled(store.machineGroup.machines.isEmpty)
             ToolbarAction("New Server", systemImage: "plus", primary: true) {
                 router.presentNewServer = true
             }
@@ -38,18 +38,31 @@ struct HomeView: View {
     }
 
     @ViewBuilder var serversSection: some View {
-        if !store.machineGroup.machines.isEmpty {
+        if store.machineGroup.machines.isEmpty {
+            EmptyStateView(
+                "Save a server to reach it in one click",
+                systemImage: "server.rack",
+                message: "Saved servers keep their address, port and identity, and open a terminal, files or a monitor.",
+                actionTitle: "New Server"
+            ) {
+                router.presentNewServer = true
+            }
+            .frame(maxWidth: 640)
+            .rxCard()
+        } else {
             VStack(alignment: .leading, spacing: RX.Space.s3) {
-                SectionTitle("Servers") {
-                    Button("View All") { router.route = .servers }
+                SectionTitle("Servers", count: store.machineGroup.count) {
+                    Button("Show All") { router.route = .servers }
                         .buttonStyle(.rxPlain)
+                        .help("Show every server in a table")
                 }
                 LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 290), spacing: RX.Space.s4)],
+                    columns: [GridItem(.adaptive(minimum: 310), spacing: RX.Space.s4)],
                     spacing: RX.Space.s4
                 ) {
                     ForEach(store.machineGroup.machines) { machine in
                         ServerTile(machine: machine.id)
+                            .transition(.scale(scale: 0.96).combined(with: .opacity))
                     }
                     NewServerTile()
                 }
@@ -61,6 +74,8 @@ struct HomeView: View {
 // MARK: - Quick Connect
 
 /// The big, fast way in: type `user@host` and press Return. Focused on open.
+/// What was typed is read back as separate User, Host and Port tokens, so it is
+/// clear what Return will connect to before pressing it.
 struct QuickConnectHero: View {
     @EnvironmentObject var store: RayonStore
     @State private var command = ""
@@ -68,17 +83,30 @@ struct QuickConnectHero: View {
     @FocusState private var focused: Bool
 
     var parsed: SSHCommandReader? {
-        let trimmed = command.trimmingCharacters(in: .whitespaces)
-        return SSHCommandReader(command: trimmed) ?? SSHCommandReader(command: "ssh " + trimmed)
+        var trimmed = command.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else { return nil }
+        if !trimmed.lowercased().hasPrefix("ssh ") { trimmed = "ssh " + trimmed }
+        // Accept `user@host:port` as well as `-p port`.
+        let parts = trimmed.split(separator: " ")
+        if parts.count == 2, parts[1].contains("@"), parts[1].filter({ $0 == ":" }).count == 1,
+           let colon = parts[1].lastIndex(of: ":")
+        {
+            let target = parts[1][..<colon]
+            let port = parts[1][parts[1].index(after: colon)...]
+            trimmed = "ssh \(target) -p \(port)"
+        }
+        return SSHCommandReader(command: trimmed)
     }
 
     var body: some View {
+        let parsed = parsed
         VStack(spacing: RX.Space.s4) {
             HStack(spacing: RX.Space.s3) {
                 Image(systemName: "terminal")
                     .font(.system(size: 22, weight: .regular))
                     .foregroundStyle(.rxInkSecondary)
-                TextField("ssh user@host -p 22", text: $command)
+                    .accessibilityHidden(true)
+                TextField("user@host:22", text: $command)
                     .textFieldStyle(.plain)
                     .font(.system(size: 22, weight: .regular, design: .monospaced))
                     .disableAutocorrection(true)
@@ -88,6 +116,7 @@ struct QuickConnectHero: View {
                         if newValue.hasPrefix("ssh ssh ") { command.removeFirst("ssh ".count) }
                         refreshSuggestion()
                     }
+                    .accessibilityLabel("Quick Connect")
                 Button(action: connect) {
                     Image(systemName: "arrow.right")
                         .font(.system(size: 16, weight: .semibold))
@@ -98,6 +127,9 @@ struct QuickConnectHero: View {
                 .buttonStyle(.plain)
                 .disabled(parsed == nil)
                 .opacity(parsed == nil ? 0.35 : 1)
+                .scaleEffect(parsed == nil ? 0.9 : 1)
+                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: parsed == nil)
+                .help("Connect (↩)")
                 .accessibilityLabel("Connect")
             }
             .padding(.leading, RX.Space.s5)
@@ -107,9 +139,24 @@ struct QuickConnectHero: View {
                 Capsule()
                     .fill(.thickMaterial)
                     .overlay(Capsule().fill(Color.rxSurface.opacity(0.35)))
-                    .shadow(color: .black.opacity(0.18), radius: 18, y: 8)
+                    .overlay(Capsule().strokeBorder(Color.rxAccent.opacity(focused ? 0.5 : 0), lineWidth: 1.5))
+                    .shadow(color: .black.opacity(focused ? 0.24 : 0.18), radius: focused ? 22 : 18, y: 8)
             )
+            .animation(.easeOut(duration: 0.2), value: focused)
             .frame(maxWidth: 640)
+
+            Group {
+                if let parsed {
+                    ParsedCommand(command: parsed)
+                        .transition(.opacity.combined(with: .offset(y: -6)))
+                } else if !"ssh ".hasPrefix(command.lowercased()) {
+                    Text("Type user@host, user@host:port or a full ssh command.")
+                        .font(.rxHelp)
+                        .foregroundStyle(.rxInkSecondary)
+                        .transition(.opacity)
+                }
+            }
+            .animation(.easeOut(duration: 0.2), value: parsed)
 
             if let suggestion {
                 Button {
@@ -125,24 +172,35 @@ struct QuickConnectHero: View {
                 }
                 .buttonStyle(.plain)
                 .keyboardShortcut(.return, modifiers: .command)
+                .help("Connect with this recent command")
+                .transition(.opacity)
             }
 
             if store.identityGroupForAutoAuth.isEmpty {
-                Text("Needs an identity that authenticates automatically.")
-                    .font(.rxHelp)
-                    .foregroundStyle(.rxWarning)
+                HStack(spacing: RX.Space.s2) {
+                    Image(systemName: "exclamationmark.triangle")
+                    Text("Quick Connect signs in with identities set to “Authenticate automatically”. You have none yet.")
+                    Button("Open Identities") { AppRouter.shared.route = .identities }
+                        .buttonStyle(.link)
+                }
+                .font(.rxHelp)
+                .foregroundStyle(.rxWarning)
             }
 
             if store.storeRecent, !store.recentRecord.isEmpty {
-                RXFlowLayout(spacing: RX.Space.s2, alignment: .center) {
-                    ForEach(store.recentRecord) { record in
-                        RecentChip(record: record)
+                VStack(spacing: RX.Space.s2) {
+                    CapsLabel("Recent")
+                    RXFlowLayout(spacing: RX.Space.s2, alignment: .center) {
+                        ForEach(store.recentRecord) { record in
+                            RecentChip(record: record)
+                        }
                     }
                 }
                 .frame(maxWidth: 640)
             }
         }
         .frame(maxWidth: .infinity)
+        .animation(.easeOut(duration: 0.2), value: suggestion)
         .onAppear {
             onMainThread(delay: 0.2) { focused = true }
         }
@@ -164,6 +222,41 @@ struct QuickConnectHero: View {
             .lazy
             .map(\.equivalentSSHCommand)
             .first { !$0.isEmpty && $0.hasPrefix(typed) && $0 != typed }
+    }
+}
+
+/// The parsed command as distinct tokens: who, where, which port.
+private struct ParsedCommand: View {
+    let command: SSHCommandReader
+
+    var body: some View {
+        HStack(spacing: RX.Space.s2) {
+            token("User", command.username, systemImage: "person", tint: .rxAccent)
+            token("Host", command.remoteAddress, systemImage: "network", tint: .rxSeries2)
+            token("Port", command.remotePort, systemImage: "number", tint: .rxInkSecondary)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    func token(_ title: String, _ value: String, systemImage: String, tint: Color) -> some View {
+        HStack(spacing: 5) {
+            Image(systemName: systemImage)
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(tint)
+            Text(title.uppercased())
+                .font(.rxCaption)
+                .tracking(rxCapsTracking)
+                .foregroundStyle(.rxInkSecondary)
+            Text(value)
+                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                .foregroundStyle(.rxInk)
+                .lineLimit(1)
+                .truncationMode(.middle)
+        }
+        .padding(.horizontal, 10)
+        .frame(height: 24)
+        .background(Capsule().fill(tint.opacity(0.12)))
+        .overlay(Capsule().strokeBorder(tint.opacity(0.25), lineWidth: 0.5))
     }
 }
 
@@ -223,8 +316,12 @@ struct RecentChip: View {
 
 // MARK: - Tiles
 
-/// A server at a glance: name, address, state, CPU and memory while monitored.
-/// Click opens the monitor, double-click a terminal, right-click the context menu.
+/// Every tile in the grid, the New Server tile included, has this height, so rows
+/// line up whether or not a server is being monitored.
+private let serverTileHeight: CGFloat = 168
+
+/// A server at a glance: name, address, state, CPU and memory while monitored,
+/// and its actions by name. Clicking the tile connects; right-click for more.
 struct ServerTile: View {
     let machine: RDMachine.ID
     @EnvironmentObject var store: RayonStore
@@ -233,7 +330,7 @@ struct ServerTile: View {
     var body: some View {
         let read = store.machineGroup[machine]
         ServerLiveReader(machine: machine) { state in
-            VStack(alignment: .leading, spacing: RX.Space.s3) {
+            VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top, spacing: RX.Space.s2) {
                     VStack(alignment: .leading, spacing: 2) {
                         RedactableText(read.name, redacted: store.machineRedacted == .all)
@@ -246,31 +343,109 @@ struct ServerTile: View {
                             .lineLimit(1)
                     }
                     Spacer(minLength: RX.Space.s2)
-                }
-                if let cpu = state.cpu, let memory = state.memory {
-                    tileBar("CPU", percent: cpu, color: .rxAccent)
-                    tileBar("Memory", percent: memory, color: .rxSeries2)
-                } else {
-                    HStack {
-                        CapsLabel("Last used")
-                        Spacer()
-                        Text(RXFormat.relative(read.lastConnection))
-                            .font(.system(size: 12))
-                            .foregroundStyle(.rxInkSecondary)
+                    if connected {
+                        StatusDot(.success, size: .small)
+                            .padding(.top, 6)
+                            .help("A terminal is open")
+                            .transition(.scale.combined(with: .opacity))
                     }
-
                 }
+                Spacer(minLength: RX.Space.s2)
+                Group {
+                    if let cpu = state.cpu, let memory = state.memory {
+                        VStack(spacing: 6) {
+                            tileBar("CPU", percent: cpu, color: .rxAccent)
+                            tileBar("Memory", percent: memory, color: .rxSeries2)
+                        }
+                        .transition(.opacity)
+                    } else {
+                        VStack(spacing: 6) {
+                            infoRow("Last used", RXFormat.relative(read.lastConnection))
+                            infoRow("Identity", identityName(read))
+                        }
+                        .transition(.opacity)
+                    }
+                }
+                .animation(.easeOut(duration: 0.25), value: state.cpu == nil)
+                Spacer(minLength: RX.Space.s3)
+                actions
             }
+            .frame(height: serverTileHeight - RX.Space.s4 * 2)
         }
         .rxCard()
+        .overlay(
+            RoundedRectangle(cornerRadius: RX.Radius.card, style: .continuous)
+                .strokeBorder(Color.rxAccent.opacity(hovered ? 0.35 : 0), lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(hovered ? 0.12 : 0), radius: 16, y: 8)
         .scaleEffect(hovered ? 1.01 : 1)
-        .animation(.easeOut(duration: 0.15), value: hovered)
+        .animation(.spring(response: 0.25, dampingFraction: 0.8), value: hovered)
         .contentShape(RoundedRectangle(cornerRadius: RX.Radius.card, style: .continuous))
         .onHover { hovered = $0 }
-        .gesture(TapGesture(count: 2).onEnded { AppRouter.shared.openTerminal(machine: machine) })
-        .simultaneousGesture(TapGesture(count: 1).onEnded { AppRouter.shared.openMonitor(machine: machine) })
+        .onTapGesture { connect() }
         .contextMenu { ServerContextMenu(machine: machine) }
-        .help("Double-click to open a terminal")
+        .help("Click to open a terminal")
+        .accessibilityElement(children: .contain)
+        .accessibilityAddTraits(.isButton)
+    }
+
+    var connected: Bool {
+        TerminalManager.shared.sessionContexts.contains { $0.remoteType == .machine && $0.machine.id == machine && !$0.closed }
+    }
+
+    var actions: some View {
+        HStack(spacing: RX.Space.s1) {
+            Button(action: connect) {
+                Label("Connect", systemImage: ServerTool.terminal.systemImage)
+            }
+            .buttonStyle(.rx(.primary, size: .small))
+            .help(ServerTool.terminal.help)
+            toolButton(.files)
+            toolButton(.monitor)
+            Spacer(minLength: 0)
+            Menu {
+                ServerContextMenu(machine: machine)
+            } label: {
+                Label("More", systemImage: "ellipsis")
+            }
+            .menuStyle(.button)
+            .menuIndicator(.hidden)
+            .buttonStyle(.rx(.plain, size: .small, iconOnly: true))
+            .fixedSize()
+            .help("More actions")
+        }
+    }
+
+    func toolButton(_ tool: ServerTool) -> some View {
+        Button {
+            tool.show(machine)
+        } label: {
+            Label(tool.title, systemImage: tool.systemImage)
+        }
+        .buttonStyle(.rx(size: .small))
+        .help(tool.help)
+    }
+
+    func connect() {
+        AppRouter.shared.openTerminal(machine: machine)
+    }
+
+    func identityName(_ machine: RDMachine) -> String {
+        guard let aid = machine.associatedIdentity, let uid = UUID(uuidString: aid) else { return "Automatic" }
+        let identity = store.identityGroup[uid]
+        return identity.username.isEmpty ? "Missing" : identity.username
+    }
+
+    func infoRow(_ title: String, _ value: String) -> some View {
+        HStack {
+            CapsLabel(title)
+            Spacer()
+            Text(value)
+                .font(.system(size: 12))
+                .foregroundStyle(.rxInkSecondary)
+                .lineLimit(1)
+        }
+        .frame(height: 16)
     }
 
     func tileBar(_ title: String, percent: Double, color: Color) -> some View {
@@ -280,12 +455,14 @@ struct ServerTile: View {
             UsageBar(fraction: percent / 100, color: color)
             Text("\(RXFormat.percent(percent))%")
                 .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                .contentTransition(.numericText())
                 .frame(width: 36, alignment: .trailing)
         }
+        .frame(height: 16)
     }
 }
 
-/// The dashed tile that ends the server grid.
+/// The dashed tile that ends the server grid, the same size as a server tile.
 struct NewServerTile: View {
     @State private var hovered = false
 
@@ -293,19 +470,30 @@ struct NewServerTile: View {
         Button {
             AppRouter.shared.presentNewServer = true
         } label: {
-            Label("New Server", systemImage: "plus")
-                .font(.rxBody)
-                .foregroundStyle(hovered ? Color.rxAccent : Color.rxInkSecondary)
-                .frame(maxWidth: .infinity, minHeight: 120)
-                .frame(maxHeight: .infinity)
-                .background(
-                    RoundedRectangle(cornerRadius: RX.Radius.card, style: .continuous)
-                        .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
-                        .foregroundStyle(hovered ? Color.rxAccent : Color.rxControlBorder)
-                )
-                .contentShape(Rectangle())
+            VStack(spacing: RX.Space.s2) {
+                Image(systemName: "plus")
+                    .font(.system(size: 18, weight: .medium))
+                    .scaleEffect(hovered ? 1.15 : 1)
+                Text("New Server")
+                    .font(.rxBody)
+            }
+            .foregroundStyle(hovered ? Color.rxAccent : Color.rxInkSecondary)
+            .frame(maxWidth: .infinity)
+            .frame(height: serverTileHeight)
+            .background(
+                RoundedRectangle(cornerRadius: RX.Radius.card, style: .continuous)
+                    .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
+                    .foregroundStyle(hovered ? Color.rxAccent : Color.rxControlBorder)
+            )
+            .background(
+                RoundedRectangle(cornerRadius: RX.Radius.card, style: .continuous)
+                    .fill(Color.rxAccent.opacity(hovered ? 0.06 : 0))
+            )
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .onHover { hovered = $0 }
+        .animation(.spring(response: 0.25, dampingFraction: 0.7), value: hovered)
+        .help("Add a server")
     }
 }
