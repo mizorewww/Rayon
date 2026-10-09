@@ -91,6 +91,7 @@ public struct GhosttyConfigurationView: View {
                         .frame(minWidth: 300, idealWidth: 340, maxWidth: 400)
                         .padding(.trailing, RX.Space.s6)
                         .padding(.top, RX.Space.s3)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
                     }
                 }
                 if !model.message.isEmpty {
@@ -117,15 +118,22 @@ public struct GhosttyConfigurationView: View {
                             .disabled(model.redoStack.isEmpty)
                     }
                     .help("Undo / Redo")
-                    Button { resetConfirm = true } label: { Label("Reset All", systemImage: "arrow.counterclockwise") }
-                        .help("Reset All")
-                    Button { showPreview.toggle() } label: { Label(showPreview ? "Hide Preview" : "Show Preview", systemImage: "sidebar.right") }
-                        .help(showPreview ? "Hide Preview" : "Show Preview")
+                    Button { resetConfirm = true } label: {
+                        Label("Reset All…", systemImage: "arrow.counterclockwise").labelStyle(.titleAndIcon)
+                    }
+                    .help("Reset every terminal setting to its default")
+                    Toggle(isOn: $showPreview.animation(.easeInOut(duration: 0.25))) {
+                        Label("Preview", systemImage: "sidebar.right").labelStyle(.titleAndIcon)
+                    }
+                    .toggleStyle(.button)
+                    .help(showPreview ? "Hide the live terminal preview" : "Show a live terminal preview beside the settings")
                 }
             }
         }))
         .searchable(text: $search, placement: .toolbar, prompt: "Search settings")
         .onAppear(perform: installApplyHandler)
+        .animation(.easeOut(duration: 0.18), value: selection)
+        .animation(.easeOut(duration: 0.18), value: search.isEmpty)
         .onChange(of: selection) { next in
             if navigating { navigating = false; return }
             navigationHistory = Array(navigationHistory.prefix(navigationIndex + 1)) + [next]

@@ -84,6 +84,7 @@ struct ConfigSettingRow: View {
                         Label("About \(setting.name)", systemImage: "questionmark.circle")
                     }
                     .buttonStyle(.rx(.plain, size: .small, iconOnly: true))
+                    .help("About \(setting.name)")
                     .popover(isPresented: $help) {
                         ScrollView {
                             VStack(alignment: .leading, spacing: RX.Space.s3) {
@@ -99,12 +100,15 @@ struct ConfigSettingRow: View {
                         }
                         .frame(maxHeight: 500)
                     }
+                    // Only a changed setting can be reset; the slot stays so controls don't shift.
                     Button { model.reset(setting.key) } label: {
                         Label("Reset to Default", systemImage: "arrow.counterclockwise")
                     }
                     .buttonStyle(.rx(.plain, size: .small, iconOnly: true))
+                    .opacity(isModified ? 1 : 0)
                     .disabled(!isModified)
-                    .help("Reset to default")
+                    .help("Reset \(setting.name) to its default")
+                    .animation(.easeOut(duration: 0.15), value: isModified)
                 }
             }
             if stacked {
@@ -156,13 +160,12 @@ struct ConfigWidgetView: View {
                     Menu {
                         ForEach(widget?.presets ?? []) { option in Button(option.name) { value.wrappedValue = option.value } }
                     } label: {
-                        Label("Presets", systemImage: "list.bullet")
+                        Text("Presets")
                     }
                     .menuStyle(.button)
-                    .menuIndicator(.hidden)
-                    .buttonStyle(.rx(iconOnly: true))
+                    .buttonStyle(.rx(size: .small))
                     .fixedSize()
-                    .help("Presets")
+                    .help("Choose a common value")
                     if widget?.type == "custom-color" { colorInput } else { numericInput }
                 }
             case "number": numericInput
