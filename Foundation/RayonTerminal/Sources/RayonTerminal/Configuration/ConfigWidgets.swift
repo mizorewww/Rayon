@@ -11,7 +11,7 @@ struct ConfigSettingRow: View {
     @State private var help = false
 
     private var highlightedName: AttributedString {
-        var text = AttributedString(setting.name)
+        var text = AttributedString(ConfigLayout.title(setting))
         for token in query.split(whereSeparator: \.isWhitespace) {
             if let range = text.range(of: String(token), options: .caseInsensitive) {
                 text[range].foregroundColor = Color.rxAccent
@@ -34,8 +34,9 @@ struct ConfigSettingRow: View {
 
     private var isModified: Bool { model.document.overrides[setting.key] != nil }
 
-    /// The catalog description's first sentence, without markdown.
+    /// Rayon's wording, else the catalog description's first sentence, without markdown.
     private var summary: String {
+        if let wording = ConfigLayout.wording[setting.key]?.summary { return wording }
         let plain = setting.description
             .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
             .replacingOccurrences(of: "`", with: "")
@@ -61,21 +62,11 @@ struct ConfigSettingRow: View {
                     }
                     if !summary.isEmpty {
                         HelpText(summary)
-                            .lineLimit(1)
-                    }
-                    HStack(spacing: RX.Space.s2) {
-                        Text(setting.key)
-                            .font(.system(size: 11, design: .monospaced))
-                            .foregroundStyle(.rxInkTertiary)
-                            .textSelection(.enabled)
-                        if let platform = setting.platform {
-                            Text(platform.joined(separator: " / "))
-                                .font(.rxHelp)
-                                .foregroundStyle(.rxInkTertiary)
-                        }
+                            .lineLimit(2)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                .help("Ghostty setting: \(setting.key)")
                 HStack(spacing: RX.Space.s2) {
                     if !stacked {
                         ConfigWidgetView(model: model, setting: setting)
@@ -90,6 +81,10 @@ struct ConfigSettingRow: View {
                         ScrollView {
                             VStack(alignment: .leading, spacing: RX.Space.s3) {
                                 Text(setting.name).font(.rxSheetTitle)
+                                Text(setting.key)
+                                    .font(.system(size: 11, design: .monospaced))
+                                    .foregroundStyle(.rxInkSecondary)
+                                    .textSelection(.enabled)
                                 Text(.init(setting.description)).font(.rxBody)
                                 if let note = setting.note {
                                     HelpText(note.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression))
@@ -172,7 +167,7 @@ struct ConfigWidgetView: View {
             case "pill" where (widget?.options ?? []).count <= 4 && !(widget?.options ?? []).isEmpty:
                 RXSegmented(
                     selection: Binding(get: { effective }, set: { value.wrappedValue = $0 }),
-                    options: (widget?.options ?? []).map { .init($0.value, $0.name) },
+                    options: (widget?.options ?? []).map { .init($0.value, ConfigLayout.optionName(setting.key, value: $0.value, fallback: $0.name)) },
                     caps: false
                 )
             case "dropdown", "pill":
@@ -225,7 +220,9 @@ struct ConfigWidgetView: View {
         Picker(setting.name, selection: value) {
             Text("Default").tag("")
             Divider()
-            ForEach(widget?.options ?? []) { option in Text(option.name).tag(option.value).disabled(option.disabled == true) }
+            ForEach(widget?.options ?? []) { option in
+                Text(ConfigLayout.optionName(setting.key, value: option.value, fallback: option.name)).tag(option.value).disabled(option.disabled == true)
+            }
             if !value.wrappedValue.isEmpty && !(widget?.options ?? []).contains(where: { $0.value == value.wrappedValue }) {
                 Text(value.wrappedValue).tag(value.wrappedValue)
             }
@@ -324,20 +321,33 @@ struct ConfigPairInput: View {
     let labels: [String]
     private var parts: [String] { ConfigPairCodec.parse(value, scroll: scroll).values }
     private var linked: Bool { ConfigPairCodec.parse(value, scroll: scroll).linked }
+    private var names: [String] { scroll ? ["Trackpad", "Wheel"] : labels }
+
     var body: some View {
         HStack(spacing: RX.Space.s2) {
-            TextField(scroll ? "Precision" : labels[0], text: Binding(get: { parts[0] }, set: { write($0, linked ? $0 : parts[1], linked) }))
+            caption(names[0])
+            TextField(names[0], text: Binding(get: { parts[0] }, set: { write($0, linked ? $0 : parts[1], linked) }))
                 .multilineTextAlignment(.trailing)
                 .textFieldStyle(.rx)
-                .frame(width: 72)
-            RXIconButton(linked ? "Unlink Values" : "Link Values", systemImage: linked ? "link" : "link.badge.plus", kind: .plain) {
-                write(parts[0], parts[1], !linked)
+                .frame(width: 56)
+            if !scroll {
+                RXIconButton(linked ? "Unlink: set \(names[0]) and \(names[1]) separately" : "Link: use one value for both",
+                             systemImage: linked ? "link" : "link.badge.plus", kind: .plain) {
+                    write(parts[0], parts[1], !linked)
+                }
             }
-            TextField(scroll ? "Discrete" : labels[1], text: Binding(get: { parts[1] }, set: { write(linked ? $0 : parts[0], $0, linked) }))
+            caption(names[1])
+            TextField(names[1], text: Binding(get: { parts[1] }, set: { write(linked ? $0 : parts[0], $0, linked) }))
                 .multilineTextAlignment(.trailing)
                 .textFieldStyle(.rx)
-                .frame(width: 72)
+                .frame(width: 56)
         }
+    }
+
+    private func caption(_ text: String) -> some View {
+        Text(text)
+            .font(.rxHelp)
+            .foregroundStyle(.rxInkSecondary)
     }
     private func write(_ a: String, _ b: String, _ linked: Bool) { value = linked ? a : scroll ? "precision:\(a),discrete:\(b)" : "\(a),\(b)" }
 }

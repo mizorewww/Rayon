@@ -2,29 +2,24 @@ import AppKit
 import RayonDesign
 import SwiftUI
 
-/// App-owned preferences share the editor's navigation without coupling this package to RayonStore.
+/// Rows the app supplies for a group in `ConfigLayout` (General, Connection,
+/// About), so its preferences share Settings without coupling this package to
+/// RayonStore. The content is the group's rows, usually an `RXDividedStack`.
 public struct ConfigHostSettingsSection: Identifiable {
     public let id: String
-    let title: String
-    let subtitle: String?
-    let icon: String
     let keywords: String
     let content: AnyView
 
-    @MainActor public init<Content: View>(id: String, title: String, subtitle: String? = nil, icon: String, keywords: String,
-                                        @ViewBuilder content: () -> Content) {
+    @MainActor public init<Content: View>(id: String, keywords: String, @ViewBuilder content: () -> Content) {
         self.id = id
-        self.title = title
-        self.subtitle = subtitle
-        self.icon = icon
         self.keywords = keywords
         self.content = AnyView(content())
     }
 }
 
-/// The terminal settings Rayon applies, drawn with the Rayon design system: a
-/// category column, then the selected category's settings as grouped cards.
-/// Settings that only matter to standalone Ghostty are not shown.
+/// All of Settings: a category column, then the selected category's groups as
+/// cards. The categories, their order and their groups come from `ConfigLayout`;
+/// Ghostty settings are drawn from the catalog, app rows from `hostSections`.
 public struct GhosttyConfigurationView: View {
     @StateObject private var model = ConfigEditorModel.shared
     @Binding private var selectionBinding: String
@@ -33,13 +28,13 @@ public struct GhosttyConfigurationView: View {
     @State private var jumpTarget: String?
     @State private var showPreview = true
     @State private var resetConfirm = false
-    @State private var navigationHistory = ["colors"]
+    @State private var navigationHistory = ["general"]
     @State private var navigationIndex = 0
     @State private var navigating = false
     private let onApplied: ((Double?) -> Void)?
     private let embedded: Bool
     private let usesExternalSelection: Bool
-    private let hostSections: [ConfigHostSettingsSection]
+    private let hostSections: [String: ConfigHostSettingsSection]
 
     private var selection: String {
         get { usesExternalSelection ? selectionBinding : localSelection }
@@ -48,8 +43,21 @@ public struct GhosttyConfigurationView: View {
         }
     }
 
-    private var isHostSection: Bool { hostSections.contains { $0.id == selection } && search.isEmpty }
-    private var navigation: [ConfigPanel] { ConfigCatalog.shared.rayonNavigation }
+    /// Categories with something to show: app categories need their host rows.
+    private var categories: [ConfigLayout.Category] {
+        ConfigLayout.categories.filter { category in
+            category.groups.contains { group in
+                group.items.contains { item in
+                    switch item {
+                    case let .setting(key): return ConfigCatalog.shared.setting(key: key) != nil
+                    case let .host(id): return hostSections[id] != nil
+                    }
+                }
+            }
+        }
+    }
+
+    private var category: ConfigLayout.Category? { categories.first { $0.id == selection } }
 
     public init(
         embedded: Bool = false,
@@ -57,8 +65,9 @@ public struct GhosttyConfigurationView: View {
         selection: Binding<String>? = nil,
         onApplied: ((Double?) -> Void)? = nil
     ) {
-        self.hostSections = hostSections
-        let initialSelection = selection?.wrappedValue ?? hostSections.first?.id ?? "colors"
+        self.hostSections = Dictionary(hostSections.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let fallback = hostSections.isEmpty ? "text" : "general"
+        let initialSelection = selection?.wrappedValue ?? fallback
         _localSelection = State(initialValue: initialSelection)
         _selectionBinding = selection ?? .constant(initialSelection)
         usesExternalSelection = selection != nil
@@ -72,17 +81,17 @@ public struct GhosttyConfigurationView: View {
         model.onApplied = onApplied
     }
 
-    private var panel: ConfigPanel? { navigation.first { $0.id == selection } }
+    private var showsTerminalTools: Bool { search.isEmpty ? category?.section == .terminal : true }
 
     public var body: some View {
         HStack(spacing: 0) {
             categoryColumn
-                .frame(width: 200)
+                .frame(width: 216)
             VStack(spacing: 0) {
                 HStack(alignment: .top, spacing: RX.Space.s4) {
                     content
                         .frame(minWidth: 440, maxWidth: .infinity, maxHeight: .infinity)
-                    if showPreview && !isHostSection && search.isEmpty {
+                    if showPreview, search.isEmpty, category?.previews == true {
                         ScrollView {
                             ConfigPreview(model: model)
                                 .rxCard(padding: 0)
@@ -103,35 +112,43 @@ public struct GhosttyConfigurationView: View {
         .toolbarBackground(.hidden, for: .windowToolbar)
         .modifier(ConfigToolbar(leading: {
             ControlGroup {
-                    Button { navigate(-1) } label: { Label("Back", systemImage: "chevron.left") }
-                        .disabled(navigationIndex == 0)
-                    Button { navigate(1) } label: { Label("Forward", systemImage: "chevron.right") }
-                        .disabled(navigationIndex + 1 >= navigationHistory.count)
+                Button { navigate(-1) } label: { Label("Back", systemImage: "chevron.left") }
+                    .disabled(navigationIndex == 0)
+                    .help("Previous category")
+                Button { navigate(1) } label: { Label("Forward", systemImage: "chevron.right") }
+                    .disabled(navigationIndex + 1 >= navigationHistory.count)
+                    .help("Next category")
             }
         }, trailing: {
             Group {
-                if !isHostSection {
+                if showsTerminalTools {
                     ControlGroup {
                         Button { model.undo() } label: { Label("Undo", systemImage: "arrow.uturn.backward") }
                             .disabled(model.undoStack.isEmpty)
+                            .help("Undo the last terminal setting change")
                         Button { model.redo() } label: { Label("Redo", systemImage: "arrow.uturn.forward") }
                             .disabled(model.redoStack.isEmpty)
+                            .help("Redo")
                     }
-                    .help("Undo / Redo")
                     Button { resetConfirm = true } label: {
-                        Label("Reset All…", systemImage: "arrow.counterclockwise").labelStyle(.titleAndIcon)
+                        Label("Reset Terminal…", systemImage: "arrow.counterclockwise").labelStyle(.titleAndIcon)
                     }
                     .help("Reset every terminal setting to its default")
-                    Toggle(isOn: $showPreview.animation(.easeInOut(duration: 0.25))) {
-                        Label("Preview", systemImage: "sidebar.right").labelStyle(.titleAndIcon)
+                    if category?.previews == true {
+                        Toggle(isOn: $showPreview.animation(.easeInOut(duration: 0.25))) {
+                            Label("Preview", systemImage: "sidebar.right").labelStyle(.titleAndIcon)
+                        }
+                        .toggleStyle(.button)
+                        .help(showPreview ? "Hide the live terminal preview" : "Show a live terminal preview beside the settings")
                     }
-                    .toggleStyle(.button)
-                    .help(showPreview ? "Hide the live terminal preview" : "Show a live terminal preview beside the settings")
                 }
             }
         }))
         .searchable(text: $search, placement: .toolbar, prompt: "Search settings")
-        .onAppear(perform: installApplyHandler)
+        .onAppear {
+            installApplyHandler()
+            if category == nil { selection = categories.first?.id ?? "text" }
+        }
         .animation(.easeOut(duration: 0.18), value: selection)
         .animation(.easeOut(duration: 0.18), value: search.isEmpty)
         .onChange(of: selection) { next in
@@ -140,7 +157,9 @@ public struct GhosttyConfigurationView: View {
             navigationIndex = navigationHistory.count - 1
         }
         .confirmationDialog("Reset every terminal setting to its default?", isPresented: $resetConfirm) {
-            Button("Reset All", role: .destructive) { model.edit { $0 = ConfigDocument() } }
+            Button("Reset Terminal Settings", role: .destructive) { model.edit { $0 = ConfigDocument() } }
+        } message: {
+            Text("Rayon's General and Connection preferences are kept.")
         }
         .frame(minWidth: embedded ? 700 : 960, minHeight: 560)
     }
@@ -150,15 +169,18 @@ public struct GhosttyConfigurationView: View {
     private var categoryColumn: some View {
         ScrollView(.vertical, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 2) {
-                if !hostSections.isEmpty {
-                    categorySection("Rayon")
-                    ForEach(hostSections) { section in
-                        categoryRow(section.title, icon: section.icon, id: section.id)
+                ForEach([ConfigLayout.Category.Section.app, .terminal, .info], id: \.self) { section in
+                    let members = categories.filter { $0.section == section }
+                    if !members.isEmpty {
+                        if section.rawValue.isEmpty {
+                            Spacer().frame(height: RX.Space.s4)
+                        } else {
+                            categorySection(section.rawValue)
+                        }
+                        ForEach(members) { category in
+                            categoryRow(category)
+                        }
                     }
-                }
-                categorySection("Terminal")
-                ForEach(navigation) { panel in
-                    categoryRow(panel.name, icon: icon(panel.id), id: panel.id)
                 }
             }
             .padding(.horizontal, RX.Space.s2)
@@ -176,23 +198,24 @@ public struct GhosttyConfigurationView: View {
             .padding(.bottom, RX.Space.s1)
     }
 
-    private func categoryRow(_ title: String, icon: String, id: String) -> some View {
-        let selected = selection == id && search.isEmpty
+    private func categoryRow(_ category: ConfigLayout.Category) -> some View {
+        let selected = selection == category.id && search.isEmpty
         return Button {
             search = ""
-            selection = id
+            selection = category.id
         } label: {
             HStack(spacing: RX.Space.s2) {
-                Image(systemName: icon)
+                Image(systemName: category.icon)
                     .font(.system(size: 13))
                     .foregroundStyle(selected ? Color.rxAccent : Color.rxInkSecondary)
                     .frame(width: 18)
-                Text(title)
+                Text(category.title)
                     .font(.system(size: 13, weight: selected ? .medium : .regular))
                     .foregroundStyle(.rxInk)
                     .lineLimit(1)
                 Spacer(minLength: 0)
-                if let count = modifiedCount(id), count > 0 {
+                let count = modifiedCount(category)
+                if count > 0 {
                     Text("\(count)")
                         .font(.system(size: 11).monospacedDigit())
                         .foregroundStyle(.rxAccent)
@@ -210,9 +233,8 @@ public struct GhosttyConfigurationView: View {
         .buttonStyle(.plain)
     }
 
-    private func modifiedCount(_ panelID: String) -> Int? {
-        guard navigation.contains(where: { $0.id == panelID }) else { return nil }
-        return model.document.overrides.keys.filter { ConfigCatalog.shared.panel(containing: $0)?.id == panelID }.count
+    private func modifiedCount(_ category: ConfigLayout.Category) -> Int {
+        model.document.overrides.keys.filter { ConfigLayout.categoryOfKey[$0]?.id == category.id }.count
     }
 
     // MARK: Errors
@@ -242,98 +264,27 @@ public struct GhosttyConfigurationView: View {
 
     @ViewBuilder private var content: some View {
         if !search.isEmpty {
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: RX.Space.s6) {
-                    PageTitle("Search Results", subtitle: searchSubtitle)
-                    ForEach(hostSearchResults) { section in
-                        section.content
-                    }
-                    let results = searchResults
-                    ForEach(navigation) { category in
-                        let matches = results.filter { ConfigCatalog.shared.panel(containing: $0.key)?.id == category.id }
-                        if !matches.isEmpty {
-                            VStack(alignment: .leading, spacing: RX.Space.s2) {
-                                HStack {
-                                    CapsLabel(category.name)
-                                    Spacer()
-                                    Button("Show in \(category.name)") {
-                                        jumpTarget = matches.first?.key
-                                        selection = category.id
-                                        search = ""
-                                    }
-                                    .buttonStyle(.link)
-                                    .font(.rxHelp)
-                                }
-                                .padding(.leading, RX.Space.s4)
-                                RXDividedStack {
-                                    ForEach(matches) { setting in
-                                        ConfigSettingRow(model: model, setting: setting, query: search)
-                                    }
-                                }
-                                .padding(.horizontal, RX.Space.s4)
-                                .background(Color.clear.rxCard(padding: 0))
-                            }
-                        }
-                    }
-                    if results.isEmpty && hostSearchResults.isEmpty {
-                        EmptyStateView("No settings match “\(search)”", systemImage: "magnifyingglass")
-                            .rxCard()
-                    }
-                }
-                .padding(.horizontal, RX.Space.s6)
-                .padding(.top, RX.Space.s3)
-                .padding(.bottom, RX.Space.s6)
-            }
-        } else if let section = hostSections.first(where: { $0.id == selection }) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: RX.Space.s6) {
-                    PageTitle(section.title, subtitle: section.subtitle)
-                    section.content
-                }
-                .frame(maxWidth: 760, alignment: .leading)
-                .padding(.horizontal, RX.Space.s6)
-                .padding(.top, RX.Space.s3)
-                .padding(.bottom, RX.Space.s6)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        } else if selection == "keybinds" {
-            ScrollView {
-                VStack(alignment: .leading, spacing: RX.Space.s6) {
-                    PageTitle("Keybindings")
-                    ConfigKeybindingList(model: model)
-                }
-                .padding(.horizontal, RX.Space.s6)
-                .padding(.top, RX.Space.s3)
-                .padding(.bottom, RX.Space.s6)
-            }
-        } else if let panel {
+            searchContent
+        } else if let category {
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: RX.Space.s6) {
-                        PageTitle(panel.name)
-                        ForEach(panel.groups ?? []) { group in
-                            VStack(alignment: .leading, spacing: RX.Space.s2) {
-                                if !group.name.isEmpty {
-                                    CapsLabel(group.name)
-                                        .padding(.leading, RX.Space.s4)
-                                }
-                                RXDividedStack {
-                                    ForEach(group.settings, id: \.self) { id in
-                                        if let setting = ConfigCatalog.shared.registry[id] {
-                                            ConfigSettingRow(model: model, setting: setting).id(setting.key)
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal, RX.Space.s4)
-                                .background(Color.clear.rxCard(padding: 0))
+                        PageTitle(category.title)
+                        if category.id == "keyboard" {
+                            ConfigKeybindingList(model: model)
+                        } else {
+                            ForEach(category.groups) { group in
+                                groupCard(group)
                             }
                         }
                     }
+                    .frame(maxWidth: category.section == .terminal ? .infinity : 760, alignment: .leading)
                     .padding(.horizontal, RX.Space.s6)
                     .padding(.top, RX.Space.s3)
                     .padding(.bottom, RX.Space.s6)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .id(panel.id)
+                .id(category.id)
                 .task(id: jumpTarget) {
                     guard let jumpTarget else { return }
                     await Task.yield()
@@ -343,46 +294,134 @@ public struct GhosttyConfigurationView: View {
         } else {
             EmptyStateView("Choose a category", systemImage: "slider.horizontal.3")
                 .frame(maxHeight: .infinity)
-                .onAppear { if hostSections.isEmpty { selection = navigation.first?.id ?? "colors" } }
         }
     }
 
-    private var searchSubtitle: String {
-        let count = searchResults.count + hostSearchResults.count
-        return count == 0 ? "Nothing found" : "\(count) match\(count == 1 ? "" : "es") for “\(search)”"
-    }
-
-    private func stripTags(_ text: String) -> String {
-        text.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
-    }
-
-    private var hostSearchResults: [ConfigHostSettingsSection] {
-        let tokens = search.lowercased().split(whereSeparator: \.isWhitespace)
-        return hostSections.filter { section in
-            let text = "\(section.title) \(section.keywords)".lowercased()
-            return tokens.allSatisfy { text.contains($0) }
+    /// A group: its caption, then its rows on one card.
+    @ViewBuilder private func groupCard(_ group: ConfigLayout.Group, keys: [String]? = nil) -> some View {
+        let hosts = group.items.compactMap { item -> ConfigHostSettingsSection? in
+            if case let .host(id) = item { return hostSections[id] }
+            return nil
+        }
+        let settings = (keys ?? group.items.compactMap { item -> String? in
+            if case let .setting(key) = item { return key }
+            return nil
+        }).compactMap { ConfigCatalog.shared.setting(key: $0) }
+        if !hosts.isEmpty || !settings.isEmpty {
+            VStack(alignment: .leading, spacing: RX.Space.s2) {
+                CapsLabel(group.title)
+                    .padding(.leading, RX.Space.s4)
+                VStack(spacing: 0) {
+                    ForEach(hosts) { $0.content }
+                    if !settings.isEmpty {
+                        RXDividedStack {
+                            ForEach(settings) { setting in
+                                ConfigSettingRow(model: model, setting: setting, query: search).id(setting.key)
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, RX.Space.s4)
+                .background(Color.clear.rxCard(padding: 0))
+            }
         }
     }
 
-    private var searchResults: [ConfigSetting] {
-        let tokens = search.lowercased().split(whereSeparator: \.isWhitespace)
-        let catalog = ConfigCatalog.shared
-        return catalog.rayonSettings.filter { setting in
-            let category = catalog.panel(containing: setting.key)
-            let group = catalog.group(containing: setting.key)
-            let haystack = [setting.key, setting.name, setting.description, category?.name ?? "", group?.name ?? ""].joined(separator: " ").lowercased()
-            return tokens.allSatisfy { haystack.contains($0) }
+    // MARK: Search
+
+    private var searchContent: some View {
+        let settings = searchResults
+        let hosts = hostSearchResults
+        return ScrollView {
+            LazyVStack(alignment: .leading, spacing: RX.Space.s6) {
+                PageTitle("Search Results", subtitle: searchSubtitle(settings.count + hosts.count))
+                ForEach(categories) { category in
+                    let groups = category.groups.compactMap { group -> (ConfigLayout.Group, [String])? in
+                        let hostMatch = group.items.contains { item in
+                            if case let .host(id) = item { return hosts.contains(id) }
+                            return false
+                        }
+                        let keys = group.items.compactMap { item -> String? in
+                            if case let .setting(key) = item, settings.contains(key) { return key }
+                            return nil
+                        }
+                        return hostMatch || !keys.isEmpty ? (group, keys) : nil
+                    }
+                    if !groups.isEmpty {
+                        VStack(alignment: .leading, spacing: RX.Space.s3) {
+                            HStack {
+                                Label(category.title, systemImage: category.icon)
+                                    .font(.rxBodyStrong)
+                                    .foregroundStyle(.rxInk)
+                                Spacer()
+                                Button("Show in \(category.title)") {
+                                    jumpTarget = groups.first?.1.first
+                                    selection = category.id
+                                    search = ""
+                                }
+                                .buttonStyle(.link)
+                                .font(.rxHelp)
+                            }
+                            ForEach(groups, id: \.0.id) { group, keys in
+                                groupCard(group, keys: keys)
+                            }
+                        }
+                    }
+                }
+                if settings.isEmpty && hosts.isEmpty {
+                    EmptyStateView("No settings match “\(search)”", systemImage: "magnifyingglass")
+                        .rxCard()
+                }
+            }
+            .padding(.horizontal, RX.Space.s6)
+            .padding(.top, RX.Space.s3)
+            .padding(.bottom, RX.Space.s6)
         }
+    }
+
+    private func searchSubtitle(_ count: Int) -> String {
+        count == 0 ? "Nothing found" : "\(count) match\(count == 1 ? "" : "es") for “\(search)”"
+    }
+
+    private var tokens: [Substring] { search.lowercased().split(whereSeparator: \.isWhitespace) }
+
+    /// Host groups whose keywords, group or category title match.
+    private var hostSearchResults: Set<String> {
+        var result = Set<String>()
+        for category in categories {
+            for group in category.groups {
+                for case let .host(id) in group.items {
+                    guard let section = hostSections[id] else { continue }
+                    let text = "\(category.title) \(group.title) \(section.keywords)".lowercased()
+                    if tokens.allSatisfy({ text.contains($0) }) { result.insert(id) }
+                }
+            }
+        }
+        return result
+    }
+
+    /// Ghostty keys whose name, description, key, group or category match.
+    private var searchResults: Set<String> {
+        let tokens = tokens
+        var result = Set<String>()
+        for category in categories {
+            for group in category.groups {
+                for case let .setting(key) in group.items {
+                    guard let setting = ConfigCatalog.shared.setting(key: key) else { continue }
+                    let wording = ConfigLayout.wording[key]
+                    let haystack = [setting.key, setting.name, setting.description, wording?.title ?? "", wording?.summary ?? "", category.title, group.title]
+                        .joined(separator: " ").lowercased()
+                    if tokens.allSatisfy({ haystack.contains($0) }) { result.insert(key) }
+                }
+            }
+        }
+        return result
     }
 
     private func navigate(_ delta: Int) {
         let next = navigationIndex + delta
         guard navigationHistory.indices.contains(next) else { return }
         navigating = true; navigationIndex = next; selection = navigationHistory[next]
-    }
-
-    private func icon(_ id: String) -> String {
-        ["application": "app", "terminal": "terminal", "clipboard": "doc.on.clipboard", "window": "rectangle.inset.filled", "colors": "paintpalette", "fonts": "textformat", "keybinds": "keyboard", "mouse": "computermouse"][id] ?? "slider.horizontal.3"
     }
 }
 

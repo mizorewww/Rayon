@@ -2,8 +2,9 @@
 //  SettingsView.swift
 //  Rayon (macOS)
 //
-//  Settings is a sidebar destination with its own category column: Rayon's own
-//  preferences (General, About), then the terminal configuration catalog.
+//  Settings is a sidebar destination. Its categories and their order come from
+//  RayonTerminal's ConfigLayout; this file supplies the rows for Rayon's own
+//  preferences (General, Connection, About).
 //
 
 import RayonModule
@@ -18,20 +19,34 @@ struct SettingsView: View {
         GhosttyConfigurationView(
             embedded: true,
             hostSections: [
-                ConfigHostSettingsSection(
-                    id: SettingsCategory.general,
-                    title: "General",
-                    icon: "gearshape",
-                    keywords: "appearance dark light confirmation ask closing recent record quick connect open sessions ssh timeout monitor refresh interval font size"
-                ) { GeneralSettings() },
-                ConfigHostSettingsSection(
-                    id: SettingsCategory.about,
-                    title: "About",
-                    icon: "info.circle",
-                    keywords: "version build license source github acknowledgements libraries"
-                ) { AboutSettings() },
+                ConfigHostSettingsSection(id: "general.appearance", keywords: "appearance dark light mode theme system") {
+                    AppearanceSettings()
+                },
+                ConfigHostSettingsSection(id: "general.sessions", keywords: "open sessions automatically ask before closing confirmation quit") {
+                    SessionSettings()
+                },
+                ConfigHostSettingsSection(id: "general.recent", keywords: "recent servers history quick connect commands record remember") {
+                    RecentSettings()
+                },
+                ConfigHostSettingsSection(id: "connection.ssh", keywords: "ssh timeout connect wait") {
+                    SSHSettings()
+                },
+                ConfigHostSettingsSection(id: "connection.monitor", keywords: "monitor refresh interval status") {
+                    MonitorSettings()
+                },
+                ConfigHostSettingsSection(id: "about.rayon", keywords: "version build license source github agreement") {
+                    AboutSettings()
+                },
+                ConfigHostSettingsSection(id: "about.acknowledgements", keywords: "acknowledgements credits libraries ghostty") {
+                    AcknowledgementSettings()
+                },
             ],
-            selection: $router.settingsSelection
+            selection: $router.settingsSelection,
+            onApplied: { size in
+                // One font size: the terminal's Font Size setting also sets the
+                // size ⌘+ and ⌘− start from.
+                if let size { store.terminalFontSize = Int(size.rounded()) }
+            }
         )
     }
 }
@@ -60,83 +75,101 @@ enum AppearancePreference: String, CaseIterable {
     }
 }
 
-private struct GeneralSettings: View {
-    @EnvironmentObject var store: RayonStore
+private struct AppearanceSettings: View {
     @AppStorage(AppearancePreference.key) private var appearance = AppearancePreference.system.rawValue
-    @AppStorage("wiki.qaq.rayon.maxRecentRecordCount") private var recentLimit = 8
 
     var body: some View {
-        VStack(alignment: .leading, spacing: RX.Space.s6) {
-            RXFormSection {
-                RXFormRow("Appearance") {
-                    RXSegmented(selection: $appearance, options: [
-                        .init(AppearancePreference.system.rawValue, "System"),
-                        .init(AppearancePreference.light.rawValue, "Light"),
-                        .init(AppearancePreference.dark.rawValue, "Dark"),
-                    ], caps: false)
-                }
-            }
-            RXFormSection("Behavior") {
-                SwitchRow(
-                    "Ask before closing",
-                    isOn: Binding(get: { !store.disableConformation }, set: { store.disableConformation = !$0 })
-                )
-                SwitchRow(
-                    "Remember recent servers",
-                    isOn: $store.storeRecent
-                )
-                NumberFieldRow(
-                    "Recent items to keep",
-                    value: $recentLimit,
-                    in: 1 ... 50
-                )
-                .disabled(!store.storeRecent)
-                SwitchRow(
-                    "Record Quick Connect commands",
-                    isOn: $store.saveTemporarySession
-                )
-                SwitchRow(
-                    "Open sessions when connected",
-                    isOn: $store.openInterfaceAutomatically
-                )
-            }
-            RXFormSection("Connection") {
-                NumberFieldRow(
-                    "SSH timeout",
-                    description: "How long to wait for a server before giving up.",
-                    value: $store.timeout,
-                    in: 2 ... 30,
-                    unit: "s"
-                )
-                RXFormRow("Monitor refresh", description: "How often an open monitor reads the server.") {
-                    Picker("Monitor refresh", selection: Binding(get: { max(5, store.monitorInterval) }, set: { store.monitorInterval = $0 })) {
-                        ForEach([5, 10, 15, 30, 60], id: \.self) { seconds in
-                            Text("Every \(seconds) s").tag(seconds)
-                        }
-                        if ![5, 10, 15, 30, 60].contains(max(5, store.monitorInterval)) {
-                            Text("Every \(store.monitorInterval) s").tag(store.monitorInterval)
-                        }
-                    }
-                    .labelsHidden()
-                    .fixedSize()
-                }
-                NumberFieldRow(
-                    "Terminal font size",
-                    description: "Change per session with ⌘+ and ⌘−.",
-                    value: $store.terminalFontSize,
-                    in: 4 ... 30,
-                    unit: "pt"
-                )
-            }
+        RXFormRow("Appearance", description: "Light or dark windows; terminal colors are set under Colors.") {
+            RXSegmented(selection: $appearance, options: [
+                .init(AppearancePreference.system.rawValue, "System"),
+                .init(AppearancePreference.light.rawValue, "Light"),
+                .init(AppearancePreference.dark.rawValue, "Dark"),
+            ], caps: false)
         }
         .onChange(of: appearance) { raw in
             (AppearancePreference(rawValue: raw) ?? .system).apply()
+        }
+    }
+}
+
+private struct SessionSettings: View {
+    @EnvironmentObject var store: RayonStore
+
+    var body: some View {
+        RXDividedStack {
+            SwitchRow(
+                "Show a session when it connects",
+                description: "Switch to a terminal as soon as it opens.",
+                isOn: $store.openInterfaceAutomatically
+            )
+            SwitchRow(
+                "Ask before closing a session",
+                description: "Confirm before closing a connected terminal or quitting.",
+                isOn: Binding(get: { !store.disableConformation }, set: { store.disableConformation = !$0 })
+            )
+        }
+    }
+}
+
+private struct RecentSettings: View {
+    @EnvironmentObject var store: RayonStore
+    @AppStorage("wiki.qaq.rayon.maxRecentRecordCount") private var recentLimit = 8
+
+    var body: some View {
+        RXDividedStack {
+            SwitchRow(
+                "Remember recent servers",
+                description: "Listed under Quick Connect on Home.",
+                isOn: $store.storeRecent
+            )
+            NumberFieldRow("Number to keep", value: $recentLimit, in: 1 ... 50)
+                .disabled(!store.storeRecent)
+            SwitchRow(
+                "Include Quick Connect commands",
+                description: "Also remember user@host commands typed on Home.",
+                isOn: $store.saveTemporarySession
+            )
+            .disabled(!store.storeRecent)
         }
         .onChange(of: recentLimit) { limit in
             store.maxRecentRecordCount = limit
             if store.recentRecord.count > limit {
                 store.recentRecord = Array(store.recentRecord.prefix(limit))
             }
+        }
+    }
+}
+
+private struct SSHSettings: View {
+    @EnvironmentObject var store: RayonStore
+
+    var body: some View {
+        NumberFieldRow(
+            "Connection timeout",
+            description: "How long to wait for a server before giving up.",
+            value: $store.timeout,
+            in: 2 ... 30,
+            unit: "s"
+        )
+    }
+}
+
+private struct MonitorSettings: View {
+    @EnvironmentObject var store: RayonStore
+    private let intervals = [5, 10, 15, 30, 60]
+
+    var body: some View {
+        RXFormRow("Refresh", description: "How often an open monitor reads the server.") {
+            Picker("Refresh", selection: Binding(get: { max(5, store.monitorInterval) }, set: { store.monitorInterval = $0 })) {
+                ForEach(intervals, id: \.self) { seconds in
+                    Text("Every \(seconds) s").tag(seconds)
+                }
+                if !intervals.contains(max(5, store.monitorInterval)) {
+                    Text("Every \(store.monitorInterval) s").tag(store.monitorInterval)
+                }
+            }
+            .labelsHidden()
+            .fixedSize()
         }
     }
 }
@@ -155,43 +188,46 @@ private struct AboutSettings: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: RX.Space.s6) {
-            RXFormSection("Rayon") {
-                RXFormRow("Version") {
-                    Text(version)
-                        .font(.rxBody.monospacedDigit())
-                        .foregroundStyle(.rxInkSecondary)
-                        .textSelection(.enabled)
-                }
-                RXFormRow("Source code") {
-                    Link(destination: URL(string: "https://github.com/Lakr233/Rayon")!) {
-                        Label("GitHub", systemImage: "arrow.up.right.square")
-                    }
-                    .buttonStyle(.rx)
-                }
-                RXFormRow("License") {
-                    Button("View License…") { document = .license }
-                        .buttonStyle(.rx)
-                }
-                RXFormRow("End user license agreement") {
-                    Button("View Agreement…") { document = .agreement }
-                        .buttonStyle(.rx)
-                }
+        RXDividedStack {
+            RXFormRow("Version") {
+                Text(version)
+                    .font(.rxBody.monospacedDigit())
+                    .foregroundStyle(.rxInkSecondary)
+                    .textSelection(.enabled)
             }
-            RXFormSection("Acknowledgements") {
-                RXFormRow("Made by", description: "Lakr Aream (@Lakr233) with @__oquery, @zlind0, @unixzii, @82flex and @xnth97.") {
-                    EmptyView()
+            RXFormRow("Source code") {
+                Link(destination: URL(string: "https://github.com/Lakr233/Rayon")!) {
+                    Label("GitHub", systemImage: "arrow.up.right.square")
                 }
-                RXFormRow("Terminal", description: "Ghostty, its configuration catalog and app icon presets (MIT, Ghostty contributors).") {
-                    EmptyView()
-                }
-                RXFormRow("Libraries", description: "libssh2 · NSRemoteShell · CodeMirror · XMLCoder · SymbolPicker · Keychain") {
-                    EmptyView()
-                }
+                .buttonStyle(.rx)
+            }
+            RXFormRow("License") {
+                Button("View License…") { document = .license }
+                    .buttonStyle(.rx)
+            }
+            RXFormRow("End user license agreement") {
+                Button("View Agreement…") { document = .agreement }
+                    .buttonStyle(.rx)
             }
         }
         .sheet(item: $document) { item in
             LicenseSheet(document: item) { document = nil }
+        }
+    }
+}
+
+private struct AcknowledgementSettings: View {
+    var body: some View {
+        RXDividedStack {
+            RXFormRow("Made by", description: "Lakr Aream (@Lakr233) with @__oquery, @zlind0, @unixzii, @82flex and @xnth97.") {
+                EmptyView()
+            }
+            RXFormRow("Terminal", description: "Ghostty, its configuration catalog and app icon presets (MIT, Ghostty contributors).") {
+                EmptyView()
+            }
+            RXFormRow("Libraries", description: "libssh2 · NSRemoteShell · CodeMirror · XMLCoder · SymbolPicker · Keychain") {
+                EmptyView()
+            }
         }
     }
 }

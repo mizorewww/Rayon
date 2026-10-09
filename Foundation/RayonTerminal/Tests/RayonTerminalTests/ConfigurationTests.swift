@@ -11,6 +11,15 @@ final class ConfigurationTests: XCTestCase {
         XCTAssertEqual(ids.count, Set(ids).count)
         XCTAssertEqual(catalog.registry["quitAfterLastWindowClosed"]?.defaultValue, .scalar("false"))
     }
+    func testSettingsLayoutShowsEveryAppliedSettingOnce() {
+        let keys = ConfigLayout.categories.flatMap(\.keys)
+        XCTAssertEqual(keys.count, Set(keys).count, "a setting appears in two places")
+        XCTAssertEqual(Set(keys), ConfigCatalog.rayonKeys, "Settings and the applied keys disagree")
+        for key in keys {
+            XCTAssertNotNil(ConfigCatalog.shared.setting(key: key), "\(key) is not in the catalog")
+        }
+        XCTAssertEqual(ConfigLayout.categories.map(\.id).count, Set(ConfigLayout.categories.map(\.id)).count)
+    }
     func testEditorShowsRayonRuntimeDefaults() {
         let document = ConfigDocument()
         XCTAssertEqual(document.text("font-size"), "14")

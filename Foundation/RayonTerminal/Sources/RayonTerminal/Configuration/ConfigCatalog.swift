@@ -11,14 +11,11 @@ struct ConfigCatalog: Decodable, Sendable {
     let settings: [ConfigSetting]
     /// Settings that take effect in Rayon's terminal. Everything else in the
     /// upstream catalog (windows, tabs, GTK, Linux, app icons, quick terminal…)
-    /// belongs to standalone Ghostty and is not shown.
+    /// belongs to standalone Ghostty and is not shown. Settings arranges these
+    /// with `ConfigLayout`, not the upstream navigation.
     let rayonSettings: [ConfigSetting]
-    /// The upstream navigation reduced to Rayon's settings; empty groups and panels are dropped.
-    let rayonNavigation: [ConfigPanel]
     let themeNames: [String]
     private let byKey: [String: ConfigSetting]
-    /// Setting key → the Rayon panel and group that show it.
-    private let placement: [String: (panel: ConfigPanel, group: ConfigGroup)]
 
     static let shared: ConfigCatalog = {
         guard let url = Bundle.module.url(forResource: "catalog", withExtension: "json"),
@@ -28,7 +25,7 @@ struct ConfigCatalog: Decodable, Sendable {
         return catalog
     }()
 
-    static let rayonKeys: Set<String> = RayonTerminalConfiguration.supportedKeys.subtracting(["freetype-load-flags"])
+    static let rayonKeys: Set<String> = RayonTerminalConfiguration.supportedKeys.subtracting(ConfigLayout.hiddenKeys)
 
     private enum CodingKeys: String, CodingKey { case revision, registry, navigation, themes }
 
@@ -43,30 +40,9 @@ struct ConfigCatalog: Decodable, Sendable {
         rayonSettings = settings.filter { Self.rayonKeys.contains($0.key) }
         byKey = Dictionary(settings.map { ($0.key, $0) }, uniquingKeysWith: { first, _ in first })
         themeNames = themes.keys.sorted()
-        let registry = registry
-        rayonNavigation = navigation.compactMap { panel in
-            let groups = (panel.groups ?? []).compactMap { group -> ConfigGroup? in
-                let ids = group.settings.filter { registry[$0].map { Self.rayonKeys.contains($0.key) } ?? false }
-                guard !ids.isEmpty else { return nil }
-                return ConfigGroup(id: group.id, name: group.name, note: group.note, preview: group.preview, settings: ids)
-            }
-            guard !groups.isEmpty || panel.id == "keybinds" else { return nil }
-            return ConfigPanel(id: panel.id, name: panel.name, note: panel.note, groups: groups, pages: nil)
-        }
-        var placement: [String: (panel: ConfigPanel, group: ConfigGroup)] = [:]
-        for panel in rayonNavigation {
-            for group in panel.groups ?? [] {
-                for id in group.settings {
-                    if let key = registry[id]?.key, placement[key] == nil { placement[key] = (panel, group) }
-                }
-            }
-        }
-        self.placement = placement
     }
 
     func setting(key: String) -> ConfigSetting? { byKey[key] }
-    func panel(containing key: String) -> ConfigPanel? { placement[key]?.panel }
-    func group(containing key: String) -> ConfigGroup? { placement[key]?.group }
 }
 
 struct ConfigSetting: Decodable, Identifiable, Sendable {

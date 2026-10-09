@@ -140,6 +140,6 @@ extension Route {
 }
 
 enum SettingsCategory {
-    static let general = "rayon-general"
-    static let about = "rayon-about"
+    static let general = "general"
+    static let about = "about"
 }
