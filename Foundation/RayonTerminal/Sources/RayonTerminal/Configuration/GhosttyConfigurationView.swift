@@ -342,7 +342,7 @@ public struct GhosttyConfigurationView: View {
                             }
                         }
                     }
-                    .frame(maxWidth: category.section == .terminal ? .infinity : 760, alignment: .leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, RX.Space.s6)
                     .padding(.top, RX.Space.s3)
                     .padding(.bottom, RX.Space.s6)
