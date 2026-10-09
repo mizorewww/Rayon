@@ -102,6 +102,20 @@ class MenubarTool {
         if !quiet { persist() }
     }
 
+    #if DEBUG
+        /// Adds a sample server whose monitor never connects, and opens its
+        /// popover. Launch the debug build with RAYON_PREVIEW_MENUBAR=1 to check
+        /// the popover's layout. The sample is not saved.
+        @MainActor func showPreview() {
+            let machine = RDMachine(remoteAddress: "203.0.113.10", remotePort: "22", name: "web-01")
+            let item = MenubarStatusItem(machine: machine, identity: RDIdentity(), session: .preview(machine: machine))
+            bootstrapLock.lock()
+            statusItem.append(item)
+            bootstrapLock.unlock()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1) { item.showPopover(item) }
+        }
+    #endif
+
     func remove(menubarItem: MenubarStatusItem.ID) {
         bootstrapLock.lock()
         statusItem = statusItem

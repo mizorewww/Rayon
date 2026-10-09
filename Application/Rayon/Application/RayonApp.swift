@@ -94,6 +94,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_: Notification) {
         AppearancePreference.applyStored()
         MenubarTool.shared.restore()
+        #if DEBUG
+            if ProcessInfo.processInfo.environment["RAYON_PREVIEW_MENUBAR"] != nil {
+                MenubarTool.shared.showPreview()
+            }
+        #endif
     }
 
     func applicationShouldTerminate(_: NSApplication) -> NSApplication.TerminateReply {

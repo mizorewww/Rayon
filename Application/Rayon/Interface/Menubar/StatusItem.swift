@@ -28,10 +28,10 @@ class MenubarStatusItem: NSObject, Identifiable {
     var loopContinue: Bool = true
     var cancellables = Set<AnyCancellable>()
 
-    @MainActor init(machine: RDMachine, identity: RDIdentity) {
+    @MainActor init(machine: RDMachine, identity: RDIdentity, session: MonitorSession? = nil) {
         self.machine = machine
         self.identity = identity
-        session = MonitorSession(machine: machine, identity: identity)
+        self.session = session ?? MonitorSession(machine: machine, identity: identity)
 
         let buildPopover = NSPopover()
         buildPopover.behavior = .transient
@@ -39,13 +39,12 @@ class MenubarStatusItem: NSObject, Identifiable {
 
         super.init()
 
-        let contentView = MenubarPopoverView(session: session) { [weak self] in
+        let contentView = MenubarPopoverView(session: self.session) { [weak self] in
             self?.closeThisItem()
         } dismiss: { [weak self] in
             self?.popover.performClose(nil)
         }
         .environmentObject(RayonStore.shared)
-        .frame(width: 340)
         buildPopover.contentViewController = NSHostingController(rootView: contentView)
 
         eventMonitor = EventMonitor(mask: [.leftMouseDown, .rightMouseDown], handler: { [self] event in
@@ -132,54 +131,77 @@ class MenubarStatusItem: NSObject, Identifiable {
     }
 }
 
-/// The popover for one server.
+/// The popover for one server: the same cards as its Monitor page, in one column.
 struct MenubarPopoverView: View {
     @ObservedObject var session: MonitorSession
     @EnvironmentObject var store: RayonStore
     let remove: () -> Void
     let dismiss: () -> Void
 
+    static let width: CGFloat = 380
+
     var body: some View {
-        VStack(alignment: .leading, spacing: RX.Space.s3) {
-            HStack(spacing: RX.Space.s2) {
+        VStack(spacing: 0) {
+            header
+                .padding(.horizontal, RX.Space.s4)
+                .padding(.vertical, RX.Space.s3)
+            Hairline()
+            ScrollView {
+                VStack(spacing: RX.Space.s3) {
+                    if session.phase == .connected, session.status.hasData {
+                        SystemCard(session: session)
+                        ProcessorCard(session: session)
+                        MemoryCard(session: session)
+                        HStack(spacing: RX.Space.s3) {
+                            ThroughputCard(session: session, direction: .receive, height: 128)
+                            ThroughputCard(session: session, direction: .transmit, height: 128)
+                        }
+                        NetworkCard(session: session)
+                        DiskCard(session: session)
+                        GraphicsCard(session: session)
+                    } else {
+                        MonitorPlaceholder(session: session)
+                    }
+                }
+                .padding(RX.Space.s3)
+            }
+            .frame(height: 560)
+        }
+        .frame(width: Self.width)
+    }
+
+    /// Name and system facts on the left; the server's tools as symbols on the right.
+    var header: some View {
+        let system = session.status.system
+        // The hostname only when it says something the name doesn't.
+        let hostname = system.hostname == session.machine.name ? "" : system.hostname
+        let facts = [hostname, system.releaseName, system.uptimeSec > 0 ? "up \(RXFormat.duration(system.uptimeSec))" : ""]
+            .filter { !$0.isEmpty }
+        return HStack(alignment: .center, spacing: RX.Space.s2) {
+            VStack(alignment: .leading, spacing: 2) {
                 RedactableText(session.machine.name, redacted: store.machineRedacted == .all)
                     .font(.rxBodyStrong)
                     .foregroundStyle(.rxInk)
-                Spacer()
-                RXIconButton("Remove from Menu Bar", systemImage: "xmark", kind: .plain, size: .small, action: remove)
+                    .lineLimit(1)
+                if !facts.isEmpty {
+                    Text(facts.joined(separator: " · "))
+                        .font(.rxHelp)
+                        .foregroundStyle(.rxInkSecondary)
+                        .lineLimit(1)
+                }
             }
-            if session.phase == .connected, session.status.hasData {
-                CompactMonitorView(session: session)
-            } else {
-                MonitorPlaceholder(session: session)
-            }
-            HStack(spacing: RX.Space.s2) {
-                Button {
+            Spacer(minLength: RX.Space.s2)
+            ForEach(ServerTool.allCases) { tool in
+                RXIconButton(tool.help, systemImage: tool.systemImage, kind: .plain) {
                     dismiss()
                     openMainWindow()
-                    AppRouter.shared.openTerminal(machine: session.machine.id)
-                } label: {
-                    Label("Terminal", systemImage: "terminal")
+                    tool.show(session.machine.id)
                 }
-                .buttonStyle(.rx)
-                Button {
-                    dismiss()
-                    openMainWindow()
-                    AppRouter.shared.openMonitor(machine: session.machine.id)
-                } label: {
-                    Label("Monitor", systemImage: "gauge.with.dots.needle.33percent")
-                }
-                .buttonStyle(.rx)
-                Spacer()
-                Button("Open Rayon") {
-                    dismiss()
-                    openMainWindow()
-                }
-                .buttonStyle(.rxPrimary)
             }
+            Hairline(vertical: true)
+                .frame(height: 16)
+            RXIconButton("Remove from Menu Bar", systemImage: "xmark", kind: .plain, action: remove)
         }
-        .padding(RX.Space.s4)
-        .background(Color.rxWindow)
     }
 
     func openMainWindow() {

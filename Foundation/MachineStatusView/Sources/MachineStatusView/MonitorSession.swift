@@ -105,6 +105,51 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
         debugPrint("\(self) \(#function) \(machine.id)")
     }
 
+    #if DEBUG
+        /// A session filled with sample readings that never connects, for checking
+        /// layouts (menu bar popover, monitor page) without a server.
+        public static func preview(machine: RDMachine) -> MonitorSession {
+            MonitorSession(previewing: machine)
+        }
+
+        private init(previewing machine: RDMachine) {
+            self.machine = machine
+            identity = nil
+            shell = NSRemoteShell()
+            loopContinue = false
+            status.objectWillChange
+                .sink { [weak self] _ in self?.objectWillChange.send() }
+                .store(in: &cancellables)
+            let core = ServerStatus.ProcessPercentInfo(system: 6.2, user: 18.4, iowait: 1.1, nice: 0.3, sum: 26)
+            var cores: [String: ServerStatus.ProcessPercentInfo] = [:]
+            for index in 0 ..< 8 {
+                let used = Float(13 + index * 6)
+                cores["cpu\(index)"] = ServerStatus.ProcessPercentInfo(system: 4, user: used - 5, iowait: 1, nice: 0, sum: used)
+            }
+            status.processor = ServerStatus.ProcessorInfo(summary: core, cores: cores)
+            status.memory = .init(total: 16_384_000, free: 3_100_000, buffers: 420_000, cached: 5_200_000, swapTotal: 4_096_000, swapFree: 3_500_000)
+            status.system = .init(release: "Ubuntu 24.04.1 LTS", uptimeInSec: 1_728_000, hostname: "web-01",
+                                  runningProcs: 3, totalProcs: 412, load1: 0.82, load5: 0.64, load15: 0.51)
+            status.network = .init(elements: [
+                .init(device: "eth0", rxBytesPerSec: 2_400_000, txBytesPerSec: 640_000),
+                .init(device: "docker0", rxBytesPerSec: 81_000, txBytesPerSec: 96_000),
+            ])
+            status.fileSystem = .init(elements: [
+                .init(mountPoint: "/", size: "98G", used: "41G", free: "52G", percent: 44),
+                .init(mountPoint: "/data", size: "1.8T", used: "1.3T", free: "450G", percent: 74),
+            ])
+            phase = .connected
+            for step in 0 ..< 40 {
+                status.network = .init(elements: [
+                    .init(device: "eth0", rxBytesPerSec: 1_600_000 + (step % 7) * 260_000, txBytesPerSec: 400_000 + (step % 5) * 90_000),
+                    .init(device: "docker0", rxBytesPerSec: 81_000, txBytesPerSec: 96_000),
+                ])
+                history.record(status)
+            }
+            lastUpdate = Date()
+        }
+    #endif
+
     public static func == (lhs: MonitorSession, rhs: MonitorSession) -> Bool {
         lhs.id == rhs.id
     }
