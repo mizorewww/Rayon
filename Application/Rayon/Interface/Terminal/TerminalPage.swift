@@ -2,7 +2,8 @@
 //  TerminalPage.swift
 //  Rayon (macOS)
 //
-//  A session inside the main window: session tabs; text size, Files, Monitor, Close.
+//  A session inside the main window: session tabs; the Terminal · Files · Monitor
+//  switcher; text size, Reconnect, Close.
 //  Status bar: state, user@host:port, live CPU / memory while monitored, font size.
 //
 
@@ -58,14 +59,6 @@ struct TerminalPage: View {
                     .keyboardShortcut("+", modifiers: .command)
                 }
                 .help("Text Size")
-                if context.remoteType == .machine, context.machine.isNotPlaceholder() {
-                    ToolbarAction("Open File Transfer", systemImage: "arrow.up.arrow.down") {
-                        AppRouter.shared.openFileTransfer(machine: context.machine.id)
-                    }
-                    ToolbarAction("Open Monitor", systemImage: "waveform.path.ecg") {
-                        AppRouter.shared.openMonitor(machine: context.machine.id)
-                    }
-                }
                 if context.closed {
                     ToolbarAction("Reconnect", systemImage: "arrow.clockwise", primary: true) {
                         context.reconnect()
@@ -76,6 +69,10 @@ struct TerminalPage: View {
                 }
             }
         }
+        .serverToolSwitcher(
+            machine: context.remoteType == .machine && context.machine.isNotPlaceholder() ? context.machine.id : nil,
+            current: .terminal
+        )
         .onAppear {
             context.interfaceToken = interfaceToken
         }
@@ -112,7 +109,7 @@ struct TerminalPage: View {
         .font(.rxBody)
         .padding(.horizontal, RX.Space.s3)
         .frame(height: 36)
-        .background(Color.rxTerminalBackground)
+        .background(Color.black.opacity(0.35))
     }
 }
 
@@ -128,7 +125,7 @@ struct SessionTabs: View {
                     SessionTab(context: context, selected: context.id == selection)
                 }
                 Button {
-                    AppRouter.shared.batchStartup()
+                    AppRouter.shared.openTerminals()
                 } label: {
                     Image(systemName: "plus")
                         .frame(width: 24, height: 24)
@@ -136,7 +133,7 @@ struct SessionTabs: View {
                 }
                 .buttonStyle(.plain)
                 .foregroundStyle(.rxInkSecondary)
-                .help("New Session")
+                .help("Open Terminals…")
             }
             .padding(.horizontal, 4)
         }
@@ -152,7 +149,7 @@ private struct SessionTab: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Text(context.remoteType == .machine ? context.machine.name : context.navigationTitle)
+            Text(context.displayName)
                 .font(.system(size: 12, weight: selected ? .medium : .regular))
                 .foregroundStyle(selected ? Color.rxInk : Color.rxInkSecondary)
                 .lineLimit(1)
@@ -238,7 +235,7 @@ enum TerminalSessionActions {
         let manager = TerminalManager.shared
         if manager.sessionAlive(forContext: context.id) {
             UIBridge.requiresConfirmation(
-                message: "Close the session on \(context.remoteType == .machine ? context.machine.name : context.navigationTitle)?",
+                message: "Close the session on \(context.displayName)?",
                 confirmTitle: "Close Session",
                 destructive: true
             ) { confirmed in
@@ -251,6 +248,13 @@ enum TerminalSessionActions {
 }
 
 extension TerminalManager.Context {
+    /// The server's name, or `user@host` for a Quick Connect session.
+    var displayName: String {
+        if remoteType == .machine { return machine.name }
+        if let command { return "\(command.username)@\(command.remoteAddress)" }
+        return navigationTitle
+    }
+
     /// Reconnects with the details from when this session started.
     func reconnect() {
         guard closed else { return }

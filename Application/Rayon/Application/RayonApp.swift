@@ -53,7 +53,8 @@ struct RayonCommands: Commands {
         CommandGroup(after: .newItem) {
             Button("New Server…") { AppRouter.shared.presentNewServer = true }
                 .keyboardShortcut("n", modifiers: [.command, .shift])
-            Button("Batch Startup…") { AppRouter.shared.batchStartup() }
+            Button("Open Terminals…") { AppRouter.shared.openTerminals() }
+                .keyboardShortcut("t", modifiers: [.command, .shift])
         }
         CommandGroup(after: .sidebar) {
             Button("Home") { AppRouter.shared.route = .home }

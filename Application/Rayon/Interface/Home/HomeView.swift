@@ -29,7 +29,7 @@ struct HomeView: View {
         .pageChrome()
         .pageToolbar {
         } trailing: {
-            ToolbarAction("Batch Startup", systemImage: "wind") { router.batchStartup() }
+            ToolbarAction("Batch Startup", systemImage: "wind") { router.openTerminals() }
                 .disabled(store.machineGroup.machines.isEmpty)
             ToolbarAction("New Server", systemImage: "plus", primary: true) {
                 router.presentNewServer = true

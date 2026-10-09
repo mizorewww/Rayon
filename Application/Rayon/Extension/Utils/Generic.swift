@@ -59,7 +59,7 @@ enum SheetPresenter {
 }
 
 enum ServerPickerPanel {
-    /// The multi-select server picker used by Batch Startup, Run snippet and Port Forward.
+    /// The multi-select server picker used by Open Terminals, Run snippet and Port Forward.
     @MainActor
     static func present(
         title: String,

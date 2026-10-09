@@ -66,8 +66,60 @@ enum ServerActions {
     }
 }
 
-/// Open Terminal ↩, Open Monitor, Open File Transfer, Show in Menu Bar, Edit,
-/// Duplicate, Copy Address, Delete. The same items appear in a row's ⋯ button.
+/// The three ways into a server. Every surface that opens one (tiles, table rows,
+/// context menus, the session switcher, the sidebar) uses these names, symbols and
+/// descriptions, so a button means the same thing wherever it appears.
+enum ServerTool: CaseIterable, Identifiable {
+    case terminal
+    case files
+    case monitor
+
+    var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .terminal: return "Terminal"
+        case .files: return "Files"
+        case .monitor: return "Monitor"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .terminal: return "terminal"
+        case .files: return "folder"
+        case .monitor: return "gauge.with.dots.needle.33percent"
+        }
+    }
+
+    /// Tooltip: what the tool does, in a sentence.
+    var help: String {
+        switch self {
+        case .terminal: return "Open an SSH terminal on this server"
+        case .files: return "Browse, upload and download files over SFTP"
+        case .monitor: return "Watch CPU, memory, disk and network usage"
+        }
+    }
+
+    /// Shows this tool for the server, reusing a session that is already open.
+    @MainActor
+    func show(_ machine: RDMachine.ID) {
+        let router = AppRouter.shared
+        switch self {
+        case .terminal:
+            if let existing = TerminalManager.shared.sessionContexts.first(where: { $0.remoteType == .machine && $0.machine.id == machine }) {
+                router.route = .terminal(existing.id)
+            } else {
+                router.openTerminal(machine: machine)
+            }
+        case .files: router.openFileTransfer(machine: machine)
+        case .monitor: router.openMonitor(machine: machine)
+        }
+    }
+}
+
+/// Terminal, Files, Monitor, Show in Menu Bar, Edit, Duplicate, Copy Address,
+/// Copy SSH Command, Delete.
 struct ServerContextMenu: View {
     let machine: RDMachine.ID
 
@@ -77,17 +129,17 @@ struct ServerContextMenu: View {
             Button {
                 router.openTerminal(machine: machine)
             } label: {
-                Label("Open Terminal", systemImage: "terminal")
+                Label("New Terminal", systemImage: ServerTool.terminal.systemImage)
             }
             Button {
-                router.openMonitor(machine: machine)
+                ServerTool.files.show(machine)
             } label: {
-                Label("Open Monitor", systemImage: "waveform.path.ecg")
+                Label("Open Files", systemImage: ServerTool.files.systemImage)
             }
             Button {
-                router.openFileTransfer(machine: machine)
+                ServerTool.monitor.show(machine)
             } label: {
-                Label("Open File Transfer", systemImage: "arrow.up.arrow.down")
+                Label("Open Monitor", systemImage: ServerTool.monitor.systemImage)
             }
             Button {
                 router.showInMenuBar(machine: machine)
@@ -165,5 +217,40 @@ struct ServerLiveReader<Content: View>: View {
         @ObservedObject var session: MonitorSession
         @ViewBuilder let inner: () -> Inner
         var body: some View { inner() }
+    }
+}
+
+/// Terminal · Files · Monitor for one server, centred in a session page's toolbar,
+/// so moving between the three views of a server is one click from any of them.
+struct ServerToolSwitcher: View {
+    let machine: RDMachine.ID
+    let current: ServerTool
+
+    var body: some View {
+        Picker("View", selection: Binding(get: { current }, set: { $0.show(machine) })) {
+            ForEach(ServerTool.allCases) { tool in
+                Label(tool.title, systemImage: tool.systemImage)
+                    .labelStyle(.titleAndIcon)
+                    .help(tool.help)
+                    .tag(tool)
+            }
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .fixedSize()
+        .help("Switch between this server's terminal, files and monitor")
+    }
+}
+
+extension View {
+    /// Places the `ServerToolSwitcher` in the centre of the window toolbar.
+    func serverToolSwitcher(machine: RDMachine.ID?, current: ServerTool) -> some View {
+        toolbar {
+            ToolbarItem(placement: .principal) {
+                if let machine {
+                    ServerToolSwitcher(machine: machine, current: current)
+                }
+            }
+        }
     }
 }

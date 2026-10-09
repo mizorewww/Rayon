@@ -25,7 +25,11 @@ enum Route: Hashable {
 final class AppRouter: ObservableObject {
     nonisolated(unsafe) static let shared = AppRouter()
 
-    @Published var route: Route = .home
+    @Published var route: Route = .home {
+        didSet { if !route.isSession { lastPlace = route } }
+    }
+    /// The last page that is not a session; closing a session returns here.
+    private(set) var lastPlace: Route = .home
     @Published var columnVisibility: NavigationSplitViewVisibility = .all
     /// Presents the server editor for a new server from anywhere (menu, Home, Servers).
     @Published var presentNewServer = false
@@ -39,19 +43,19 @@ final class AppRouter: ObservableObject {
         TerminalManager.shared.$sessionContexts
             .sink { [weak self] contexts in
                 guard let self, case let .terminal(id) = self.route else { return }
-                if !contexts.contains(where: { $0.id == id }) { self.route = .home }
+                if !contexts.contains(where: { $0.id == id }) { self.route = self.lastPlace }
             }
             .store(in: &cancellables)
         MonitorCenter.shared.$sessions
             .sink { [weak self] sessions in
                 guard let self, case let .monitor(id) = self.route else { return }
-                if !sessions.contains(where: { $0.id == id }) { self.route = .servers }
+                if !sessions.contains(where: { $0.id == id }) { self.route = self.lastPlace }
             }
             .store(in: &cancellables)
         FileTransferManager.shared.$transfers
             .sink { [weak self] transfers in
                 guard let self, case let .transfer(id) = self.route else { return }
-                if !transfers.contains(where: { $0.id == id }) { self.route = .home }
+                if !transfers.contains(where: { $0.id == id }) { self.route = self.lastPlace }
             }
             .store(in: &cancellables)
     }
@@ -84,11 +88,16 @@ final class AppRouter: ObservableObject {
     }
 
     func openFileTransfer(machine: RDMachine.ID) {
-        if let existing = FileTransferManager.shared.transfers.first(where: { $0.machine.id == machine }) {
+        let manager = FileTransferManager.shared
+        if let existing = manager.transfers.first(where: { $0.machine.id == machine }) {
             route = .transfer(existing.id)
             return
         }
-        FileTransferManager.shared.begin(for: machine)
+        manager.begin(for: machine)
+        // Like Monitor, Files opens its page right away and connects in place.
+        if let started = manager.transfers.last(where: { $0.machine.id == machine }) {
+            route = .transfer(started.id)
+        }
     }
 
     @MainActor
@@ -96,12 +105,12 @@ final class AppRouter: ObservableObject {
         MenubarTool.shared.createRuncat(for: machine)
     }
 
-    /// Batch Startup: pick servers, then open a terminal for each.
+    /// Pick one or more servers, then open a terminal for each.
     @MainActor
-    func batchStartup() {
+    func openTerminals() {
         ServerPickerPanel.present(
-            title: "Batch Startup",
-            confirmTitle: "Open Terminals",
+            title: "Open Terminals",
+            confirmTitle: "Open",
             allowsMany: true
         ) { machines in
             for machine in machines {
@@ -118,6 +127,15 @@ final class AppRouter: ObservableObject {
     func openSettings(_ category: String = SettingsCategory.general) {
         settingsSelection = category
         route = .settings
+    }
+}
+
+extension Route {
+    var isSession: Bool {
+        switch self {
+        case .terminal, .monitor, .transfer: return true
+        default: return false
+        }
     }
 }
 

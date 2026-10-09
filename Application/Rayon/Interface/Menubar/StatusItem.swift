@@ -167,7 +167,7 @@ struct MenubarPopoverView: View {
                     openMainWindow()
                     AppRouter.shared.openMonitor(machine: session.machine.id)
                 } label: {
-                    Label("Monitor", systemImage: "waveform.path.ecg")
+                    Label("Monitor", systemImage: "gauge.with.dots.needle.33percent")
                 }
                 .buttonStyle(.rx)
                 Spacer()

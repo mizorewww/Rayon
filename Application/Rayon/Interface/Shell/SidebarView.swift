@@ -55,7 +55,7 @@ struct SidebarView: View {
                         Text("Sessions")
                         Spacer()
                         Button {
-                            router.batchStartup()
+                            router.openTerminals()
                         } label: {
                             Image(systemName: "wind")
                         }

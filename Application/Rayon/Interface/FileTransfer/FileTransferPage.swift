@@ -110,6 +110,7 @@ struct FileTransferPage: View {
             FilePromptSheet(prompt: prompt, context: context) { self.prompt = nil }
         }
         .onChange(of: context.currentDir) { _ in selection = nil }
+        .serverToolSwitcher(machine: context.machine.id, current: .files)
     }
 
     var subtitle: String {

@@ -2,7 +2,7 @@
 //  ServersView.swift
 //  Rayon (macOS)
 //
-//  All servers grouped, with search, redaction, Batch Startup and New Server.
+//  All servers grouped, with search, redaction, Open Terminals and New Server.
 //
 
 import MachineStatusView
@@ -38,7 +38,11 @@ struct ServersView: View {
         PageScaffold(search: $searchText, searchPrompt: "Search servers") {
         } trailing: {
             RedactionMenu()
-            ToolbarAction("Batch Startup", systemImage: "wind") { router.batchStartup() }
+            Button { router.openTerminals() } label: {
+                Label("Open Terminals…", systemImage: "rectangle.stack.badge.plus")
+                    .labelStyle(.titleAndIcon)
+            }
+            .help("Pick several servers and open a terminal on each")
                 .disabled(store.machineGroup.machines.isEmpty)
             ToolbarAction("New Server", systemImage: "plus", primary: true) {
                 router.presentNewServer = true
@@ -94,7 +98,8 @@ struct RedactionMenu: View {
             .pickerStyle(.inline)
             .labelsHidden()
         } label: {
-            Label("Redaction", systemImage: store.machineRedacted == .none ? "eye" : "eye.slash")
+            Label("Privacy", systemImage: store.machineRedacted == .none ? "eye" : "eye.slash")
+                .labelStyle(.titleAndIcon)
         }
         .menuIndicator(.hidden)
         .help(store.machineRedacted.tooltip)
@@ -164,13 +169,13 @@ struct ServerColumns {
     let identity: CGFloat = 110
     let cpu: CGFloat = 110
     let lastUsed: CGFloat = 120
-    let actions: CGFloat = 156
+    let actions: CGFloat = 220
     let showIdentity: Bool
     let showCPU: Bool
     let showLastUsed: Bool
 
     init(width: CGFloat) {
-        let base: CGFloat = 180 + 150 + 156 + 24
+        let base: CGFloat = 180 + 150 + 220 + 24
         showCPU = width > base + 110
         showIdentity = width > base + 110 + 110
         showLastUsed = width > base + 110 + 110 + 120
@@ -238,14 +243,14 @@ private struct ServerRow: View {
                         .frame(width: columns.lastUsed, alignment: .leading)
                 }
                 HStack(spacing: RX.Space.s1) {
-                    RXIconButton("Open File Transfer", systemImage: "arrow.up.arrow.down", size: .small) {
-                        AppRouter.shared.openFileTransfer(machine: machine)
-                    }
-                    RXIconButton("Open Monitor", systemImage: "waveform.path.ecg", size: .small) {
-                        AppRouter.shared.openMonitor(machine: machine)
+                    ForEach([ServerTool.files, .monitor]) { tool in
+                        Button(tool.title) { tool.show(machine) }
+                            .buttonStyle(.rx(.plain, size: .small))
+                            .help(tool.help)
                     }
                     Button("Connect") { AppRouter.shared.openTerminal(machine: machine) }
                         .buttonStyle(.rx(size: .small))
+                        .help(ServerTool.terminal.help)
                 }
                 .frame(width: columns.actions, alignment: .trailing)
             }

@@ -2,7 +2,7 @@
 //  PickerSheets.swift
 //  Rayon (macOS)
 //
-//  The server picker (Batch Startup, Run snippet, Port Forward) and the identity picker.
+//  The server picker (Open Terminals, Run snippet, Port Forward) and the identity picker.
 //
 
 import RayonModule
