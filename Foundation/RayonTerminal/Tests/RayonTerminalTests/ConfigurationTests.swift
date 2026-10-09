@@ -20,6 +20,29 @@ final class ConfigurationTests: XCTestCase {
         }
         XCTAssertEqual(ConfigLayout.categories.map(\.id).count, Set(ConfigLayout.categories.map(\.id)).count)
     }
+    func testShortcutsReadAsKeyCaps() {
+        XCTAssertEqual(KeybindingNames.step("super+shift+k"), "⇧⌘K")
+        XCTAssertEqual(KeybindingNames.step("super+physical:four"), "⌘4")
+        XCTAssertEqual(KeybindingNames.step("ctrl+alt+arrow_left"), "⌃⌥←")
+        XCTAssertEqual(KeybindingNames.step("super+equal"), "⌘=")
+        XCTAssertEqual(KeybindingNames.summary(ConfigKeybinding("super+equal=increase_font_size:1")), "Make Text Bigger (1 pt)")
+        XCTAssertEqual(KeybindingNames.summary(ConfigKeybinding("super+backspace=text:\\x15")), "Delete to Start of Line")
+        XCTAssertEqual(KeybindingNames.summary(ConfigKeybinding("alt+arrow_left=esc:b")), "Move Back a Word")
+        XCTAssertFalse(KeybindingNames.applies(ConfigKeybinding("super+t=new_tab")))
+        XCTAssertTrue(KeybindingNames.applies(ConfigKeybinding("super+k=clear_screen")))
+    }
+    func testCodepointMappingRoundTrip() {
+        let mapping = CodepointMapping("U+E000-U+F8FF,U+F0000-U+FFFFD=Symbols Nerd Font")
+        XCTAssertEqual(mapping?.family, "Symbols Nerd Font")
+        XCTAssertEqual(CodepointRangeSet.describe(mapping?.ranges ?? ""), "Nerd Font icons")
+        XCTAssertEqual(mapping?.rendered, "U+E000-U+F8FF,U+F0000-U+FFFFD=Symbols Nerd Font")
+        XCTAssertEqual(CodepointRangeSet.describe("U+1234"), "U+1234")
+    }
+    @MainActor func testInstalledFontsComeFromCoreText() {
+        XCTAssertTrue(FontLibrary.isMonospaced("Menlo"))
+        XCTAssertFalse(FontLibrary.styles(of: "Menlo").isEmpty)
+        XCTAssertFalse(FontLibrary.families.contains { $0.name.hasPrefix(".") })
+    }
     func testEditorShowsRayonRuntimeDefaults() {
         let document = ConfigDocument()
         XCTAssertEqual(document.text("font-size"), "14")
