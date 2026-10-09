@@ -170,18 +170,9 @@ public struct MemoryCard: View {
                     LegendItem("Free", value: kB(Double(memory.memFree)), color: .rxSurfaceSunken, outlined: true)
                 }
                 .padding(.top, RX.Space.s3)
-                HelpText(swapLine)
-                    .padding(.top, RX.Space.s3)
             }
         }
         .rxCard()
-    }
-
-    var swapLine: String {
-        let swapTotal = Double(memory.swapTotal)
-        let swapUsed = max(0, swapTotal - Double(memory.swapFree))
-        let swap = swapTotal > 0 ? "Swap \(kB(swapUsed)) of \(kB(swapTotal))" : "No swap"
-        return swap
     }
 
     func kB(_ value: Double) -> String {
@@ -306,7 +297,7 @@ public struct ThroughputCard: View {
         let peak = samples.max() ?? 0
         let rate = RXFormat.rate(current)
         VStack(alignment: .leading, spacing: 0) {
-            CardHead(isReceive ? "Receive · RX" : "Transmit · TX") {
+            CardHead(isReceive ? "Receive" : "Transmit") {
                 if peak > 0 {
                     HintText("peak \(RXFormat.rateString(peak))")
                 }
@@ -337,13 +328,11 @@ public struct NetworkCard: View {
     }
 
     public var body: some View {
-        let status = session.status
-        let elements = status.network.elements.sorted { ($0.rxBytesPerSec + $0.txBytesPerSec) > ($1.rxBytesPerSec + $1.txBytesPerSec) }
+        let elements = session.status.network.elements.sorted { ($0.rxBytesPerSec + $0.txBytesPerSec) > ($1.rxBytesPerSec + $1.txBytesPerSec) }
         let peak = Double(max(1, elements.map { max($0.rxBytesPerSec, $0.txBytesPerSec) }.max() ?? 1))
         VStack(alignment: .leading, spacing: 0) {
-            CardHead("Network") {
-                HintText("Total ↓ \(RXFormat.rateString(Double(status.totalReceivePerSecond)))  ↑ \(RXFormat.rateString(Double(status.totalTransmitPerSecond)))")
-            }
+            // Totals live in the Receive and Transmit cards beside this one.
+            CardHead("Network")
             if elements.isEmpty {
                 HelpText("No data")
                     .padding(.top, RX.Space.s2)

@@ -8,7 +8,8 @@ import RayonModule
 import SwiftUI
 
 /// The monitor's card grid. Two columns when there is room (System, Processor,
-/// Memory, Disks on the left; RX/TX, Network, Graphics on the right), one otherwise.
+/// Memory, Disks on the left; Receive and Transmit, Network, Graphics on the right),
+/// one otherwise.
 public struct MonitorDashboard: View {
     @ObservedObject var session: MonitorSession
 
