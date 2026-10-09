@@ -28,6 +28,7 @@ struct ConfigSettingRow: View {
     /// Editors that need the full row width.
     private var stacked: Bool {
         if setting.key == "keybind" { return true }
+        if setting.key.hasPrefix("font-family") { return false }
         return ["theme", "palette", "repeatable-text", "feature-list"].contains(widgetType)
     }
 
@@ -133,6 +134,28 @@ struct ConfigWidgetView: View {
     }
 
     @ViewBuilder var body: some View {
+        switch setting.key {
+        case "font-family":
+            ConfigFontFamilyEditor(model: model, key: setting.key, placeholder: "Built-in (JetBrains Mono)")
+        case "font-family-bold", "font-family-italic", "font-family-bold-italic":
+            ConfigFontFamilyEditor(model: model, key: setting.key, placeholder: "Same as main font")
+        case "font-style", "font-style-bold", "font-style-italic", "font-style-bold-italic":
+            ConfigFontStylePicker(model: model, key: setting.key)
+        case "scrollback-limit", "image-storage-limit":
+            ConfigByteInput(value: value, fallback: setting.defaultValue.values.first ?? "0")
+        case "font-feature", "font-variation", "font-variation-bold", "font-variation-italic", "font-variation-bold-italic":
+            VStack(alignment: .leading, spacing: RX.Space.s2) {
+                ConfigRepeatableEditor(model: model, key: setting.key, placeholder: setting.key == "font-feature" ? "e.g. -calt" : "e.g. wght=500")
+                ConfigListSuggestions(model: model, key: setting.key)
+            }
+        case "font-codepoint-map":
+            ConfigRepeatableEditor(model: model, key: setting.key, placeholder: "U+E000-U+F8FF=Symbols Nerd Font")
+        default:
+            catalogWidget
+        }
+    }
+
+    @ViewBuilder private var catalogWidget: some View {
             switch widget?.type ?? (setting.repeatable == true ? "repeatable-text" : "text") {
             case "switch":
                 Toggle(setting.name, isOn: Binding(get: { effective.lowercased() == "true" }, set: { value.wrappedValue = String($0) }))
@@ -321,11 +344,12 @@ struct ConfigPairInput: View {
 struct ConfigRepeatableEditor: View {
     @ObservedObject var model: ConfigEditorModel
     let key: String
+    var placeholder = "Value"
     var body: some View {
         VStack(spacing: 0) {
             ForEach(Array(model.document.values(key).enumerated()), id: \.offset) { index, _ in
                 HStack(spacing: RX.Space.s1) {
-                    TextField("Value", text: Binding(get: { let a = model.document.values(key); return a.indices.contains(index) ? a[index] : "" }, set: { text in
+                    TextField(placeholder, text: Binding(get: { let a = model.document.values(key); return a.indices.contains(index) ? a[index] : "" }, set: { text in
                         model.edit { var a = $0.values(key); guard a.indices.contains(index) else { return }; a[index] = text; $0.set(key, a) }
                     }))
                     .textFieldStyle(.plain)
