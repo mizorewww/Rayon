@@ -104,8 +104,14 @@ You can also open `App.xcworkspace` and run the **Rayon** scheme.
    Advanced. Ghostty coverage is described in
    [Foundation/RayonTerminal/CONFIGURATION.md](Foundation/RayonTerminal/CONFIGURATION.md).
 
-The iOS app (`mRayon`) is in this repository but has not been updated yet: it still
-uses the original interface and the legacy XTerminalUI terminal.
+### iPhone and iPad
+
+The iOS app (`mRayon`, iOS 16+) shares the Ghostty terminal and the same Settings as
+the Mac: the same categories, font picker and shortcut editor, as a list on iPhone
+and iPad. Above the keyboard, the terminal shows Ghostty's key bar (esc, tab, sticky
+ctrl/alt/cmd, arrows, symbols, paste). Its other screens still use the earlier
+iOS design. Build it from `App.xcworkspace` with the **mRayon** scheme; UI tests
+live in [Application/mRayonUITests](Application/mRayonUITests/README.md).
 
 ## Security
 
@@ -132,7 +138,9 @@ open an issue asking for a private contact instead.
   briefly open native terminal windows and use no SSH connection or credential store:
 
   ```sh
-  swift test --package-path Foundation/RayonTerminal
+  swift test --package-path Foundation/RayonTerminal          # macOS
+  cd Foundation/RayonTerminal && xcodebuild test \
+    -scheme RayonTerminal-Package -destination "platform=iOS Simulator,name=iPhone 17 Pro"
   ```
 
 The app lives in `Application/Rayon` (macOS) and `Application/mRayon` (iOS); shared
