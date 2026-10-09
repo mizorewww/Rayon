@@ -21,8 +21,18 @@ struct MainView: View {
             SidebarView()
                 .navigationSplitViewColumnWidth(min: 200, ideal: RX.sidebarWidth, max: 280)
         } detail: {
-            content
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Pages cross-fade with a slight rise, so the eye follows the change
+            // of place instead of seeing the content column jump.
+            ZStack {
+                content
+                    .id(router.route)
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .offset(y: 6)),
+                        removal: .opacity
+                    ))
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .animation(.easeOut(duration: 0.2), value: router.route)
         }
         .frame(minWidth: 940, minHeight: 600)
         .modifier(HiddenWindowTitle())
