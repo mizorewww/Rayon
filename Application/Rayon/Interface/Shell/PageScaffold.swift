@@ -94,6 +94,20 @@ extension View {
     }
 }
 
+/// Whether a page is the one on screen. Open session pages stay mounted so
+/// switching between them is instant; the hidden ones must not add toolbar items,
+/// search fields or keyboard shortcuts.
+private struct ActivePageKey: EnvironmentKey {
+    static let defaultValue = true
+}
+
+extension EnvironmentValues {
+    var isActivePage: Bool {
+        get { self[ActivePageKey.self] }
+        set { self[ActivePageKey.self] = newValue }
+    }
+}
+
 extension View {
     /// Navigation controls at the leading edge, actions at the trailing edge.
     func pageToolbar<Leading: View, Trailing: View>(
@@ -107,23 +121,32 @@ extension View {
 private struct PageToolbar<Leading: View, Trailing: View>: ViewModifier {
     let leading: Leading
     let trailing: Trailing
+    @Environment(\.isActivePage) private var isActive
 
+    // The condition sits inside the toolbar builder: switching the page's own
+    // identity would rebuild it (and its terminal view) on every switch.
     func body(content: Content) -> some View {
         if #available(macOS 26.0, *) {
             content.toolbar {
-                ToolbarItemGroup(placement: .navigation) { leading }
-                ToolbarSpacer(.flexible)
-                ToolbarItemGroup(placement: .automatic) { trailing }
+                if isActive {
+                    ToolbarItemGroup(placement: .navigation) { leading }
+                    ToolbarSpacer(.flexible)
+                    ToolbarItemGroup(placement: .automatic) { trailing }
+                }
             }
         } else {
             content.toolbar {
-                ToolbarItemGroup(placement: .navigation) { leading }
-                ToolbarItemGroup(placement: .automatic) { trailing }
+                if isActive {
+                    ToolbarItemGroup(placement: .navigation) { leading }
+                    ToolbarItemGroup(placement: .automatic) { trailing }
+                }
             }
         }
     }
 }
 
+/// Toolbar search for pages that are never kept hidden (session pages search
+/// inside the page instead: a hidden page's search field would stay in the toolbar).
 private struct OptionalSearch: ViewModifier {
     let text: Binding<String>?
     let prompt: String

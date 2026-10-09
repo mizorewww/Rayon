@@ -32,7 +32,7 @@ struct FileTransferPage: View {
     var busy: Bool { context.processConnection || context.isProgressRunning }
 
     var body: some View {
-        PageScaffold(scrolls: false, search: $filter, searchPrompt: "Filter") {
+        PageScaffold(scrolls: false) {
             ToolbarAction("Enclosing Folder", systemImage: "arrow.up") { goUp() }
                 .disabled(context.currentUrl.pathComponents.count <= 1 || busy || !context.connected)
                 .keyboardShortcut(.upArrow, modifiers: .command)
@@ -54,10 +54,16 @@ struct FileTransferPage: View {
         } header: {
             VStack(alignment: .leading, spacing: RX.Space.s2) {
                 PageTitle(store.machineRedacted == .all ? "File Transfer" : context.machine.name, subtitle: subtitle)
-                Breadcrumb(url: context.currentUrl) { path in
-                    context.navigate(path: path)
+                HStack(spacing: RX.Space.s3) {
+                    Breadcrumb(url: context.currentUrl) { path in
+                        context.navigate(path: path)
+                    }
+                    .disabled(busy || !context.connected)
+                    Spacer(minLength: RX.Space.s2)
+                    // In the page, not the toolbar: this page stays mounted while
+                    // hidden, and a toolbar search field would stay with it.
+                    RXSearchField("Filter this folder", text: $filter, width: 200)
                 }
-                .disabled(busy || !context.connected)
             }
         } content: {
             VStack(spacing: RX.Space.s4) {

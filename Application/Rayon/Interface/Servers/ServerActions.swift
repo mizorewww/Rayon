@@ -244,9 +244,19 @@ struct ServerToolSwitcher: View {
 extension View {
     /// Places the `ServerToolSwitcher` in the centre of the window toolbar.
     func serverToolSwitcher(machine: RDMachine.ID?, current: ServerTool) -> some View {
-        toolbar {
-            ToolbarItem(placement: .principal) {
-                if let machine {
+        modifier(ServerToolSwitcherItem(machine: machine, current: current))
+    }
+}
+
+private struct ServerToolSwitcherItem: ViewModifier {
+    let machine: RDMachine.ID?
+    let current: ServerTool
+    @Environment(\.isActivePage) private var isActive
+
+    func body(content: Content) -> some View {
+        content.toolbar {
+            if isActive, let machine {
+                ToolbarItem(placement: .principal) {
                     ServerToolSwitcher(machine: machine, current: current)
                 }
             }

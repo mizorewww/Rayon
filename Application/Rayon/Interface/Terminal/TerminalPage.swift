@@ -18,6 +18,7 @@ struct TerminalPage: View {
     @EnvironmentObject var store: RayonStore
 
     @State private var interfaceToken = UUID()
+    @Environment(\.isActivePage) private var isActive
 
     var body: some View {
         VStack(spacing: 0) {
@@ -75,6 +76,10 @@ struct TerminalPage: View {
         )
         .onAppear {
             context.interfaceToken = interfaceToken
+            context.termInterface.setActive(isActive)
+        }
+        .onChange(of: isActive) { active in
+            context.termInterface.setActive(active)
         }
     }
 

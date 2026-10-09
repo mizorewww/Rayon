@@ -26,15 +26,20 @@ struct MainView: View {
             ZStack {
                 RXWindowBackground()
                     .ignoresSafeArea()
-                content
-                    .id(router.route)
-                    .transition(.asymmetric(
-                        insertion: .opacity.combined(with: .offset(y: 6)),
-                        removal: .opacity
-                    ))
+                // Places (Home, Servers, Settings…) cross-fade with a slight rise,
+                // so the eye follows the change of place.
+                if !router.route.isSession {
+                    content
+                        .id(router.route)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .offset(y: 6)),
+                            removal: .opacity
+                        ))
+                }
+                SessionPages(route: router.route)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .animation(.easeOut(duration: 0.2), value: router.route)
+            .animation(.easeOut(duration: 0.2), value: router.route.isSession ? nil : router.route)
             // Set here, outside the page transition, so the toolbar never falls
             // back to its opaque background while one page fades into another.
             .toolbarBackground(.hidden, for: .windowToolbar)
@@ -75,28 +80,49 @@ struct MainView: View {
             PortForwardView()
         case .settings:
             SettingsView()
-        case let .terminal(id):
-            if let context = TerminalManager.shared.sessionContexts.first(where: { $0.id == id }) {
+        case .terminal, .monitor, .transfer:
+            EmptyView()
+        }
+    }
+}
+
+/// Every open terminal, file browser and monitor stays mounted; the route only
+/// decides which one is visible. Switching between a server's Terminal, Files
+/// and Monitor (or between servers) is then a change of visibility, with no
+/// page or terminal surface rebuilt and scroll positions kept.
+private struct SessionPages: View {
+    let route: Route
+    @ObservedObject var terminals = TerminalManager.shared
+    @ObservedObject var transfers = FileTransferManager.shared
+    @ObservedObject var monitors = MonitorCenter.shared
+
+    var body: some View {
+        ZStack {
+            ForEach(terminals.sessionContexts) { context in
                 TerminalPage(context: context)
-                    .id(id)
-            } else {
-                HomeView()
+                    .sessionPage(active: route == .terminal(context.id))
             }
-        case let .monitor(id):
-            if let session = MonitorCenter.shared.session(withID: id) {
-                MonitorPage(session: session)
-                    .id(id)
-            } else {
-                ServersView()
-            }
-        case let .transfer(id):
-            if let context = FileTransferManager.shared.transfers.first(where: { $0.id == id }) {
+            ForEach(transfers.transfers) { context in
                 FileTransferPage(context: context)
-                    .id(id)
-            } else {
-                HomeView()
+                    .sessionPage(active: route == .transfer(context.id))
+            }
+            ForEach(monitors.sessions) { session in
+                MonitorPage(session: session)
+                    .sessionPage(active: route == .monitor(session.id))
             }
         }
+    }
+}
+
+private extension View {
+    func sessionPage(active: Bool) -> some View {
+        opacity(active ? 1 : 0)
+            .allowsHitTesting(active)
+            .accessibilityHidden(!active)
+            .zIndex(active ? 1 : 0)
+            .environment(\.isActivePage, active)
+            // No fade between a server's tools: two different layouts mixing for
+            // a moment reads as lag, while an instant change feels immediate.
     }
 }
 
