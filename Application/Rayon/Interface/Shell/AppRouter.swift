@@ -26,8 +26,17 @@ final class AppRouter: ObservableObject {
     nonisolated(unsafe) static let shared = AppRouter()
 
     @Published var route: Route = .home {
-        didSet { if !route.isSession { lastPlace = route } }
+        didSet {
+            if !route.isSession {
+                lastPlace = route
+            } else if let owner = owner(of: route) {
+                lastRoute[owner] = route
+            }
+        }
     }
+    /// The page each server (or Quick Connect terminal) showed last, so its
+    /// sidebar row returns to the same tool.
+    private var lastRoute: [SessionOwner: Route] = [:]
     /// The last page that is not a session; closing a session returns here.
     private(set) var lastPlace: Route = .home
     @Published var columnVisibility: NavigationSplitViewVisibility = .all
@@ -124,10 +133,81 @@ final class AppRouter: ObservableObject {
         }
     }
 
+    // MARK: - Sessions by server
+
+    /// Who a session page belongs to.
+    func owner(of route: Route) -> SessionOwner? {
+        switch route {
+        case let .terminal(id):
+            guard let context = TerminalManager.shared.sessionContexts.first(where: { $0.id == id }) else { return nil }
+            return context.remoteType == .machine ? .server(context.machine.id) : .command(context.id)
+        case let .transfer(id):
+            return FileTransferManager.shared.transfers.first { $0.id == id }.map { .server($0.machine.id) }
+        case let .monitor(id):
+            return MonitorCenter.shared.session(withID: id).map { .server($0.machine.id) }
+        default:
+            return nil
+        }
+    }
+
+    /// Every open session page, terminals first, then files, then monitors.
+    var sessionRoutes: [Route] {
+        TerminalManager.shared.sessionContexts.map { .terminal($0.id) }
+            + FileTransferManager.shared.transfers.map { .transfer($0.id) }
+            + MonitorCenter.shared.sessions.map { .monitor($0.id) }
+    }
+
+    /// Servers and Quick Connect terminals with something open, in the order
+    /// their first session opened.
+    var openOwners: [SessionOwner] {
+        var seen = Set<SessionOwner>()
+        return sessionRoutes.compactMap(owner(of:)).filter { seen.insert($0).inserted }
+    }
+
+    func routes(of owner: SessionOwner) -> [Route] {
+        sessionRoutes.filter { self.owner(of: $0) == owner }
+    }
+
+    /// Shows a server's sessions: the tool it showed last, else the first open one.
+    func show(_ owner: SessionOwner) {
+        let open = routes(of: owner)
+        if let last = lastRoute[owner], open.contains(last) {
+            route = last
+        } else if let first = open.first {
+            route = first
+        }
+    }
+
+    /// Closes every session of a server or Quick Connect terminal.
+    @MainActor
+    func closeAll(_ owner: SessionOwner) {
+        for route in routes(of: owner) {
+            switch route {
+            case let .terminal(id):
+                if let context = TerminalManager.shared.sessionContexts.first(where: { $0.id == id }) {
+                    TerminalManager.shared.closeSession(withContextID: context.id)
+                }
+            case let .transfer(id):
+                FileTransferManager.shared.end(for: id)
+            case let .monitor(id):
+                MonitorCenter.shared.end(id)
+            default:
+                break
+            }
+        }
+    }
+
     func openSettings(_ category: String = SettingsCategory.general) {
         settingsSelection = category
         route = .settings
     }
+}
+
+/// What owns a group of session pages: a saved server, or one Quick Connect
+/// terminal (which has no saved server to group under).
+enum SessionOwner: Hashable {
+    case server(RDMachine.ID)
+    case command(UUID)
 }
 
 extension Route {

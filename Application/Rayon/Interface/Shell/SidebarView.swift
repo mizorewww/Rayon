@@ -2,8 +2,9 @@
 //  SidebarView.swift
 //  Rayon (macOS)
 //
-//  Home · Manage · Sessions (terminals, files, monitors), with Settings pinned
-//  to the bottom-left corner.
+//  Home · Manage · Sessions (one row per server with open sessions; the page's
+//  toolbar switches between its Terminal, Files and Monitor), with Settings
+//  pinned to the bottom-left corner.
 //
 
 import MachineStatusView
@@ -17,8 +18,26 @@ struct SidebarView: View {
     @ObservedObject var monitors = MonitorCenter.shared
     @ObservedObject var transfers = FileTransferManager.shared
 
-    var selection: Binding<Route?> {
-        Binding(get: { router.route }, set: { if let route = $0 { router.route = route } })
+    /// A place (Home, Servers…) or a server with open sessions. Selecting a
+    /// server shows the tool it showed last; the toolbar switcher changes tools.
+    enum Item: Hashable {
+        case place(Route)
+        case owner(SessionOwner)
+    }
+
+    var selection: Binding<Item?> {
+        Binding(get: {
+            if router.route.isSession {
+                return router.owner(of: router.route).map(Item.owner)
+            }
+            return .place(router.route)
+        }, set: { item in
+            switch item {
+            case let .place(route): router.route = route
+            case let .owner(owner): router.show(owner)
+            case nil: break
+            }
+        })
     }
 
     /// Changes whenever a session opens or closes; drives the row animation.
@@ -29,36 +48,28 @@ struct SidebarView: View {
     var body: some View {
         List(selection: selection) {
             Label("Home", systemImage: "house")
-                .tag(Route.home)
+                .tag(Item.place(.home))
 
             Section("Manage") {
                 Label("Servers", systemImage: "server.rack")
                     .badge(store.machineGroup.count)
-                    .tag(Route.servers)
+                    .tag(Item.place(.servers))
                 Label("Identities", systemImage: "person.badge.key")
                     .badge(store.identityGroup.count)
-                    .tag(Route.identities)
+                    .tag(Item.place(.identities))
                 Label("Snippets", systemImage: "chevron.left.forwardslash.chevron.right")
                     .badge(store.snippetGroup.count)
-                    .tag(Route.snippets)
+                    .tag(Item.place(.snippets))
                 Label("Port Forward", systemImage: "arrow.left.arrow.right")
                     .badge(store.portForwardGroup.count)
-                    .tag(Route.portForward)
+                    .tag(Item.place(.portForward))
             }
 
             if !sessionIDs.isEmpty {
                 Section("Sessions") {
-                    ForEach(terminals.sessionContexts) { context in
-                        TerminalSidebarRow(context: context)
-                            .tag(Route.terminal(context.id))
-                    }
-                    ForEach(transfers.transfers) { context in
-                        TransferSidebarRow(context: context)
-                            .tag(Route.transfer(context.id))
-                    }
-                    ForEach(monitors.sessions) { session in
-                        MonitorSidebarRow(session: session)
-                            .tag(Route.monitor(session.id))
+                    ForEach(router.openOwners, id: \.self) { owner in
+                        OwnerSidebarRow(owner: owner)
+                            .tag(Item.owner(owner))
                     }
                 }
             }
@@ -70,7 +81,7 @@ struct SidebarView: View {
             // corner while drawing it exactly like the rows above.
             List(selection: selection) {
                 Label("Settings", systemImage: "gearshape")
-                    .tag(Route.settings)
+                    .tag(Item.place(.settings))
                     .help("Settings (⌘,)")
             }
             .listStyle(.sidebar)
@@ -81,63 +92,91 @@ struct SidebarView: View {
     }
 }
 
-/// A session row: SF Symbol and title.
-private struct SessionLabel: View {
-    let title: String
-    let systemImage: String
+/// A server with open sessions (or a Quick Connect terminal): its name, then
+/// small symbols for the tools that are open.
+private struct OwnerSidebarRow: View {
+    let owner: SessionOwner
+    @EnvironmentObject var store: RayonStore
+    @ObservedObject var terminals = TerminalManager.shared
+    @ObservedObject var transfers = FileTransferManager.shared
+    @ObservedObject var monitors = MonitorCenter.shared
 
-    var body: some View {
-        Label(title, systemImage: systemImage)
-            .lineLimit(1)
-            .truncationMode(.middle)
-    }
-}
+    private var routes: [Route] { AppRouter.shared.routes(of: owner) }
 
-private struct TerminalSidebarRow: View {
-    @ObservedObject var context: TerminalManager.Context
-
-    var body: some View {
-        SessionLabel(
-            title: context.displayName,
-            systemImage: ServerTool.terminal.systemImage
-        )
-        .help("Terminal")
-        .contextMenu {
-            if context.closed {
-                Button("Reconnect") { context.reconnect() }
-            }
-            Button("Close Session") { TerminalSessionActions.close(context) }
+    private var title: String {
+        switch owner {
+        case let .server(id):
+            return store.machineGroup[id].name
+        case let .command(id):
+            return terminals.sessionContexts.first { $0.id == id }?.displayName ?? "Terminal"
         }
     }
-}
 
-private struct MonitorSidebarRow: View {
-    @ObservedObject var session: MonitorSession
-
-    var body: some View {
-        SessionLabel(title: session.machine.name, systemImage: ServerTool.monitor.systemImage)
-            .help("Monitor")
-            .contextMenu {
-                Button("New Terminal") { AppRouter.shared.openTerminal(machine: session.machine.id) }
-                Button("Close Monitor") { MonitorCenter.shared.end(session.id) }
+    private var openTools: [ServerTool] {
+        ServerTool.allCases.filter { tool in
+            routes.contains { route in
+                switch (tool, route) {
+                case (.terminal, .terminal), (.files, .transfer), (.monitor, .monitor): return true
+                default: return false
+                }
             }
+        }
     }
-}
-
-private struct TransferSidebarRow: View {
-    @ObservedObject var context: FileTransferContext
 
     var body: some View {
-        SessionLabel(
-            title: context.machine.name,
-            systemImage: ServerTool.files.systemImage
-        )
-        .help("Files")
-        .contextMenu {
-            if !context.connected {
-                Button("Reconnect") { context.processBootstrap() }
+        HStack(spacing: RX.Space.s2) {
+            Label {
+                RedactableText(title, redacted: store.machineRedacted == .all)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            } icon: {
+                Image(systemName: { if case .command = owner { return "terminal" } else { return "server.rack" } }())
             }
-            Button("Close Files") { FileTransferSessionActions.close(context) }
+            Spacer(minLength: 0)
+            if case .server = owner {
+                HStack(spacing: 3) {
+                    ForEach(openTools) { tool in
+                        Image(systemName: tool.systemImage)
+                            .font(.system(size: 10))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .accessibilityHidden(true)
+            }
+        }
+        .help(openTools.map(\.title).joined(separator: ", ") + " open")
+        .contextMenu { menu }
+    }
+
+    @ViewBuilder var menu: some View {
+        ForEach(routes, id: \.self) { route in
+            switch route {
+            case let .terminal(id):
+                if let context = terminals.sessionContexts.first(where: { $0.id == id }) {
+                    if context.closed { Button("Reconnect Terminal") { context.reconnect() } }
+                    Button("Close Terminal") { TerminalSessionActions.close(context) }
+                }
+            case let .transfer(id):
+                if let context = transfers.transfers.first(where: { $0.id == id }) {
+                    Button("Close Files") { FileTransferSessionActions.close(context) }
+                }
+            case let .monitor(id):
+                Button("Close Monitor") { MonitorCenter.shared.end(id) }
+            default:
+                EmptyView()
+            }
+        }
+        if routes.count > 1 {
+            Divider()
+            Button("Close All") {
+                UIBridge.requiresConfirmation(
+                    message: "Close everything open on \(title)?",
+                    confirmTitle: "Close All",
+                    destructive: true
+                ) { confirmed in
+                    if confirmed { AppRouter.shared.closeAll(owner) }
+                }
+            }
         }
     }
 }
