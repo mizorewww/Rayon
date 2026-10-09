@@ -145,7 +145,7 @@ struct ConfigWidgetView: View {
                     value: Binding(get: { Double(effective) ?? widget?.min ?? 0 }, set: { value.wrappedValue = String(format: "%g", $0) }),
                     in: (widget?.min ?? 0) ... (widget?.max ?? 1),
                     step: widget?.step ?? 0.01
-                ) { String(format: "%g", $0) }
+                )
             case "pill" where (widget?.options ?? []).count <= 4 && !(widget?.options ?? []).isEmpty:
                 RXSegmented(
                     selection: Binding(get: { effective }, set: { value.wrappedValue = $0 }),
