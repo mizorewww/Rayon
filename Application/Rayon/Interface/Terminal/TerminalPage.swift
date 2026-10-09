@@ -27,7 +27,9 @@ struct TerminalPage: View {
                 surface
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .background(Color.rxTerminalBackground)
+            // No backdrop of our own: Ghostty paints its background with
+            // `background-opacity`, so a translucent terminal shows the window
+            // material underneath instead of an opaque fill.
             .clipShape(RoundedRectangle(cornerRadius: RX.Radius.lg, style: .continuous))
             .padding(.horizontal, RX.Space.s6)
             TerminalStatusBar(context: context)
@@ -97,6 +99,7 @@ struct TerminalPage: View {
                 context.interfaceToken = interfaceToken
             }
             .environment(\.colorScheme, .dark)
+            .background(Color.rxTerminalBackground)
         }
     }
 
@@ -109,7 +112,7 @@ struct TerminalPage: View {
         .font(.rxBody)
         .padding(.horizontal, RX.Space.s3)
         .frame(height: 36)
-        .background(Color.white.opacity(0.05))
+        .background(Color.rxTerminalBackground)
     }
 }
 
