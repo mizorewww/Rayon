@@ -42,37 +42,6 @@ public struct RXDividedStack<Content: View>: View {
     }
 }
 
-/// A titled group of settings rows on one card.
-public struct RXFormSection<Content: View>: View {
-    let title: String?
-    let footer: String?
-    let content: Content
-
-    public init(_ title: String? = nil, footer: String? = nil, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.footer = footer
-        self.content = content()
-    }
-
-    public var body: some View {
-        VStack(alignment: .leading, spacing: RX.Space.s2) {
-            if let title, !title.isEmpty {
-                CapsLabel(title)
-                    .padding(.leading, RX.Space.s4)
-            }
-            RXDividedStack {
-                content
-            }
-            .padding(.horizontal, RX.Space.s4)
-            .background(RXCardBackground())
-            if let footer, !footer.isEmpty {
-                HelpText(footer)
-                    .padding(.horizontal, RX.Space.s4)
-            }
-        }
-    }
-}
-
 /// A settings row: title and one-sentence description, control right-aligned.
 public struct RXFormRow<Control: View>: View {
     let title: String
@@ -227,38 +196,6 @@ public struct RXSlider: View {
         .onAppear { text = format(value) }
         .onChange(of: value) { newValue in
             if !fieldFocused { text = format(newValue) }
-        }
-    }
-}
-
-/// A settings row with an `RXSlider`.
-public struct SliderRow: View {
-    let title: String
-    let description: String?
-    @Binding var value: Double
-    let range: ClosedRange<Double>
-    let step: Double
-    let unit: String?
-
-    public init(
-        _ title: String,
-        description: String? = nil,
-        value: Binding<Double>,
-        in range: ClosedRange<Double>,
-        step: Double = 1,
-        unit: String? = nil
-    ) {
-        self.title = title
-        self.description = description
-        _value = value
-        self.range = range
-        self.step = step
-        self.unit = unit
-    }
-
-    public var body: some View {
-        RXFormRow(title, description: description) {
-            RXSlider(value: $value, in: range, step: step, unit: unit)
         }
     }
 }

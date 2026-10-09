@@ -306,41 +306,6 @@ public struct RXValueField: View {
     }
 }
 
-/// Multi-line editor with field chrome (keys, comments).
-public struct RXTextEditor: View {
-    @Binding var text: String
-    let placeholder: String
-    let monospaced: Bool
-    let minHeight: CGFloat
-
-    public init(text: Binding<String>, placeholder: String = "", monospaced: Bool = false, minHeight: CGFloat = 72) {
-        _text = text
-        self.placeholder = placeholder
-        self.monospaced = monospaced
-        self.minHeight = minHeight
-    }
-
-    public var body: some View {
-        TextEditor(text: $text)
-            .font(monospaced ? .rxCode : .rxBody)
-            .scrollContentBackground(.hidden)
-            .padding(.horizontal, 3)
-            .padding(.vertical, 5)
-            .frame(minHeight: minHeight)
-            .overlay(alignment: .topLeading) {
-                if text.isEmpty, !placeholder.isEmpty {
-                    Text(placeholder)
-                        .font(monospaced ? .rxCode : .rxBody)
-                        .foregroundStyle(.rxInkSecondary)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 6)
-                        .allowsHitTesting(false)
-                }
-            }
-            .rxFieldBackground()
-    }
-}
-
 /// A 28pt filter field at the left of a toolbar. Filters the current list live.
 public struct RXSearchField: View {
     let prompt: String
@@ -381,37 +346,6 @@ public struct RXSearchField: View {
 }
 
 // MARK: - Button groups
-
-/// Joined bordered buttons for view switches (List / Grid, text size A / A).
-/// Separate the buttons with `RXButtonGroupDivider`.
-public struct RXButtonGroup<Content: View>: View {
-    let content: Content
-
-    public init(@ViewBuilder content: () -> Content) {
-        self.content = content()
-    }
-
-    public var body: some View {
-        HStack(spacing: 0) {
-            content
-        }
-        .buttonStyle(RXGroupedButtonStyle())
-        .frame(height: RX.controlHeight)
-        .background(Capsule().fill(Color.primary.opacity(0.07)))
-        .clipShape(Capsule())
-        .fixedSize()
-    }
-}
-
-public struct RXButtonGroupDivider: View {
-    public init() {}
-    public var body: some View {
-        Rectangle()
-            .fill(Color.primary.opacity(0.1))
-            .frame(width: 1)
-            .padding(.vertical, 6)
-    }
-}
 
 public struct RXGroupedButtonStyle: ButtonStyle {
     public init() {}
@@ -512,13 +446,4 @@ public extension View {
         }
     }
 
-    /// A secondary action in a bar or over content: Liquid Glass on 26, bordered before.
-    @ViewBuilder
-    func rxGlassAction() -> some View {
-        if #available(macOS 26.0, iOS 26.0, *) {
-            buttonStyle(.glass)
-        } else {
-            buttonStyle(.bordered)
-        }
-    }
 }

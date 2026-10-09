@@ -60,59 +60,6 @@ public struct StatusDot: View {
     }
 }
 
-/// A status dot with its word.
-public struct StatusLabel: View {
-    let status: RXStatus
-    let text: String
-
-    public init(_ status: RXStatus, _ text: String) {
-        self.status = status
-        self.text = text
-    }
-
-    public var body: some View {
-        HStack(spacing: 6) {
-            StatusDot(status)
-            Text(text)
-                .font(.rxBody)
-                .foregroundStyle(.rxInk)
-                .lineLimit(1)
-        }
-        .accessibilityElement(children: .combine)
-    }
-}
-
-/// Toolbar capsule that states one thing with a dot and a word.
-public struct StatusPill: View {
-    let status: RXStatus
-    let text: String
-    let caps: Bool
-
-    public init(_ status: RXStatus, _ text: String, caps: Bool = false) {
-        self.status = status
-        self.text = text
-        self.caps = caps
-    }
-
-    public var body: some View {
-        HStack(spacing: RX.Space.s2) {
-            StatusDot(status, size: caps ? .small : .regular)
-            if caps {
-                CapsLabel(text)
-            } else {
-                Text(text)
-                    .font(.rxBody)
-                    .foregroundStyle(.rxInk)
-                    .lineLimit(1)
-            }
-        }
-        .padding(.horizontal, caps ? 10 : 12)
-        .frame(height: RX.controlHeight)
-        .background(Capsule().fill(Color.rxPill))
-        .accessibilityElement(children: .combine)
-    }
-}
-
 /// Small label for groups, orientation, auth type.
 public struct RXTag: View {
     public enum Style {

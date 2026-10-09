@@ -261,8 +261,4 @@ public final class MonitorCenter: ObservableObject {
         session.shutdown()
     }
 
-    public func endAll() {
-        sessions.forEach { $0.shutdown() }
-        sessions = []
-    }
 }

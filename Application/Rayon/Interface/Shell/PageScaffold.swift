@@ -160,19 +160,6 @@ private struct OptionalSearch: ViewModifier {
     }
 }
 
-/// The back button at the left of a sub-page toolbar ("Servers").
-struct BackButton: View {
-    let title: String
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Label(title, systemImage: "chevron.left")
-        }
-        .help("Back to \(title)")
-    }
-}
-
 /// A toolbar action drawn by the system (Liquid Glass on macOS 26): a symbol,
 /// with its title as the tooltip and accessibility label (HIG: prefer simple,
 /// recognizable symbols in toolbars). The primary action is tinted, not worded.
