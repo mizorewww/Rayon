@@ -172,20 +172,17 @@ struct ConfigKeybindingList: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: RX.Space.s3) {
-            HStack(spacing: RX.Space.s2) {
-                RXSearchField("Search shortcuts", text: $filter, width: 220)
-                Spacer()
-                Button("Restore Defaults…") { confirmReset = true }
-                    .buttonStyle(.rx)
-                    .disabled(model.document.overrides["keybind"] == nil)
-                Button {
-                    editIndex = nil
-                    draft = ConfigKeybinding().rendered
-                    editing = true
-                } label: {
-                    Label("Add Shortcut", systemImage: "plus")
+            // One row when it fits; on a narrow screen the buttons go under the search.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: RX.Space.s2) {
+                    RXSearchField("Search shortcuts", text: $filter, width: 220)
+                    Spacer()
+                    headerButtons
                 }
-                .buttonStyle(.rxPrimary)
+                VStack(alignment: .leading, spacing: RX.Space.s2) {
+                    RXSearchField("Search shortcuts", text: $filter, width: nil)
+                    HStack(spacing: RX.Space.s2) { headerButtons }
+                }
             }
             let rows = visible
             ForEach(KeybindingNames.groups.map(\.title) + ["Other"], id: \.self) { group in
@@ -223,6 +220,22 @@ struct ConfigKeybindingList: View {
         }
     }
 
+    @ViewBuilder private var headerButtons: some View {
+        Button("Restore Defaults…") { confirmReset = true }
+            .buttonStyle(.rx)
+            .disabled(model.document.overrides["keybind"] == nil)
+            .fixedSize()
+        Button {
+            editIndex = nil
+            draft = ConfigKeybinding().rendered
+            editing = true
+        } label: {
+            Label("Add Shortcut", systemImage: "plus")
+        }
+        .buttonStyle(.rxPrimary)
+        .fixedSize()
+    }
+
     private func row(index: Int, binding: ConfigKeybinding) -> some View {
         let duplicate = entries.filter { ConfigKeybinding($0).canonical == binding.canonical }.count > 1
         return HStack(spacing: RX.Space.s3) {
@@ -232,7 +245,7 @@ struct ConfigKeybindingList: View {
                     KeyCaps(text: KeybindingNames.step(step))
                 }
             }
-            .frame(minWidth: 120, alignment: .leading)
+            .frame(minWidth: 96, alignment: .leading)
             VStack(alignment: .leading, spacing: 2) {
                 Text(KeybindingNames.summary(binding))
                     .font(.rxBody)

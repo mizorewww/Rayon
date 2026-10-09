@@ -160,6 +160,14 @@ struct ConfigFontPicker: View {
     /// Outer width shared by the font and style pickers so they line up.
     static let width: CGFloat = 224
 
+    /// macOS opens the list above the button; iPad below it, where the screen
+    /// has room for the list.
+    #if os(macOS)
+        private static let arrowEdge: Edge = .bottom
+    #else
+        private static let arrowEdge: Edge = .top
+    #endif
+
     @Binding var family: String
     /// Shown when no family is set.
     let placeholder: String
@@ -181,7 +189,7 @@ struct ConfigFontPicker: View {
         }
         .buttonStyle(.rx)
         .help("Choose a font installed on this Mac")
-        .popover(isPresented: $open, arrowEdge: .bottom) {
+        .popover(isPresented: $open, arrowEdge: Self.arrowEdge) {
             FontFamilyList(selection: $family, placeholder: placeholder) { open = false }
         }
     }
@@ -235,6 +243,10 @@ private struct FontFamilyList: View {
         .padding(RX.Space.s3)
         #if os(macOS)
         .frame(width: 320, height: 420)
+        #else
+        // A List has no height of its own; give the iPad popover one (on iPhone
+        // this is a sheet, which ignores the ideal size).
+        .frame(minWidth: 320, idealWidth: 360, minHeight: 420, idealHeight: 560)
         #endif
     }
 

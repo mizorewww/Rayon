@@ -111,7 +111,11 @@ struct ConfigSettingRow: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             #endif
                         }
+                        #if os(macOS)
                         .frame(maxHeight: 500)
+                        #else
+                        .frame(minWidth: 320, idealWidth: 430, minHeight: 240, idealHeight: 420)
+                        #endif
                     }
                     // Only a changed setting can be reset; the slot stays so controls don't shift.
                     Button { model.reset(setting.key) } label: {

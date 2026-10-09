@@ -55,6 +55,9 @@ struct ConfigLayout {
             Group("appearance", "Appearance", [.host("general.appearance")]),
             Group("sessions", "Sessions", [.host("general.sessions")]),
             Group("recent", "Recent", [.host("general.recent")]),
+            // App-specific: the iOS app's container and log. A group shows only
+            // when the app supplies its rows.
+            Group("data", "Data", [.host("general.data")]),
         ]),
         Category(id: "connection", title: "Connection", icon: "network", section: .app, groups: [
             Group("ssh", "SSH", [.host("connection.ssh")]),
