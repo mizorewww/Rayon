@@ -1,4 +1,3 @@
-import AppKit
 import RayonDesign
 import SwiftUI
 
@@ -88,6 +87,31 @@ public struct GhosttyConfigurationView: View {
     private var showsTerminalTools: Bool { search.isEmpty ? category?.section == .terminal : true }
 
     public var body: some View {
+        #if os(macOS)
+            columns
+        #else
+            CompactSettings(
+                categories: categories,
+                hostSections: hostSections,
+                model: model,
+                categoryPage: { category in categoryPage(category) },
+                searchContent: { searchContent },
+                search: $search,
+                resetConfirm: $resetConfirm
+            )
+            .onAppear(perform: installApplyHandler)
+            .confirmationDialog("Reset every terminal setting to its default?", isPresented: $resetConfirm) {
+                Button("Reset Terminal Settings", role: .destructive) { model.edit { $0 = ConfigDocument() } }
+            } message: {
+                Text("Rayon's General and Connection preferences are kept.")
+            }
+        #endif
+    }
+
+    #if os(macOS)
+    /// macOS: a category column beside the selected category, with the live
+    /// preview beside or above it.
+    private var columns: some View {
         HStack(spacing: 0) {
             categoryColumn
                 .frame(width: 216)
@@ -167,6 +191,33 @@ public struct GhosttyConfigurationView: View {
             Text("Rayon's General and Connection preferences are kept.")
         }
         .frame(minWidth: embedded ? 700 : 960, minHeight: 560)
+    }
+    #endif
+
+    /// One category's groups as cards: the iOS page pushed from the category list.
+    private func categoryPage(_ category: ConfigLayout.Category) -> some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: RX.Space.s6) {
+                if category.previews {
+                    DisclosureGroup("Preview") {
+                        ConfigPreview(model: model)
+                            .rxCard(padding: 0)
+                            .padding(.top, RX.Space.s2)
+                    }
+                    .font(.rxBodyStrong)
+                }
+                if category.id == "keyboard" {
+                    ConfigKeybindingList(model: model)
+                } else {
+                    ForEach(category.groups) { group in
+                        groupCard(group)
+                    }
+                }
+            }
+            .padding(RX.Space.s4)
+        }
+        .background(RXBackdrop().ignoresSafeArea())
+        .navigationTitle(category.title)
     }
 
     // MARK: Category column
@@ -369,7 +420,7 @@ public struct GhosttyConfigurationView: View {
                                     selection = category.id
                                     search = ""
                                 }
-                                .buttonStyle(.link)
+                                .rxLinkButton()
                                 .font(.rxHelp)
                             }
                             ForEach(groups, id: \.0.id) { group, keys in
@@ -435,6 +486,77 @@ public struct GhosttyConfigurationView: View {
     }
 }
 
+#if !os(macOS)
+    /// iPhone and iPad: the categories as a grouped list, each pushing its page;
+    /// searching replaces the list with matching settings.
+    private struct CompactSettings<Page: View, Results: View>: View {
+        let categories: [ConfigLayout.Category]
+        let hostSections: [String: ConfigHostSettingsSection]
+        @ObservedObject var model: ConfigEditorModel
+        let categoryPage: (ConfigLayout.Category) -> Page
+        let searchContent: () -> Results
+        @Binding var search: String
+        @Binding var resetConfirm: Bool
+
+        private func modifiedCount(_ category: ConfigLayout.Category) -> Int {
+            model.document.overrides.keys.filter { ConfigLayout.categoryOfKey[$0]?.id == category.id }.count
+        }
+
+        var body: some View {
+            Group {
+                if search.isEmpty {
+                    List {
+                        ForEach([ConfigLayout.Category.Section.app, .terminal, .info], id: \.self) { section in
+                            let members = categories.filter { $0.section == section }
+                            if !members.isEmpty {
+                                Section(section.rawValue) {
+                                    ForEach(members) { category in
+                                        NavigationLink {
+                                            categoryPage(category)
+                                        } label: {
+                                            HStack {
+                                                Label(category.title, systemImage: category.icon)
+                                                Spacer()
+                                                let count = modifiedCount(category)
+                                                if count > 0 {
+                                                    Text("\(count) changed")
+                                                        .font(.rxHelp)
+                                                        .foregroundStyle(.rxInkSecondary)
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    searchContent()
+                }
+            }
+            .searchable(text: $search, prompt: "Search settings")
+            .navigationTitle("Settings")
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        Button { model.undo() } label: { Label("Undo", systemImage: "arrow.uturn.backward") }
+                            .disabled(model.undoStack.isEmpty)
+                        Button { model.redo() } label: { Label("Redo", systemImage: "arrow.uturn.forward") }
+                            .disabled(model.redoStack.isEmpty)
+                        Divider()
+                        Button(role: .destructive) { resetConfirm = true } label: {
+                            Label("Reset Terminal Settings…", systemImage: "arrow.counterclockwise")
+                        }
+                    } label: {
+                        Label("More", systemImage: "ellipsis.circle")
+                    }
+                }
+            }
+        }
+    }
+#endif
+
+#if os(macOS)
 /// Navigation at the leading edge, actions at the trailing edge of the window toolbar.
 private struct ConfigToolbar<Leading: View, Trailing: View>: ViewModifier {
     let leading: Leading
@@ -460,3 +582,4 @@ private struct ConfigToolbar<Leading: View, Trailing: View>: ViewModifier {
         }
     }
 }
+#endif

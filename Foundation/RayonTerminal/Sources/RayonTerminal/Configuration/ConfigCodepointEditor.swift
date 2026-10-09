@@ -161,8 +161,7 @@ private struct CodepointRangePicker: View {
             }
             .frame(width: 220)
         }
-        .menuStyle(.button)
-        .menuIndicator(.hidden)
+        .rxButtonMenu(indicator: false)
         .buttonStyle(.rx)
         .fixedSize()
         .help(ranges)

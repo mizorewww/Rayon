@@ -1,62 +1,63 @@
-import AppKit
 import GhosttyTerminal
 import XCTest
+#if canImport(UIKit)
+    import UIKit
+#endif
 @testable import RayonTerminal
 
 final class NativeTerminalTests: XCTestCase {
     @MainActor
     func testUserClipboardActionsWorkButRemoteClipboardWriteIsDenied() async throws {
-        _ = NSApplication.shared
-        let pasteboard = NSPasteboard.general
-        // Preserve every readable representation, not just the user's text.
-        let saved = (pasteboard.pasteboardItems ?? []).map { item in
-            let copy = NSPasteboardItem()
-            for type in item.types {
-                if let data = item.data(forType: type) { copy.setData(data, forType: type) }
-            }
-            return copy
-        }
-        defer {
-            pasteboard.clearContents()
-            pasteboard.writeObjects(saved)
-        }
+        let saved = TestPasteboard.save()
+        defer { TestPasteboard.restore(saved) }
         let terminal = RayonTerminalView()
         let native = terminal.session.platformView()
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 640, height: 400),
-            styleMask: [.titled], backing: .buffered, defer: false
-        )
-        window.isReleasedWhenClosed = false
-        window.contentView = native
-        window.orderFront(nil)
+        let window = TestHost(native)
         defer { window.close() }
         try await Task.sleep(for: .milliseconds(100))
         terminal.write("Rayon copy marker")
         XCTAssertTrue(terminal.session.backend.waitForPendingOutput())
         XCTAssertTrue(native.performBindingAction("select_all"))
-        XCTAssertTrue(native.copySelectedTextToPasteboard())
-        try await Task.sleep(for: .milliseconds(100))
-        XCTAssertTrue(pasteboard.string(forType: .string)?.contains("Rayon copy marker") == true)
+        #if os(macOS)
+            XCTAssertTrue(native.copySelectedTextToPasteboard())
+            try await Task.sleep(for: .milliseconds(100))
+            XCTAssertTrue(TestPasteboard.string?.contains("Rayon copy marker") == true)
 
-        pasteboard.clearContents()
-        pasteboard.setString("Rayon paste 中文", forType: .string)
-        let pasted = expectation(description: "system pasteboard input")
-        terminal.setupBufferChain { text in
-            if text.contains("Rayon paste 中文") { pasted.fulfill() }
-        }
-        XCTAssertTrue(native.performBindingAction("paste_from_clipboard"))
-        await fulfillment(of: [pasted], timeout: 5)
+            TestPasteboard.string = "Rayon paste 中文"
+            let pasted = expectation(description: "system pasteboard input")
+            terminal.setupBufferChain { text in
+                if text.contains("Rayon paste 中文") { pasted.fulfill() }
+            }
+            XCTAssertTrue(native.performBindingAction("paste_from_clipboard"))
+            await fulfillment(of: [pasted], timeout: 5)
 
-        let remote = Data("remote replacement".utf8).base64EncodedString()
-        terminal.write("\u{1B}]52;c;\(remote)\u{07}")
-        XCTAssertTrue(terminal.session.backend.waitForPendingOutput())
-        try await Task.sleep(for: .milliseconds(100))
-        XCTAssertEqual(pasteboard.string(forType: .string), "Rayon paste 中文")
+            let remote = Data("remote replacement".utf8).base64EncodedString()
+            terminal.write("\u{1B}]52;c;\(remote)\u{07}")
+            XCTAssertTrue(terminal.session.backend.waitForPendingOutput())
+            try await Task.sleep(for: .milliseconds(100))
+            XCTAssertEqual(TestPasteboard.string, "Rayon paste 中文")
+        #else
+            // Reading the pasteboard's contents on iOS waits on the paste-consent
+            // prompt, which a test cannot answer; the change count and the
+            // presence of text are readable without it.
+            let beforeCopy = UIPasteboard.general.changeCount
+            XCTAssertTrue(native.copySelectedTextToPasteboard())
+            try await Task.sleep(for: .milliseconds(100))
+            XCTAssertGreaterThan(UIPasteboard.general.changeCount, beforeCopy, "Copy writes the pasteboard")
+            XCTAssertTrue(UIPasteboard.general.hasStrings)
+
+            let afterCopy = UIPasteboard.general.changeCount
+            let remote = Data("remote replacement".utf8).base64EncodedString()
+            terminal.write("\u{1B}]52;c;\(remote)\u{07}")
+            XCTAssertTrue(terminal.session.backend.waitForPendingOutput())
+            try await Task.sleep(for: .milliseconds(200))
+            XCTAssertEqual(UIPasteboard.general.changeCount, afterCopy, "A remote program cannot write the pasteboard")
+        #endif
     }
 
     @MainActor
     func testRealSurfaceInputOutputResizeFontAndWindowTransfer() async throws {
-        _ = NSApplication.shared
+        TestHost.prepare()
         let terminal = RayonTerminalView()
         let title = expectation(description: "OSC title")
         let bell = expectation(description: "bell")
@@ -73,13 +74,7 @@ final class NativeTerminalTests: XCTestCase {
         terminal.setTerminalFontSize(with: 16)
         let native = terminal.session.platformView()
         XCTAssertTrue(native === terminal.session.platformView())
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 640, height: 400),
-            styleMask: [.titled, .resizable], backing: .buffered, defer: false
-        )
-        window.isReleasedWhenClosed = false
-        window.contentView = native
-        window.orderFront(nil)
+        let window = TestHost(native)
         defer { window.close() }
         try await Task.sleep(for: .milliseconds(200))
         terminal.write("\u{1B}[31m中文 👻\u{1B}[0m\r\n\u{1B}]2;Rayon Ghostty Test\u{07}\u{07}")
@@ -91,7 +86,7 @@ final class NativeTerminalTests: XCTestCase {
         XCTAssertEqual(native.fontSize, 16)
 
         let originalSize = terminal.requestTerminalSize()
-        window.setContentSize(NSSize(width: 900, height: 600))
+        window.resize(CGSize(width: 900, height: 600))
         try await Task.sleep(for: .milliseconds(150))
         XCTAssertGreaterThan(terminal.requestTerminalSize().width, originalSize.width)
         terminal.setTerminalFontSize(with: 20)
@@ -103,14 +98,9 @@ final class NativeTerminalTests: XCTestCase {
         terminal.write((0..<100).map { "history \($0)\r\n" }.joined())
         XCTAssertTrue(terminal.session.backend.waitForPendingOutput())
 
-        let secondWindow = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 900, height: 600),
-            styleMask: [.titled], backing: .buffered, defer: false
-        )
-        secondWindow.isReleasedWhenClosed = false
+        let secondWindow = TestHost(size: CGSize(width: 900, height: 600))
         native.removeFromSuperview()
-        secondWindow.contentView = terminal.session.platformView()
-        secondWindow.orderFront(nil)
+        secondWindow.show(terminal.session.platformView())
         defer { secondWindow.close() }
         try await Task.sleep(for: .milliseconds(150))
         terminal.write("after move\r\n")
@@ -123,25 +113,18 @@ final class NativeTerminalTests: XCTestCase {
 
     @MainActor
     func testLastSessionReferenceMayBeReleasedBySSHWorker() async throws {
-        _ = NSApplication.shared
         let owner = SessionOwner()
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 640, height: 400),
-            styleMask: [.titled], backing: .buffered, defer: false
-        )
-        window.isReleasedWhenClosed = false
-        weak var native: AppTerminalView?
+        let window = TestHost()
+        weak var native: PlatformTerminalView?
         autoreleasepool {
             let view = owner.session!.platformView()
             native = view
-            window.contentView = view
-            window.orderFront(nil)
+            window.show(view)
         }
         try await Task.sleep(for: .milliseconds(100))
         owner.session!.output.write(Data("live teardown surface".utf8))
         XCTAssertTrue(owner.session!.backend.waitForPendingOutput())
         XCTAssertTrue(owner.session!.backend.readViewportText()?.contains("live teardown surface") == true)
-        window.contentView = nil
         window.close()
         await Task.detached { owner.releaseSession() }.value
         for _ in 0..<50 where native != nil {

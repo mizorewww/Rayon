@@ -1,4 +1,3 @@
-import AppKit
 import RayonDesign
 import SwiftUI
 
@@ -38,7 +37,7 @@ struct ConfigPreview: View {
                                 }
                                 HStack(spacing: 2) {
                                     Text(shell.prompt).foregroundStyle(Color(configHex: document.effectivePalette(2, dark: dark)))
-                                    ConfigCommandInput(shell: shell, color: NSColor(foreground), font: NSFont(name: family, size: size) ?? .monospacedSystemFont(ofSize: size, weight: .regular)).frame(minWidth: 70)
+                                    ConfigCommandInput(shell: shell, color: foreground, fontName: family, size: size).frame(minWidth: 70)
                                 }.id("input")
                             }.font(.custom(family, size: size)).padding(12).frame(maxWidth: .infinity, alignment: .leading)
                         }.frame(minHeight: 200, idealHeight: 280, maxHeight: 420)

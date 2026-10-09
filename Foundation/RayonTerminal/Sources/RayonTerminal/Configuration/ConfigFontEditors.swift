@@ -215,7 +215,7 @@ private struct FontFamilyList: View {
         VStack(alignment: .leading, spacing: RX.Space.s2) {
             RXSearchField("Search fonts", text: $search, width: nil)
             Toggle("Monospaced fonts only", isOn: $monospacedOnly)
-                .toggleStyle(.checkbox)
+                .rxCheckboxToggle()
                 .font(.rxHelp)
             ScrollViewReader { proxy in
                 List {
@@ -233,7 +233,9 @@ private struct FontFamilyList: View {
             }
         }
         .padding(RX.Space.s3)
+        #if os(macOS)
         .frame(width: 320, height: 420)
+        #endif
     }
 
     private func row(name: String, title: String, font: Font) -> some View {
@@ -380,8 +382,7 @@ struct ConfigFontStylePicker: View {
             }
             .frame(width: ConfigFontPicker.width - 28)
         }
-        .menuStyle(.button)
-        .menuIndicator(.hidden)
+        .rxButtonMenu(indicator: false)
         .buttonStyle(.rx)
         .fixedSize()
         .help(family.isEmpty ? "Styles of the built-in font" : "Styles installed for \(family)")

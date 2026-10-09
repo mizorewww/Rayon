@@ -1,4 +1,3 @@
-import AppKit
 import GhosttyTerminal
 import XCTest
 @testable import RayonTerminal
@@ -44,7 +43,7 @@ final class ConfigurationRuntimeTests: XCTestCase {
         XCTAssertTrue(runtime.contains("font-thicken = \(thicken)"))
     }
     @MainActor func testRuntimeFilterAndDualThemes() throws {
-        _ = NSApplication.shared
+        TestHost.prepare()
         var doc = ConfigDocument()
         try doc.merge("theme = light:3024 Day,dark:3024 Night\nbackground = #223344\ncommand = rm -rf /\nconfig-file = /tmp/config\nclipboard-write = allow\nkeybind = global:ctrl+k=quit\nkeybind = ctrl+k=text:hello")
         let text = RayonTerminalConfiguration.runtimeContents(doc, dark: true)
@@ -77,12 +76,11 @@ final class ConfigurationRuntimeTests: XCTestCase {
         XCTAssertTrue(ConfigPairCodec.parse("2", scroll: true).linked)
     }
     @MainActor func testApplyPreservesSurfaceAndFractionalFontForNewSessions() async throws {
-        _ = NSApplication.shared
+        TestHost.prepare()
         defer { try? RayonTerminalConfiguration.apply(ConfigEditorModel.storedDocument()) }
         let terminal = RayonTerminalView()
         let native = terminal.session.platformView()
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 640, height: 400), styleMask: [.titled], backing: .buffered, defer: false)
-        window.isReleasedWhenClosed = false; window.contentView = native; window.orderFront(nil)
+        let window = TestHost(native)
         defer { window.close() }
         try await Task.sleep(for: .milliseconds(100))
         terminal.write("configuration survival marker\r\n")
@@ -100,8 +98,7 @@ final class ConfigurationRuntimeTests: XCTestCase {
         XCTAssertEqual(native.fontSize, 13.5)
         // A fresh batch/interactive view shares the same exact (non-rounded) configuration.
         let next = RayonTerminalView()
-        let second = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 640, height: 400), styleMask: [.titled], backing: .buffered, defer: false)
-        second.isReleasedWhenClosed = false; second.contentView = next.session.platformView(); second.orderFront(nil)
+        let second = TestHost(next.session.platformView())
         defer { second.close() }
         try await Task.sleep(for: .milliseconds(100))
         XCTAssertEqual(next.session.platformView().fontSize, 13.5)

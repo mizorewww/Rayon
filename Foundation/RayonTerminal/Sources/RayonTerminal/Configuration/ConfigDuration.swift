@@ -47,8 +47,7 @@ struct ConfigDurationInput: View {
                 } label: {
                     Label("Units", systemImage: "clock")
                 }
-                .menuStyle(.button)
-                .menuIndicator(.hidden)
+                .rxButtonMenu(indicator: false)
                 .buttonStyle(.rx(iconOnly: true))
                 .fixedSize()
                 .help("Add a unit")

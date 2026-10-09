@@ -317,7 +317,7 @@ struct ConfigKeybindingBuilder: View {
                         Toggle("Also send the keys to the program", isOn: prefix("unconsumed"))
                         Toggle("Only when the action can run", isOn: prefix("performable"))
                     }
-                    .toggleStyle(.checkbox)
+                    .rxCheckboxToggle()
                     .font(.rxBody)
                 }
 
@@ -341,7 +341,9 @@ struct ConfigKeybindingBuilder: View {
                 .keyboardShortcut(.defaultAction)
                 .disabled(!parsed.errors.isEmpty || recordingStep != nil)
         }
+        #if os(macOS)
         .frame(width: 580)
+        #endif
     }
 
     private func prefix(_ name: String) -> Binding<Bool> {
@@ -399,7 +401,7 @@ struct ConfigKeybindingBuilder: View {
                 } label: {
                     Text("Key: \(KeybindingNames.key(key))")
                 }
-                .menuStyle(.button)
+                .rxButtonMenu()
                 .buttonStyle(.rx(size: .small))
                 .fixedSize()
             }

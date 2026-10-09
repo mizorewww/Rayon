@@ -1,6 +1,8 @@
 import Foundation
 import SwiftUI
-import AppKit
+#if os(macOS)
+    import AppKit
+#endif
 
 /// An entirely in-memory playground. No Process, FileManager or SSH backend is used.
 @MainActor
@@ -174,38 +176,63 @@ final class ConfigSandbox: ObservableObject {
     }
 }
 
-struct ConfigCommandInput: NSViewRepresentable {
-    @ObservedObject var shell: ConfigSandbox
-    let color: NSColor
-    let font: NSFont
-    func makeCoordinator() -> Coordinator { Coordinator(self) }
-    func makeNSView(context: Context) -> NSTextField {
-        let field = NSTextField(string: "")
-        field.delegate = context.coordinator; field.isBordered = false; field.drawsBackground = false; field.focusRingType = .none
-        return field
-    }
-    func updateNSView(_ field: NSTextField, context: Context) {
-        context.coordinator.owner = self
-        if field.stringValue != shell.input { field.stringValue = shell.input }
-        field.textColor = color; field.font = font
-    }
-    final class Coordinator: NSObject, NSTextFieldDelegate {
-        var owner: ConfigCommandInput
-        init(_ owner: ConfigCommandInput) { self.owner = owner }
-        func controlTextDidChange(_ obj: Notification) { if let field = obj.object as? NSTextField { owner.shell.input = field.stringValue } }
-        func control(_ control: NSControl, textView: NSTextView, doCommandBy command: Selector) -> Bool {
-            switch NSStringFromSelector(command) {
-            case "insertNewline:": owner.shell.submit()
-            case "moveUp:": owner.shell.historyMove(-1)
-            case "moveDown:": owner.shell.historyMove(1)
-            case "insertTab:": owner.shell.complete()
-            case "cancelOperation:": owner.shell.output(owner.shell.prompt + owner.shell.input + "^C"); owner.shell.input = ""
-            case "centerSelectionInVisibleArea:": owner.shell.lines.removeAll()
-            default: return false
+#if os(macOS)
+    /// The prompt's input line: Return runs, ↑/↓ walk history, Tab completes,
+    /// Esc cancels, ⌃L clears.
+    struct ConfigCommandInput: NSViewRepresentable {
+        @ObservedObject var shell: ConfigSandbox
+        let color: Color
+        let fontName: String
+        let size: CGFloat
+        private var font: NSFont { NSFont(name: fontName, size: size) ?? .monospacedSystemFont(ofSize: size, weight: .regular) }
+        func makeCoordinator() -> Coordinator { Coordinator(self) }
+        func makeNSView(context: Context) -> NSTextField {
+            let field = NSTextField(string: "")
+            field.delegate = context.coordinator; field.isBordered = false; field.drawsBackground = false; field.focusRingType = .none
+            return field
+        }
+        func updateNSView(_ field: NSTextField, context: Context) {
+            context.coordinator.owner = self
+            if field.stringValue != shell.input { field.stringValue = shell.input }
+            field.textColor = NSColor(color); field.font = font
+        }
+        final class Coordinator: NSObject, NSTextFieldDelegate {
+            var owner: ConfigCommandInput
+            init(_ owner: ConfigCommandInput) { self.owner = owner }
+            func controlTextDidChange(_ obj: Notification) { if let field = obj.object as? NSTextField { owner.shell.input = field.stringValue } }
+            func control(_ control: NSControl, textView: NSTextView, doCommandBy command: Selector) -> Bool {
+                switch NSStringFromSelector(command) {
+                case "insertNewline:": owner.shell.submit()
+                case "moveUp:": owner.shell.historyMove(-1)
+                case "moveDown:": owner.shell.historyMove(1)
+                case "insertTab:": owner.shell.complete()
+                case "cancelOperation:": owner.shell.output(owner.shell.prompt + owner.shell.input + "^C"); owner.shell.input = ""
+                case "centerSelectionInVisibleArea:": owner.shell.lines.removeAll()
+                default: return false
+                }
+                textView.string = owner.shell.input
+                textView.setSelectedRange(NSRange(location: textView.string.utf16.count, length: 0))
+                return true
             }
-            textView.string = owner.shell.input
-            textView.setSelectedRange(NSRange(location: textView.string.utf16.count, length: 0))
-            return true
         }
     }
-}
+#else
+    /// The prompt's input line; Return runs the command.
+    struct ConfigCommandInput: View {
+        @ObservedObject var shell: ConfigSandbox
+        let color: Color
+        let fontName: String
+        let size: CGFloat
+
+        var body: some View {
+            TextField("", text: $shell.input)
+                .textFieldStyle(.plain)
+                .font(.custom(fontName, size: size))
+                .foregroundStyle(color)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
+                .submitLabel(.go)
+                .onSubmit { shell.submit() }
+        }
+    }
+#endif

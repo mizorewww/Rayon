@@ -1,4 +1,8 @@
-import AppKit
+#if os(macOS)
+    import AppKit
+#else
+    import UIKit
+#endif
 import RayonDesign
 import SwiftUI
 
@@ -35,6 +39,14 @@ struct ConfigSettingRow: View {
 
     private var isModified: Bool { model.document.overrides[setting.key] != nil }
 
+    #if os(iOS)
+        @Environment(\.horizontalSizeClass) private var sizeClass
+        /// On a narrow iPhone screen every control goes under its title.
+        private var widgetBelow: Bool { stacked || sizeClass == .compact }
+    #else
+        private var widgetBelow: Bool { stacked }
+    #endif
+
     /// Rayon's wording, else the catalog description's first sentence, without markdown.
     private var summary: String {
         if let wording = ConfigLayout.wording[setting.key]?.summary { return wording }
@@ -69,7 +81,7 @@ struct ConfigSettingRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .help("Ghostty setting: \(setting.key)")
                 HStack(spacing: RX.Space.s2) {
-                    if !stacked {
+                    if !widgetBelow {
                         ConfigWidgetView(model: model, setting: setting)
                             .disabled(setting.disabled == true)
                     }
@@ -93,7 +105,11 @@ struct ConfigSettingRow: View {
                                 Link("Ghostty documentation", destination: URL(string: "https://ghostty.org/docs/config/reference#" + setting.key)!)
                             }
                             .padding(RX.Space.s4)
+                            #if os(macOS)
                             .frame(width: 430, alignment: .leading)
+                            #else
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            #endif
                         }
                         .frame(maxHeight: 500)
                     }
@@ -108,7 +124,7 @@ struct ConfigSettingRow: View {
                     .animation(.easeOut(duration: 0.15), value: isModified)
                 }
             }
-            if stacked {
+            if widgetBelow {
                 ConfigWidgetView(model: model, setting: setting)
                     .disabled(setting.disabled == true)
             }
@@ -180,7 +196,7 @@ struct ConfigWidgetView: View {
                     } label: {
                         Text("Presets")
                     }
-                    .menuStyle(.button)
+                    .rxButtonMenu()
                     .buttonStyle(.rx(size: .small))
                     .fixedSize()
                     .help("Choose a common value")
@@ -293,8 +309,14 @@ extension Color {
         } else { self = configHex == "white" ? .white : .black }
     }
     var configHex: String {
-        guard let color = NSColor(self).usingColorSpace(.sRGB) else { return "#000000" }
-        return String(format: "#%02x%02x%02x", Int((color.redComponent * 255).rounded()), Int((color.greenComponent * 255).rounded()), Int((color.blueComponent * 255).rounded()))
+        var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+        #if os(macOS)
+            guard let color = NSColor(self).usingColorSpace(.sRGB) else { return "#000000" }
+            color.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        #else
+            guard UIColor(self).getRed(&red, green: &green, blue: &blue, alpha: &alpha) else { return "#000000" }
+        #endif
+        return String(format: "#%02x%02x%02x", Int((red * 255).rounded()), Int((green * 255).rounded()), Int((blue * 255).rounded()))
     }
 }
 

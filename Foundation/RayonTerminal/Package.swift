@@ -3,7 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "RayonTerminal",
-    platforms: [.macOS(.v13)],
+    platforms: [.macOS(.v13), .iOS(.v16)],
     products: [
         .library(name: "RayonTerminal", targets: ["RayonTerminal"]),
         .executable(name: "RayonConfigurationPreview", targets: ["RayonConfigurationPreview"]),

@@ -1,16 +1,23 @@
-import AppKit
 import GhosttyTerminal
 import SwiftUI
 
+#if os(macOS)
+    import AppKit
+
+    /// Ghostty's native terminal view on this platform.
+    public typealias PlatformTerminalView = AppTerminalView
+#else
+    import UIKit
+
+    public typealias PlatformTerminalView = UITerminalView
+#endif
+
 /// One native terminal per SSH context. Copies of this SwiftUI value share the
 /// same view/session, preserving scrollback when a terminal moves between windows.
-public struct RayonTerminalView: NSViewRepresentable {
+public struct RayonTerminalView {
     nonisolated let session: RayonTerminalSession
 
     nonisolated public init() { session = RayonTerminalSession() }
-
-    public func makeNSView(context: Context) -> AppTerminalView { session.platformView() }
-    public func updateNSView(_ view: AppTerminalView, context: Context) {}
 
     nonisolated public func write(_ string: String) { session.output.write(Data(string.utf8)) }
 
@@ -47,6 +54,18 @@ public struct RayonTerminalView: NSViewRepresentable {
     }
 }
 
+#if os(macOS)
+    extension RayonTerminalView: NSViewRepresentable {
+        public func makeNSView(context _: Context) -> AppTerminalView { session.platformView() }
+        public func updateNSView(_: AppTerminalView, context _: Context) {}
+    }
+#else
+    extension RayonTerminalView: UIViewRepresentable {
+        public func makeUIView(context _: Context) -> UITerminalView { session.platformView() }
+        public func updateUIView(_: UITerminalView, context _: Context) {}
+    }
+#endif
+
 /// Only the immutable/thread-safe transport objects cross queues. AppKit storage
 /// and all Ghostty view operations are explicitly main-actor isolated.
 final class RayonTerminalSession: @unchecked Sendable {
@@ -66,7 +85,7 @@ final class RayonTerminalSession: @unchecked Sendable {
         output = TerminalOutputBuffer { backend.receive($0) }
     }
 
-    @MainActor func platformView() -> AppTerminalView {
+    @MainActor func platformView() -> PlatformTerminalView {
         if let presentation { return presentation.view }
         let presentation = TerminalPresentation(session: self)
         self.presentation = presentation
@@ -81,7 +100,7 @@ private final class TerminalPresentation: NSObject, TerminalSurfaceTitleDelegate
     TerminalSurfaceBellDelegate, TerminalSurfaceLifecycleDelegate,
     TerminalSurfaceClipboardConfirmationDelegate
 {
-    let view: AppTerminalView
+    let view: PlatformTerminalView
     private let callbacks: TerminalCallbacks
     private let output: TerminalOutputBuffer
     private var initialFontPreferenceApplied = false
@@ -94,7 +113,7 @@ private final class TerminalPresentation: NSObject, TerminalSurfaceTitleDelegate
     init(session: RayonTerminalSession) {
         callbacks = session.callbacks
         output = session.output
-        view = AppTerminalView(frame: .zero)
+        view = PlatformTerminalView(frame: .zero)
         super.init()
         NotificationCenter.default.addObserver(self, selector: #selector(configurationDidApply), name: RayonTerminalConfiguration.didApply, object: nil)
         view.delegate = self

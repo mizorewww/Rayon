@@ -45,7 +45,12 @@ final class ConfigurationTests: XCTestCase {
     }
     func testEditorShowsRayonRuntimeDefaults() {
         let document = ConfigDocument()
-        XCTAssertEqual(document.text("font-size"), "14")
+        // Ghostty's built-in size differs per platform.
+        #if os(macOS)
+            XCTAssertEqual(document.text("font-size"), "14")
+        #else
+            XCTAssertEqual(document.text("font-size"), "10")
+        #endif
         XCTAssertEqual(document.text("font-thicken"), "true")
         XCTAssertEqual(document.text("cursor-style-blink"), "true")
         XCTAssertEqual(document.text("minimum-contrast"), ConfigCatalog.shared.setting(key: "minimum-contrast")?.defaultValue.text)

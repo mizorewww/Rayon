@@ -5,7 +5,11 @@ import RayonTerminal
 @main
 struct ConfigurationPreviewApp: App {
     var body: some Scene {
-        WindowGroup("Rayon Configuration Preview") { GhosttyConfigurationView() }
-            .defaultSize(width: 1280, height: 820)
+        #if os(macOS)
+            WindowGroup("Rayon Configuration Preview") { GhosttyConfigurationView() }
+                .defaultSize(width: 1280, height: 820)
+        #else
+            WindowGroup { NavigationStack { GhosttyConfigurationView() } }
+        #endif
     }
 }
