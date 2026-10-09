@@ -79,7 +79,7 @@ private struct AppearanceSettings: View {
     @AppStorage(AppearancePreference.key) private var appearance = AppearancePreference.system.rawValue
 
     var body: some View {
-        RXFormRow("Appearance", description: "Light or dark windows; terminal colors are set under Colors.") {
+        RXFormRow("Light or dark", description: "Terminal colors are set under Colors.") {
             RXSegmented(selection: $appearance, options: [
                 .init(AppearancePreference.system.rawValue, "System"),
                 .init(AppearancePreference.light.rawValue, "Light"),
@@ -207,13 +207,14 @@ private struct AboutSettings: View {
                 }
                 .buttonStyle(.rx)
             }
-            RXFormRow("License") {
-                Button("View License…") { document = .license }
-                    .buttonStyle(.rx)
-            }
-            RXFormRow("End user license agreement") {
-                Button("View Agreement…") { document = .agreement }
-                    .buttonStyle(.rx)
+            RXFormRow("Legal") {
+                HStack(spacing: RX.Space.s2) {
+                    Button("License…") { document = .license }
+                        .buttonStyle(.rx)
+                    Button("Agreement…") { document = .agreement }
+                        .buttonStyle(.rx)
+                        .help("End user license agreement")
+                }
             }
         }
         .sheet(item: $document) { item in

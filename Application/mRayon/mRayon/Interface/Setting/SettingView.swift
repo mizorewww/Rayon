@@ -89,7 +89,7 @@ private struct AppearanceSettings: View {
     @AppStorage(AppearancePreference.key) private var appearance = AppearancePreference.system.rawValue
 
     var body: some View {
-        RXFormRow("Appearance", description: "Terminal colors are set under Colors.") {
+        RXFormRow("Light or dark", description: "Terminal colors are set under Colors.") {
             Picker("Appearance", selection: $appearance) {
                 Text("System").tag(AppearancePreference.system.rawValue)
                 Text("Light").tag(AppearancePreference.light.rawValue)

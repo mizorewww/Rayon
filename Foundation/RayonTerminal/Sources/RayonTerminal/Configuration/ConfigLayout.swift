@@ -172,11 +172,11 @@ struct ConfigLayout {
         "mouse-scroll-multiplier": ("Scroll speed", "Multiplies trackpad (precise) and mouse wheel (line) scrolling."),
         "cursor-click-to-move": ("Option-click moves the cursor", "Option-click at a prompt to move the cursor there."),
         "link-url": ("Detect links", "⌘-click URLs in terminal output to open them."),
-        "cursor-style": ("Shape", nil),
+        "cursor-style": ("Style", nil),
         "cursor-style-blink": ("Blinking", "Whether the cursor blinks; programs can still ask for either."),
         "adjust-cursor-thickness": ("Bar thickness", "Width of the bar and hollow-block cursor, in points or percent."),
         "adjust-cursor-height": ("Height", "Height of the cursor, in points or percent."),
-        "cursor-color": ("Color", nil),
+        "cursor-color": ("Fill", "Color of the cursor itself."),
         "cursor-text": ("Text under the cursor", nil),
         "cursor-opacity": ("Opacity", nil),
     ]
