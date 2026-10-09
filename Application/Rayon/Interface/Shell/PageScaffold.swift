@@ -149,7 +149,9 @@ struct BackButton: View {
     }
 }
 
-/// A toolbar action drawn by the system (Liquid Glass on macOS 26).
+/// A toolbar action drawn by the system (Liquid Glass on macOS 26): a symbol,
+/// with its title as the tooltip and accessibility label (HIG: prefer simple,
+/// recognizable symbols in toolbars). The primary action is tinted, not worded.
 struct ToolbarAction: View {
     let title: String
     let systemImage: String
@@ -167,7 +169,6 @@ struct ToolbarAction: View {
         if primary {
             Button(action: action) {
                 Label(title, systemImage: systemImage)
-                    .labelStyle(.titleAndIcon)
             }
             .rxPrimaryAction()
             .help(title)

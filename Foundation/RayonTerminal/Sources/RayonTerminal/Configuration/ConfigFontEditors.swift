@@ -338,7 +338,7 @@ struct ConfigFontFamilyEditor: View {
                 Button {
                     addingFallback = true
                 } label: {
-                    Label("Add Fallback Font", systemImage: "plus")
+                    Label("Add Fallback", systemImage: "plus")
                 }
                 .buttonStyle(.rx(.plain, size: .small))
                 .fixedSize()

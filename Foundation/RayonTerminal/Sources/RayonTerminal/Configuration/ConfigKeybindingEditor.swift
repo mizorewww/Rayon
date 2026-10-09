@@ -206,7 +206,7 @@ struct ConfigKeybindingList: View {
             }
         }
         .confirmationDialog("Restore the default shortcuts?", isPresented: $confirmReset) {
-            Button("Restore Defaults", role: .destructive) { model.reset("keybind") }
+            Button("Restore", role: .destructive) { model.reset("keybind") }
         }
         .sheet(isPresented: $editing) {
             ConfigKeybindingBuilder(raw: $draft) {
@@ -303,7 +303,7 @@ struct ConfigKeybindingBuilder: View {
                 Button {
                     edit { $0.steps.append("key_k") }
                 } label: {
-                    Label("Then Press Another Key", systemImage: "plus")
+                    Label("Add Step", systemImage: "plus")
                 }
                 .buttonStyle(.rx(.plain, size: .small))
                 .disabled(parsed.steps.count >= 4)

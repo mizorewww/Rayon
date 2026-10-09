@@ -118,11 +118,13 @@ struct ServerEditorSheet: View {
                     .foregroundStyle(.rxInkSecondary)
             }
             if isNew {
-                Button("Create Without Connecting", action: saveWithoutConnecting)
+                Button("Add", action: saveWithoutConnecting)
                     .buttonStyle(.rx)
                     .disabled(!canSave || connecting)
-                Button("Create and Connect", action: createAndConnect)
+                    .help("Save the server without connecting")
+                Button("Add and Connect", action: createAndConnect)
                     .buttonStyle(.rxPrimary)
+                    .help("Check the connection, then save the server")
                     .keyboardShortcut(.defaultAction)
                     .disabled(!canSave || connecting)
             } else {

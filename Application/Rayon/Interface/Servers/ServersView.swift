@@ -40,7 +40,6 @@ struct ServersView: View {
             RedactionMenu()
             Button { router.openTerminals() } label: {
                 Label("Open Terminals…", systemImage: "rectangle.stack.badge.plus")
-                    .labelStyle(.titleAndIcon)
             }
             .help("Pick several servers and open a terminal on each")
                 .disabled(store.machineGroup.machines.isEmpty)
@@ -99,7 +98,6 @@ struct RedactionMenu: View {
             .labelsHidden()
         } label: {
             Label("Privacy", systemImage: store.machineRedacted == .none ? "eye" : "eye.slash")
-                .labelStyle(.titleAndIcon)
         }
         .menuIndicator(.hidden)
         .help(store.machineRedacted.tooltip)

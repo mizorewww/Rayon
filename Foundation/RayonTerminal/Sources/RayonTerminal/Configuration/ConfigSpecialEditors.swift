@@ -30,16 +30,19 @@ struct ConfigThemePicker: View {
                 }
                 Spacer()
             }
+            RXSearchField("Search \(ConfigCatalog.shared.themeNames.count) themes", text: $search, width: nil)
             HStack(spacing: RX.Space.s2) {
-                RXSearchField("Search \(ConfigCatalog.shared.themeNames.count) themes", text: $search, width: 240)
-                Spacer()
-                Text(selected.isEmpty ? "No theme: base colors below apply" : selected)
+                Text(selected.isEmpty ? "No theme: the base colors below apply." : "Using \(selected)")
                     .font(.rxHelp)
                     .foregroundStyle(.rxInkSecondary)
                     .lineLimit(1)
+                    .truncationMode(.middle)
+                Spacer(minLength: RX.Space.s2)
                 if !selected.isEmpty {
-                    Button("Use No Theme") { value = "" }
+                    Button("Remove") { value = "" }
                         .buttonStyle(.rx(.plain, size: .small))
+                        .fixedSize()
+                        .help("Use no theme; the base colors below apply")
                 }
             }
             if !selected.isEmpty && ConfigCatalog.shared.themes[selected] == nil {

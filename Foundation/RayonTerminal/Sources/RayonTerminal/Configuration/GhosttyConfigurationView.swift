@@ -101,7 +101,7 @@ public struct GhosttyConfigurationView: View {
             )
             .onAppear(perform: installApplyHandler)
             .confirmationDialog("Reset every terminal setting to its default?", isPresented: $resetConfirm) {
-                Button("Reset Terminal Settings", role: .destructive) { model.edit { $0 = ConfigDocument() } }
+                Button("Reset", role: .destructive) { model.edit { $0 = ConfigDocument() } }
             } message: {
                 Text("Rayon's General and Connection preferences are kept.")
             }
@@ -160,12 +160,12 @@ public struct GhosttyConfigurationView: View {
                             .help("Redo")
                     }
                     Button { resetConfirm = true } label: {
-                        Label("Reset Terminal…", systemImage: "arrow.counterclockwise").labelStyle(.titleAndIcon)
+                        Label("Reset Terminal Settings…", systemImage: "arrow.counterclockwise")
                     }
                     .help("Reset every terminal setting to its default")
                     if category?.previews == true {
                         Toggle(isOn: $showPreview.animation(.easeInOut(duration: 0.25))) {
-                            Label("Preview", systemImage: "sidebar.right").labelStyle(.titleAndIcon)
+                            Label("Preview", systemImage: "sidebar.right")
                         }
                         .toggleStyle(.button)
                         .help(showPreview ? "Hide the live terminal preview" : "Show a live terminal preview beside the settings")
@@ -186,7 +186,7 @@ public struct GhosttyConfigurationView: View {
             navigationIndex = navigationHistory.count - 1
         }
         .confirmationDialog("Reset every terminal setting to its default?", isPresented: $resetConfirm) {
-            Button("Reset Terminal Settings", role: .destructive) { model.edit { $0 = ConfigDocument() } }
+            Button("Reset", role: .destructive) { model.edit { $0 = ConfigDocument() } }
         } message: {
             Text("Rayon's General and Connection preferences are kept.")
         }

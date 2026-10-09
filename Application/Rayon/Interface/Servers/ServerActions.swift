@@ -229,8 +229,7 @@ struct ServerToolSwitcher: View {
     var body: some View {
         Picker("View", selection: Binding(get: { current }, set: { $0.show(machine) })) {
             ForEach(ServerTool.allCases) { tool in
-                Label(tool.title, systemImage: tool.systemImage)
-                    .labelStyle(.titleAndIcon)
+                Text(tool.title)
                     .help(tool.help)
                     .tag(tool)
             }
