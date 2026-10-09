@@ -7,7 +7,7 @@ import MachineStatus
 import RayonModule
 import SwiftUI
 
-/// The monitor's card grid. Two columns when there is room (System, Processor,
+/// The monitor's card grid. Two columns when there is room (Load, Processor,
 /// Memory, Disks on the left; Receive and Transmit, Network, Graphics on the right),
 /// one otherwise.
 public struct MonitorDashboard: View {
@@ -54,7 +54,7 @@ public struct MonitorDashboard: View {
     }
 }
 
-/// Hostname, System, Uptime and Address under the page title.
+/// Hostname, OS, Uptime and Address under the page title.
 public struct MonitorFacts: View {
     @ObservedObject var session: MonitorSession
     let redactAddress: Bool
@@ -68,7 +68,7 @@ public struct MonitorFacts: View {
         let system = session.status.system
         FactsRow([
             .init("Hostname", value: system.hostname.isEmpty ? "—" : system.hostname),
-            .init("System", value: system.releaseName.isEmpty ? "—" : system.releaseName),
+            .init("OS", value: system.releaseName.isEmpty ? "—" : system.releaseName),
             .init("Uptime", value: RXFormat.duration(system.uptimeSec)),
             .init("Address", value: session.machine.remoteAddress, monospaced: true, redacted: redactAddress),
         ])
@@ -161,7 +161,7 @@ public struct MonitorPlaceholder: View {
             switch session.phase {
             case let .failed(message):
                 EmptyStateView(
-                    "Cannot reach \(session.machine.name)",
+                    "Can't connect",
                     systemImage: "exclamationmark.triangle",
                     message: message,
                     actionTitle: retry == nil ? nil : "Try Again",
@@ -172,7 +172,7 @@ public struct MonitorPlaceholder: View {
             default:
                 VStack(spacing: RX.Space.s3) {
                     ProgressView()
-                    Text("Connecting to \(session.machine.name)…")
+                    Text("Connecting…")
                         .font(.rxBody)
                         .foregroundStyle(.rxInkSecondary)
                 }

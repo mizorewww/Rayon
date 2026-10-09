@@ -23,12 +23,12 @@ public struct SystemCard: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            CardHead("System")
-            MetricView(String(format: "%.2f", system.load1), unit: "load 1 min")
+            CardHead("Load")
+            MetricView(String(format: "%.2f", system.load1), unit: "1 min")
                 .padding(.top, RX.Space.s1)
             SubMetricRow([
-                .init("Load 5 min", value: String(format: "%.2f", system.load5)),
-                .init("Load 15 min", value: String(format: "%.2f", system.load15)),
+                .init("5 min", value: String(format: "%.2f", system.load5)),
+                .init("15 min", value: String(format: "%.2f", system.load15)),
                 .init("Processes", value: "\(system.runningProcs)", unit: "/ \(system.totalProcs) running"),
             ])
             .padding(.top, RX.Space.s5)
