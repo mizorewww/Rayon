@@ -93,6 +93,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_: Notification) {
         AppearancePreference.applyStored()
+        MenubarTool.shared.restore()
     }
 
     func applicationShouldTerminate(_: NSApplication) -> NSApplication.TerminateReply {

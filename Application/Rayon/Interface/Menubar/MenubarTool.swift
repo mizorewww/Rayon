@@ -24,6 +24,26 @@ class MenubarTool {
 
     private init() {}
 
+    /// Servers shown in the menu bar, so they come back after Rayon restarts.
+    private static let persistedKey = "wiki.qaq.rayon.menubarMachines"
+
+    private func persist() {
+        bootstrapLock.lock()
+        let ids = statusItem.map(\.machine.id.uuidString)
+        bootstrapLock.unlock()
+        UserDefaults.standard.set(ids, forKey: Self.persistedKey)
+    }
+
+    /// Puts back the menu bar items from the last run. A server that was deleted,
+    /// or lost its identity, is dropped without an alert.
+    @MainActor func restore() {
+        let ids = UserDefaults.standard.stringArray(forKey: Self.persistedKey) ?? []
+        for id in ids.compactMap(UUID.init(uuidString:)) {
+            createRuncat(for: id, quiet: true)
+        }
+        persist()
+    }
+
     struct ArgumentCompiler: Codable {
         let machine: RDMachine.ID
         let identity: RDIdentity.ID
@@ -46,38 +66,30 @@ class MenubarTool {
         }
     }
 
-    @MainActor func createRuncat(for machineId: RDMachine.ID) {
+    /// - Parameter quiet: restoring at launch; problems are skipped, not shown.
+    @MainActor func createRuncat(for machineId: RDMachine.ID, quiet: Bool = false) {
+        func fail(_ message: String) {
+            if !quiet { UIBridge.presentError(with: message, delay: 0) }
+        }
         bootstrapLock.lock()
         let copy = statusItem
         bootstrapLock.unlock()
         for item in copy where item.machine.id == machineId {
-            UIBridge.presentError(
-                with: "Another cat is running for this machine",
-                delay: 0
-            )
+            fail("This server is already in the menu bar")
             return
         }
 
         let machine = RayonStore.shared.machineGroup[machineId]
         guard machine.isNotPlaceholder() else {
-            UIBridge.presentError(
-                with: "Could not create menubar app: malformed machine info",
-                delay: 0
-            )
+            fail("Could not add the server to the menu bar: its details are missing")
             return
         }
         guard machine.associatedIdentity != nil else {
-            UIBridge.presentError(
-                with: "Could not create menubar app: login identity of this machine must be set",
-                delay: 0
-            )
+            fail("To show a server in the menu bar, choose an identity for it first (Edit Server › Identity)")
             return
         }
         guard let identity = RayonStore.shared.associatedIdentity(for: machine) else {
-            UIBridge.presentError(
-                with: "Could not create menubar app: malformed identity info",
-                delay: 0
-            )
+            fail("Could not add the server to the menu bar: its identity is missing")
             return
         }
         let compiler = ArgumentCompiler(machine: machine.id, identity: identity.id)
@@ -87,6 +99,7 @@ class MenubarTool {
         bootstrapLock.lock()
         statusItem.append(item)
         bootstrapLock.unlock()
+        if !quiet { persist() }
     }
 
     func remove(menubarItem: MenubarStatusItem.ID) {
@@ -94,5 +107,6 @@ class MenubarTool {
         statusItem = statusItem
             .filter { $0.id != menubarItem }
         bootstrapLock.unlock()
+        persist()
     }
 }
