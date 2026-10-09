@@ -8,7 +8,7 @@
 import CodeEditorUI
 import RayonModule
 import SwiftUI
-import XTerminalUI
+import RayonTerminal
 
 @main
 struct mRayonApp: App {
@@ -36,14 +36,11 @@ struct mRayonApp: App {
                 .onAppear {
                     // optimize later on flight exp
                     let editor = SCodeEditor()
-                    let xterm = STerminalView()
+                    AppearancePreference.applyStored()
                     checkAgreement()
                     DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                         withExtendedLifetime(editor) {
                             debugPrint("editor \(editor) prewarm done")
-                        }
-                        withExtendedLifetime(xterm) {
-                            debugPrint("xterm \(xterm) prewarm done")
                         }
                     }
                 }

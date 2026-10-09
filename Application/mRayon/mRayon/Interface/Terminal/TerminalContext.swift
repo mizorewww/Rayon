@@ -9,7 +9,7 @@ import NSRemoteShell
 import RayonModule
 import SwiftUI
 import UIKit
-import XTerminalUI
+import RayonTerminal
 
 class TerminalContext: ObservableObject, Identifiable, Equatable {
     var id: UUID = .init()
@@ -95,7 +95,7 @@ class TerminalContext: ObservableObject, Identifiable, Equatable {
 
     // MARK: SHELL CONTEXT -
 
-    let termInterface: STerminalView = .init()
+    let termInterface: RayonTerminalView = .init()
 
     init(machine: RDMachine) {
         self.machine = machine

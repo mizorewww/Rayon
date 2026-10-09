@@ -8,13 +8,13 @@
 import NSRemoteShell
 import RayonModule
 import SwiftUI
-import XTerminalUI
+import RayonTerminal
 
 class SnippetExecuteContext: ObservableObject {
     let snippet: RDSnippet
     let machineGroup: [RDMachine]
     var shellGroup: [NSRemoteShell]
-    let terminalGroup: [STerminalView]
+    let terminalGroup: [RayonTerminalView]
 
     @Published var interfaceAllocated = false
 
@@ -29,7 +29,7 @@ class SnippetExecuteContext: ObservableObject {
     init(snippet: RDSnippet, machineGroup: [RDMachine]) {
         self.snippet = snippet
         self.machineGroup = machineGroup
-        var buildTermUI = [STerminalView]()
+        var buildTermUI = [RayonTerminalView]()
         machineGroup.forEach { _ in
             buildTermUI.append(.init())
         }
@@ -68,7 +68,7 @@ class SnippetExecuteContext: ObservableObject {
         onMainThread { self.hasError = true }
     }
 
-    func createExecute(for machine: RDMachine, shell: NSRemoteShell, term: STerminalView) {
+    func createExecute(for machine: RDMachine, shell: NSRemoteShell, term: RayonTerminalView) {
         defer {
             moveToComplete(for: machine.id)
         }

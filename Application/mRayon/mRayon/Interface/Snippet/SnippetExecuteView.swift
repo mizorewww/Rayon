@@ -8,7 +8,7 @@
 import NSRemoteShell
 import RayonModule
 import SwiftUI
-import XTerminalUI
+import RayonTerminal
 
 struct SnippetExecuteView: View {
     @StateObject var context: SnippetExecuteContext
