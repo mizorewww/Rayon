@@ -29,6 +29,7 @@ struct ConfigSettingRow: View {
     private var stacked: Bool {
         if setting.key == "keybind" { return true }
         if setting.key.hasPrefix("font-family") { return false }
+        if setting.key.hasPrefix("font-variation") || setting.key == "font-feature" || setting.key == "font-codepoint-map" { return true }
         return ["theme", "palette", "repeatable-text", "feature-list"].contains(widgetType)
     }
 
@@ -138,13 +139,12 @@ struct ConfigWidgetView: View {
             ConfigFontStylePicker(model: model, key: setting.key)
         case "scrollback-limit", "image-storage-limit":
             ConfigByteInput(value: value, fallback: setting.defaultValue.values.first ?? "0")
-        case "font-feature", "font-variation", "font-variation-bold", "font-variation-italic", "font-variation-bold-italic":
-            VStack(alignment: .leading, spacing: RX.Space.s2) {
-                ConfigRepeatableEditor(model: model, key: setting.key, placeholder: setting.key == "font-feature" ? "e.g. -calt" : "e.g. wght=500")
-                ConfigListSuggestions(model: model, key: setting.key)
-            }
+        case "font-feature":
+            ConfigFontFeatureEditor(model: model)
+        case "font-variation", "font-variation-bold", "font-variation-italic", "font-variation-bold-italic":
+            ConfigFontVariationEditor(model: model, key: setting.key)
         case "font-codepoint-map":
-            ConfigRepeatableEditor(model: model, key: setting.key, placeholder: "U+E000-U+F8FF=Symbols Nerd Font")
+            ConfigCodepointMapEditor(model: model)
         default:
             catalogWidget
         }

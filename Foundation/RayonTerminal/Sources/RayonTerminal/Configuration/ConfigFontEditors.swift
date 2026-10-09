@@ -1,26 +1,45 @@
-import AppKit
 import CoreText
 import RayonDesign
 import SwiftUI
 
-/// The fonts installed on this Mac, read once.
+/// The fonts installed on this device, read once through CoreText so the same
+/// code serves macOS and iOS.
 @MainActor
 enum FontLibrary {
+    struct Face {
+        let family: String
+        let style: String
+        let postScriptName: String
+        let monospaced: Bool
+    }
+
     struct Family: Identifiable, Hashable {
         var id: String { name }
         let name: String
         let monospaced: Bool
     }
 
+    static let faces: [Face] = {
+        let collection = CTFontCollectionCreateFromAvailableFonts(nil)
+        let descriptors = CTFontCollectionCreateMatchingFontDescriptors(collection) as? [CTFontDescriptor] ?? []
+        return descriptors.compactMap { descriptor in
+            guard let family = CTFontDescriptorCopyAttribute(descriptor, kCTFontFamilyNameAttribute) as? String,
+                  !family.hasPrefix("."),
+                  let name = CTFontDescriptorCopyAttribute(descriptor, kCTFontNameAttribute) as? String
+            else { return nil }
+            let style = CTFontDescriptorCopyAttribute(descriptor, kCTFontStyleNameAttribute) as? String ?? "Regular"
+            let traits = CTFontDescriptorCopyAttribute(descriptor, kCTFontTraitsAttribute) as? [CFString: Any]
+            let symbolic = (traits?[kCTFontSymbolicTrait] as? NSNumber)?.uint32Value ?? 0
+            let monospaced = symbolic & CTFontSymbolicTraits.traitMonoSpace.rawValue != 0
+            return Face(family: family, style: style, postScriptName: name, monospaced: monospaced)
+        }
+    }()
+
     static let families: [Family] = {
-        let manager = NSFontManager.shared
-        return manager.availableFontFamilies
-            .filter { !$0.hasPrefix(".") }
-            .map { name in
-                let font = members(of: name).first.flatMap { NSFont(name: $0.postScriptName, size: 12) }
-                let mono = font.map { $0.isFixedPitch || $0.fontDescriptor.symbolicTraits.contains(.monoSpace) } ?? false
-                return Family(name: name, monospaced: mono)
-            }
+        var monospaced: [String: Bool] = [:]
+        for face in faces { monospaced[face.family] = (monospaced[face.family] ?? false) || face.monospaced }
+        return monospaced
+            .map { Family(name: $0.key, monospaced: $0.value) }
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }()
 
@@ -28,16 +47,8 @@ enum FontLibrary {
         families.first { $0.name == family }?.monospaced ?? false
     }
 
-    struct Member {
-        let postScriptName: String
-        let style: String
-    }
-
-    static func members(of family: String) -> [Member] {
-        (NSFontManager.shared.availableMembers(ofFontFamily: family) ?? []).compactMap { entry in
-            guard entry.count >= 2, let name = entry[0] as? String, let style = entry[1] as? String else { return nil }
-            return Member(postScriptName: name, style: style)
-        }
+    static func members(of family: String) -> [Face] {
+        faces.filter { $0.family == family }
     }
 
     /// Style names offered when the family is Ghostty's built-in font.
@@ -49,6 +60,13 @@ enum FontLibrary {
         return members(of: family).map(\.style).filter { seen.insert($0).inserted }
     }
 
+    /// The family's regular face, else its first.
+    static func font(of family: String) -> CTFont? {
+        let members = members(of: family)
+        guard let face = members.first(where: { $0.style == "Regular" }) ?? members.first else { return nil }
+        return CTFontCreateWithName(face.postScriptName as CFString, 12, nil)
+    }
+
     struct Axis: Identifiable {
         var id: String { tag }
         let tag: String
@@ -58,11 +76,10 @@ enum FontLibrary {
         let defaultValue: Double
     }
 
-    /// Variable-font axes (weight, width, slant…) of the family's first member.
+    /// Variable-font axes (weight, width, slant…).
     static func axes(of family: String) -> [Axis] {
-        guard let member = members(of: family).first,
-              let font = NSFont(name: member.postScriptName, size: 12),
-              let raw = CTFontCopyVariationAxes(font as CTFont) as? [[CFString: Any]]
+        guard let font = font(of: family),
+              let raw = CTFontCopyVariationAxes(font) as? [[CFString: Any]]
         else { return [] }
         return raw.compactMap { axis in
             guard let identifier = axis[kCTFontVariationAxisIdentifierKey] as? NSNumber else { return nil }
@@ -77,6 +94,65 @@ enum FontLibrary {
             )
         }
     }
+
+    struct Feature: Identifiable, Hashable {
+        var id: String { tag }
+        let tag: String
+        let name: String
+        let group: String
+        let defaultOn: Bool
+    }
+
+    /// OpenType features the family's font actually has, named by the font.
+    static func features(of family: String) -> [Feature] {
+        guard !family.isEmpty else { return builtInFeatures }
+        guard let font = font(of: family), let types = CTFontCopyFeatures(font) as? [[CFString: Any]] else { return [] }
+        var result: [String: Feature] = [:]
+        var order: [String] = []
+        for type in types {
+            let typeName = type[kCTFontFeatureTypeNameKey] as? String ?? "Other"
+            for selector in type[kCTFontFeatureTypeSelectorsKey] as? [[CFString: Any]] ?? [] {
+                guard let tag = selector[kCTFontOpenTypeFeatureTag] as? String else { continue }
+                let value = (selector[kCTFontOpenTypeFeatureValue] as? NSNumber)?.intValue ?? 1
+                let isDefault = (selector[kCTFontFeatureSelectorDefaultKey] as? NSNumber)?.boolValue ?? false
+                let selectorName = selector[kCTFontFeatureSelectorNameKey] as? String ?? tag
+                // Character variants and stylistic sets arrive one feature type
+                // each, with selectors named just "On"/"Off": gather them into one
+                // group and name each by its type.
+                let generic = ["on", "off", "enabled", "disabled"].contains(selectorName.lowercased())
+                let name = generic ? typeName : selectorName
+                let group = tag.range(of: "^cv[0-9]{2}$", options: .regularExpression) != nil ? "Character Variants"
+                    : tag.range(of: "^ss[0-9]{2}$", options: .regularExpression) != nil ? "Stylistic Sets"
+                    : typeName
+                let existing = result[tag]
+                if existing == nil { order.append(tag) }
+                result[tag] = Feature(
+                    tag: tag,
+                    name: value != 0 ? name : existing?.name ?? name,
+                    group: group,
+                    defaultOn: isDefault ? value != 0 : existing?.defaultOn ?? false
+                )
+            }
+        }
+        return order.compactMap { result[$0] }
+    }
+
+    /// Ghostty's built-in JetBrains Mono is not installed, so its features are listed here.
+    static let builtInFeatures: [Feature] = [
+        Feature(tag: "calt", name: "Ligatures (contextual alternates)", group: "Ligatures", defaultOn: true),
+        Feature(tag: "zero", name: "Slashed zero", group: "Characters", defaultOn: false),
+    ] + (1 ... 20).map { index in
+        Feature(tag: String(format: "ss%02d", index), name: "Stylistic set \(index)", group: "Stylistic Sets", defaultOn: false)
+    } + (1 ... 20).map { index in
+        Feature(tag: String(format: "cv%02d", index), name: "Character variant \(index)", group: "Character Variants", defaultOn: false)
+    }
+}
+
+/// The family a per-style setting applies to: its own family key, else the main font.
+@MainActor
+func configFamily(for key: String, prefix: String, in document: ConfigDocument) -> String {
+    let own = key.replacingOccurrences(of: prefix, with: "font-family")
+    return document.overrides[own]?.first ?? document.overrides["font-family"]?.first ?? ""
 }
 
 /// A button showing the chosen family in its own typeface; opens the font list.
@@ -264,10 +340,7 @@ struct ConfigFontStylePicker: View {
     let key: String
 
     /// The family this style applies to: its own family key, else the main font.
-    private var family: String {
-        let own = key.replacingOccurrences(of: "font-style", with: "font-family")
-        return model.document.overrides[own]?.first ?? model.document.overrides["font-family"]?.first ?? ""
-    }
+    private var family: String { configFamily(for: key, prefix: "font-style", in: model.document) }
 
     private func name(_ value: String) -> String {
         switch value {
@@ -315,60 +388,146 @@ struct ConfigFontStylePicker: View {
     }
 }
 
-/// Quick inserts for list settings whose values follow a small vocabulary.
-struct ConfigListSuggestions: View {
+/// `font-feature`: the chosen font's OpenType features as switches, grouped as
+/// the font groups them. A switch left at the font's default writes nothing.
+struct ConfigFontFeatureEditor: View {
     @ObservedObject var model: ConfigEditorModel
-    let key: String
+    @State private var custom = ""
 
-    private struct Suggestion: Hashable {
-        let value: String
-        let title: String
+    private var family: String { model.document.overrides["font-family"]?.first ?? "" }
+    private var entries: [String] { model.document.overrides["font-feature"] ?? [] }
+
+    /// `tag`, `+tag`, `tag=1`, `tag=on` turn a feature on; `-tag`, `tag=0`, `tag=off` turn it off.
+    private func parse(_ entry: String) -> (tag: String, on: Bool) {
+        let trimmed = entry.trimmingCharacters(in: .whitespaces)
+        if trimmed.hasPrefix("-") { return (String(trimmed.dropFirst()), false) }
+        if trimmed.hasPrefix("+") { return (String(trimmed.dropFirst()), true) }
+        if let eq = trimmed.firstIndex(of: "=") {
+            let value = trimmed[trimmed.index(after: eq)...].lowercased()
+            return (String(trimmed[..<eq]), !["0", "off", "false"].contains(value))
+        }
+        return (trimmed, true)
     }
 
-    private var suggestions: [Suggestion] {
-        switch key {
-        case "font-feature":
-            return [
-                .init(value: "-calt", title: "Turn off ligatures (-calt)"),
-                .init(value: "-liga", title: "Turn off standard ligatures (-liga)"),
-                .init(value: "-dlig", title: "Turn off discretionary ligatures (-dlig)"),
-                .init(value: "zero", title: "Slashed zero (zero)"),
-                .init(value: "ss01", title: "Stylistic set 1 (ss01)"),
-                .init(value: "ss02", title: "Stylistic set 2 (ss02)"),
-                .init(value: "ss03", title: "Stylistic set 3 (ss03)"),
-                .init(value: "cv01", title: "Character variant 1 (cv01)"),
-            ]
-        case "font-variation", "font-variation-bold", "font-variation-italic", "font-variation-bold-italic":
-            let own = key.replacingOccurrences(of: "font-variation", with: "font-family")
-            let family = model.document.overrides[own]?.first ?? model.document.overrides["font-family"]?.first ?? ""
-            return FontLibrary.axes(of: family).map { axis in
-                .init(
-                    value: "\(axis.tag)=\(axis.defaultValue.formatted())",
-                    title: "\(axis.name) (\(axis.tag), \(axis.minimum.formatted())–\(axis.maximum.formatted()))"
-                )
-            }
-        default:
-            return []
+    private func isOn(_ feature: FontLibrary.Feature) -> Bool {
+        entries.last { parse($0).tag == feature.tag }.map { parse($0).on } ?? feature.defaultOn
+    }
+
+    private func set(_ feature: FontLibrary.Feature, on: Bool) {
+        var next = entries.filter { parse($0).tag != feature.tag }
+        if on != feature.defaultOn { next.append(on ? feature.tag : "-" + feature.tag) }
+        write(next)
+    }
+
+    private func write(_ values: [String]) {
+        model.edit { document in
+            if values.isEmpty { document.overrides.removeValue(forKey: "font-feature") } else { document.set("font-feature", values) }
         }
     }
 
     var body: some View {
-        let options = suggestions
-        let current = Set(model.document.values(key))
-        Menu {
-            if options.isEmpty {
-                Text(key.hasPrefix("font-variation") ? "The chosen font has no variation axes" : "No suggestions")
+        let features = FontLibrary.features(of: family)
+        let known = Set(features.map(\.tag))
+        let groups = Dictionary(grouping: features, by: \.group)
+        let groupOrder = features.map(\.group).reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
+        VStack(alignment: .leading, spacing: RX.Space.s3) {
+            if features.isEmpty {
+                HelpText("\(family) has no OpenType features to switch.")
             }
-            ForEach(options, id: \.self) { option in
-                Button(option.title) { model.edit { $0.set(key, $0.values(key) + [option.value]) } }
-                    .disabled(current.contains(option.value))
+            ForEach(groupOrder, id: \.self) { group in
+                VStack(alignment: .leading, spacing: 6) {
+                    CapsLabel(group)
+                    RXFlowLayout(spacing: 6) {
+                        ForEach(groups[group] ?? []) { feature in
+                            RXChip(feature.name, isOn: isOn(feature)) { set(feature, on: !isOn(feature)) }
+                                .help("\(feature.tag)\(feature.defaultOn ? " · on by default" : "")")
+                        }
+                    }
+                }
             }
-        } label: {
-            Label(key.hasPrefix("font-variation") ? "Add Axis" : "Add Feature", systemImage: "plus")
+            let others = entries.filter { !known.contains(parse($0).tag) }
+            if !others.isEmpty {
+                VStack(alignment: .leading, spacing: 6) {
+                    CapsLabel("Other")
+                    RXFlowLayout(spacing: 6) {
+                        ForEach(others, id: \.self) { entry in
+                            RXChip(entry, isOn: true) { write(entries.filter { $0 != entry }) }
+                                .help("Remove \(entry)")
+                        }
+                    }
+                }
+            }
+            HStack(spacing: RX.Space.s2) {
+                TextField("Other feature, e.g. ss07 or -liga", text: $custom)
+                    .textFieldStyle(.rxMono)
+                    .frame(width: 240)
+                    .onSubmit(addCustom)
+                Button("Add", action: addCustom)
+                    .buttonStyle(.rx(size: .small))
+                    .disabled(custom.trimmingCharacters(in: .whitespaces).isEmpty)
+            }
+            if family.isEmpty {
+                HelpText("Showing the features of the built-in font; choose a font under Font to see its own.")
+            }
         }
-        .menuStyle(.button)
-        .buttonStyle(.rx(size: .small))
-        .fixedSize()
+    }
+
+    private func addCustom() {
+        let value = custom.trimmingCharacters(in: .whitespaces)
+        guard !value.isEmpty else { return }
+        write(entries.filter { parse($0).tag != parse(value).tag } + [value])
+        custom = ""
+    }
+}
+
+/// `font-variation…`: a slider and field per axis of the chosen variable font.
+/// An axis left at its default writes nothing.
+struct ConfigFontVariationEditor: View {
+    @ObservedObject var model: ConfigEditorModel
+    let key: String
+
+    private var family: String { configFamily(for: key, prefix: "font-variation", in: model.document) }
+    private var entries: [String] { model.document.overrides[key] ?? [] }
+
+    private func value(_ axis: FontLibrary.Axis) -> Double {
+        for entry in entries.reversed() {
+            let parts = entry.split(separator: "=", maxSplits: 1).map { $0.trimmingCharacters(in: .whitespaces) }
+            if parts.count == 2, parts[0] == axis.tag, let number = Double(parts[1]) { return number }
+        }
+        return axis.defaultValue
+    }
+
+    private func set(_ axis: FontLibrary.Axis, _ number: Double) {
+        var next = entries.filter { !$0.hasPrefix(axis.tag + "=") }
+        if abs(number - axis.defaultValue) > 0.0001 { next.append("\(axis.tag)=\(number.formatted(.number.grouping(.never)))") }
+        model.edit { document in
+            if next.isEmpty { document.overrides.removeValue(forKey: key) } else { document.set(key, next) }
+        }
+    }
+
+    var body: some View {
+        let axes = FontLibrary.axes(of: family)
+        VStack(alignment: .trailing, spacing: RX.Space.s2) {
+            if family.isEmpty {
+                HelpText("Choose a variable font under Font to adjust its axes.")
+            } else if axes.isEmpty {
+                HelpText("\(family) is not a variable font.")
+            }
+            ForEach(axes) { axis in
+                HStack(spacing: RX.Space.s2) {
+                    Text(axis.name)
+                        .font(.rxHelp)
+                        .foregroundStyle(.rxInkSecondary)
+                        .frame(width: 80, alignment: .trailing)
+                        .help(axis.tag)
+                    RXSlider(
+                        value: Binding(get: { value(axis) }, set: { set(axis, $0) }),
+                        in: axis.minimum ... max(axis.maximum, axis.minimum + 0.01),
+                        step: axis.maximum - axis.minimum > 10 ? 1 : 0.01
+                    )
+                }
+            }
+        }
     }
 }
 
