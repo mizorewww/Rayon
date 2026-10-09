@@ -222,7 +222,7 @@ struct IdentityPickerSheet: View {
         }
         .frame(width: 460)
         .sheet(isPresented: $creating) {
-            IdentityEditorSheet(identity: nil) { created in
+            IdentityEditorSheet { created in
                 creating = false
                 if let created { selection = created }
             }

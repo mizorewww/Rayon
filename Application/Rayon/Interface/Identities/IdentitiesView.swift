@@ -70,7 +70,7 @@ struct IdentitiesView: View {
             }
         }
         .sheet(isPresented: $creating) {
-            IdentityEditorSheet(identity: nil) { created in
+            IdentityEditorSheet { created in
                 creating = false
                 if let created { selection = created }
             }
@@ -183,12 +183,9 @@ private struct IdentityDetail: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(original.username.isEmpty ? "No username" : original.username)
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.rxInk)
-                    if !usageLine.isEmpty { HelpText(usageLine) }
-                }
+                // The username is the first field below; the header says
+                // where the identity is used.
+                HelpText(usageLine.isEmpty ? "Not used by any server" : usageLine)
                 Spacer()
                 Menu {
                     Button("Duplicate") { IdentityActions.duplicate(identity) }
@@ -346,7 +343,7 @@ struct IdentityForm: View {
                 }
             } else {
                 RXField("Password") {
-                    SecureField("Password", text: $draft.password)
+                    SecureField("Required", text: $draft.password)
                         .textFieldStyle(.rx)
                 }
             }
@@ -434,24 +431,24 @@ private struct KeyField: View {
     }
 }
 
-/// New Identity as a sheet (from Identities and the identity picker).
+/// New Identity as a sheet (from Identities and the identity picker). Existing
+/// identities are edited in place on the Identities page.
 struct IdentityEditorSheet: View {
-    let identity: RDIdentity.ID?
     let onComplete: (RDIdentity.ID?) -> Void
 
     @EnvironmentObject var store: RayonStore
     @State private var draft = IdentityDraft()
 
     var body: some View {
-        SheetScaffold(identity == nil ? "New Identity" : "Edit Identity", ) {
+        SheetScaffold("New Identity") {
             IdentityForm(draft: $draft)
         } footer: {
             Spacer()
             Button("Cancel") { onComplete(nil) }
                 .buttonStyle(.rx)
                 .keyboardShortcut(.cancelAction)
-            Button(identity == nil ? "Create" : "Save") {
-                var base = identity.map { store.identityGroup[$0] } ?? RDIdentity(
+            Button("Create") {
+                var base = RDIdentity(
                     username: "",
                     password: "",
                     privateKey: "",
@@ -471,8 +468,5 @@ struct IdentityEditorSheet: View {
             .disabled(!draft.isValid)
         }
         .frame(width: 520)
-        .onAppear {
-            if let identity { draft = IdentityDraft(store.identityGroup[identity]) }
-        }
     }
 }
