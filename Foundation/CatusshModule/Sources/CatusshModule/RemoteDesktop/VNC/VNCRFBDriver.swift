@@ -136,7 +136,7 @@ final class VNCRFBDriver: RemoteDesktopDriver, @unchecked Sendable {
         // ExtendedDesktopSize cover resizing, not monitor selection.
     }
 
-    func updateQuality(fps _: Int, quality _: Int) {
+    func updateStream(_: RemoteDesktopStreamSettings) {
         // The RFB wire has no quality knob; encodings are negotiated once.
     }
 

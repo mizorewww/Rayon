@@ -186,25 +186,81 @@ public enum UUControlProtocol {
         return rpcRequest(requestID: requestID, bodyField: 15, body: body)
     }
 
-    /// CaptureSettingRequest field 7 = chroma (3 = 4:4:4 true color).
-    public static func captureSettingRequest(requestID: UInt64, chromaFormat: Int32) -> Data {
+    /// RpcRequest case 2 `CaptureSettingRequest`, whole, as the official
+    /// viewer sends it on every change (openuuyc `capture_setting_request`):
+    /// {1: fps tier, 2: quality, 3: cursor_capture, 4: screen_id -2 (the
+    /// session's tracks, no monitor), 5/6: resolution -1 (unchanged), 7:
+    /// chroma (1 4:2:0, 3 4:4:4), 8: custom bit rate, 9: dpi 0, 10:
+    /// resolution type 1, 11: hdr, 12: auto quality, 13: codec (1 H.264,
+    /// 2 H.265), 14/15: largest size we decode, 18: fps the viewer shows}.
+    /// Zeros are left off, as protobuf does.
+    public static func captureSettingRequest(
+        requestID: UInt64,
+        settings: RemoteDesktopStreamSettings,
+        codecType: Int32,
+        fpsCount: Int32,
+        cursorCapture: Bool
+    ) -> Data {
         var body = Data()
-        UUProtobufWriter.pushInt32Field(7, chromaFormat, into: &body)
+        func put(_ field: Int, _ value: Int32) {
+            if value != 0 { UUProtobufWriter.pushInt32Field(field, value, into: &body) }
+        }
+        put(1, Int32(UUFpsTier.encode(rawFPS: settings.fps)))
+        put(2, Int32(settings.quality))
+        put(3, cursorCapture ? 1 : 0)
+        put(4, -2)
+        put(5, -1)
+        put(6, -1)
+        put(7, Int32(settings.trueColor ? UUChromaFormat.c444 : UUChromaFormat.c420))
+        put(10, 1)
+        put(12, Int32(RemoteDesktopStreamSettings.qualityHD))
+        put(13, codecType)
+        put(14, 3840)
+        put(15, 2160)
+        put(18, fpsCount)
         return rpcRequest(requestID: requestID, bodyField: 2, body: body)
     }
 
-    /// CaptureSettingRequest carrying the viewer's fps/quality choice:
-    /// field 1 is the fps *option index* (`UUFpsTier`), field 18
-    /// (`fpsCount`) the raw frame rate, field 2 the quality preset — the
-    /// same pairing the upstream viewer sends (src/capture_setting.rs).
-    public static func captureSettingRequest(requestID: UInt64, rawFPS: Int32, quality: Int32? = nil) -> Data {
-        var body = Data()
-        UUProtobufWriter.pushInt32Field(1, Int32(UUFpsTier.encode(rawFPS: Int(rawFPS))), into: &body)
-        if let quality, quality > 0 {
-            UUProtobufWriter.pushInt32Field(2, quality, into: &body)
+    /// An RpcResponse (field 22) `{1: {1: request_id}, 2: CaptureSettingResponse
+    /// {1: repeated Error {1: code, 2: message, 3: detail}}}`: the request
+    /// it answers and its errors (none: applied). Nil for anything else.
+    public static func decodeCaptureSettingResponse(_ data: Data) -> (requestID: UInt64, errors: [(code: Int, message: String, detail: String)])? {
+        guard let inbound = decodeInbound(data),
+              inbound.field.number == UUControlField.rpcResponse,
+              case let .bytes(rpc) = inbound.field.value,
+              let fields = try? UUWire.decode(rpc)
+        else { return nil }
+        var requestID: UInt64 = 0
+        var body: Data?
+        for field in fields {
+            switch (field.number, field.value) {
+            case (1, let .bytes(header)):
+                for item in (try? UUWire.decode(header)) ?? [] {
+                    if item.number == 1, case let .varint(v) = item.value { requestID = v }
+                }
+            case (2, let .bytes(b)): body = b
+            default: break
+            }
         }
-        UUProtobufWriter.pushInt32Field(18, rawFPS, into: &body)
-        return rpcRequest(requestID: requestID, bodyField: 2, body: body)
+        // An answer with no errors leaves its empty body off the wire.
+        guard requestID != 0 || body != nil, let parts = try? UUWire.decode(body ?? Data()) else { return nil }
+        var errors: [(code: Int, message: String, detail: String)] = []
+        for part in parts where part.number == 1 {
+            guard case let .bytes(b) = part.value, let items = try? UUWire.decode(b) else { continue }
+            var code = 0
+            var message = ""
+            var detail = ""
+            for item in items {
+                switch (item.number, item.value) {
+                case (1, let .varint(v)): code = v.int32Value
+                case (2, let .bytes(text)): message = String(decoding: text, as: UTF8.self)
+                case (3, let .bytes(text)): detail = String(decoding: text, as: UTF8.self)
+                default: break
+                }
+            }
+            errors.append((code, message, detail))
+        }
+        return (requestID, errors)
     }
 
     /// Clipboard V3: `RpcRequest` case 10 `ClipboardTextChangeRequest`

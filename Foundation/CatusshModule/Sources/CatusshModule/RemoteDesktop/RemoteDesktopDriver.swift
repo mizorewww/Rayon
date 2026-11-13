@@ -38,8 +38,8 @@ public protocol RemoteDesktopDriver: AnyObject, Sendable {
 
     /// Switches the display being viewed (multi-monitor hosts).
     func selectDisplay(_ displayID: Int)
-    /// Applies a quality preference; the units are the driver's.
-    func updateQuality(fps: Int, quality: Int)
+    /// Applies a frame rate, quality and colour (UU Remote; VNC has none).
+    func updateStream(_ settings: RemoteDesktopStreamSettings)
     /// Asks the host for a full refresh / keyframe.
     func requestKeyframeOrRefresh()
     /// Adds a display of the given pixel size on the host, where it can

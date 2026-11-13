@@ -12,6 +12,11 @@ import Combine
 import CoreGraphics
 import Foundation
 import os
+#if canImport(UIKit)
+    import UIKit
+#elseif canImport(AppKit)
+    import AppKit
+#endif
 
 @MainActor
 public final class RemoteDesktopSession: ObservableObject, Identifiable {
@@ -58,6 +63,11 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
     @Published public private(set) var rttMs: Int?
     /// Bit rate, loss and route, when the backend measures them.
     @Published public private(set) var network: RemoteDesktopNetwork?
+    /// The frame rate, quality and colour asked of the host: the machine's
+    /// saved choice, then each one made here.
+    @Published public private(set) var streamSettings: RemoteDesktopStreamSettings
+    /// Something the stage should say for a moment (a refused setting).
+    @Published public private(set) var notice: RemoteDesktopNotice?
     /// What the backend wants shown as a subtitle or progress line.
     @Published public private(set) var statusHint: String = ""
     /// The last clipboard contents the host pushed.
@@ -107,11 +117,17 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
     public init(machine: RDMachine, protocolType: RDMachine.RemoteDesktopProtocolType) {
         self.machine = machine
         self.protocolType = protocolType
+        streamSettings = RemoteDesktopStreamSettings(machine: machine)
     }
 
     /// Builds the backend and starts connecting.
     public func connect() {
         guard phase == .idle || phase.isTerminal else { return }
+        // A choice saved since (another window, another device): the
+        // connection asks for it.
+        if let saved = Self.savedMachine(machine.id) {
+            streamSettings = RemoteDesktopStreamSettings(machine: saved)
+        }
         if let existing = driver {
             existing.stop()
             driver = nil
@@ -215,8 +231,40 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
         driver?.removeVirtualDisplay(displayID)
     }
 
-    public func applyQuality(fps: Int, quality: Int) {
-        driver?.updateQuality(fps: fps, quality: quality)
+    /// A new frame rate, quality or colour: shown checked at once, saved
+    /// with the machine (only those fields of its record as it is now),
+    /// and asked of the host when connected or on the next connection.
+    public func setStreamSettings(_ settings: RemoteDesktopStreamSettings) {
+        guard settings != streamSettings else { return }
+        streamSettings = settings
+        save(settings)
+        driver?.updateStream(settings)
+    }
+
+    private func save(_ settings: RemoteDesktopStreamSettings) {
+        let store = CatusshStore.shared
+        guard var record = Self.savedMachine(machine.id) else { return }
+        record.uuFPS = settings.fps
+        record.uuQuality = settings.quality
+        record.uuTrueColor = settings.trueColor
+        store.machineGroup[machine.id] = record
+    }
+
+    private static func savedMachine(_ id: RDMachine.ID) -> RDMachine? {
+        CatusshStore.shared.machineGroup.machines.first { $0.id == id }
+    }
+
+    /// The fastest the screen this runs on refreshes.
+    public static func localRefreshRate() -> Int {
+        #if canImport(UIKit)
+            UIApplication.shared.connectedScenes
+                .compactMap { ($0 as? UIWindowScene)?.screen.maximumFramesPerSecond }
+                .max() ?? 60
+        #elseif canImport(AppKit)
+            NSScreen.main?.maximumFramesPerSecond ?? 60
+        #else
+            60
+        #endif
     }
 
     /// Full redraw; also useful as a "stuck?" nudge.
@@ -303,6 +351,33 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
     nonisolated public func reportRemoteClipboard(_ text: String) {
         Task { @MainActor [weak self] in
             self?.remoteClipboard = text
+        }
+    }
+
+    /// Reports something to tell the person for a moment.
+    nonisolated public func reportNotice(_ text: String) {
+        Task { @MainActor [weak self] in self?.notice = RemoteDesktopNotice(text) }
+    }
+
+    /// The host changed what was asked (true colour it cannot send): the
+    /// settings as they are now, saved, and why.
+    nonisolated public func reportStreamChanged(_ settings: RemoteDesktopStreamSettings, notice: String) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            self.streamSettings = settings
+            self.save(settings)
+            self.notice = RemoteDesktopNotice(notice)
+        }
+    }
+
+    /// The host refused the stream settings: back to `previous`, saved
+    /// too, and why.
+    nonisolated public func reportStreamRefused(_ previous: RemoteDesktopStreamSettings, reason: String) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            self.streamSettings = previous
+            self.save(previous)
+            self.notice = RemoteDesktopNotice(reason)
         }
     }
 

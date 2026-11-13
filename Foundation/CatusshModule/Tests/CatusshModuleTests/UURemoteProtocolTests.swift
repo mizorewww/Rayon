@@ -655,7 +655,13 @@ final class UURemoteProtocolTests: XCTestCase {
     // MARK: - CaptureSettingRequest
 
     func testCaptureSettingRequestFields() {
-        let data = UUControlProtocol.captureSettingRequest(requestID: 9, rawFPS: 120, quality: 4)
+        let data = UUControlProtocol.captureSettingRequest(
+            requestID: 9,
+            settings: RemoteDesktopStreamSettings(fps: 90, quality: 4, trueColor: true),
+            codecType: 2,
+            fpsCount: 90,
+            cursorCapture: false
+        )
         guard let inbound = UUControlProtocol.decodeInbound(data),
               inbound.field.number == UUControlField.rpcRequest,
               case let .bytes(rpc) = inbound.field.value,
@@ -670,9 +676,77 @@ final class UURemoteProtocolTests: XCTestCase {
         for f in bodyFields {
             if case let .varint(v) = f.value { seen[f.number] = v }
         }
-        XCTAssertEqual(seen[1], UInt64(UUFpsTier.encode(rawFPS: 120))) // enum, not raw
-        XCTAssertEqual(seen[18], 120)                                 // raw fpsCount
-        XCTAssertEqual(seen[2], 4)                                    // quality
+        XCTAssertEqual(seen[1], UInt64(UUFpsTier.fps90))  // enum, not raw
+        XCTAssertEqual(seen[18], 90)                      // raw fpsCount
+        XCTAssertEqual(seen[2], 4)                        // quality
+        XCTAssertNil(seen[3])                             // cursor drawn by us
+        XCTAssertEqual(seen[4].map { Int64(bitPattern: $0) }, -2) // the session's tracks
+        XCTAssertEqual(seen[5].map { Int64(bitPattern: $0) }, -1) // resolution unchanged
+        XCTAssertEqual(seen[6].map { Int64(bitPattern: $0) }, -1)
+        XCTAssertEqual(seen[7], 3)                        // 4:4:4
+        XCTAssertEqual(seen[10], 1)
+        XCTAssertEqual(seen[13], 2)                       // H.265
+        XCTAssertEqual(seen[14], 3840)
+        XCTAssertEqual(seen[15], 2160)
+    }
+
+    func testCaptureSettingResponseGivesItsRequestAndErrors() {
+        func response(_ id: UInt64, errors: [(Int32, String)], detail: String = "") -> Data {
+            var header = Data()
+            UUProtobufWriter.pushVarintField(1, id, into: &header)
+            var body = Data()
+            for (code, message) in errors {
+                var error = Data()
+                UUProtobufWriter.pushInt32Field(1, code, into: &error)
+                UUProtobufWriter.pushStringField(2, message, into: &error)
+                if !detail.isEmpty { UUProtobufWriter.pushStringField(3, detail, into: &error) }
+                UUProtobufWriter.pushMessageField(1, error, into: &body)
+            }
+            var rpc = Data()
+            UUProtobufWriter.pushMessageField(1, header, into: &rpc)
+            UUProtobufWriter.pushMessageField(2, body, into: &rpc)
+            return UUControlProtocol.envelope(sequence: 3, timestamp: 4, fieldNumber: UUControlField.rpcResponse, body: rpc)
+        }
+        let applied = UUControlProtocol.decodeCaptureSettingResponse(response(9, errors: []))
+        XCTAssertEqual(applied?.requestID, 9)
+        XCTAssertEqual(applied?.errors.count, 0)
+        let lowered = UUControlProtocol.decodeCaptureSettingResponse(response(10, errors: [(-3, "fps adjusted")]))
+        XCTAssertEqual(lowered?.errors.first?.code, -3)
+        XCTAssertEqual(lowered?.errors.first?.message, "fps adjusted")
+        let colour = UUControlProtocol.decodeCaptureSettingResponse(response(11, errors: [(-6, "chroma")], detail: #"{"error_code":2}"#))
+        XCTAssertEqual(colour?.errors.first?.code, -6)
+        XCTAssertEqual(colour?.errors.first?.detail, #"{"error_code":2}"#)
+        XCTAssertNil(UUControlProtocol.decodeCaptureSettingResponse(UUControlProtocol.keyboardHeartbeat()))
+    }
+
+    func testStreamSettingsKeepToTheMenu() {
+        let odd = RemoteDesktopStreamSettings(fps: 120, quality: 1)
+        XCTAssertEqual(odd.fps, 144)
+        XCTAssertEqual(odd.quality, RemoteDesktopStreamSettings.qualityHD)
+        XCTAssertEqual(RemoteDesktopStreamSettings(fps: 45, quality: 6).fps, 30)
+        XCTAssertEqual(RemoteDesktopStreamSettings(fps: 45, quality: 6).quality, RemoteDesktopStreamSettings.qualityAuto)
+        var machine = RDMachine()
+        machine.uuFPS = 90
+        machine.uuQuality = 3
+        machine.uuTrueColor = true
+        XCTAssertEqual(RemoteDesktopStreamSettings(machine: machine), RemoteDesktopStreamSettings(fps: 90, quality: 3, trueColor: true))
+        let decoded = try? JSONDecoder().decode(RDMachine.self, from: JSONEncoder().encode(machine))
+        XCTAssertEqual(decoded?.uuTrueColor, true)
+        XCTAssertEqual(decoded?.uuQuality, 3)
+    }
+
+    @MainActor
+    func testChoosingOneStreamSettingKeepsTheOthers() {
+        var machine = RDMachine()
+        machine.remoteDesktopProtocol = .uuRemote
+        let session = RemoteDesktopSession(machine: machine, protocolType: .uuRemote)
+        var settings = session.streamSettings
+        settings.quality = 3
+        session.setStreamSettings(settings)
+        settings = session.streamSettings
+        settings.fps = 90
+        session.setStreamSettings(settings)
+        XCTAssertEqual(session.streamSettings, RemoteDesktopStreamSettings(fps: 90, quality: 3))
     }
 
     // MARK: - SDP helpers

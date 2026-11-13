@@ -137,6 +137,9 @@ public struct RemoteDesktopStageView: View {
                 }
         }
         .background(Color.black.ignoresSafeArea())
+        .onChange(of: session.notice) { notice in
+            if let notice { flash(notice.text, for: 4) }
+        }
         #if os(iOS)
             .onAppear {
                 if session.protocolType == .uuRemote { officialAppInstalled = UULocalBridge.officialAppInstalled }
@@ -560,51 +563,46 @@ public struct RemoteDesktopStageView: View {
         .help("Frame rate and image quality")
     }
 
+    /// The official viewer's 画质 choices, as pickers: each shows its
+    /// choice checked, and choosing one keeps the others.
     @ViewBuilder private var qualityChoices: some View {
-            Section("Frame rate") {
-                ForEach([30, 60, 90, 144], id: \.self) { fps in
-                    Button {
-                        applyQuality(fps: fps)
-                    } label: {
-                        if fps == session.machine.uuFPS {
-                            Label("\(fps) fps", systemImage: "checkmark")
-                        } else {
-                            Text("\(fps) fps")
-                        }
+            Section("Frame Rate") {
+                Picker("Frame Rate", selection: streamBinding(\.fps)) {
+                    ForEach(RemoteDesktopStreamSettings.frameRates, id: \.self) { fps in
+                        Text("\(fps) fps").tag(fps)
                     }
                 }
+                .pickerStyle(.inline)
+                .labelsHidden()
             }
             Section("Quality") {
-                ForEach(Self.qualityPresets, id: \.value) { preset in
-                    Button {
-                        applyQuality(quality: preset.value)
-                    } label: {
-                        if preset.value == session.machine.uuQuality {
-                            Label(preset.title, systemImage: "checkmark")
-                        } else {
-                            Text(preset.title)
-                        }
+                Picker("Quality", selection: streamBinding(\.quality)) {
+                    ForEach(RemoteDesktopStreamSettings.qualities, id: \.value) { preset in
+                        Text(preset.title).tag(preset.value)
                     }
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+                Toggle("True Colour (4:4:4)", isOn: streamBinding(\.trueColor))
+            }
+            // Locked, the host is still connected and takes the settings.
+            if session.phase != .connected, session.phase != .authenticating {
+                Section {
+                    Text("Applies when connected")
                 }
             }
     }
 
-    private static let qualityPresets: [(title: String, value: Int)] = [
-        ("Fast", 1),
-        ("Balanced", 2),
-        ("High", 3),
-        ("Ultra", 4),
-        ("Auto", 5),
-    ]
-
-    private func applyQuality(fps: Int? = nil, quality: Int? = nil) {
-        let newFPS = fps ?? session.machine.uuFPS
-        let newQuality = quality ?? session.machine.uuQuality
-        var machine = session.machine
-        machine.uuFPS = newFPS
-        machine.uuQuality = newQuality
-        CatusshStore.shared.machineGroup[machine.id] = machine
-        session.applyQuality(fps: newFPS, quality: newQuality)
+    /// One field of the session's stream settings, the rest kept.
+    private func streamBinding<Value>(_ field: WritableKeyPath<RemoteDesktopStreamSettings, Value>) -> Binding<Value> {
+        Binding(
+            get: { session.streamSettings[keyPath: field] },
+            set: { value in
+                var settings = session.streamSettings
+                settings[keyPath: field] = value
+                session.setStreamSettings(settings)
+            }
+        )
     }
 
     private var specialKeysMenu: some View {

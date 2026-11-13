@@ -120,6 +120,24 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
     private var viewedMidCertain = false
     private let viewLock = NSLock()
 
+    // MARK: Stream settings
+
+    /// Frame rate, quality and colour asked of the host; taken from the
+    /// session at start and on every change. `streamLock`: the connect
+    /// options are made off the main thread.
+    private var stream = RemoteDesktopStreamSettings()
+    /// The fastest the local screen refreshes: no use asking for more.
+    private var localRefresh = 60
+    private let streamLock = NSLock()
+    /// The codec the frames come in (1 H.264, 2 H.265), for the settings
+    /// request; 0 until a frame says. Under `viewLock`.
+    private var codecType: Int32 = 0
+    /// The settings request waiting for its answer, and what was asked
+    /// before it, to go back to if the host refuses. Main thread.
+    private var pendingStream: (requestID: UInt64, previous: RemoteDesktopStreamSettings)?
+    /// What the host last applied. Main thread.
+    private var appliedStream: RemoteDesktopStreamSettings?
+
     /// What the connection is for: a desktop streams the screen; a terminal
     /// connection carries terminals (and port mappings) and no video.
     public enum Purpose: Sendable { case desktop, terminal }
@@ -148,6 +166,8 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
     // MARK: - RemoteDesktopDriver
 
     public func start(session: RemoteDesktopSession) {
+        let settings = MainActor.assumeIsolated { (session.streamSettings, RemoteDesktopSession.localRefreshRate()) }
+        streamLock.withLock { (stream, localRefresh) = settings }
         Task { await connect() }
     }
 
@@ -457,15 +477,83 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
         return (result, certain)
     }
 
-    /// CaptureSettingRequest (RpcRequest case 2): field 1 fps *option
-    /// index*, field 18 raw fpsCount, field 2 quality.
-    public func updateQuality(fps: Int, quality: Int) {
-        guard controlChannelOpen else { return }
-        sendControlChannel(UUControlProtocol.captureSettingRequest(
-            requestID: nextOutboundSequence(),
-            rawFPS: Int32(fps),
-            quality: quality > 0 ? Int32(quality) : nil
+    /// A new frame rate, quality or colour: kept for the next connection,
+    /// and asked of the host now when connected. Main thread.
+    public func updateStream(_ settings: RemoteDesktopStreamSettings) {
+        let previous = streamLock.withLock { () -> RemoteDesktopStreamSettings in
+            defer { stream = settings }
+            return stream
+        }
+        sendStreamSettings(previous: previous)
+    }
+
+    /// The picture settings the official viewer sends once connected: when
+    /// TEXT is open and a frame has said its codec, whichever comes last,
+    /// and once. Main thread.
+    private func sendFirstStreamSettings() {
+        guard !firstStreamSent, textChannelOpen, viewLock.withLock({ codecType }) != 0 else { return }
+        firstStreamSent = true
+        sendStreamSettings(previous: nil)
+    }
+
+    private var firstStreamSent = false
+
+    /// The whole CaptureSettingRequest for the current settings, on
+    /// TEXT_DATA_CHANNEL like every viewing request of the official viewer
+    /// (openuuyc `channels.rs`); seen live, the host then changes the
+    /// stream (HD 1728×1080 key frames, Original 1920×1200). It answers on
+    /// TEXT as text messages, which WebKit hands over empty when they are
+    /// protobuf, so an answer is read only where one gets through. Main
+    /// thread.
+    private func sendStreamSettings(previous: RemoteDesktopStreamSettings?) {
+        guard textChannelOpen else { return }
+        let (settings, refresh) = streamLock.withLock { (stream, localRefresh) }
+        let codec = viewLock.withLock { codecType }
+        let requestID = nextOutboundSequence()
+        pendingStream = (requestID, previous ?? appliedStream ?? settings)
+        Self.log.info("stream settings \(requestID): \(settings.fps) fps, quality \(settings.quality), \(settings.trueColor ? "4:4:4" : "4:2:0", privacy: .public), codec \(codec)")
+        sendTextChannel(UUControlProtocol.captureSettingRequest(
+            requestID: requestID,
+            settings: settings,
+            codecType: codec,
+            fpsCount: Int32(min(settings.fps, max(refresh, 30))),
+            // False: we draw the host's cursor ourselves. Live, true put a
+            // second cursor into the picture, and a right-click opened no
+            // menu.
+            cursorCapture: false
         ))
+    }
+
+    /// The host's answer to a settings request: applied, applied with the
+    /// frame rate lowered to its screen's (-3), or refused, when the
+    /// session goes back to what was asked before. Main thread.
+    private func handleStreamAnswer(requestID: UInt64, errors: [(code: Int, message: String, detail: String)]) {
+        guard let pending = pendingStream, pending.requestID == requestID else { return }
+        pendingStream = nil
+        var settings = streamLock.withLock { stream }
+        Self.log.info("stream settings \(requestID) answered: \(errors.map { "\($0.code) \($0.message) \($0.detail)" }.joined(separator: "; "), privacy: .public)")
+        // -6 is how true colour went, not a refusal: its detail's
+        // `error_code` 1 or 2 means the host fell back to 4:2:0 (openuuyc
+        // settings.rs).
+        if let colour = errors.first(where: { $0.code == -6 }),
+           let detail = try? JSONSerialization.jsonObject(with: Data(colour.detail.utf8)) as? [String: Any],
+           let outcome = (detail["error_code"] as? NSNumber)?.intValue, outcome == 1 || outcome == 2, settings.trueColor {
+            settings.trueColor = false
+            let changed = settings
+            streamLock.withLock { stream = changed }
+            session.reportStreamChanged(changed, notice: "The host can't send true colour here; it sends standard colour.")
+        }
+        let refused = errors.filter { $0.code != -3 && $0.code != -6 }
+        if refused.isEmpty {
+            appliedStream = settings
+            if errors.contains(where: { $0.code == -3 }) {
+                session.reportNotice("The host's screen can't show \(settings.fps) fps; it sends what its screen does.")
+            }
+            return
+        }
+        streamLock.withLock { stream = pending.previous }
+        let reason = refused.first.map { $0.message.isEmpty ? "error \($0.code)" : $0.message } ?? ""
+        session.reportStreamRefused(pending.previous, reason: "The host kept its picture settings: \(reason)")
     }
 
     /// A key frame on the track in view (all of them before one is known).
@@ -559,8 +647,7 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
                 connectOptions: options,
                 streamerData: Self.streamerData(
                     controlID: appControlID,
-                    fps: session.machine.uuFPS,
-                    quality: session.machine.uuQuality
+                    fps: streamLock.withLock { stream.fps }
                 ),
                 timeout: 15
             )
@@ -644,8 +731,9 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
     /// `streamer_data` (a JSON *string* on the wire) of
     /// `{control_id, device_capability:{display_info, ice_id,
     /// video_codec_capability}}` — mirrors `Shape.control` upstream.
-    private static func streamerData(controlID: String, fps: Int, quality: Int) -> [String: Any] {
-        let codecs = quality >= 2 ? [1, 2] : [1]
+    private static func streamerData(controlID: String, fps: Int) -> [String: Any] {
+        // Both codecs whatever the quality: the host picks.
+        let codecs = [1, 2]
         var capability: [[String: Any]] = []
         for codec in codecs {
             for chroma in [1, 3] {
@@ -682,11 +770,12 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
         options.controlConnectType = UUControlConnectType.normal
         // Decoder caps: every supported codec × chroma, like upstream's
         // `video_preferences` expansion.
-        let codecs: [Int32] = session.machine.uuQuality >= 2 ? [2, 1] : [1]
+        let settings = streamLock.withLock { stream }
+        let codecs: [Int32] = [2, 1]
         for codec in codecs {
             for chroma in [Int32(1), 3] {
                 options.decoderCapList.append(UUDecoderCap(
-                    fps: Int32(session.machine.uuFPS),
+                    fps: Int32(settings.fps),
                     codec: codec,
                     width: 3840,
                     height: 2160,
@@ -696,16 +785,16 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
         }
         if capture == UUCaptureType.desktop {
             var params = UUCaptureParams()
-            params.fpsTier = UUFpsTier.encode(rawFPS: session.machine.uuFPS)
-            params.videoQuality = session.machine.uuQuality
+            params.fpsTier = UUFpsTier.encode(rawFPS: settings.fps)
+            params.videoQuality = settings.quality
             params.chooseResolutionType = 2 // FOLLOW_LOCAL
             params.localResolution = UUScreenResolution(width: 1920, height: 1080)
             params.chooseResolution = UUScreenResolution() // upstream sends an empty message
-            params.chromaFormat = UUChromaFormat.c420 // 4:4:4 is requested later on CONTROL
+            params.chromaFormat = UUChromaFormat.c420 // 4:4:4 rides the settings request on TEXT
             params.enableHDR = true
-            params.fpsCount = Int32(session.machine.uuFPS)
+            params.fpsCount = Int32(settings.fps)
             options.captureParams = params
-            for mode in [UUVirtualDisplayMode(width: 1920, height: 1080, fps: Int32(session.machine.uuFPS))] {
+            for mode in [UUVirtualDisplayMode(width: 1920, height: 1080, fps: Int32(settings.fps))] {
                 options.virtualDisplayModes.append(mode)
             }
             options.virtualDisplayInitResolution = UUScreenResolution(width: 1920, height: 1080)
@@ -742,6 +831,14 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
         }
         await peer.setCodecHandler { [weak self] name in
             self?.decodeQueue.async { self?.encodedCodec = name.replacingOccurrences(of: "video/", with: "") }
+            // The receiver's stats say the codec too, where no encoded frame
+            // ever comes through (no RTCRtpScriptTransform).
+            guard let self, self.viewLock.withLock({ self.codecType }) == 0 else { return }
+            let upper = name.uppercased()
+            guard upper.contains("265") || upper.contains("HEVC") || upper.contains("264") else { return }
+            let type: Int32 = upper.contains("264") ? 1 : 2
+            self.viewLock.withLock { self.codecType = type }
+            self.sendFirstStreamSettings()
         }
         await peer.setEncodedFrameHandler { [weak self] base64, timestamp, mid in
             self?.decodeQueue.async {
@@ -775,6 +872,7 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
         }
         await peer.setDataChannelStateHandler("TEXT_DATA_CHANNEL") { [weak self] (state: String) in
             self?.textChannelOpen = state == "open"
+            self?.sendFirstStreamSettings()
         }
         await peer.setDataChannelHandler("CONTROL_DATA_CHANNEL") { [weak self] data in
             self?.handleControlChannel(data)
@@ -1171,6 +1269,9 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
         // Desktop input JSON also arrives as raw text on this channel — the
         // protobuf envelope decode just returns nil for it.
         guard let inbound = UUControlProtocol.decodeInbound(data) else { return }
+        if seenControlFields.insert(inbound.field.number).inserted {
+            Self.log.info("first control message field \(inbound.field.number), \(data.count) bytes")
+        }
         switch inbound.field.number {
         case UUControlField.simpleAction:
             if case let .bytes(body) = inbound.field.value,
@@ -1195,6 +1296,13 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
                     session.reportPhase(locked ? .authenticating : .connected)
                 }
                 if let cursor = change.cursor { updateCursor(shape: cursor) }
+            }
+        case UUControlField.rpcResponse:
+            if let answer = UUControlProtocol.decodeCaptureSettingResponse(data) {
+                Self.log.info("rpc answer to \(answer.requestID): \(answer.errors.count) errors")
+                handleStreamAnswer(requestID: answer.requestID, errors: answer.errors)
+            } else {
+                Self.log.info("rpc answer not read, \(data.count) bytes")
             }
         case UUControlField.portMappingFrame:
             if let frame = UUPortMappingEnvelope.unwrap(data) {
@@ -1318,7 +1426,12 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
         let nalUnits = UUVideoAccessUnit.nalUnits(annexB: bytes)
         // The stream says its codec in a key frame's parameter sets, before
         // the receiver's stats do.
-        if let codec = UUVideoAccessUnit.codec(ofParameterSetsIn: nalUnits) { encodedCodec = codec }
+        if let codec = UUVideoAccessUnit.codec(ofParameterSetsIn: nalUnits), codec != encodedCodec || viewLock.withLock({ codecType }) == 0 {
+            encodedCodec = codec
+            let type: Int32 = codec.uppercased().contains("265") || codec.uppercased().contains("HEVC") ? 2 : 1
+            viewLock.withLock { codecType = type }
+            DispatchQueue.main.async { [weak self] in self?.sendFirstStreamSettings() }
+        }
         let unit = UUVideoAccessUnit(nalUnits: nalUnits, sequence: 0, timestamp: timestamp, codecName: encodedCodec)
         let image = encodedDecoder.decode(accessUnit: unit)
         encodedCount += 1
@@ -1336,11 +1449,18 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
         guard let image else { return }
         reportFrame(image, size: encodedDecoder.outputSize)
     }
+    /// Control message kinds seen, each logged once.
+    private var seenControlFields: Set<UInt32> = []
     private var encodedCount = 0
     private var failedDecodes = 0
     private static let log = Logger(subsystem: "me.mizorewww.rayon", category: "uu-driver")
 
     private func handleTextChannel(_ data: Data) {
+        if let answer = UUControlProtocol.decodeCaptureSettingResponse(data) {
+            Self.log.info("rpc answer to \(answer.requestID) on TEXT: \(answer.errors.count) errors")
+            handleStreamAnswer(requestID: answer.requestID, errors: answer.errors)
+            return
+        }
         // Clipboard V3 inbound: case-10 text-change request -> surface the
         // text and acknowledge with a case-6 response (CB_SUCCEEDED).
         if let change = UUControlProtocol.decodeClipboardTextChange(data) {
@@ -1511,18 +1631,11 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
             try? await Task.sleep(nanoseconds: 1_000_000_000)
             guard let self, !self.closed else { return }
             // One sendVideoTrack RPC once the channel is up (like the
-            // official iPhone viewer); 4:4:4 true colour rides a separate
-            // CaptureSettingRequest when the quality tier asks for it.
+            // official iPhone viewer).
             self.sendControlChannel(UUControlProtocol.sendVideoTrackRequest(
                 requestID: self.nextOutboundSequence(),
                 tracks: await MainActor.run { self.midByTrackIndex.keys.sorted() }
             ))
-            if self.session.machine.uuQuality >= 4 {
-                self.sendControlChannel(UUControlProtocol.captureSettingRequest(
-                    requestID: self.nextOutboundSequence(),
-                    chromaFormat: Int32(UUChromaFormat.c444)
-                ))
-            }
         }
     }
 
@@ -1658,6 +1771,15 @@ private final class UURTCPeerConnection: NSObject, WKScriptMessageHandler, WKNav
         };`;
         let transformWorker = null;
         let statsTimer = null;
+        // A message as bytes, whatever it came as: text, an ArrayBuffer, or
+        // a Blob, which a Uint8Array cannot read (it came out empty).
+        function relay(label, data) {
+            const kind = typeof data === 'string' ? 'text' : (data && data.constructor ? data.constructor.name : typeof data);
+            if (typeof data === 'string') { post('dc_message', {label: label, kind: kind, b64: base64(new TextEncoder().encode(data))}); return; }
+            if (data instanceof ArrayBuffer || ArrayBuffer.isView(data)) { post('dc_message', {label: label, kind: kind, b64: base64(new Uint8Array(data.buffer || data, data.byteOffset || 0, data.byteLength))}); return; }
+            if (data && data.arrayBuffer) { data.arrayBuffer().then(b => post('dc_message', {label: label, kind: kind, b64: base64(new Uint8Array(b))})); return; }
+            post('dc_message', {label: label, kind: kind, b64: ''});
+        }
         function base64(bytes) {
             let text = '';
             for (let i = 0; i < bytes.length; i += 0x8000) text += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
@@ -1683,7 +1805,7 @@ private final class UURTCPeerConnection: NSObject, WKScriptMessageHandler, WKNav
                 ch.binaryType = 'arraybuffer';
                 ch.onopen = () => post('dc_open', {label: ch.label});
                 ch.onclose = () => post('dc_close', {label: ch.label});
-                ch.onmessage = m => post('dc_message', {label: ch.label, b64: base64(typeof m.data === 'string' ? new TextEncoder().encode(m.data) : new Uint8Array(m.data))});
+                ch.onmessage = m => relay(ch.label, m.data);
                 channels[ch.label] = ch;
             };
             pc.ontrack = e => {
@@ -1753,7 +1875,7 @@ private final class UURTCPeerConnection: NSObject, WKScriptMessageHandler, WKNav
                 ch.binaryType = 'arraybuffer';
                 ch.onopen = () => post('dc_open', {label: ch.label});
                 ch.onclose = () => post('dc_close', {label: ch.label});
-                ch.onmessage = m => post('dc_message', {label: ch.label, b64: base64(typeof m.data === 'string' ? new TextEncoder().encode(m.data) : new Uint8Array(m.data))});
+                ch.onmessage = m => relay(ch.label, m.data);
                 channels[label] = ch;
             }
             for (let i = 0; i < 5; i++) pc.addTransceiver('video', {direction: 'recvonly'});
@@ -1817,7 +1939,7 @@ private final class UURTCPeerConnection: NSObject, WKScriptMessageHandler, WKNav
             let count = messageCounts[label, default: 0] + 1
             messageCounts[label] = count
             if count <= 3 || count.isMultiple(of: 500) {
-                Self.log.info("\(label, privacy: .public) message \(count), \((data["data"] as? [Any])?.count ?? 0) bytes")
+                Self.log.info("\(label, privacy: .public) message \(count), \(data["kind"] as? String ?? "?", privacy: .public), \(((data["b64"] as? String)?.count ?? 0) * 3 / 4) bytes")
             }
         case "video_frame", "encoded":
             let count = messageCounts[name, default: 0] + 1

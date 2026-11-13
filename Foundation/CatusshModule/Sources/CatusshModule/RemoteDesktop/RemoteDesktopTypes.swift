@@ -106,3 +106,48 @@ public struct RemoteDesktopNetwork: Equatable, Sendable {
         self.relayed = relayed
     }
 }
+
+/// The stream a UU Remote host sends: frame rate, quality preset and true
+/// colour, as the official viewer's 画质 menu offers them.
+public struct RemoteDesktopStreamSettings: Equatable, Sendable {
+    public var fps: Int
+    /// The host's preset: 2 HD, 3 Ultra HD, 4 Original, 5 Auto.
+    public var quality: Int
+    /// 4:4:4 chroma instead of 4:2:0.
+    public var trueColor: Bool
+
+    public static let qualityHD = 2
+    public static let qualityAuto = 5
+    public static let frameRates = [30, 60, 90, 144]
+    /// The presets in the official menu's order, with their bit rates.
+    public static let qualities: [(value: Int, title: String)] = [
+        (5, "Auto"),
+        (4, "Original · 20 Mbps"),
+        (3, "Ultra HD · 8 Mbps"),
+        (2, "HD · 2 Mbps"),
+    ]
+
+    public init(fps: Int = 60, quality: Int = 5, trueColor: Bool = false) {
+        // A rate off the menu is the nearest on it; a preset the menu no
+        // longer has (Fast, Custom) is HD and Auto.
+        self.fps = Self.frameRates.min { abs($0 - fps) < abs($1 - fps) } ?? 60
+        self.quality = switch quality {
+        case 1: Self.qualityHD
+        case 2 ... 5: quality
+        default: Self.qualityAuto
+        }
+        self.trueColor = trueColor
+    }
+
+    public init(machine: RDMachine) {
+        self.init(fps: machine.uuFPS, quality: machine.uuQuality, trueColor: machine.uuTrueColor)
+    }
+}
+
+/// A line to show for a moment; each is new, even with the same text.
+public struct RemoteDesktopNotice: Equatable, Sendable {
+    public let id = UUID()
+    public let text: String
+
+    public init(_ text: String) { self.text = text }
+}

@@ -110,6 +110,8 @@ public struct RDMachine: Codable, Identifiable, Equatable, Sendable {
     public var uuDisplayID: Int = 0
     public var uuFPS: Int = 60
     public var uuQuality: Int = 5
+    /// UU Remote's true colour: 4:4:4 chroma instead of 4:2:0.
+    public var uuTrueColor: Bool = false
     public var uuManaged: Bool = false
     public var ghosttyTerminfoVersion: String? = nil
     public var proxyJumpMachineID: String? = nil
@@ -143,6 +145,7 @@ public struct RDMachine: Codable, Identifiable, Equatable, Sendable {
         case uuDisplayID
         case uuFPS
         case uuQuality
+        case uuTrueColor
         case uuManaged
         case ghosttyTerminfoVersion
         case proxyJumpMachineID
@@ -213,6 +216,7 @@ public struct RDMachine: Codable, Identifiable, Equatable, Sendable {
         uuQuality = try container.decodeIfPresent(Int.self, forKey: .uuQuality)
             ?? legacyAttachment["remoteDesktop.uu.quality"].flatMap(Int.init)
             ?? 5
+        uuTrueColor = try container.decodeIfPresent(Bool.self, forKey: .uuTrueColor) ?? false
         uuManaged = try container.decodeIfPresent(Bool.self, forKey: .uuManaged)
             ?? (legacyAttachment["remoteDesktop.uu.managed"] == "1")
         ghosttyTerminfoVersion = try container.decodeIfPresent(String.self, forKey: .ghosttyTerminfoVersion)
@@ -314,6 +318,9 @@ public struct RDMachine: Codable, Identifiable, Equatable, Sendable {
         }
         if uuQuality != 5 {
             try container.encode(uuQuality, forKey: .uuQuality)
+        }
+        if uuTrueColor {
+            try container.encode(uuTrueColor, forKey: .uuTrueColor)
         }
         if uuManaged {
             try container.encode(uuManaged, forKey: .uuManaged)
