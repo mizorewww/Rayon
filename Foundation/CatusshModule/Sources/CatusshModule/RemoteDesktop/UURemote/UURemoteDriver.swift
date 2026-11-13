@@ -100,6 +100,8 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
     /// When a virtual screen was asked for: the view goes to the next one
     /// listed within ten seconds, and to none made later by someone else.
     private var virtualScreenAskedAt: Date?
+    /// The screen in view had its capture started on this connection.
+    private var screenActivated = false
     /// Each video track's transceiver mid, by the host's track index, from
     /// the answer. Main thread.
     private var midByTrackIndex: [Int: String] = [:]
@@ -220,7 +222,7 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
         guard x.isFinite, y.isFinite else { return }
         sentPointer = (x, y)
         // Main thread, like the screens: on the screen in view.
-        let screenID = screens.isEmpty ? nil : viewedScreenID
+        let screenID = screens.count > 1 ? viewedScreenID : nil
         sendControlChannel(UUControlProtocol.mouseMoveAbsolute(x: x, y: y, screenID: screenID), kind: .pointerMove)
         updateCursor(pointer: (x, y))
     }
@@ -339,6 +341,7 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
         }
         Self.log.info("view screen \(displayID) instead of \(previous.map(String.init) ?? "none", privacy: .public)")
         viewedScreenID = displayID
+        screenActivated = true
         followViewedScreen(leaving: true)
         session.reportDisplays(screens, selected: displayID)
     }
@@ -393,6 +396,14 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
                 selectDisplay(pinned)
                 return
             }
+        }
+        // The official viewer starts the capture of the screen it shows
+        // when it connects. Without it, a host whose screen was removed
+        // (a virtual one) kept sending input there: seen live, no click
+        // landed until a screen was chosen again.
+        if !screenActivated, let viewed = viewedScreenID {
+            screenActivated = true
+            sendControlChannel(UUControlProtocol.captureScreen(viewed, start: true, sequence: nextOutboundSequence()))
         }
         followViewedScreen()
         session.reportDisplays(displays, selected: viewedScreenID ?? -1)
