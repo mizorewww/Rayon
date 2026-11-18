@@ -1,0 +1,35 @@
+name: PR merge
+
+# Retries the merge of a contributor's pull request the automated review approved
+# (see pr-review.yml and .github/scripts/merge_ready.py). This repository has no
+# CI, so the review merges right after approving.
+# Nothing from the pull request is checked out or run here.
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number
+        required: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          if [ -n "$PR" ]; then
+            HEAD_SHA=$(gh pr view "$PR" --json headRefOid --jq .headRefOid)
+          fi
+          python3 .github/scripts/merge_ready.py "$HEAD_SHA"
+        env:
+          PR: ${{ inputs.pr }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          MAINTAINER_TOKEN: ${{ secrets.MAINTAINER_TOKEN }}
+          CI_WORKFLOWS: ""
