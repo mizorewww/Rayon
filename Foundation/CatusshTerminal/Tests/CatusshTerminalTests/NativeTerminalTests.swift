@@ -7,6 +7,76 @@ import XCTest
 
 final class NativeTerminalTests: XCTestCase {
     @MainActor
+    func testClipboardSharingLetsRemoteProgramsWriteAndDeniesThemWhenOff() async throws {
+        let saved = TestPasteboard.save()
+        defer {
+            CatusshTerminalView.setClipboardSharing(true)
+            TestPasteboard.restore(saved)
+        }
+        let terminal = CatusshTerminalView()
+        let native = terminal.session.platformView()
+        let window = TestHost(native)
+        defer { window.close() }
+        try await Task.sleep(for: .milliseconds(100))
+
+        // Sharing on (the default): a remote program's OSC 52 write lands on
+        // the system clipboard.
+        CatusshTerminalView.setClipboardSharing(true)
+        TestPasteboard.string = "before"
+        let shared = Data("remote clipboard 中文".utf8).base64EncodedString()
+        #if os(macOS)
+            terminal.write("\u{1B}]52;c;\(shared)\u{07}")
+            XCTAssertTrue(terminal.session.backend.waitForPendingOutput())
+            try await Task.sleep(for: .milliseconds(300))
+            XCTAssertEqual(TestPasteboard.string, "remote clipboard 中文")
+        #else
+            let beforeWrite = UIPasteboard.general.changeCount
+            terminal.write("\u{1B}]52;c;\(shared)\u{07}")
+            XCTAssertTrue(terminal.session.backend.waitForPendingOutput())
+            try await Task.sleep(for: .milliseconds(300))
+            XCTAssertGreaterThan(UIPasteboard.general.changeCount, beforeWrite, "A shared remote write reaches the pasteboard")
+        #endif
+
+        // Sharing off: the same write leaves the clipboard alone.
+        CatusshTerminalView.setClipboardSharing(false)
+        TestPasteboard.string = "local only"
+        terminal.write("\u{1B}]52;c;\(shared)\u{07}")
+        XCTAssertTrue(terminal.session.backend.waitForPendingOutput())
+        try await Task.sleep(for: .milliseconds(300))
+        XCTAssertEqual(TestPasteboard.string, "local only")
+    }
+
+    @MainActor
+    func testClipboardSharingAnswersRemoteReadsWhenOn() async throws {
+        let saved = TestPasteboard.save()
+        defer {
+            CatusshTerminalView.setClipboardSharing(true)
+            TestPasteboard.restore(saved)
+        }
+        let terminal = CatusshTerminalView()
+        let native = terminal.session.platformView()
+        let window = TestHost(native)
+        defer { window.close() }
+        try await Task.sleep(for: .milliseconds(100))
+
+        // A program asks for the clipboard with OSC 52 `?`; the terminal
+        // answers as input, base64, when sharing is on and not when off.
+        for (sharing, expectAnswer) in [(true, true), (false, false)] {
+            CatusshTerminalView.setClipboardSharing(sharing)
+            TestPasteboard.string = "local clip 中文"
+            let answer = expectation(description: "clipboard read answer \(sharing ? "allowed" : "denied")")
+            answer.isInverted = !expectAnswer
+            let expected = Data("local clip 中文".utf8).base64EncodedString()
+            terminal.setupBufferChain { text in
+                if text.contains(expected) { answer.fulfill() }
+            }
+            terminal.write("\u{1B}]52;c;?\u{07}")
+            XCTAssertTrue(terminal.session.backend.waitForPendingOutput())
+            await fulfillment(of: [answer], timeout: expectAnswer ? 5 : 1)
+        }
+    }
+
+    @MainActor
     func testUserClipboardActionsWorkButRemoteClipboardWriteIsDenied() async throws {
         let saved = TestPasteboard.save()
         defer { TestPasteboard.restore(saved) }
@@ -32,6 +102,8 @@ final class NativeTerminalTests: XCTestCase {
             await fulfillment(of: [pasted], timeout: 5)
 
             let remote = Data("remote replacement".utf8).base64EncodedString()
+            CatusshTerminalView.setClipboardSharing(false)
+            defer { CatusshTerminalView.setClipboardSharing(true) }
             terminal.write("\u{1B}]52;c;\(remote)\u{07}")
             XCTAssertTrue(terminal.session.backend.waitForPendingOutput())
             try await Task.sleep(for: .milliseconds(100))
@@ -48,6 +120,8 @@ final class NativeTerminalTests: XCTestCase {
 
             let afterCopy = UIPasteboard.general.changeCount
             let remote = Data("remote replacement".utf8).base64EncodedString()
+            CatusshTerminalView.setClipboardSharing(false)
+            defer { CatusshTerminalView.setClipboardSharing(true) }
             terminal.write("\u{1B}]52;c;\(remote)\u{07}")
             XCTAssertTrue(terminal.session.backend.waitForPendingOutput())
             try await Task.sleep(for: .milliseconds(200))

@@ -205,6 +205,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_: Notification) {
         AppearancePreference.applyStored()
         CatusshTerminalView.setCopyOnSelect(CatusshStore.shared.terminalCopyOnSelect)
+        CatusshTerminalView.setClipboardSharing(CatusshStore.shared.terminalClipboardSharing)
         // The appearance and copy on select may come from another device,
         // through iCloud.
         windowObservers.append(
@@ -212,6 +213,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 MainActor.assumeIsolated {
                     AppearancePreference.applyStored()
                     CatusshTerminalView.setCopyOnSelect(CatusshStore.shared.terminalCopyOnSelect)
+                    CatusshTerminalView.setClipboardSharing(CatusshStore.shared.terminalClipboardSharing)
                 }
             }
         )

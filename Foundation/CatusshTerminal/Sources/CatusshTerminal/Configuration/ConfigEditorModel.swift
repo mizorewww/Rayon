@@ -167,10 +167,14 @@ enum CatusshTerminalConfiguration {
     /// The app's Copy on Select preference. It is not a setting of the editor's
     /// document: the app stores it with its own preferences and sets it here.
     static private(set) var copyOnSelect = true
+    /// The app's Clipboard Sharing preference: programs running on the remote
+    /// host may read and write the system clipboard through the terminal
+    /// (OSC 52). Like Copy on Select, the app stores it with its preferences.
+    static private(set) var clipboardSharing = true
     static let controller: TerminalController = {
         let result = TerminalController(configuration: TerminalConfiguration.default
             .custom("copy-on-select", copyOnSelectValue)
-            .custom("clipboard-read", "ask").custom("clipboard-write", "ask"))
+            .custom("clipboard-read", clipboardAccessValue).custom("clipboard-write", clipboardAccessValue))
         let document = ConfigEditorModel.storedDocument()
         if !document.overrides.isEmpty { try? apply(document, to: result) }
         return result
@@ -180,10 +184,22 @@ enum CatusshTerminalConfiguration {
     /// that nothing on Apple platforms reads, and `true` may copy only there.
     private static var copyOnSelectValue: String { copyOnSelect ? "clipboard" : "none" }
 
+    /// `allow`/`deny` rather than `ask`: the sharing preference is the user's
+    /// answer, so no per-request confirmation is needed. (Ghostty's own
+    /// default writes allow; reads it would ask.)
+    private static var clipboardAccessValue: String { clipboardSharing ? "allow" : "deny" }
+
     /// Applies to every terminal, open ones included, keeping their scrollback.
     static func setCopyOnSelect(_ enabled: Bool) {
         guard copyOnSelect != enabled else { return }
         copyOnSelect = enabled
+        try? apply(ConfigEditorModel.shared.saved)
+    }
+
+    /// Applies to every terminal, open ones included, keeping their scrollback.
+    static func setClipboardSharing(_ enabled: Bool) {
+        guard clipboardSharing != enabled else { return }
+        clipboardSharing = enabled
         try? apply(ConfigEditorModel.shared.saved)
     }
 
@@ -242,7 +258,7 @@ enum CatusshTerminalConfiguration {
                 lines.append("\(key) = \(value)")
             }
         }
-        lines += ["copy-on-select = \(copyOnSelectValue)", "clipboard-read = ask", "clipboard-write = ask"]
+        lines += ["copy-on-select = \(copyOnSelectValue)", "clipboard-read = \(clipboardAccessValue)", "clipboard-write = \(clipboardAccessValue)"]
         return lines.joined(separator: "\n")
     }
     static func apply(_ document: ConfigDocument, to target: TerminalController? = nil) throws {

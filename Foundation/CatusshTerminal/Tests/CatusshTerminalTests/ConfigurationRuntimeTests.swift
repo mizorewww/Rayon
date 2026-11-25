@@ -45,11 +45,13 @@ final class ConfigurationRuntimeTests: XCTestCase {
     @MainActor func testRuntimeFilterAndDualThemes() throws {
         TestHost.prepare()
         var doc = ConfigDocument()
-        try doc.merge("theme = light:3024 Day,dark:3024 Night\nbackground = #223344\ncommand = rm -rf /\nconfig-file = /tmp/config\nclipboard-write = allow\nkeybind = global:ctrl+k=quit\nkeybind = ctrl+k=text:hello")
+        try doc.merge("theme = light:3024 Day,dark:3024 Night\nbackground = #223344\ncommand = rm -rf /\nconfig-file = /tmp/config\nclipboard-write = deny\nkeybind = global:ctrl+k=quit\nkeybind = ctrl+k=text:hello")
         let text = CatusshTerminalConfiguration.runtimeContents(doc, dark: true)
         XCTAssertFalse(text.contains("command ="))
         XCTAssertFalse(text.contains("config-file ="))
-        XCTAssertFalse(text.contains("= allow"))
+        // A user's clipboard-write override is filtered out: the only such
+        // line is the one the app's sharing preference appends.
+        XCTAssertFalse(text.contains("clipboard-write = deny"))
         XCTAssertFalse(text.contains("=quit"))
         XCTAssertTrue(text.contains("ctrl+k=text:hello"))
         let controller = TerminalController(configuration: .default)

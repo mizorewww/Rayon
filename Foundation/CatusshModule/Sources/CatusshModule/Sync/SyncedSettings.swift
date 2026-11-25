@@ -38,6 +38,7 @@ enum SyncedSettings {
         bool("reducedViewEffects", \.reducedViewEffects),
         bool("disableConformation", \.disableConformation),
         bool("terminalCopyOnSelect", \.terminalCopyOnSelect),
+        bool("terminalClipboardSharing", \.terminalClipboardSharing),
         Setting(
             name: "machineRedacted",
             read: { .int(CatusshStore.shared.machineRedacted.rawValue) },

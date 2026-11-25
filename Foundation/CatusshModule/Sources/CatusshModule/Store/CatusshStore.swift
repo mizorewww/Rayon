@@ -43,6 +43,7 @@ public class CatusshStore: ObservableObject, @unchecked Sendable {
         monitorInterval = Self.readDefaultInt("me.mizorewww.rayon.monitorInterval", defaultValue: 3, in: defaults)
         terminalFontSize = Self.readDefaultInt("me.mizorewww.rayon.terminalFontSize", defaultValue: 14, in: defaults)
         terminalCopyOnSelect = Self.readDefaultBool("me.mizorewww.rayon.terminalCopyOnSelect", defaultValue: true, in: defaults)
+        terminalClipboardSharing = Self.readDefaultBool("me.mizorewww.rayon.terminalClipboardSharing", defaultValue: true, in: defaults)
         maxRecentRecordCount = Self.readDefaultInt("me.mizorewww.rayon.maxRecentRecordCount", defaultValue: 8, in: defaults)
         if timeout <= 0 { timeout = 5 }
 
@@ -277,6 +278,13 @@ public class CatusshStore: ObservableObject, @unchecked Sendable {
     @Published public var terminalCopyOnSelect: Bool = true {
         didSet {
             UserDefaults.standard.set(terminalCopyOnSelect, forKey: "me.mizorewww.rayon.terminalCopyOnSelect")
+        }
+    }
+
+    /// Programs on the remote host may read and write the clipboard (OSC 52).
+    @Published public var terminalClipboardSharing: Bool = true {
+        didSet {
+            UserDefaults.standard.set(terminalClipboardSharing, forKey: "me.mizorewww.rayon.terminalClipboardSharing")
         }
     }
 

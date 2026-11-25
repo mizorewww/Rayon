@@ -47,6 +47,7 @@ struct mCatusshApp: App {
                 .onAppear {
                     AppearancePreference.applyStored()
                     CatusshTerminalView.setCopyOnSelect(store.terminalCopyOnSelect)
+                    CatusshTerminalView.setClipboardSharing(store.terminalClipboardSharing)
                     checkAgreement()
                     #if DEBUG
                         seedPreviewServers()
@@ -62,6 +63,7 @@ struct mCatusshApp: App {
                 .onReceive(NotificationCenter.default.publisher(for: CloudSync.settingsDidChange)) { _ in
                     AppearancePreference.applyStored()
                     CatusshTerminalView.setCopyOnSelect(store.terminalCopyOnSelect)
+                    CatusshTerminalView.setClipboardSharing(store.terminalClipboardSharing)
                 }
         }
     }

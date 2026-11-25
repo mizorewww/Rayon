@@ -40,7 +40,7 @@ struct SettingView: View {
                 ConfigHostSettingsSection(id: "connection.monitor", keywords: "monitor refresh interval status") {
                     MonitorSettings()
                 },
-                ConfigHostSettingsSection(id: "terminal.copyOnSelect", keywords: "copy on select selection clipboard pasteboard automatically") {
+                ConfigHostSettingsSection(id: "terminal.copyOnSelect", keywords: "copy on select selection clipboard pasteboard automatically share remote osc52 programs") {
                     CopyOnSelectSettings()
                 },
                 ConfigHostSettingsSection(id: "about.catussh", keywords: "version build license source github issues") {
@@ -251,13 +251,23 @@ private struct CopyOnSelectSettings: View {
     @ObservedObject var store = CatusshStore.shared
 
     var body: some View {
-        SwitchRow(
-            "Copy on select",
-            description: "Copy text to the clipboard as soon as you finish selecting it.",
-            isOn: $store.terminalCopyOnSelect
-        )
-        .onChange(of: store.terminalCopyOnSelect) { enabled in
-            CatusshTerminalView.setCopyOnSelect(enabled)
+        RXDividedStack {
+            SwitchRow(
+                "Copy on select",
+                description: "Copy text to the clipboard as soon as you finish selecting it.",
+                isOn: $store.terminalCopyOnSelect
+            )
+            .onChange(of: store.terminalCopyOnSelect) { enabled in
+                CatusshTerminalView.setCopyOnSelect(enabled)
+            }
+            SwitchRow(
+                "Share clipboard with remote programs",
+                description: "Programs running on the server may read and write this device's clipboard (OSC 52), so a copy in vim or tmux lands here.",
+                isOn: $store.terminalClipboardSharing
+            )
+            .onChange(of: store.terminalClipboardSharing) { enabled in
+                CatusshTerminalView.setClipboardSharing(enabled)
+            }
         }
     }
 }

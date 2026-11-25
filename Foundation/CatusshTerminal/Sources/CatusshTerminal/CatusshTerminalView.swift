@@ -47,6 +47,13 @@ public struct CatusshTerminalView: Sendable {
         CatusshTerminalConfiguration.setCopyOnSelect(enabled)
     }
 
+    /// Clipboard sharing, for every terminal: programs running on the remote
+    /// host may read and write the system clipboard (OSC 52). The app stores
+    /// the preference and sets it here.
+    @MainActor public static func setClipboardSharing(_ enabled: Bool) {
+        CatusshTerminalConfiguration.setClipboardSharing(enabled)
+    }
+
     /// For a terminal kept mounted while another page is shown: a hidden
     /// terminal stops rendering and gives up keyboard focus (so typing never
     /// lands in a session you can't see); shown again, it takes focus back.
