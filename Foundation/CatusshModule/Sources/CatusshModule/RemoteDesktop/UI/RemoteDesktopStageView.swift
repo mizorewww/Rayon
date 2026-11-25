@@ -693,7 +693,7 @@ public struct RemoteDesktopStageView: View {
     private var clipboardMenu: some View {
         Menu {
             Button {
-                let text = RemoteDesktopPasteboard.read()
+                let text = RemoteDesktopClipboard.read() ?? ""
                 guard !text.isEmpty else {
                     flash("Pasteboard is empty")
                     return
@@ -709,7 +709,7 @@ public struct RemoteDesktopStageView: View {
                     flash("Remote clipboard is empty")
                     return
                 }
-                RemoteDesktopPasteboard.write(text)
+                RemoteDesktopClipboard.write(text)
                 flash("Copied \(text.count) characters from the remote clipboard")
             } label: {
                 Label("Pull remote clipboard", systemImage: "clipboard")
@@ -717,7 +717,7 @@ public struct RemoteDesktopStageView: View {
         } label: {
             Label("Clipboard", systemImage: "clipboard").stageControl()
         }
-        .help("Clipboard sync")
+        .help("The clipboard syncs itself while connected; these push and pull by hand")
     }
 
     private var officialAppMenu: some View {
@@ -840,25 +840,3 @@ private extension Label {
         }
     }
 #endif
-
-/// Pasteboard read/write shared by the stage's clipboard actions.
-enum RemoteDesktopPasteboard {
-    static func read() -> String {
-        #if canImport(UIKit)
-            return UIPasteboard.general.string ?? ""
-        #elseif canImport(AppKit)
-            return NSPasteboard.general.string(forType: .string) ?? ""
-        #else
-            return ""
-        #endif
-    }
-
-    static func write(_ text: String) {
-        #if canImport(UIKit)
-            UIPasteboard.general.string = text
-        #elseif canImport(AppKit)
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(text, forType: .string)
-        #endif
-    }
-}

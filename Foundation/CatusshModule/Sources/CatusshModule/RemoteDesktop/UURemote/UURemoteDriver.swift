@@ -82,6 +82,13 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
     /// macOS virtual keycodes for Mac hosts. Unknown (assist joins)
     /// defaults to Windows, the majority case for UU Remote.
     private var targetIsWindows = true
+    /// False until the device list resolves the platform (an assist join may
+    /// never): the clipboard offer then sends both wire forms.
+    private var targetPlatformKnown = false
+    /// The clipboard wire state machine; behind a lock because inbound
+    /// channel handlers and outbound offers run on different threads.
+    private var clipboard = UURemoteClipboard()
+    private let clipboardLock = NSLock()
     private var heartbeatTask: Task<Void, Never>?
     private var videoRequestTask: Task<Void, Never>?
     private var connectTimeoutTask: Task<Void, Never>?
@@ -318,15 +325,16 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
         sendControlChannel(UUControlProtocol.textInput(text), kind: .input)
     }
 
-    /// Clipboard V3: `RpcRequest` case 10 `ClipboardTextChangeRequest`
-    /// `{1: formatId, 2: text}` on TEXT_DATA_CHANNEL, where the host's
-    /// clipboard bridge lives (upstream `viewer/clipboard.rs`).
+    /// A local copy offered to the host on TEXT_DATA_CHANNEL: the case-10
+    /// text a Windows host applies, the rich format offer a Mac host takes,
+    /// both when the platform never resolved (upstream `viewer/clipboard.rs`).
     public func sendClipboard(_ text: String) {
         guard textChannelOpen else { return }
-        sendTextChannel(UUControlProtocol.clipboardTextChangeRequest(
-            requestID: nextOutboundSequence(),
-            text: String(text.prefix(30 * 1024))
-        ))
+        let targetMac: Bool? = targetPlatformKnown ? !targetIsWindows : nil
+        let messages = clipboardLock.withLock { clipboard.offer(text, targetMac: targetMac) }
+        for message in messages {
+            sendTextChannel(message)
+        }
     }
 
     /// Shows another of the host's screens: its capture starts, the one
@@ -594,6 +602,7 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
             UURemoteAccountStore.shared.devices.first(where: { $0.deviceID == deviceID })
         }) {
             targetIsWindows = device.platform != 4
+            targetPlatformKnown = true
             // The account says it is not there: no room to join.
             guard device.isOnline else {
                 let name = device.alias.isEmpty ? "The device" : device.alias
@@ -1474,16 +1483,17 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
             handleStreamAnswer(requestID: answer.requestID, errors: answer.errors)
             return
         }
-        // Clipboard V3 inbound: case-10 text-change request -> surface the
-        // text and acknowledge with a case-6 response (CB_SUCCEEDED).
-        if let change = UUControlProtocol.decodeClipboardTextChange(data) {
-            session.reportRemoteClipboard(change.text)
-            sendTextChannel(UUControlProtocol.clipboardTextChangeResponse(
-                requestID: nextOutboundSequence(),
-                header: change.header
-            ))
-            return
+        // Clipboard inbound, in any of the three wire forms (case-10 text,
+        // the field-17 stream, the rich format negotiation): the engine
+        // answers what has to be answered and surfaces complete text.
+        let outcome = clipboardLock.withLock { clipboard.receive(data) }
+        for reply in outcome.replies {
+            sendTextChannel(reply)
         }
+        if let text = outcome.text {
+            session.reportRemoteClipboard(text)
+        }
+        if outcome.handled { return }
         session.reportHint("UU Remote text: \(String(decoding: data, as: UTF8.self))")
     }
 

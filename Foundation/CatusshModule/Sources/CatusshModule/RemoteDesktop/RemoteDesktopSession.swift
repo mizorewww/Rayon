@@ -73,6 +73,17 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
     /// The last clipboard contents the host pushed.
     @Published public private(set) var remoteClipboard: String = ""
 
+    /// The newest text known to be on both clipboards, either direction:
+    /// what the host is never given back (its own copy) and what the local
+    /// pasteboard is never asked for twice. Clipboard writes are idempotent,
+    /// so equality is the whole echo guard.
+    private var syncedClipboardText: String?
+    /// The pasteboard's change count the sync last saw, so a copy made
+    /// before the connection is never pushed.
+    private var pasteboardChangeCount = 0
+    /// The local clipboard monitor; runs while the session is connected.
+    private var clipboardWatch: Task<Void, Never>?
+
     /// Whether a pointer is currently held, tracked here so the view can
     /// render pressed-state affordances without asking the driver.
     @Published public private(set) var pressedButtons: Set<MouseButton> = []
@@ -147,6 +158,7 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
     /// disconnect.
     public func disconnect() {
         Self.log.info("disconnect \(self.machine.name, privacy: .public) in \(String(describing: self.phase), privacy: .public)")
+        stopClipboardWatch()
         driver?.stop()
         driver = nil
         if !phase.isTerminal {
@@ -205,7 +217,46 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
 
     public func pushClipboard(_ text: String) {
         guard phase == .connected else { return }
+        syncedClipboardText = text
         driver?.sendClipboard(text)
+    }
+
+    // MARK: - Clipboard sharing
+
+    /// Watches the local clipboard while connected: a copy here is a copy on
+    /// the host. Polling is a macOS-only affair — on iOS reading another
+    /// app's pasteboard raises the paste consent every time, so there the
+    /// clipboard menu's explicit push is the way, while a host copy still
+    /// lands on its own (writes need no consent).
+    private func startClipboardWatch() {
+        #if canImport(AppKit) && !targetEnvironment(macCatalyst)
+            guard clipboardWatch == nil else { return }
+            pasteboardChangeCount = RemoteDesktopClipboard.changeCount
+            syncedClipboardText = nil
+            clipboardWatch = Task { @MainActor [weak self] in
+                while !Task.isCancelled {
+                    try? await Task.sleep(nanoseconds: 700_000_000)
+                    guard let self else { return }
+                    if self.phase.isTerminal { break }
+                    guard self.phase == .connected else { continue }
+                    let count = RemoteDesktopClipboard.changeCount
+                    guard count != self.pasteboardChangeCount else { continue }
+                    self.pasteboardChangeCount = count
+                    // A copy with no text (an image, a file) leaves the
+                    // shared clipboard as it is rather than emptying it.
+                    guard let text = RemoteDesktopClipboard.read(), !text.isEmpty else { continue }
+                    guard text != self.syncedClipboardText else { continue }
+                    self.syncedClipboardText = text
+                    self.driver?.sendClipboard(text)
+                }
+                self?.clipboardWatch = nil
+            }
+        #endif
+    }
+
+    private func stopClipboardWatch() {
+        clipboardWatch?.cancel()
+        clipboardWatch = nil
     }
 
     public func switchDisplay(_ displayID: Int) {
@@ -281,6 +332,11 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
             if self.phase != phase {
                 Self.log.info("\(self.machine.name, privacy: .public): \(String(describing: phase), privacy: .public) \(hint ?? "", privacy: .public)")
                 self.phase = phase
+                if phase == .connected {
+                    startClipboardWatch()
+                } else {
+                    stopClipboardWatch()
+                }
             }
             if let hint, hint != self.statusHint { self.statusHint = hint }
         }
@@ -347,10 +403,19 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
         }
     }
 
-    /// Reports clipboard text arriving from the host.
+    /// Reports clipboard text arriving from the host. A copy on the host is
+    /// a copy here: the shared clipboard is one, so the text lands on the
+    /// local pasteboard — guarded against the echo of a local copy coming
+    /// back, and against overwriting with what is already there.
     nonisolated public func reportRemoteClipboard(_ text: String) {
         Task { @MainActor [weak self] in
-            self?.remoteClipboard = text
+            guard let self else { return }
+            self.remoteClipboard = text
+            syncedClipboardText = text
+            if RemoteDesktopClipboard.read() != text {
+                RemoteDesktopClipboard.write(text)
+            }
+            pasteboardChangeCount = RemoteDesktopClipboard.changeCount
         }
     }
 
@@ -469,5 +534,39 @@ public extension RDMachine.RemoteDesktopProtocolType {
         case .vnc: return "VNC"
         case .uuRemote: return "UU Remote"
         }
+    }
+}
+
+
+/// The system pasteboard's plain text and change count, shared by the
+/// session's clipboard sync and the stage's clipboard actions.
+public enum RemoteDesktopClipboard {
+    public static var changeCount: Int {
+        #if canImport(UIKit)
+            UIPasteboard.general.changeCount
+        #elseif canImport(AppKit)
+            NSPasteboard.general.changeCount
+        #else
+            0
+        #endif
+    }
+
+    public static func read() -> String? {
+        #if canImport(UIKit)
+            UIPasteboard.general.string
+        #elseif canImport(AppKit)
+            NSPasteboard.general.string(forType: .string)
+        #else
+            nil
+        #endif
+    }
+
+    public static func write(_ text: String) {
+        #if canImport(UIKit)
+            UIPasteboard.general.string = text
+        #elseif canImport(AppKit)
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(text, forType: .string)
+        #endif
     }
 }

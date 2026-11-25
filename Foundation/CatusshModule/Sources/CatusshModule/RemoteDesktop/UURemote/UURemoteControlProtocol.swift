@@ -242,8 +242,13 @@ public enum UUControlProtocol {
             default: break
             }
         }
-        // An answer with no errors leaves its empty body off the wire.
-        guard requestID != 0 || body != nil, let parts = try? UUWire.decode(body ?? Data()) else { return nil }
+        // An answer with no errors leaves its empty body off the wire, which
+        // is indistinguishable from another RpcResponse's unless the other
+        // cases are ruled out: a response carrying a clipboard case (5 rich,
+        // 6 text-change) is the clipboard's, never a capture answer.
+        let carriesClipboardCase = fields.contains { $0.number == 5 || $0.number == 6 }
+        guard !carriesClipboardCase, requestID != 0 || body != nil,
+              let parts = try? UUWire.decode(body ?? Data()) else { return nil }
         var errors: [(code: Int, message: String, detail: String)] = []
         for part in parts where part.number == 1 {
             guard case let .bytes(b) = part.value, let items = try? UUWire.decode(b) else { continue }
@@ -261,63 +266,6 @@ public enum UUControlProtocol {
             errors.append((code, message, detail))
         }
         return (requestID, errors)
-    }
-
-    /// Clipboard V3: `RpcRequest` case 10 `ClipboardTextChangeRequest`
-    /// `{1: format_id, 2: text}` — format 13 is unicode text (formats are
-    /// `STREAMER_CLIPBOARD_FORMATS` = {text: 1, unicodeText: 13}). Sent on
-    /// TEXT_DATA_CHANNEL, which is where the host's clipboard bridge lives.
-    public static func clipboardTextChangeRequest(requestID: UInt64, text: String, formatID: Int32 = 13) -> Data {
-        var body = Data()
-        UUProtobufWriter.pushInt32Field(1, formatID, into: &body)
-        UUProtobufWriter.pushStringField(2, text, into: &body)
-        return rpcRequest(requestID: requestID, bodyField: 10, body: body)
-    }
-
-    /// A decoded inbound case-10 clipboard text change: the RpcRequest
-    /// header (field 1, echoed in the response) and the text (field 2).
-    public static func decodeClipboardTextChange(_ data: Data) -> (header: Data, text: String)? {
-        guard let inbound = decodeInbound(data),
-              inbound.field.number == UUControlField.rpcRequest,
-              case let .bytes(rpc) = inbound.field.value,
-              let rpcFields = try? UUWire.decode(rpc)
-        else { return nil }
-        var header: Data?
-        var body: Data?
-        for field in rpcFields {
-            switch (field.number, field.value) {
-            case (1, let .bytes(b)): header = b
-            case (10, let .bytes(b)): body = b
-            default: break
-            }
-        }
-        guard let header, let body,
-              let parts = try? UUWire.decode(body)
-        else { return nil }
-        for part in parts {
-            if part.number == 2, case let .bytes(text) = part.value,
-               let string = String(data: text, encoding: .utf8) {
-                return (header, string)
-            }
-        }
-        return nil
-    }
-
-    /// The case-6 `TextChangeResponse` the viewer owes the host after an
-    /// inbound text change: `{1: echoed header, 6: {1: err=1 (CB_SUCCEEDED)}}`.
-    public static func clipboardTextChangeResponse(requestID: UInt64, header: Data) -> Data {
-        var response = Data()
-        UUProtobufWriter.pushVarintField(1, 1, into: &response)
-        return rpcRequest(requestID: requestID, bodyField: 6, header: header, body: response)
-    }
-
-    /// `rpcRequest` variant that echoes an inbound request's header verbatim
-    /// (the response must carry the requester's header, not a fresh one).
-    public static func rpcRequest(requestID: UInt64, bodyField: UInt32, header: Data, body: Data) -> Data {
-        var request = Data()
-        UUProtobufWriter.pushMessageField(1, header, into: &request)
-        UUProtobufWriter.pushMessageField(Int(bodyField), body, into: &request)
-        return envelope(sequence: requestID, timestamp: UInt64(Date().timeIntervalSince1970 * 1000), fieldNumber: UUControlField.rpcRequest, body: request)
     }
 
     // MARK: - JSON input on CONTROL_DATA_CHANNEL

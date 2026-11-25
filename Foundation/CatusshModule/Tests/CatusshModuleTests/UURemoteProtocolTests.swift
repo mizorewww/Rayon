@@ -624,34 +624,6 @@ final class UURemoteProtocolTests: XCTestCase {
         XCTAssertEqual(json["heartbeat"] as? String, "kbd_heartbeat")
     }
 
-    // MARK: - Clipboard V3 RPC
-
-    func testClipboardTextChangeRequestWire() {
-        // envelope {1:seq, 2:ts, 21:RpcRequest{1:hdr, 10:{1:fmt, 2:text}}}
-        let data = UUControlProtocol.clipboardTextChangeRequest(requestID: 42, text: "粘贴📋")
-        let change = UUControlProtocol.decodeClipboardTextChange(data)
-        XCTAssertEqual(change?.text, "粘贴📋")
-        XCTAssertFalse(change?.header.isEmpty ?? true)
-    }
-
-    func testClipboardTextChangeResponseEchoesHeader() {
-        let request = UUControlProtocol.clipboardTextChangeRequest(requestID: 42, text: "hi")
-        let decoded = UUControlProtocol.decodeClipboardTextChange(request)
-        XCTAssertNotNil(decoded)
-        let response = UUControlProtocol.clipboardTextChangeResponse(requestID: 1, header: decoded!.header)
-        // The response must carry the echoed header plus case-6 result.
-        guard let inbound = UUControlProtocol.decodeInbound(response),
-              inbound.field.number == UUControlField.rpcRequest,
-              case let .bytes(rpc) = inbound.field.value,
-              let fields = try? UUWire.decode(rpc)
-        else { return XCTFail("response not an rpc") }
-        XCTAssertTrue(fields.contains { f in
-            if case let .bytes(b) = f.value { return f.number == 1 && b == decoded!.header }
-            return false
-        })
-        XCTAssertTrue(fields.contains { $0.number == 6 })
-    }
-
     // MARK: - CaptureSettingRequest
 
     func testCaptureSettingRequestFields() {
