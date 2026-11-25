@@ -39,8 +39,18 @@ public enum UUConstants {
     public static let apiBase = "https://api.nrd.nie.163.com"
     public static let apiBaseSecondary = "https://api-dcdn.nrd.nie.163.com"
     public static let apiBaseIPv4 = "https://api-ipv4.nrd.nie.163.com"
-    public static let versionName = "4.42.0.2770"
-    public static let versionCode = "2770"
+    /// Version reported to the cloud and to hosts. Hosts compare it against a
+    /// moving baseline and refuse a control that falls under it ("控制端版本过低");
+    /// the official Windows client is at 4.48.3, macOS at 4.48.4, so reporting
+    /// the current release family stays clear of the baseline. The check is a
+    /// numeric comparison: the code is the version's fourth component, as the
+    /// official client's is.
+    public static let versionName = "4.48.3.5000"
+    public static let versionCode = "5000"
+    /// The first three components, for places that carry no build number.
+    public static var shortVersionName: String {
+        versionName.split(separator: ".").prefix(3).joined(separator: ".")
+    }
     public static let packageName = "com.netease.gameviewer"
     public static let channel = "gwqd"
     public static let language = "zh-CN"
@@ -85,11 +95,15 @@ public struct UUDeviceInfo: Equatable, Sendable {
     /// A desktop to connect to: a computer, and not a sign-in of catussh.
     public var isDesktop: Bool { (platform == 1 || platform == 4) && !isCatusshRegistration }
 
-    /// catussh signs in as a device of its own (the service wants one), with
-    /// the PC client's version and a name that starts with "catussh"; it is
-    /// no computer to connect to.
+    /// catussh signs in as a device of its own (the service wants one), named
+    /// "catussh" or "catussh · <host>"; it is no computer to connect to. The
+    /// exact naming is the marker — not the reported version, which moves with
+    /// the official client, nor a bare prefix, which a real computer named
+    /// "catussh-lab-pc" would share.
     public var isCatusshRegistration: Bool {
-        platform == 1 && versionName == UUConstants.versionName && alias.lowercased().hasPrefix("catussh")
+        guard platform == 1 else { return false }
+        let name = alias.lowercased()
+        return name == "catussh" || name.hasPrefix("catussh ·")
     }
 
     public static func platformName(_ platform: Int) -> String {

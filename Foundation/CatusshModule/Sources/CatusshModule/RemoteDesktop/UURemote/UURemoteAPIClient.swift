@@ -117,7 +117,9 @@ public actor UURemoteAPIClient {
         urlRequest.httpMethod = request.method
         urlRequest.httpBody = request.body.isEmpty ? nil : request.body
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        urlRequest.setValue("UURemote/\(UUConstants.versionName) (Macintosh; Apple Silicon)", forHTTPHeaderField: "User-Agent")
+        // The short version and the PC client's agent: the signing key is the
+        // Windows client's, and the requests are signed as that client (plat 1).
+        urlRequest.setValue("UURemote/\(UUConstants.shortVersionName) (Windows NT 10.0; Win64; x64)", forHTTPHeaderField: "User-Agent")
         for (key, value) in headers where !value.isEmpty {
             urlRequest.setValue(value, forHTTPHeaderField: key)
         }

@@ -777,7 +777,9 @@ public final class UURemoteDriver: RemoteDesktopDriver, @unchecked Sendable {
         }
         options.deviceID = await MainActor.run { UURemoteAccountStore.shared.credentials.deviceID }
         options.clientType = UUClientType.mac
-        options.clientVersion = "4.42.0"
+        // The host refuses a viewer whose version falls under its moving
+        // baseline ("控制端版本过低"); the official macOS client is at 4.48.4.
+        options.clientVersion = "4.48.4"
         options.controlConnectType = UUControlConnectType.normal
         // Decoder caps: every supported codec × chroma, like upstream's
         // `video_preferences` expansion.
