@@ -105,7 +105,6 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
     public var status: ServerStatus { snapshot.status }
     public var history: MonitorHistory { snapshot.history }
 
-    private let sampler = ServerStatusSampler()
     private var updateTask: Task<Void, Never>?
 
     public init(machine: RDMachine, identity: RDIdentity?) {
@@ -180,8 +179,13 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
     /// Each round publishes at most one snapshot (plus a phase change when
     /// the connection state moves), so observers redraw once per round.
     /// Samples over the server's pooled connection.
+    ///
+    /// Every await can outlive a `retarget` or `reconnect`, which cancel
+    /// this loop and start another; a cancelled loop stops before it
+    /// publishes anything. Its sampler is its own: a cancelled loop's
+    /// in-flight sample must not share counters with its successor's.
     private func updateLoop() async {
-        let sampler = sampler
+        let sampler = ServerStatusSampler()
         var failures = 0
         var lease: SSHLease?
         defer { lease?.release() }
@@ -196,6 +200,7 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
                 do {
                     let leased = try await SSHConnectionPool.shared.lease(for: machine)
                     lease = leased
+                    if Task.isCancelled { break }
                     recordConnection(banner: leased.connection.serverVersion)
                 } catch {
                     if Task.isCancelled { break }
