@@ -60,14 +60,19 @@ public struct CodeEditor: View {
     }
 
     public var body: some View {
-        SourceEditor($text, language: language.codeLanguage, configuration: configuration, state: $state)
+        SourceEditor(
+            $text,
+            language: language.codeLanguage,
+            configuration: Self.configuration(for: text, wrapsLines: wrapsLines, fontSize: fontSize),
+            state: $state
+        )
             .onChange(of: state.cursorPositions) { positions in
                 guard let start = positions?.first?.start, start.line > 0 else { return }
                 onCaretChange(EditorCaret(line: start.line, column: start.column))
             }
     }
 
-    private var configuration: SourceEditorConfiguration {
+    static func configuration(for text: String, wrapsLines: Bool, fontSize: CGFloat) -> SourceEditorConfiguration {
         let indentOption: IndentOption
         switch EditorIndentation.detect(in: text) {
         case .tabs: indentOption = .tab
@@ -86,7 +91,7 @@ public struct CodeEditor: View {
     }
 }
 
-private extension EditorTheme {
+extension EditorTheme {
     /// Editor colours drawn from the app's tokens, so the editor reads as part
     /// of Rayon in light and dark mode rather than as a separate tool. Built
     /// once: the editor reloads whenever its configuration compares unequal,
@@ -95,7 +100,9 @@ private extension EditorTheme {
         text: Attribute(color: NSColor(Color.rxInk)),
         insertionPoint: NSColor(Color.rxAccent),
         invisibles: Attribute(color: NSColor(Color.rxInkTertiary)),
-        background: .clear,
+        // Not drawn (`useThemeBackground: false`), but read for its
+        // brightness, which AppKit raises on for `.clear`'s gray space.
+        background: NSColor(srgbRed: 0, green: 0, blue: 0, alpha: 0),
         lineHighlight: NSColor(Color.rxAccent).withAlphaComponent(0.07),
         selection: .selectedTextBackgroundColor,
         keywords: Attribute(color: NSColor(EditorPalette.keyword)),
