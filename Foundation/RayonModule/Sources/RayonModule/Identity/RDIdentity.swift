@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import NSRemoteShell
 @preconcurrency import WCDBSwift
 
 public struct RDIdentity: StoredRecord {
@@ -146,27 +145,6 @@ public struct RDIdentity: StoredRecord {
     public func loginUsername(override: String?) -> String {
         guard let override, !override.isEmpty else { return username }
         return override
-    }
-
-    /// Signs `remote` in with this identity's credentials, as `username`
-    /// when the server sets its own user name, else as the identity's.
-    public func callAuthenticationWith(remote: NSRemoteShell, username override: String? = nil) {
-        if remote.isAuthenticated { return }
-        let username = loginUsername(override: override)
-        if useSSHAgent {
-            remote.authenticate(withAgent: username)
-        } else if privateKey.count > 0 || publicKey.count > 0 {
-            remote.authenticate(with: username, andPublicKey: publicKey, andPrivateKey: privateKey, andPassword: password)
-        } else {
-            remote.authenticate(with: username, andPassword: password)
-        }
-        guard remote.isAuthenticated else {
-            return
-        }
-        let date = Date()
-        Task { @MainActor in
-            RayonStore.shared.noteIdentityUsed(id, at: date)
-        }
     }
 }
 

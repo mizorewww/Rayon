@@ -16,9 +16,6 @@ import os
 @MainActor
 public final class RayonStore: ObservableObject {
     public static let shared: RayonStore = {
-        // Before any connection: every one is checked against the saved
-        // host keys.
-        KnownHosts.install()
         LegacyStoreImport.runIfNeeded(into: .shared)
         RayonStorage.shared.purgeTombstones()
         return RayonStore(storage: .shared)

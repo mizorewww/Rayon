@@ -9,7 +9,9 @@
 //
 
 import Foundation
-import NSRemoteShell
+import NIOCore
+import os
+import RayonSSH
 import SwiftUI
 
 /// The terminal renderer a session drives, implemented in the apps over
@@ -37,7 +39,7 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
     @Published public var destroyedSession = false {
         didSet {
             if destroyedSession {
-                shell.destroyPermanently()
+                endSSH()
             }
         }
     }
@@ -71,7 +73,16 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
 
     public let machine: RDMachine
     public let command: SSHCommandReader?
-    public var shell: NSRemoteShell = .init()
+
+    /// The SSH shell while one runs: what typing and resizing reach.
+    /// Local and UU Remote terminals never have one.
+    struct SSHState {
+        var shell: SSHShell?
+        var input: AsyncStream<ByteBuffer>.Continuation?
+        var task: Task<Void, Never>?
+    }
+
+    let ssh = OSAllocatedUnfairLock(initialState: SSHState())
 
     /// On a UU Remote device: the host's session this tab shows.
     public var uuSessionID: UInt32?
@@ -103,9 +114,17 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
             stateAccessLock.lock()
             _terminalSize = newValue
             stateAccessLock.unlock()
-            shell.explicitRequestStatusPickup()
+            if let shell = ssh.withLock({ $0.shell }) {
+                let size = Self.usableSize(newValue)
+                shell.resize(columns: Int(size.width), rows: Int(size.height))
+            }
             uuWakeSemaphore.signal()
         }
+    }
+
+    /// A size too small to be real is the renderer not laid out yet.
+    static func usableSize(_ size: CGSize) -> CGSize {
+        size.width < 8 || size.height < 8 ? defaultTerminalSize : size
     }
 
     private var _dataBuffer: String = ""
@@ -125,9 +144,13 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
             bufferAccessLock.unlock()
             return
         }
+        if let input = ssh.withLock({ $0.input }) {
+            bufferAccessLock.unlock()
+            input.yield(ByteBuffer(string: str))
+            return
+        }
         _dataBuffer += str
         bufferAccessLock.unlock()
-        shell.explicitRequestStatusPickup()
         uuWakeSemaphore.signal()
     }
 
@@ -190,10 +213,6 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
         }
     }
 
-    public func setupShellData() {
-        shell.applyConnection(for: machine, timeout: RayonStore.workerTimeoutNumber)
-    }
-
     public static func == (lhs: TerminalContext, rhs: TerminalContext) -> Bool {
         lhs.id == rhs.id
     }
@@ -207,10 +226,6 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
     }
 
     public func processBootstrap() {
-        defer {
-            onMainThread { self.processShutdown(exitFromShell: true) }
-        }
-
         onMainThread {
             guard self.firstConnect else { return }
             self.firstConnect = false
@@ -218,7 +233,6 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
             TerminalInterface.uiHandler.autoOpenInterface(self)
         }
 
-        setupShellData()
         discardPendingInput()
 
         debugPrint("\(self) \(#function) \(machine.id)")
@@ -246,78 +260,107 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
             #else
                 putInformation("[!] Local shell is only supported on macOS.")
             #endif
+            onMainThread { self.processShutdown(exitFromShell: true) }
             return
         }
 
         if machine.isUURemoteDevice {
             runUURemoteTerminal()
+            onMainThread { self.processShutdown(exitFromShell: true) }
             return
         }
 
-        let identity: RDIdentity?
-        if machine.associatedIdentity != nil {
-            guard let resolved = RayonStore.workerAssociatedIdentity(for: machine) else {
-                putInformation("Malformed machine or identity data")
-                return
-            }
-            identity = resolved
-        } else {
-            identity = nil
+        let task = Task.detached { [self] in
+            await runSSHTerminal()
+            onMainThread { self.processShutdown(exitFromShell: true) }
         }
+        ssh.withLock { $0.task = task }
+    }
 
-        let result = shell.connectAndAuthenticate(
-            identity: identity,
-            autoIdentities: RayonStore.workerIdentitiesForAutoAuth,
-            username: machine.sshUsernameOverride
-        ) { [self] hintText in
-            putInformation(hintText)
-        }
-        switch result {
-        case .success:
-            break
-        case .connectFailed:
-            if let refusal = shell.connectFailureReason {
-                putInformation(refusal.replacingOccurrences(of: "\n", with: "\r\n"))
-            } else {
-                putInformation("Unable to connect for \(machine.remoteAddress):\(machine.remotePort)")
+    private func runSSHTerminal() async {
+        let lease: SSHLease
+        do {
+            lease = try await SSHConnectionPool.shared.lease(for: machine) { [weak self] hint in
+                self?.putInformation(hint)
             }
-            return
-        case .authenticateFailed:
-            putInformation("Failed to authenticate connection")
-            putInformation("Did you forget to add identity or enable auto authentication?")
+        } catch {
+            putInformation(error.localizedDescription.replacingOccurrences(of: "\n", with: "\r\n"))
             return
         }
+        defer { lease.release() }
+        guard continueDecision else { return }
+        let connection = lease.connection
 
         if remoteType == .machine {
             let id = machine.id
-            let newBanner = shell.remoteBanner ?? "No Banner"
+            let banner = connection.serverVersion.isEmpty ? "No Banner" : connection.serverVersion
             Task { @MainActor in
-                guard var read = RayonStore.shared.machine(id), read.lastBanner != newBanner else { return }
-                read.lastBanner = newBanner
+                guard var read = RayonStore.shared.machine(id), read.lastBanner != banner else { return }
+                read.lastBanner = banner
                 RayonStore.shared.save(read)
             }
         }
 
-        let terminalType = prepareTerminalType()
-        shell.begin(withTerminalType: terminalType) {
-            debugPrint("channel open")
-        } withTerminalSize: { [weak self] in
-            var size = self?.terminalSize ?? TerminalContext.defaultTerminalSize
-            if size.width < 8 || size.height < 8 {
-                size = TerminalContext.defaultTerminalSize
-            }
-            return size
-        } withWriteDataBuffer: { [weak self] in
-            self?.getBuffer() ?? ""
-        } withOutputDataBuffer: { [weak self] output in
-            // RayonTerminalView.write is thread-safe (Ghostty queues output);
-            // write directly from the SSH worker thread to avoid flooding the main queue.
-            self?.surface.write(output)
-        } withContinuationHandler: { [weak self] in
-            self?.continueDecision ?? false
+        let terminalType = await prepareTerminalType(on: connection)
+        let size = Self.usableSize(terminalSize)
+        let shell: SSHShell
+        do {
+            shell = try await connection.openShell(terminalType: terminalType, columns: Int(size.width), rows: Int(size.height))
+        } catch {
+            putInformation("[!] " + error.localizedDescription)
+            return
         }
+        let (input, continuation) = AsyncStream<ByteBuffer>.makeStream()
+        bufferAccessLock.withLock {
+            ssh.withLock { $0.shell = shell; $0.input = continuation }
+            if !_dataBuffer.isEmpty { continuation.yield(ByteBuffer(string: _dataBuffer)) }
+            _dataBuffer = ""
+        }
+        // The renderer's size may have changed while the shell opened.
+        let current = Self.usableSize(terminalSize)
+        if current != size { shell.resize(columns: Int(current.width), rows: Int(current.height)) }
+        do {
+            // The renderer takes output from any thread (Ghostty queues it).
+            // A character split across two reads waits for its other half.
+            let pending = OSAllocatedUnfairLock(initialState: [UInt8]())
+            _ = try await shell.run(input: input) { [weak self] chunk in
+                let text = pending.withLock { carried in
+                    carried.append(contentsOf: chunk.readableBytesView)
+                    let complete = Self.completeUTF8Prefix(carried)
+                    defer { carried.removeFirst(complete) }
+                    return String(decoding: carried[..<complete], as: UTF8.self)
+                }
+                if !text.isEmpty { self?.surface.write(text) }
+            }
+        } catch {
+            if continueDecision { putInformation("[!] " + error.localizedDescription) }
+        }
+        ssh.withLock { $0.shell = nil; $0.input = nil }
+        debugPrint("\(self) \(#function) ended \(machine.id)")
+    }
 
-        debugPrint("\(self) \(#function) defer \(machine.id)")
+    /// How many leading bytes end on a whole UTF-8 character.
+    static func completeUTF8Prefix(_ bytes: [UInt8]) -> Int {
+        var index = bytes.count
+        // Step back over at most three continuation bytes to a lead byte.
+        while index > 0, bytes.count - index < 4, bytes[index - 1] & 0xC0 == 0x80 {
+            index -= 1
+        }
+        guard index > 0 else { return bytes.count }
+        let lead = bytes[index - 1]
+        let length = lead >= 0xF0 ? 4 : lead >= 0xE0 ? 3 : lead >= 0xC0 ? 2 : 1
+        return bytes.count - (index - 1) < length ? index - 1 : bytes.count
+    }
+
+    /// Ends the SSH shell, if there is one, from this side.
+    func endSSH() {
+        let state = ssh.withLock { state in
+            defer { state = SSHState() }
+            return state
+        }
+        state.input?.finish()
+        state.shell?.close()
+        state.task?.cancel()
     }
 
     static let modeReset = [
@@ -344,14 +387,7 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
             putInformation("")
             putInformation("[*] Connection Closed")
         }
-        if let lastError = shell.getLastError() {
-            putInformation("[i] Last Error Provided By Backend")
-            putInformation("    " + lastError)
-        }
         continueDecision = false
-        let shell = shell
-        Self.queue.async { [weak shell] in
-            shell?.requestDisconnectAndWait()
-        }
+        endSSH()
     }
 }

@@ -4,27 +4,23 @@
 //
 //  Which terminal type an SSH session asks for: xterm-ghostty where the
 //  server has (or now gets) Ghostty's terminfo, xterm-256color elsewhere.
-//  Runs on the session's worker queue, after sign-in and before the shell.
+//  Runs after sign-in and before the shell.
 //
 
 import Foundation
+import RayonSSH
 
 extension TerminalContext {
-    func prepareTerminalType() -> String {
+    func prepareTerminalType(on connection: SSHConnection) async -> String {
         guard GhosttyTerminfo.installsAutomatically else { return GhosttyTerminfo.fallbackType }
         // A saved server that has it: no command at all.
         if remoteType == .machine, RayonStore.workerMachine(for: machine.id).map(GhosttyTerminfo.isCached(on:)) == true {
             return GhosttyTerminfo.terminalType
         }
-        var output = ""
-        let outputLock = NSLock()
-        shell.beginExecute(withCommand: GhosttyTerminfo.installCommand, withTimeout: 10) {
-        } withOutput: { chunk in
-            outputLock.withLock { output += chunk }
-        } withContinuationHandler: { [weak self] in
-            self?.continueDecision ?? false
-        }
-        switch GhosttyTerminfo.outcome(of: outputLock.withLock { output }) {
+        // The command prints what it found; a failure or timeout reads as none.
+        let result = try? await connection.execute(GhosttyTerminfo.installCommand, timeout: .seconds(10))
+        let output = result.map { String(decoding: $0.output + $0.errorOutput, as: UTF8.self) } ?? ""
+        switch GhosttyTerminfo.outcome(of: output) {
         case .present:
             rememberTerminfo()
             return GhosttyTerminfo.terminalType

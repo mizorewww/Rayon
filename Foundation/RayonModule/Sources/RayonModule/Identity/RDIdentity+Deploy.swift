@@ -8,7 +8,7 @@
 //
 
 import Foundation
-import NSRemoteShell
+import RayonSSH
 
 public enum PublicKeyDeployment {
     /// Which servers took the key and which did not, by name.
@@ -30,36 +30,23 @@ public enum PublicKeyDeployment {
     }
 
     /// Installs `publicKey` on each server in turn, signing in as each
-    /// server already does. Blocks; call off the main thread.
-    public static func deploy(_ publicKey: String, to machines: [RDMachine.ID]) -> Outcome {
+    /// server already does. A server counts as done only when the command
+    /// exits 0; a failure, a timeout or no exit status is a failure.
+    public static func deploy(_ publicKey: String, to machines: [RDMachine.ID]) async -> Outcome {
         let installCmd = installCommand(for: publicKey)
         var outcome = Outcome()
         for machineID in machines {
             guard let machine = RayonStore.workerMachine(for: machineID) else { continue }
-            let shell = NSRemoteShell.configured(for: machine, timeout: RayonStore.workerTimeoutNumber)
-            let auth = shell.connectAndAuthenticate(
-                identity: RayonStore.workerAssociatedIdentity(for: machine),
-                autoIdentities: RayonStore.workerIdentitiesForAutoAuth,
-                username: machine.sshUsernameOverride
-            )
-            guard auth == .success else {
-                outcome.failed.append(machine.name)
-                shell.requestDisconnectAndWait()
-                shell.destroyPermanently()
-                continue
-            }
-            let rc = shell.beginExecute(
-                withCommand: installCmd,
-                withTimeout: 15,
-                withOnCreate: {},
-                withOutput: nil,
-                withContinuationHandler: { true }
-            )
-            shell.requestDisconnectAndWait()
-            shell.destroyPermanently()
-            if rc == 0 {
-                outcome.succeeded.append(machine.name)
-            } else {
+            do {
+                let lease = try await SSHConnectionPool.shared.lease(for: machine)
+                defer { lease.release() }
+                let result = try await lease.connection.execute(installCmd, timeout: .seconds(15))
+                if result.status == 0 {
+                    outcome.succeeded.append(machine.name)
+                } else {
+                    outcome.failed.append(machine.name)
+                }
+            } catch {
                 outcome.failed.append(machine.name)
             }
         }

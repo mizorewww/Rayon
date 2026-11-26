@@ -128,7 +128,6 @@ public final class TerminalManager: ObservableObject {
             removeFromSplitGroups(context.id)
             context.processShutdown()
             context.destroyedSession = true
-            context.shell.destroyPermanently()
         }
     }
 
@@ -138,7 +137,6 @@ public final class TerminalManager: ObservableObject {
             removeFromSplitGroups(context.id)
             context.processShutdown()
             context.destroyedSession = true
-            context.shell.destroyPermanently()
         }
     }
 
@@ -151,7 +149,6 @@ public final class TerminalManager: ObservableObject {
         for context in sessionContexts {
             context.processShutdown()
             context.destroyedSession = true
-            context.shell.destroyPermanently()
         }
         sessionContexts = []
         splitGroups = []

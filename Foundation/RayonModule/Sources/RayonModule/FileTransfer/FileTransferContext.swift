@@ -7,7 +7,8 @@
 //  FileTransferInterface.
 //
 
-import NSRemoteShell
+import os
+import RayonSSH
 import SwiftUI
 
 public class FileTransferContext: ObservableObject, Identifiable, Equatable, @unchecked Sendable {
@@ -21,16 +22,23 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
 
     public let machine: RDMachine
     public let identity: RDIdentity?
-    public var shell: NSRemoteShell = .init()
     public var firstConnect: Bool = true
     public var destroyedSession: Bool = false {
         didSet {
-            shell.destroyPermanently()
+            if destroyedSession { disconnect() }
         }
     }
 
-    /// Serial worker queue ensuring only one SFTP operation drives `shell` at a time.
-    public let workerQueue = DispatchQueue(label: "me.mizorewww.rayon.sftp.worker")
+    /// The SFTP session and the operation running on it. Operations run one
+    /// after another, each waiting for the one before.
+    struct Session {
+        var lease: SSHLease?
+        var sftp: SFTPSession?
+        var last: Task<Void, Never>?
+        var current: Task<Void, Never>?
+    }
+
+    let session = OSAllocatedUnfairLock(initialState: Session())
 
     @Published public var connected: Bool = false
     @Published public var processConnection: Bool = false
@@ -78,18 +86,20 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
         }
         set {
             progressContinuationLock.lock()
-            defer { progressContinuationLock.unlock() }
             progressContinuation = newValue
+            progressContinuationLock.unlock()
+            // Stopping a transfer cancels it between two chunks.
+            if !newValue { session.withLock { $0.current }?.cancel() }
         }
     }
 
-    public struct RemoteFile: Identifiable, Equatable, Hashable, @unchecked Sendable {
+    public struct RemoteFile: Identifiable, Equatable, Hashable, Sendable {
         public var id: RemoteFile { self }
         public let base: URL
         public let name: String
-        public let fstat: NSRemoteFile
+        public let fstat: SFTPEntry
 
-        public init(base: URL, name: String, fstat: NSRemoteFile) {
+        public init(base: URL, name: String, fstat: SFTPEntry) {
             self.base = base
             self.name = name
             self.fstat = fstat
@@ -102,17 +112,11 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
         self.machine = machine
         self.identity = identity
         currentDir = machine.fileTransferLoginPath
-        workerQueue.async {
-            self.processBootstrap()
-        }
+        processBootstrap()
     }
 
     public static func == (lhs: FileTransferContext, rhs: FileTransferContext) -> Bool {
         lhs.id == rhs.id
-    }
-
-    func setupShellData() {
-        shell.applyConnection(for: machine, timeout: RayonStore.workerTimeoutNumber)
     }
 
     public func putInformation(_ str: String) {
@@ -128,54 +132,52 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
             guard MainActor.assumeIsolated({ RayonStore.shared.openInterfaceAutomatically }) else { return }
             FileTransferInterface.uiHandler.autoOpenInterface(self)
         }
-        workerQueue.async {
-            self.callConnect()
+        enqueue(needsSession: false) { _ in
+            await self.connect()
         }
     }
 
-    func callConnect() {
+    private func connect() async {
         putInformation("Connecting...")
         onMainThread {
             self.processConnection = true
             self.connectionPhase = .connecting
         }
         defer { onMainThread { self.processConnection = false } }
-        setupShellData()
 
         debugPrint("\(self) \(#function) \(machine.id)")
-        let result = shell.connectAndAuthenticate(
-            identity: identity,
-            autoIdentities: RayonStore.workerIdentitiesForAutoAuth,
-            username: machine.sshUsernameOverride
-        ) { [self] hintText in
-            putInformation(hintText)
-        }
-        switch result {
-        case .success:
-            break
-        case .connectFailed:
-            putInformation(shell.connectFailureReason ?? "Unable to connect for \(machine.remoteAddress):\(machine.remotePort)")
-            onMainThread { self.processShutdown() }
-            return
-        case .authenticateFailed:
-            putInformation("Failed to authenticate connection, did you forget to add identity or enable auto authentication?")
+        let lease: SSHLease
+        let sftp: SFTPSession
+        do {
+            lease = try await SSHConnectionPool.shared.lease(for: machine) { [weak self] hint in
+                self?.putInformation(hint)
+            }
+        } catch {
+            putInformation(error.localizedDescription)
             onMainThread { self.processShutdown() }
             return
         }
-
-        shell.requestConnectFileTransferAndWait()
-        guard shell.isConnectedFileTransfer else {
+        do {
+            sftp = try await lease.connection.openSFTP()
+        } catch {
+            lease.release()
             putInformation("Failed to setup file transfer protocol")
             onMainThread { self.processShutdown() }
             return
         }
+        let replaced = session.withLock { state in
+            defer { state.lease = lease; state.sftp = sftp }
+            return (state.lease, state.sftp)
+        }
+        await replaced.1?.close()
+        replaced.0?.release()
 
         debugPrint("sftp session for \(machine.name) is now connected")
         onMainThread {
             self.connected = true
             self.connectionPhase = .connected
+            self.loadCurrentFileList()
         }
-        loadCurrentFileList()
     }
 
     public func processShutdown() {
@@ -187,17 +189,46 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
             self.isProgressRunning = false
             self.connectionPhase = .closed
         }
-        let shell = shell
-        workerQueue.async { [weak shell] in
-            shell?.requestDisconnectAndWait()
+        disconnect()
+    }
+
+    private func disconnect() {
+        let (lease, sftp, current) = session.withLock { state in
+            defer { state.lease = nil; state.sftp = nil }
+            return (state.lease, state.sftp, state.current)
+        }
+        current?.cancel()
+        Task {
+            await sftp?.close()
+            lease?.release()
         }
     }
 
+    /// Runs `operation` after the ones queued before it. One that needs the
+    /// SFTP session is skipped, and the session ended, when it has dropped.
+    func enqueue(needsSession: Bool = true, _ operation: @escaping @Sendable (SFTPSession?) async -> Void) {
+        session.withLock { state in
+            let previous = state.last
+            let task = Task {
+                await previous?.value
+                let sftp = self.session.withLock { $0.sftp }
+                if needsSession {
+                    guard let sftp, sftp.isActive else {
+                        if sftp != nil || self.connected { onMainThread { self.processShutdown() } }
+                        return
+                    }
+                }
+                let current = Task { await operation(sftp) }
+                self.session.withLock { $0.current = current }
+                await current.value
+            }
+            state.last = task
+        }
+    }
+
+    /// The live SFTP session; nil, after ending the session, when it dropped.
     public func connectionAvailableCheckPassed() -> Bool {
-        guard shell.isConnected,
-              shell.isAuthenticated,
-              shell.isConnectedFileTransfer
-        else {
+        guard let sftp = session.withLock({ $0.sftp }), sftp.isActive else {
             processShutdown()
             return false
         }
@@ -216,18 +247,44 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
         }
     }
 
+    private func report(_ error: Error, _ fallback: String) {
+        let message = Self.describe(error, fallback)
+        onMainThread {
+            FileTransferInterface.uiHandler.presentError(message)
+        }
+        print("SFTP \(machine.name) Error: \(message)")
+    }
+
+    static func describe(_ error: Error, _ fallback: String) -> String {
+        if error is CancellationError { return "Cancelled" }
+        return "\(fallback): \(SFTPSession.describe(error))"
+    }
+
+    private func reportProgress(_ progress: SFTPProgress) {
+        onMainThread {
+            let current = Progress(totalUnitCount: max(progress.total, 1))
+            current.completedUnitCount = progress.completed
+            self.currentProcessingFile = progress.file
+            self.currentProgress = current
+            self.currentSpeed = progress.bytesPerSecond
+        }
+    }
+
     public func loadCurrentFileList() {
         guard connectionAvailableCheckPassed() else { return }
         let currentDir = currentDir
         let currentUrl = currentUrl
-        workerQueue.async { [self] in
+        enqueue { [self] sftp in
             putInformation("Loading... \(currentDir)")
             onMainThread { self.isProgressRunning = true }
-            let files = shell.requestFileList(at: currentDir)
-            var builder = [RemoteFile]()
-            for file in files ?? [] {
-                builder.append(.init(base: currentUrl, name: file.name, fstat: file))
+            let entries: [SFTPEntry]
+            do {
+                entries = try await sftp?.entries(at: currentDir) ?? []
+            } catch {
+                entries = []
+                report(error, "Failed to list \(currentDir)")
             }
+            let builder = entries.map { RemoteFile(base: currentUrl, name: $0.name, fstat: $0) }
             putInformation("Load Complete")
             onMainThread {
                 guard self.currentDir == currentDir else { return }
@@ -240,20 +297,16 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
     public func createFolder(with name: String) {
         guard connectionAvailableCheckPassed() else { return }
         let url = currentUrl.appendingPathComponent(name)
-        workerQueue.async { [self] in
+        enqueue { [self] sftp in
             putInformation("Creating Folder \(url.path)...")
             onMainThread { self.isProgressRunning = true }
-            let done = shell.requestCreateDirAndWait(url.path)
-            if done {
+            do {
+                try await sftp?.createDirectory(at: url.path)
                 putInformation("Folder Created")
-            } else {
-                let error = shell.getLastFileTransferError() ?? "Failed to create folder"
-                onMainThread {
-                    FileTransferInterface.uiHandler.presentError(error)
-                }
-                print("SFTP \(machine.name) Error: \(error)")
+            } catch {
+                report(error, "Failed to create folder")
             }
-            loadCurrentFileList()
+            onMainThread { self.loadCurrentFileList() }
         }
     }
 
@@ -292,96 +345,64 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
         guard connectionAvailableCheckPassed() else { return }
         let base = currentUrl
         continueCurrentProgress = true
-        workerQueue.async { [self] in
+        enqueue { [self] sftp in
             onMainThread {
                 self.isProgressRunning = true
                 self.currentProgressCancelable = true
             }
-            let total = urls.count
-            var current = 0
             putInformation("Uploading...")
-            for url in urls {
-                defer { current += 1 }
+            for (current, url) in urls.enumerated() {
                 onMainThread {
-                    let progress = Progress(totalUnitCount: Int64(total))
+                    let progress = Progress(totalUnitCount: Int64(urls.count))
                     progress.completedUnitCount = Int64(current)
                     self.totalProgress = progress
                 }
-                let done = shell.requestUpload(
-                    forFileAndWait: url.path,
-                    toDirectory: base.path
-                ) { [weak self] file, progress, speed in
-                    onMainThread {
-                        guard let self else { return }
-                        self.currentProcessingFile = file
-                        self.currentProgress = progress
-                        self.currentSpeed = speed
-                    }
-                } withContinuationHandler: { [weak self] in
-                    self?.continueCurrentProgress ?? false
-                }
-                guard done else {
-                    let error = shell.getLastFileTransferError() ?? "Upload failed"
-                    onMainThread {
-                        FileTransferInterface.uiHandler.presentError(error)
-                    }
-                    print("SFTP \(machine.name) Error: \(error)")
+                do {
+                    try await sftp?.upload(url, toDirectory: base.path) { [weak self] in self?.reportProgress($0) }
+                } catch {
+                    report(error, "Upload failed")
                     break
                 }
             }
             putInformation("Upload Completed")
-            loadCurrentFileList()
+            onMainThread { self.loadCurrentFileList() }
         }
     }
 
     public func rename(from: URL, to: URL) {
         guard connectionAvailableCheckPassed() else { return }
-        workerQueue.async { [self] in
+        enqueue { [self] sftp in
             putInformation("Renaming...")
             onMainThread { self.isProgressRunning = true }
-            let done = shell.requestRenameFileAndWait(from.path, withNewPath: to.path)
-            if done {
+            do {
+                try await sftp?.rename(from.path, to: to.path)
                 putInformation("Renamed Successfully")
-            } else {
-                let error = shell.getLastFileTransferError() ?? "Failed to rename"
-                onMainThread {
-                    FileTransferInterface.uiHandler.presentError(error)
-                }
-                print("SFTP \(machine.name) Error: \(error)")
+            } catch {
+                report(error, "Failed to rename")
             }
-            loadCurrentFileList()
+            onMainThread { self.loadCurrentFileList() }
         }
     }
 
     public func delete(item: URL) {
         guard connectionAvailableCheckPassed() else { return }
         continueCurrentProgress = true
-        workerQueue.async { [self] in
+        enqueue { [self] sftp in
             onMainThread {
                 self.isProgressRunning = true
                 self.currentProgressCancelable = true
                 self.currentProcessingFile = item.path
             }
             putInformation("Deleting...")
-            let done = shell.requestDelete(
-                forFileAndWait: item.path
-            ) { [weak self] file in
-                onMainThread {
-                    self?.currentProcessingFile = file
+            do {
+                try await sftp?.removeItem(at: item.path) { [weak self] file in
+                    onMainThread { self?.currentProcessingFile = file }
                 }
-            } withContinuationHandler: { [weak self] in
-                self?.continueCurrentProgress ?? false
-            }
-            if done {
                 putInformation("Delete Completed")
-            } else {
-                let error = shell.getLastFileTransferError() ?? "Delete failed"
-                onMainThread {
-                    FileTransferInterface.uiHandler.presentError(error)
-                }
-                print("SFTP \(machine.name) Error: \(error)")
+            } catch {
+                report(error, "Delete failed")
             }
-            loadCurrentFileList()
+            onMainThread { self.loadCurrentFileList() }
         }
     }
 
@@ -398,41 +419,25 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
             to = toBase.deletingPathExtension().path + ".\(duplicate)"
             if !ext.isEmpty { to += ".\(ext)" }
         }
-        let destinationPath = to
+        let destination = URL(fileURLWithPath: to)
         guard connectionAvailableCheckPassed() else { return }
         continueCurrentProgress = true
-        workerQueue.async { [self] in
+        enqueue { [self] sftp in
             onMainThread {
                 self.isProgressRunning = true
                 self.currentProgressCancelable = true
             }
             putInformation("Downloading...")
-            let done = shell.requestDownload(
-                fromFileAndWait: fromPath,
-                toLocalPath: destinationPath
-            ) { [weak self] file, progress, speed in
-                onMainThread {
-                    guard let self else { return }
-                    self.currentProcessingFile = file
-                    self.currentProgress = progress
-                    self.currentSpeed = speed
-                }
-            } withContinuationHandler: { [weak self] in
-                self?.continueCurrentProgress ?? false
-            }
-            if done {
+            do {
+                try await sftp?.download(fromPath, to: destination) { [weak self] in self?.reportProgress($0) }
                 putInformation("Download Completed")
                 onMainThread {
                     FileTransferInterface.uiHandler.downloadCompleted()
                 }
-            } else {
-                let error = shell.getLastFileTransferError() ?? "Download failed"
-                onMainThread {
-                    FileTransferInterface.uiHandler.presentError(error)
-                }
-                print("SFTP \(machine.name) Error: \(error)")
+            } catch {
+                report(error, "Download failed")
             }
-            loadCurrentFileList()
+            onMainThread { self.loadCurrentFileList() }
         }
     }
 }

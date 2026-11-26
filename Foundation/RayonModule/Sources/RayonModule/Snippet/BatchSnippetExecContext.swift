@@ -2,13 +2,16 @@
 //  BatchSnippetExecContext.swift
 //  RayonModule
 //
-//  Shared batch snippet execution context used by macOS and iOS.
+//  Shared batch snippet execution context used by macOS and iOS. Runs on a
+//  few servers at a time, each over the server's pooled connection; a run
+//  that exits non-zero, or without an exit status, counts as failed.
 //  Uses O(1) UTF-8 byte-ring buffers and publishes state transitions on @MainActor.
 //
 
 import Combine
 import Foundation
-import NSRemoteShell
+import NIOCore
+import RayonSSH
 
 public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendable {
     public let snippet: RDSnippet
@@ -28,9 +31,6 @@ public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendabl
                 receivedBuffer[machine] = Data("\r\n[*] Malformed Machine Info\r\n".utf8)
                 continue
             }
-            shellObjects[object.id] = NSRemoteShell
-                .configured(for: object, timeout: RayonStore.workerTimeoutNumber)
-            shellContinue[object.id] = true
             buildNames[machine] = object.name
         }
         names = buildNames
@@ -51,14 +51,18 @@ public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendabl
         onMainThread { [weak self] in
             self?.isRunning = true
         }
-        DispatchQueue.global().async {
-            self.beingExecution()
-        }
+        let run = Task.detached { await self.runAll() }
+        accessLock.withLock { self.batch = run }
     }
 
-    var shellObjects: [RDMachine.ID: NSRemoteShell] = [:]
+    /// How many servers run the snippet at once.
+    static let concurrency = 8
 
-    private var shellContinue: [RDMachine.ID: Bool] = [:]
+    private var batch: Task<Void, Never>?
+    private var running: [RDMachine.ID: Task<Void, Never>] = [:]
+    private var stopped: Set<RDMachine.ID> = []
+    /// The last byte appended per server, to tell a bare \n from \r\n.
+    private var lastByte: [RDMachine.ID: UInt8] = [:]
     private var receivedBuffer: [RDMachine.ID: Data] = [:]
     private var completedMachines: [RDMachine.ID] = []
     private var consumedByteCount: [UUID: Int] = [:]
@@ -94,32 +98,21 @@ public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendabl
 
     /// Asks every running command to stop.
     public func stopAll() {
-        let shellsToDisconnect: [NSRemoteShell] = accessLock.withLock {
-            for key in shellContinue.keys {
-                shellContinue[key] = false
-            }
-            let active = Array(shellObjects.values)
-            shellObjects.removeAll()
-            return active
+        let (batch, tasks) = accessLock.withLock {
+            stopped.formUnion(machines)
+            return (self.batch, Array(running.values))
         }
-        DispatchQueue.global().async {
-            for shell in shellsToDisconnect {
-                shell.requestDisconnectAndWait()
-            }
-        }
+        batch?.cancel()
+        tasks.forEach { $0.cancel() }
     }
 
     /// Stops a single machine's execution.
     public func stop(machine: RDMachine.ID) {
-        let shell: NSRemoteShell? = accessLock.withLock {
-            shellContinue[machine] = false
-            return shellObjects.removeValue(forKey: machine)
+        let task = accessLock.withLock {
+            stopped.insert(machine)
+            return running[machine]
         }
-        if let shell {
-            DispatchQueue.global().async {
-                shell.requestDisconnectAndWait()
-            }
-        }
+        task?.cancel()
     }
 
     public var safeAccessCompletedMachines: [RDMachine.ID] {
@@ -141,28 +134,35 @@ public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendabl
         accessLock.unlock()
     }
 
-    func beingExecution() {
-        let queue = DispatchQueue(
-            label: "me.mizorewww.rayon.exec.batch.\(snippet.name)",
-            attributes: .concurrent
-        )
-        let machines = machines
-        queue.async {
-            let group = DispatchGroup()
-            for machine in machines {
-                group.enter()
-                queue.async {
-                    defer { group.leave() }
-                    self.beginExec(on: machine)
-                }
+    private func runAll() async {
+        let targets = machines.filter { names[$0] != nil }
+        await withTaskGroup(of: Void.self) { group in
+            var pending = targets.makeIterator()
+            for _ in 0 ..< Self.concurrency {
+                guard let machine = pending.next() else { break }
+                group.addTask { await self.runTracked(on: machine) }
             }
-            group.wait()
-            onMainThread { [weak self] in
-                guard let self else { return }
-                self.isRunning = false
-                self.objectWillChange.send()
+            while await group.next() != nil {
+                guard let machine = pending.next() else { continue }
+                group.addTask { await self.runTracked(on: machine) }
             }
         }
+        onMainThread { [weak self] in
+            guard let self else { return }
+            self.isRunning = false
+            self.objectWillChange.send()
+        }
+    }
+
+    /// Runs on one server in a task of its own, so it can be stopped alone.
+    private func runTracked(on machine: RDMachine.ID) async {
+        let task = accessLock.withLock { () -> Task<Void, Never>? in
+            guard !stopped.contains(machine), !Task.isCancelled else { return nil }
+            let task = Task { await self.beginExec(on: machine) }
+            running[machine] = task
+            return task
+        }
+        await task?.value
     }
 
     /// O(1) byte-indexed slice extraction from the per-machine output ring buffer.
@@ -205,75 +205,72 @@ public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendabl
         }
     }
 
-    func beginExec(on machine: RDMachine.ID) {
+    /// Command output as xterm wants it: a bare \n becomes \r\n.
+    private func appendOutput(_ chunk: ByteBuffer, for machine: RDMachine.ID) {
+        safeAccess {
+            var previous = lastByte[machine] ?? 0
+            var cleaned = [UInt8]()
+            cleaned.reserveCapacity(chunk.readableBytes)
+            for byte in chunk.readableBytesView {
+                if byte == 0x0A, previous != 0x0D { cleaned.append(0x0D) }
+                cleaned.append(byte)
+                previous = byte
+            }
+            lastByte[machine] = previous
+            lockedAppendToBuffer(String(decoding: cleaned, as: UTF8.self), for: machine)
+        }
+    }
+
+    func beginExec(on machine: RDMachine.ID) async {
         safeAccess { self.startedAt[machine] = Date() }
         onMainThread { [weak self] in self?.objectWillChange.send() }
 
-        var localShell: NSRemoteShell?
-        safeAccess { localShell = self.shellObjects[machine] }
-
-        defer {
-            debugPrint("execution subroutine completed for machine: \(machine)")
-            let doneCount: Int = accessLock.withLock {
-                if !self.completedMachines.contains(machine) {
-                    self.completedMachines.append(machine)
-                }
-                self.finishedAt[machine] = Date()
-                self.shellObjects.removeValue(forKey: machine)
-                return self.completedMachines.count
+        let failed: String? = await execute(on: machine)
+        debugPrint("execution subroutine completed for machine: \(machine)")
+        let doneCount: Int = accessLock.withLock {
+            if let failed {
+                lockedAppendToBuffer("\r\n[E] \(failed)\r\n", for: machine)
+                failedMachines.insert(machine)
+            } else {
+                lockedAppendToBuffer("\r\n[*] Execution completed\r\n", for: machine)
             }
-            if let shell = localShell {
-                shell.requestDisconnectAndWait()
-                shell.destroyPermanently()
+            if !completedMachines.contains(machine) {
+                completedMachines.append(machine)
             }
-            onMainThread { [weak self] in
-                guard let self else { return }
-                self.completedCount = doneCount
-                self.objectWillChange.send()
-            }
+            finishedAt[machine] = Date()
+            running[machine] = nil
+            return completedMachines.count
         }
-
-        guard let shell = localShell else {
-            debugPrint("missing shell for machine: \(machine)")
-            safeAccess { self.failedMachines.insert(machine) }
-            return
+        onMainThread { [weak self] in
+            guard let self else { return }
+            self.completedCount = doneCount
+            self.objectWillChange.send()
         }
+    }
 
+    /// Runs the snippet; returns why it failed, or nil when it exited 0.
+    private func execute(on machine: RDMachine.ID) async -> String? {
         guard let remote = RayonStore.workerMachine(for: machine) else {
             debugPrint("machine vanished mid-run: \(machine)")
-            safeAccess { self.failedMachines.insert(machine) }
-            return
+            return "The server no longer exists"
         }
-        let outcome = SnippetExecSession(machine: remote, shell: shell).execute(
-            snippet.code,
-            onBegin: {
-                debugPrint("channel begin")
-                self.appendToBuffer("[*] Execute Begin\r\n", for: machine)
-            },
-            onOutput: { output in
-                self.appendToBuffer(output, for: machine)
-            },
-            withContinuationHandler: {
-                self.accessLock.withLock { self.shellContinue[machine] ?? false }
+        let lease: SSHLease
+        do {
+            lease = try await SSHConnectionPool.shared.lease(for: remote)
+        } catch {
+            return error.localizedDescription.replacingOccurrences(of: "\n", with: "\r\n")
+        }
+        defer { lease.release() }
+        appendToBuffer("[*] Execute Begin\r\n", for: machine)
+        do {
+            let status = try await lease.connection.execute(snippet.code) { [weak self] chunk, _ in
+                self?.appendOutput(chunk, for: machine)
             }
-        )
-        switch outcome {
-        case .completed:
-            safeAccess {
-                self.lockedAppendToBuffer("\r\n[*] Execution completed\r\n", for: machine)
-            }
-        case .connectFailed:
-            debugPrint("failed to connect to remote machine: \(machine)")
-            safeAccess {
-                self.lockedAppendToBuffer("\r\n[E] Could not connect to the server\r\n", for: machine)
-                self.failedMachines.insert(machine)
-            }
-        case .authenticateFailed:
-            debugPrint("auth failed for machine: \(machine)")
-            safeAccess {
-                self.lockedAppendToBuffer("\r\n[E] The identity could not sign in\r\n", for: machine)
-                self.failedMachines.insert(machine)
-            }
+            return status == 0 ? nil : "Exited with status \(status)"
+        } catch is CancellationError {
+            return "Stopped"
+        } catch {
+            return Task.isCancelled ? "Stopped" : error.localizedDescription
         }
     }
 }

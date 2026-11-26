@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import NSRemoteShell
 
 public extension RayonStore {
     /// The saved server an alias names, as `ssh myserver` names a Host in
@@ -27,26 +26,6 @@ public extension RayonStore {
     /// server matches it.
     func machine(matchingQuickConnect input: String) -> RDMachine? {
         SSHCommandReader.quickConnectAlias(input).flatMap { machine(matchingAlias: $0) }
-    }
-
-    @discardableResult
-    func registerServer(
-        withAddress: String,
-        withPort: String,
-        withIdentity: RDIdentity.ID,
-        session: NSRemoteShell
-    ) -> RDMachine {
-        let machine = RDMachine(
-            remoteAddress: withAddress,
-            remotePort: withPort,
-            name: withAddress,
-            lastConnection: Date(),
-            lastBanner: session.remoteBanner ?? "",
-            comment: session.resolvedRemoteIpAddress ?? "",
-            associatedIdentity: withIdentity
-        )
-        save(machine)
-        return machine
     }
 
     func findSimilarMachine(

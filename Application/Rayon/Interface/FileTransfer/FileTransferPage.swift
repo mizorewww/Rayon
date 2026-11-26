@@ -292,7 +292,7 @@ struct FileTransferPage: View {
     func open(_ file: FileTransferContext.RemoteFile) {
         if file.fstat.isDirectory {
             context.navigate(path: context.currentUrl.appendingPathComponent(file.name).path)
-        } else if Int64(truncating: file.fstat.size ?? 0) <= FileTransferContext.editableSizeLimit {
+        } else if (file.fstat.size ?? 0) <= FileTransferContext.editableSizeLimit {
             edit(file)
         } else {
             download(file)

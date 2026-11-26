@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import NSRemoteShell
 
 /// One round of a server's readings. A value, so a monitor publishes a
 /// whole round at once and views redraw once per round.
@@ -50,8 +49,7 @@ extension ServerStatus {
     /// quotes inside the script are closed, escaped and reopened. csh
     /// rejects a newline inside quotes, so the script must be one line.
     /// RayonModule keeps its own copy (`RemoteShellCommand.posix`): it does
-    /// not depend on MachineStatus, and the two only share NSRemoteShell,
-    /// which is Objective-C.
+    /// not depend on MachineStatus, and the two share no module.
     static func posixShellCommand(_ script: String) -> String {
         assert(!script.contains("\n"), "csh cannot take a newline inside quotes")
         return "/bin/sh -c '" + script.replacingOccurrences(of: "'", with: "'\\''") + "'"
@@ -104,20 +102,5 @@ extension ServerStatus {
         }
         return ([localeExport, "RAYON_KERNEL=\"$(/usr/bin/uname -s 2>/dev/null || uname -s)\""] + commands)
             .joined(separator: "; ")
-    }
-
-    static func downloadResultFrom(shell: NSRemoteShell, command: String, timeout: Double) -> String {
-        guard shell.isConnected, shell.isAuthenticated else {
-            return ""
-        }
-        var result = ""
-        shell.beginExecute(
-            withCommand: command,
-            withTimeout: NSNumber(value: timeout),
-            withOnCreate: {},
-            withOutput: { result.append($0) },
-            withContinuationHandler: nil
-        )
-        return result
     }
 }

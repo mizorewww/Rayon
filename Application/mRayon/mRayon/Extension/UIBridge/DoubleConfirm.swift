@@ -39,3 +39,26 @@ extension UIBridge {
         }
     }
 }
+
+/// Asks before a server's host key is trusted. A changed key is a warning:
+/// replacing the saved key is the destructive choice, Cancel the safe one.
+final class IOSHostKeyTrustHandler: HostKeyTrustHandler {
+    @MainActor func confirm(_ question: HostKeyQuestion) async -> Bool {
+        await withCheckedContinuation { continuation in
+            let alert = UIAlertController(title: question.title, message: question.message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { _ in
+                continuation.resume(returning: false)
+            })
+            let trust = UIAlertAction(title: question.confirmTitle, style: question.saved == nil ? .default : .destructive) { _ in
+                continuation.resume(returning: true)
+            }
+            alert.addAction(trust)
+            if question.saved == nil { alert.preferredAction = trust }
+            guard let presenter = UIWindow.shutUpKeyWindow?.topMostViewController else {
+                continuation.resume(returning: false)
+                return
+            }
+            presenter.present(alert, animated: true)
+        }
+    }
+}

@@ -86,7 +86,7 @@ private struct FileRowView<MenuContent: View>: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            Text(isDir ? "—" : RXFormat.bytesString(Double(truncating: stat.size ?? 0)))
+            Text(isDir ? "—" : RXFormat.bytesString(Double(stat.size ?? 0)))
                 .font(.system(size: 13).monospacedDigit())
                 .foregroundStyle(isDir ? Color.rxInkSecondary : Color.rxInk)
                 .lineLimit(1)

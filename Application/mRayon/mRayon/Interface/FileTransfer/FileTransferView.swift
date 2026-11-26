@@ -387,7 +387,7 @@ struct FileTransferView: View {
         let edit: (String) -> Void
 
         private var tooLargeToEdit: Bool {
-            (file.fstat.size?.int64Value ?? 0) > FileTransferContext.editableSizeLimit
+            (file.fstat.size ?? 0) > FileTransferContext.editableSizeLimit
         }
 
         var body: some View {
@@ -545,7 +545,7 @@ struct FileTransferView: View {
         }
 
         var size: String {
-            RXFormat.bytesString(Double(truncating: file.fstat.size ?? 0))
+            RXFormat.bytesString(Double(file.fstat.size ?? 0))
         }
 
         /// Size (for a file), modified, permissions and owner, as the Mac's columns.

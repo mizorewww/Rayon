@@ -17,13 +17,9 @@ let package = Package(
             targets: ["MachineStatus"]
         ),
     ],
-    dependencies: [
-        .package(name: "NSRemoteShell", path: "../../External/NSRemoteShell"),
-    ],
     targets: [
         .target(
-            name: "MachineStatus",
-            dependencies: ["NSRemoteShell"]
+            name: "MachineStatus"
         ),
         .testTarget(
             name: "MachineStatusTests",

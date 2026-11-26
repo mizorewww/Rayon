@@ -14,7 +14,7 @@
 @testable import RayonModule
 import CoreGraphics
 import ImageIO
-import NSRemoteShell
+import RayonSSH
 import XCTest
 
 final class VNCLiveTests: XCTestCase {
@@ -117,8 +117,8 @@ final class VNCLiveTests: XCTestCase {
         client.stop()
     }
 
-    /// `vncOverSSH`: the client runs over a direct-tcpip channel bridged to
-    /// a socketpair — no local listening port involved.
+    /// `vncOverSSH`: the client runs over a direct-tcpip channel — no local
+    /// listening port involved.
     func testConnectsOverSSHDirectTCPIP() async throws {
         let server = try server()
         let environment = ProcessInfo.processInfo.environment
@@ -128,24 +128,21 @@ final class VNCLiveTests: XCTestCase {
         else {
             throw XCTSkip("Set VNC_LIVE_SSH_PORT, _USER and _PASSWORD to run the VNC-over-SSH test")
         }
-        let shell = NSRemoteShell()
-            .setupConnectionHost(server.host)
-            .setupConnectionPort(NSNumber(value: Int(sshPort) ?? 22))
-            .setupConnectionTimeout(10)
-        shell.requestConnectAndWait()
-        shell.authenticate(with: user, andPassword: password)
-        XCTAssertTrue(shell.isAuthenticated)
-        defer {
-            shell.requestDisconnectAndWait()
-            shell.destroyPermanently()
-        }
-        let fd = shell.openDirectTCPIPSocketPair(toHost: "127.0.0.1", port: 5900)
-        XCTAssertGreaterThan(fd, 0)
+        let connection = try await SSHConnection.connect(.init(
+            host: server.host,
+            port: Int(sshPort) ?? 22,
+            username: user,
+            credentials: [.password(password)],
+            timeout: .seconds(10),
+            hostKeyStatus: { _ in .trusted }
+        ))
+        let lease = SSHLease(connection: connection, identity: RDIdentity()) { await connection.close() }
+        let stream = try await connection.openByteStream(host: "127.0.0.1", port: 5900)
 
         let recorder = Recorder()
         let client = VNCRFBClient(
             configuration: .init(host: server.host, port: 0, password: server.password, shared: true,
-                                 transport: VNCSocketPairTransport(fd: fd)),
+                                 transport: SSHChannelTransport(stream: stream, lease: lease)),
             delegate: recorder
         )
         client.start()

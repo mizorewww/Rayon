@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import NSRemoteShell
+import RayonSSH
 
 public enum ServerConnectionCheck {
     public enum Outcome: Sendable {
@@ -20,34 +20,26 @@ public enum ServerConnectionCheck {
     }
 
     /// Connects to `draft` and signs in with `identity`, or else with each
-    /// identity that authenticates automatically. Blocks; call off the main
-    /// thread.
+    /// identity that authenticates automatically.
     public static func run(
         _ draft: RDMachine,
         identity chosen: RDIdentity?,
         candidates: [RDIdentity],
         timeout: NSNumber
-    ) -> Outcome {
-        let shell = NSRemoteShell.configured(for: draft, timeout: timeout)
-        shell.requestConnectAndWait()
-        guard shell.isConnected else {
-            return .unreachable(reason: shell.connectFailureReason)
+    ) async -> Outcome {
+        do {
+            let (connection, identity) = try await draft.connectSSH(
+                identity: chosen,
+                autoIdentities: candidates,
+                timeout: .seconds(max(5, timeout.intValue))
+            )
+            let banner = connection.serverVersion
+            await connection.close()
+            return .authenticated(identity: identity.id, banner: banner)
+        } catch let failure as RDMachine.SSHFailure {
+            return failure.unreachable ? .unreachable(reason: failure.message) : .rejected
+        } catch {
+            return .unreachable(reason: error.localizedDescription)
         }
-        var authenticatedWith: RDIdentity.ID?
-        if let chosen {
-            chosen.callAuthenticationWith(remote: shell, username: draft.sshUsernameOverride)
-            if shell.isAuthenticated { authenticatedWith = chosen.id }
-        } else {
-            for candidate in candidates {
-                if shell.isAuthenticated { break }
-                if !shell.isConnected { shell.requestConnectAndWait() }
-                candidate.callAuthenticationWith(remote: shell, username: draft.sshUsernameOverride)
-                if shell.isAuthenticated { authenticatedWith = candidate.id }
-            }
-        }
-        let banner = shell.remoteBanner ?? ""
-        shell.requestDisconnectAndWait()
-        guard let authenticatedWith else { return .rejected }
-        return .authenticated(identity: authenticatedWith, banner: banner)
     }
 }

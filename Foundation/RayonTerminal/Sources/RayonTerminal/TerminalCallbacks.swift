@@ -55,7 +55,7 @@ final class TerminalCallbacks: @unchecked Sendable {
     @MainActor func receiveBell() { lock.withLock { bell }?() }
 }
 
-/// NSRemoteShell accepts String input. Hold incomplete UTF-8 suffixes instead of
+/// The session takes input as String. Hold incomplete UTF-8 suffixes instead of
 /// replacing a Chinese character/emoji when Ghostty splits it across callbacks.
 struct TerminalInputDecoder {
     private var pending = Data()

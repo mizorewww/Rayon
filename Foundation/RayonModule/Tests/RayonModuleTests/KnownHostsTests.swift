@@ -1,4 +1,5 @@
 @testable import RayonModule
+import RayonSSH
 import XCTest
 
 final class KnownHostsTests: XCTestCase {
@@ -18,50 +19,43 @@ final class KnownHostsTests: XCTestCase {
         test = nil
     }
 
-    func testTheFirstKeyIsSavedAndAcceptedAgain() {
-        XCTAssertTrue(hosts.accepts(first, host: "example.com", port: 22))
-        XCTAssertEqual(hosts.savedKey(host: "example.com", port: 22), first)
-        XCTAssertTrue(hosts.accepts(first, host: "example.com", port: 22))
-        XCTAssertNil(hosts.refusalMessage(host: "example.com", port: 22))
+    func testAnUnknownKeyIsNotTrustedUntilAsked() {
+        XCTAssertEqual(hosts.status(of: first, host: "example.com", port: 22), .unknown)
+        XCTAssertNil(hosts.savedKey(host: "example.com", port: 22), "looking a key up does not save it")
+        hosts.trust(first, host: "example.com", port: 22)
+        XCTAssertEqual(hosts.status(of: first, host: "example.com", port: 22), .trusted)
     }
 
-    func testAChangedKeyIsRefusedAndTheSavedOneKept() {
-        XCTAssertTrue(hosts.accepts(first, host: "example.com", port: 22))
-        XCTAssertFalse(hosts.accepts(other, host: "example.com", port: 22))
+    func testAChangedKeyIsReportedWithTheSavedOne() {
+        hosts.trust(first, host: "example.com", port: 22)
+        XCTAssertEqual(hosts.status(of: other, host: "example.com", port: 22), .changed(saved: first))
         XCTAssertEqual(hosts.savedKey(host: "example.com", port: 22), first)
-        XCTAssertEqual(hosts.refusedKey(host: "example.com", port: 22), other)
-        let message = hosts.refusalMessage(host: "example.com", port: 22)
-        XCTAssertTrue(message?.contains(first.fingerprint) == true)
-        XCTAssertTrue(message?.contains(other.fingerprint) == true)
     }
 
-    func testTheSameKeyOfAnotherTypeIsRefused() {
-        XCTAssertTrue(hosts.accepts(first, host: "example.com", port: 22))
+    func testTheSameKeyOfAnotherTypeIsAChange() {
+        hosts.trust(first, host: "example.com", port: 22)
         let retyped = KnownHosts.HostKey(type: "ssh-rsa", key: first.key)
-        XCTAssertFalse(hosts.accepts(retyped, host: "example.com", port: 22))
+        XCTAssertEqual(hosts.status(of: retyped, host: "example.com", port: 22), .changed(saved: first))
     }
 
     func testAKeyIsSavedPerAddressAndPort() {
-        XCTAssertTrue(hosts.accepts(first, host: "example.com", port: 22))
-        XCTAssertTrue(hosts.accepts(other, host: "example.com", port: 2222))
-        XCTAssertTrue(hosts.accepts(other, host: "other.example.com", port: 22))
-        XCTAssertTrue(hosts.accepts(first, host: " Example.COM ", port: 22), "an address is the same in any case")
-        XCTAssertEqual(hosts.count, 3)
+        hosts.trust(first, host: "example.com", port: 22)
+        XCTAssertEqual(hosts.status(of: first, host: "example.com", port: 2222), .unknown)
+        XCTAssertEqual(hosts.status(of: first, host: "other.example.com", port: 22), .unknown)
+        XCTAssertEqual(hosts.status(of: first, host: " Example.COM ", port: 22), .trusted, "an address is the same in any case")
+        XCTAssertEqual(hosts.count, 1)
     }
 
-    func testForgettingLetsTheNextKeyIn() {
-        XCTAssertTrue(hosts.accepts(first, host: "example.com", port: 22))
-        XCTAssertFalse(hosts.accepts(other, host: "example.com", port: 22))
+    func testForgettingAsksAgain() {
+        hosts.trust(first, host: "example.com", port: 22)
         hosts.forget(host: "example.com", port: 22)
-        XCTAssertNil(hosts.refusalMessage(host: "example.com", port: 22))
-        XCTAssertTrue(hosts.accepts(other, host: "example.com", port: 22))
-        XCTAssertEqual(hosts.savedKey(host: "example.com", port: 22), other)
+        XCTAssertEqual(hosts.status(of: first, host: "example.com", port: 22), .unknown)
     }
 
     func testSavedKeysOutliveTheObject() {
-        XCTAssertTrue(hosts.accepts(first, host: "example.com", port: 22))
+        hosts.trust(first, host: "example.com", port: 22)
         let reopened = KnownHosts(storage: test.storage)
-        XCTAssertFalse(reopened.accepts(other, host: "example.com", port: 22))
+        XCTAssertEqual(reopened.status(of: other, host: "example.com", port: 22), .changed(saved: first))
         reopened.forgetAll()
         XCTAssertEqual(reopened.count, 0)
     }

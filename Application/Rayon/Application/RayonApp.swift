@@ -24,6 +24,7 @@ struct RayonApp: App {
 
         PortForwardBackend.shared.onError = { UIBridge.presentError(with: $0) }
         FileTransferInterface.uiHandler = MacFileTransferUIHandler()
+        HostKeyTrust.handler = MacHostKeyTrustHandler()
 
         NSLog("static main completed")
     }

@@ -22,6 +22,7 @@ struct mRayonApp: App {
         // platform UI handler it delegates to.
         FileTransferInterface.uiHandler = IOSFileTransferUIHandler()
         TerminalInterface.uiHandler = IOSTerminalUIHandler()
+        HostKeyTrust.handler = IOSHostKeyTrustHandler()
 
         _ = LogRedirect.shared
         _ = RayonStore.shared

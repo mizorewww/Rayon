@@ -7,7 +7,7 @@
     import AppKit
     import RayonModule
     import RayonTerminal
-    import NSRemoteShell
+    import RayonSSH
     import QuartzCore
     import SwiftUI
 
@@ -79,16 +79,13 @@
                          "a-very-long-file-name-that-does-not-fit-in-the-name-column-of-the-table-and-is-truncated-in-the-middle-2026-10-11.log.gz",
                          "fail2ban.log", "alternatives.log", "cloud-init.log", "wtmp", "btmp", "lastlog", "ufw.log", "mail.log"]
             context.currentFileList = names.enumerated().map { index, name in
-                let file = NSRemoteFile(filename: name)
-                var attributes = LIBSSH2_SFTP_ATTRIBUTES()
-                attributes.flags = 0xF
-                attributes.filesize = UInt64(index * index * 4321 + 17)
-                attributes.uid = index < 4 ? 0 : 1000
-                attributes.gid = 0
-                attributes.permissions = index < 4 ? 0o040755 : 0o100644
-                attributes.mtime = UInt(1_780_000_000 + index * 86400 * 3)
-                attributes.atime = attributes.mtime
-                file.populateAttributes(attributes)
+                let file = SFTPEntry(
+                    name: name,
+                    size: Int64(index * index * 4321 + 17),
+                    permissions: index < 4 ? 0o040755 : 0o100644,
+                    modificationDate: Date(timeIntervalSince1970: TimeInterval(1_780_000_000 + index * 86400 * 3)),
+                    ownerUID: index < 4 ? 0 : 1000
+                )
                 return FileTransferContext.RemoteFile(base: base, name: name, fstat: file)
             }
             try? await Task.sleep(nanoseconds: 500_000_000)
@@ -101,7 +98,7 @@
             var generator = SystemRandomNumberGenerator()
             let list = (0 ..< count).map { _ in
                 let name = "file-\(Int.random(in: 0 ..< 10_000_000, using: &generator)).log"
-                return FileTransferContext.RemoteFile(base: base, name: name, fstat: NSRemoteFile(filename: name))
+                return FileTransferContext.RemoteFile(base: base, name: name, fstat: SFTPEntry(name: name, size: nil, permissions: nil, modificationDate: nil))
             }
             report("show \(count)", [await settle { context.currentFileList = list }])
             NSLog("BENCH done")

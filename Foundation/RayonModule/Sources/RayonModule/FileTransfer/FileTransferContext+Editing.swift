@@ -8,6 +8,7 @@
 //
 
 import Foundation
+import RayonSSH
 
 public enum RemoteTextFileError: LocalizedError, Equatable {
     case notConnected
@@ -48,10 +49,10 @@ public extension FileTransferContext {
 
     /// Whether the editor opens `file` (a file within the size limit).
     static func isEditable(_ file: RemoteFile) -> Bool {
-        !file.fstat.isDirectory && Int64(truncating: file.fstat.size ?? 0) <= editableSizeLimit
+        !file.fstat.isDirectory && (file.fstat.size ?? 0) <= editableSizeLimit
     }
 
-    /// Reads a remote file as UTF-8 text on the context's serial `workerQueue`.
+    /// Reads a remote file as UTF-8 text, after the operations queued before.
     func readText(at remotePath: String) async throws -> String {
         if !connected && !processConnection {
             processBootstrap()
@@ -65,26 +66,16 @@ public extension FileTransferContext {
         let folder = try Self.makeScratchFolder()
         defer { try? FileManager.default.removeItem(at: folder) }
         let local = folder.appendingPathComponent(URL(fileURLWithPath: remotePath).lastPathComponent)
-        nonisolated(unsafe) let shell = shell
-        let size: Int64? = await withCheckedContinuation { continuation in
-            workerQueue.async {
-                continuation.resume(returning: shell.requestFileInfo(at: remotePath)?.size?.int64Value)
+        try await perform { sftp in
+            let size = try await sftp.entry(at: remotePath).size
+            if let size, size > Self.editableSizeLimit {
+                throw RemoteTextFileError.tooLarge(bytes: size, limit: Self.editableSizeLimit)
             }
-        }
-        if let size, size > Self.editableSizeLimit {
-            throw RemoteTextFileError.tooLarge(bytes: size, limit: Self.editableSizeLimit)
-        }
-        let succeeded = await runOnWorker {
-            shell.requestDownload(fromFileAndWait: remotePath, toLocalPath: local.path) { _, _, _ in
-            } withContinuationHandler: {
-                true
+            do {
+                try await sftp.download(remotePath, to: local) { _ in }
+            } catch {
+                throw RemoteTextFileError.transfer(Self.describe(error, "Couldn't read \(remotePath)"))
             }
-        }
-        guard succeeded else {
-            if !shell.isConnected || !shell.isConnectedFileTransfer {
-                onMainThread { self.processShutdown() }
-            }
-            throw RemoteTextFileError.transfer(shell.getLastFileTransferError() ?? "Couldn't read \(remotePath).")
         }
         let data = try Data(contentsOf: local)
         guard Int64(data.count) <= Self.editableSizeLimit else {
@@ -96,7 +87,8 @@ public extension FileTransferContext {
         return text
     }
 
-    /// Replaces a remote file's contents with `text` (UTF-8) on the context's serial `workerQueue`.
+    /// Replaces a remote file's contents with `text` (UTF-8), after the
+    /// operations queued before.
     func writeText(_ text: String, to remotePath: String) async throws {
         guard connected else { throw RemoteTextFileError.notConnected }
         let folder = try Self.makeScratchFolder()
@@ -105,15 +97,12 @@ public extension FileTransferContext {
         let local = folder.appendingPathComponent(remote.lastPathComponent)
         try Data(text.utf8).write(to: local)
         let directory = remote.deletingLastPathComponent().path
-        nonisolated(unsafe) let shell = shell
-        let succeeded = await runOnWorker {
-            shell.requestUpload(forFileAndWait: local.path, toDirectory: directory) { _, _, _ in
-            } withContinuationHandler: {
-                true
+        try await perform { sftp in
+            do {
+                try await sftp.upload(local, toDirectory: directory) { _ in }
+            } catch {
+                throw RemoteTextFileError.transfer(Self.describe(error, "Couldn't save \(remotePath)"))
             }
-        }
-        guard succeeded else {
-            throw RemoteTextFileError.transfer(shell.getLastFileTransferError() ?? "Couldn't save \(remotePath).")
         }
     }
 
@@ -124,10 +113,20 @@ public extension FileTransferContext {
         return folder
     }
 
-    private func runOnWorker(_ work: @escaping @Sendable () -> Bool) async -> Bool {
-        await withCheckedContinuation { continuation in
-            workerQueue.async {
-                continuation.resume(returning: work())
+    /// Runs `work` in the session's queue and hands back how it ended.
+    private func perform(_ work: @escaping @Sendable (SFTPSession) async throws -> Void) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            enqueue(needsSession: false) { sftp in
+                guard let sftp, sftp.isActive else {
+                    continuation.resume(throwing: RemoteTextFileError.notConnected)
+                    return
+                }
+                do {
+                    try await work(sftp)
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
             }
         }
     }

@@ -8,8 +8,8 @@
 
 import Foundation
 import MachineStatus
-import NSRemoteShell
 import RayonModule
+import RayonSSH
 
 /// Throughput samples collected while a monitor is open, one per round.
 public struct MonitorHistory: Equatable, Sendable {
@@ -105,16 +105,12 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
     public var status: ServerStatus { snapshot.status }
     public var history: MonitorHistory { snapshot.history }
 
-    private var shell: NSRemoteShell
     private let sampler = ServerStatusSampler()
     private var updateTask: Task<Void, Never>?
-
-    private nonisolated static let queue = DispatchQueue(label: "me.mizorewww.monitor", attributes: .concurrent)
 
     public init(machine: RDMachine, identity: RDIdentity?) {
         self.machine = machine
         self.identity = identity
-        shell = NSRemoteShell.configured(for: machine, timeout: RayonStore.shared.timeoutNumber)
         updateTask = Task { [weak self] in
             await self?.updateLoop()
         }
@@ -130,7 +126,6 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
         private init(previewing machine: RDMachine) {
             self.machine = machine
             identity = nil
-            shell = NSRemoteShell()
             var status = ServerStatus()
             let core = ServerStatus.ProcessPercentInfo(system: 6.2, user: 18.4, iowait: 1.1, nice: 0.3, sum: 26)
             var cores: [String: ServerStatus.ProcessPercentInfo] = [:]
@@ -184,33 +179,40 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
 
     /// Each round publishes at most one snapshot (plus a phase change when
     /// the connection state moves), so observers redraw once per round.
+    /// Samples over the server's pooled connection.
     private func updateLoop() async {
-        let shell = shell
         let sampler = sampler
         var failures = 0
-        rounds: while !Task.isCancelled {
-            if !(await Self.blocking { shell.isConnected && shell.isAuthenticated }) {
+        var lease: SSHLease?
+        defer { lease?.release() }
+        while !Task.isCancelled {
+            if lease.map({ !$0.connection.isActive }) ?? true {
+                lease?.release()
+                lease = nil
                 if phase != .connected { setPhase(.connecting) }
-                let identity = identity
-                let username = machine.sshUsernameOverride
-                let connected = await Self.blocking {
-                    // Statics and counters belong to the connection; a reconnect may land
-                    // on a reimaged or different host.
-                    sampler.resetConnection()
-                    shell.connectAndAuthenticate(
-                        identity: identity,
-                        autoIdentities: RayonStore.workerIdentitiesForAutoAuth,
-                        username: username
-                    )
-                    return shell.isConnected && shell.isAuthenticated
+                // Statics and counters belong to the connection; a reconnect may land
+                // on a reimaged or different host.
+                sampler.resetConnection()
+                do {
+                    let leased = try await SSHConnectionPool.shared.lease(for: machine)
+                    lease = leased
+                    recordConnection(banner: leased.connection.serverVersion)
+                } catch {
+                    if Task.isCancelled { break }
+                    failures += 1
+                    setPhase(.failed(error.localizedDescription))
                 }
-                if connected { recordConnection() }
             }
             if Task.isCancelled { break }
-            if await Self.blocking({ shell.isConnected && shell.isAuthenticated }) {
+            if let connection = lease?.connection {
                 if failures == 0 { setPhase(.connected) }
-                let timeout = max(10, Double(refreshInterval * 2))
-                let round = await Self.blocking { sampler.sample(with: shell, timeout: timeout) }
+                let timeout = Duration.seconds(max(10, refreshInterval * 2))
+                // Output counts whatever the exit status: a missing tool fails
+                // the script's last command, not its other sections.
+                let round = await sampler.sample { command in
+                    guard let result = try? await connection.execute(command, timeout: timeout) else { return "" }
+                    return String(decoding: result.output, as: UTF8.self)
+                }
                 // A loop replaced by reconnect() or ended by shutdown()
                 // must not publish over its successor.
                 if Task.isCancelled { break }
@@ -227,21 +229,17 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
                     try? await Task.sleep(nanoseconds: NSEC_PER_SEC)
                     continue
                 case .empty:
-                    // Nothing came back though the shell says it is up: a
+                    // Nothing came back though the connection is up: a
                     // dead link would otherwise show its last numbers as
                     // live forever. It fails, and the next round reconnects.
+                    // The lease goes; the next round takes the pool's
+                    // connection again, a new one if this one has dropped.
                     failures += 1
-                    await Self.blocking { shell.requestDisconnectAndWait() }
-                    if Task.isCancelled { break rounds }
+                    lease?.release()
+                    lease = nil
+                    if Task.isCancelled { break }
                     setPhase(.failed("The server stopped answering."))
                 }
-            } else {
-                failures += 1
-                let message = await Self.blocking {
-                    shell.connectFailureReason ?? shell.getLastError() ?? "Unable to connect or authenticate"
-                }
-                if Task.isCancelled { break }
-                setPhase(.failed(message))
             }
             let wait = failures > 0 ? min(30, 5 * failures) : refreshInterval
             // Cancellation from shutdown() lands here right away.
@@ -251,22 +249,11 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
 
     /// Stamps the server's banner and last connection once per connection,
     /// not every round: each write republishes the whole store.
-    private func recordConnection() {
+    private func recordConnection(banner: String) {
         guard var read = RayonStore.shared.machine(machine.id) else { return }
-        read.lastBanner = shell.remoteBanner ?? read.lastBanner
+        if !banner.isEmpty { read.lastBanner = banner }
         read.lastConnection = Date()
         RayonStore.shared.save(read)
-    }
-
-    /// The SSH API blocks; run it on the monitor queue so the loop's task
-    /// suspends at the await instead of blocking a cooperative-pool thread
-    /// or the main thread for the whole round.
-    private nonisolated static func blocking<T>(_ work: @escaping () -> T) async -> T {
-        await withCheckedContinuation { continuation in
-            queue.async {
-                continuation.resume(returning: work())
-            }
-        }
     }
 
     public func reconnect() {
@@ -280,7 +267,6 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
     public func shutdown() {
         updateTask?.cancel()
         phase = .closed
-        Self.dispose(shell)
     }
 
     /// Starts over on the server's current details: a new connection, and
@@ -288,17 +274,10 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
     func retarget(machine: RDMachine, identity: RDIdentity?) {
         self.machine = machine
         self.identity = identity
-        Self.dispose(shell)
-        shell = NSRemoteShell.configured(for: machine, timeout: RayonStore.shared.timeoutNumber)
         snapshot = MonitorSnapshot()
+        // The restarted loop leases the pool's connection for the new
+        // details; the old loop's lease goes with it.
         reconnect()
-    }
-
-    private nonisolated static func dispose(_ shell: NSRemoteShell) {
-        queue.async {
-            shell.requestDisconnectAndWait()
-            shell.destroyPermanently()
-        }
     }
 }
 

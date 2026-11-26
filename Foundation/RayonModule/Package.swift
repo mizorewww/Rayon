@@ -6,8 +6,8 @@ import PackageDescription
 let package = Package(
     name: "RayonModule",
     platforms: [
-        .macOS(.v14),
-        .iOS(.v17),
+        .macOS(.v15),
+        .iOS(.v18),
     ],
     products: [
         .library(
@@ -17,7 +17,8 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(name: "NSRemoteShell", path: "../../External/NSRemoteShell"),
+        .package(name: "RayonSSH", path: "../RayonSSH"),
+        .package(url: "https://github.com/apple/swift-nio.git", from: "2.81.0"),
         .package(url: "https://github.com/attaswift/BigInt.git", from: "5.7.0"),
         .package(url: "https://github.com/Lakr233/wcdb.xcframework", from: "2.1.26102501"),
         .package(url: "https://github.com/marksands/BetterCodable", from: "0.4.0"),
@@ -32,7 +33,8 @@ let package = Package(
         .target(
             name: "RayonModule",
             dependencies: [
-                "NSRemoteShell",
+                "RayonSSH",
+                .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "BigInt", package: "BigInt"),
                 .product(name: "WCDBSwift", package: "wcdb.xcframework"),
                 .product(name: "BetterCodable", package: "BetterCodable"),
@@ -48,6 +50,7 @@ let package = Package(
             name: "RayonModuleTests",
             dependencies: [
                 "RayonModule",
+                "RayonSSH",
                 .product(name: "BigInt", package: "BigInt"),
             ]
         ),

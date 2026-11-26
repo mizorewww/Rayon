@@ -1,0 +1,231 @@
+//
+//  RDMachine+SSH.swift
+//  RayonModule
+//
+//  How a saved server is reached and signed in to: its transport (TCP,
+//  Cloudflare Access, UU Remote, a ProxyJump chain), its identity or else
+//  every identity that signs in automatically, and the host key, which is
+//  only trusted once the person has seen its fingerprint.
+//
+
+import Foundation
+import RayonSSH
+
+public extension RDMachine {
+    /// Why signing in to a server failed, worded for the person.
+    struct SSHFailure: Error, LocalizedError, Sendable {
+        public let message: String
+        /// The server could not be reached, as opposed to refusing the identities.
+        public let unreachable: Bool
+
+        public var errorDescription: String? { message }
+    }
+
+    /// Connects and signs in with `identity`, or else with each identity
+    /// that authenticates automatically, one connection per identity.
+    /// Returns the connection and the identity that signed in.
+    func connectSSH(
+        identity: RDIdentity?,
+        autoIdentities: [RDIdentity],
+        timeout: Duration,
+        hint: (@Sendable (String) -> Void)? = nil
+    ) async throws -> (SSHConnection, RDIdentity) {
+        try await connectSSH(identity: identity, autoIdentities: autoIdentities, timeout: timeout, hint: hint, visited: [])
+    }
+
+    /// The machine's own identity when it has one, else the automatic ones;
+    /// what the terminal, files, monitor, forwards and snippets all use.
+    func connectSSH(timeout: Duration? = nil, hint: (@Sendable (String) -> Void)? = nil) async throws -> (SSHConnection, RDIdentity) {
+        let identity = RayonStore.workerAssociatedIdentity(for: self)
+        if associatedIdentity != nil, identity == nil {
+            throw SSHFailure(message: "The identity this server signs in with no longer exists.", unreachable: false)
+        }
+        return try await connectSSH(
+            identity: identity,
+            autoIdentities: RayonStore.workerIdentitiesForAutoAuth,
+            timeout: timeout ?? .seconds(max(5, RayonStore.workerTimeoutNumber.intValue)),
+            hint: hint
+        )
+    }
+
+    private func connectSSH(
+        identity: RDIdentity?,
+        autoIdentities: [RDIdentity],
+        timeout: Duration,
+        hint: (@Sendable (String) -> Void)?,
+        visited: Set<UUID>
+    ) async throws -> (SSHConnection, RDIdentity) {
+        let candidates = identity.map { [$0] } ?? autoIdentities
+        guard !candidates.isEmpty else {
+            throw SSHFailure(message: "No identity to sign in with. Choose one for the server, or let an identity authenticate automatically.", unreachable: false)
+        }
+        var reasons: [String] = []
+        for candidate in candidates {
+            let credentials: [SSHCredential]
+            do {
+                credentials = try candidate.sshCredentials()
+            } catch {
+                reasons.append("\(candidate.shortDescription()): \(error.localizedDescription)")
+                continue
+            }
+            hint?("[i] trying to authenticate with \(candidate.shortDescription())")
+            do {
+                let connection = try await connect(
+                    username: candidate.loginUsername(override: sshUsernameOverride),
+                    credentials: credentials,
+                    timeout: timeout,
+                    visited: visited
+                )
+                candidate.recordUse()
+                return (connection, candidate)
+            } catch SSHError.authenticationFailed {
+                reasons.append("\(candidate.shortDescription()) was not accepted.")
+            }
+        }
+        throw SSHFailure(message: (["Could not sign in to \(name.isEmpty ? remoteAddress : name)."] + reasons).joined(separator: "\n"), unreachable: false)
+    }
+
+    /// One connection attempt; asks about the host key and tries again
+    /// when the person trusts it.
+    private func connect(username: String, credentials: [SSHCredential], timeout: Duration, visited: Set<UUID>) async throws -> SSHConnection {
+        let host = remoteAddress
+        let port = Int(remotePort) ?? 22
+        while true {
+            let transport = try await makeTransport(timeout: timeout, visited: visited)
+            let configuration = SSHConnection.Configuration(
+                host: host,
+                port: port,
+                username: username,
+                credentials: credentials,
+                transport: transport,
+                timeout: timeout,
+                hostKeyStatus: { KnownHosts.shared.status(of: $0, host: host, port: port) }
+            )
+            do {
+                return try await SSHConnection.connect(configuration)
+            } catch let error as SSHError {
+                if case let .jump(bastion) = transport { await bastion.close() }
+                switch error {
+                case let .unknownHostKey(key):
+                    guard await HostKeyTrust.confirm(HostKeyQuestion(host: host, port: port, offered: key, saved: nil)) else {
+                        throw SSHFailure(message: "The host key of \(host) was not trusted.", unreachable: true)
+                    }
+                    KnownHosts.shared.trust(key, host: host, port: port)
+                case let .hostKeyChanged(offered, saved):
+                    guard await HostKeyTrust.confirm(HostKeyQuestion(host: host, port: port, offered: offered, saved: saved)) else {
+                        throw SSHFailure(message: error.localizedDescription, unreachable: true)
+                    }
+                    KnownHosts.shared.trust(offered, host: host, port: port)
+                case .authenticationFailed:
+                    throw error
+                case let .connectionFailed(reason):
+                    throw SSHFailure(message: transport.isWebSocket ? cloudflareReason(reason) : reason, unreachable: true)
+                default:
+                    throw SSHFailure(message: error.localizedDescription, unreachable: true)
+                }
+            } catch let refusal as SSHWebSocketEndpoint.Refusal {
+                throw SSHFailure(message: cloudflareReason(refusal), unreachable: true)
+            }
+        }
+    }
+
+    private func makeTransport(timeout: Duration, visited: Set<UUID>) async throws -> SSHTransport {
+        switch transport {
+        case .direct:
+            return .tcp
+        case .cloudflareAccess:
+            var headers: [(String, String)] = []
+            if !cloudflareServiceTokenID.isEmpty || !cloudflareServiceTokenSecret.isEmpty {
+                headers = [("Cf-Access-Client-Id", cloudflareServiceTokenID), ("Cf-Access-Client-Secret", cloudflareServiceTokenSecret)]
+            }
+            let host = Self.cloudflareHostname(remoteAddress)
+            guard !host.isEmpty else {
+                throw SSHFailure(message: "\"\(remoteAddress)\" is not a host name Cloudflare can serve.", unreachable: true)
+            }
+            return .webSocket(SSHWebSocketEndpoint(host: host, headers: headers))
+        case .uuRemote:
+            let machine = self
+            return .socket { try await machine.openUUSSHStream(timeout: timeout) }
+        case .proxyJump:
+            guard let jumpID = proxyJumpMachineID else {
+                throw SSHFailure(message: "ProxyJump server is not selected.", unreachable: true)
+            }
+            var visited = visited
+            visited.insert(id)
+            guard !visited.contains(jumpID), visited.count <= 5 else {
+                throw SSHFailure(message: "ProxyJump chain contains a loop.", unreachable: true)
+            }
+            guard let bastion = RayonStore.workerMachine(for: jumpID) else {
+                throw SSHFailure(message: "The configured ProxyJump server no longer exists.", unreachable: true)
+            }
+            do {
+                let (connection, _) = try await bastion.connectSSH(
+                    identity: RayonStore.workerAssociatedIdentity(for: bastion),
+                    autoIdentities: RayonStore.workerIdentitiesForAutoAuth,
+                    timeout: timeout,
+                    hint: nil,
+                    visited: visited
+                )
+                return .jump(connection)
+            } catch let failure as SSHFailure {
+                throw SSHFailure(message: "Jump host \(bastion.name): \(failure.message)", unreachable: true)
+            }
+        }
+    }
+
+    /// "https://host/" and "host:443" as typed are the host itself.
+    static func cloudflareHostname(_ hostname: String) -> String {
+        var host = hostname.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let range = host.range(of: "://") { host = String(host[range.upperBound...]) }
+        if let slash = host.firstIndex(of: "/") { host = String(host[..<slash]) }
+        if host.hasSuffix(":443") { host.removeLast(4) }
+        return host
+    }
+
+    private func cloudflareReason(_ refusal: SSHWebSocketEndpoint.Refusal) -> String {
+        let host = Self.cloudflareHostname(remoteAddress)
+        let asksForSignIn = refusal.location?.contains("/cdn-cgi/access/") == true || [302, 401, 403].contains(refusal.status)
+        guard asksForSignIn else { return "Could not open a Cloudflare tunnel to \(host) (HTTP \(refusal.status))." }
+        if !cloudflareServiceTokenID.isEmpty {
+            return "Cloudflare Access did not accept the service token for \(host). Check its Client ID and Secret, and that the application's policy allows it (Service Auth)."
+        }
+        return "\(host) is protected by Cloudflare Access and asks to sign in. Add a service token to the server (Edit Server › Cloudflare Access): signing in with a browser is not supported yet."
+    }
+
+    private func cloudflareReason(_ reason: String) -> String {
+        "Could not open a Cloudflare tunnel to \(Self.cloudflareHostname(remoteAddress)): \(reason)"
+    }
+}
+
+private extension SSHTransport {
+    var isWebSocket: Bool {
+        if case .webSocket = self { return true }
+        return false
+    }
+}
+
+extension RDIdentity {
+    /// What this identity offers the server. A key's passphrase is the
+    /// identity's password; a key identity does not offer the password.
+    func sshCredentials() throws -> [SSHCredential] {
+        if useSSHAgent {
+            throw SSHFailure(message: "Signing in through an SSH agent is not supported.", unreachable: false)
+        }
+        if !privateKey.isEmpty {
+            return try [.privateKey(SSHPrivateKey(text: privateKey, passphrase: password))]
+        }
+        if !password.isEmpty {
+            return [.password(password)]
+        }
+        throw SSHFailure(message: "The identity has neither a password nor a private key.", unreachable: false)
+    }
+
+    /// Stamps the identity as used, at most once a minute.
+    func recordUse() {
+        let id = id
+        let date = Date()
+        Task { @MainActor in RayonStore.shared.noteIdentityUsed(id, at: date) }
+    }
+}
+
+private typealias SSHFailure = RDMachine.SSHFailure

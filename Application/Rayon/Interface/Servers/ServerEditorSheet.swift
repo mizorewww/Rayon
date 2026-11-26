@@ -418,14 +418,14 @@ struct ServerEditorSheet: View {
         let draft = draft
         let chosen = identity.flatMap { store.identity($0) }
         let candidates = store.identitiesForAutoAuth
-        DispatchQueue.global().async {
-            let outcome = ServerConnectionCheck.run(
+        Task {
+            let outcome = await ServerConnectionCheck.run(
                 draft,
                 identity: chosen,
                 candidates: candidates,
                 timeout: RayonStore.shared.timeoutNumber
             )
-            onMainThread {
+            await MainActor.run {
                 connecting = false
                 if case let .unreachable(refusal) = outcome {
                     error = refusal ?? "Could not reach \(host) on port \(port)."

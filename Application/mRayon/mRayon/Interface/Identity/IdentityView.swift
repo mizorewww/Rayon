@@ -175,9 +175,9 @@ enum IdentityActions {
                 with: "Deploying public key",
                 subtitle: machines.count == 1 ? "To 1 server" : "To \(machines.count) servers"
             )
-            DispatchQueue.global().async {
-                let outcome = PublicKeyDeployment.deploy(pub, to: machines)
-                onMainThread {
+            Task {
+                let outcome = await PublicKeyDeployment.deploy(pub, to: machines)
+                await MainActor.run {
                     if !outcome.failed.isEmpty {
                         UIBridge.presentError(with: "Failed to deploy public key to: \(outcome.failed.joined(separator: ", ")).")
                     } else if !outcome.succeeded.isEmpty {

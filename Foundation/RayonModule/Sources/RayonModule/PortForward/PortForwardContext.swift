@@ -3,18 +3,19 @@
 //  RayonModule
 //
 //  Shared port-forward session, previously duplicated between the macOS
-//  and iOS apps. A reconnect is driven by the forward channel dropping
-//  (its round ends), not by polling; termination is lock-protected.
+//  and iOS apps. A round is one connection running the forward; when it
+//  drops the round ends and, after a pause, another begins. Terminating
+//  cancels the running task.
 //
 
 import Foundation
-import NSRemoteShell
+import os
+import RayonSSH
 
 public class PortForwardContext: ObservableObject, Identifiable, @unchecked Sendable {
     public var id = UUID()
     public let info: RDPortForward
     public let machine: RDMachine
-    public let shell: NSRemoteShell
 
     /// Where the session is in its connect → forward → stop cycle. Views
     /// match on this instead of the former hint strings, so a copy edit
@@ -45,29 +46,11 @@ public class PortForwardContext: ObservableObject, Identifiable, @unchecked Send
     /// Backoff before reconnecting after a round ends on its own.
     public var reconnectDelay: TimeInterval = 3
 
-    // The lifecycle thread reads closed each round while terminate writes
-    // it from the UI thread; the lock keeps that pair safe.
-    private let stateAccessLock = NSLock()
-    private var _closed = false
-    public private(set) var closed: Bool {
-        get {
-            stateAccessLock.lock()
-            defer { stateAccessLock.unlock() }
-            return _closed
-        }
-        set {
-            stateAccessLock.lock()
-            defer { stateAccessLock.unlock() }
-            _closed = newValue
-        }
-    }
+    private let task = OSAllocatedUnfairLock<Task<Void, Never>?>(initialState: nil)
 
-    private let reconnectSignal = DispatchSemaphore(value: 0)
-
-    public init(info: RDPortForward, machine: RDMachine, shell: NSRemoteShell = .init()) {
+    public init(info: RDPortForward, machine: RDMachine) {
         self.info = info
         self.machine = machine
-        self.shell = shell
     }
 
     func putLifecycle(_ state: Lifecycle) {
@@ -77,90 +60,69 @@ public class PortForwardContext: ObservableObject, Identifiable, @unchecked Send
         lifecycleHandler?(state)
     }
 
-    /// Starts the lifecycle on a background queue and returns immediately.
+    /// Starts the lifecycle in the background and returns immediately.
     public func begin() {
-        DispatchQueue.global().async {
-            self.runLifecycle()
+        task.withLock { task in
+            guard task == nil else { return }
+            task = Task.detached { await self.runLifecycle() }
         }
     }
 
-    /// Asks the session to stop: a running round is cut off by the
-    /// disconnect and a pending reconnect returns at once.
+    /// Stops the session: a running round is cut off and a pending
+    /// reconnect returns at once.
     public func terminate() {
-        closed = true
-        reconnectSignal.signal()
-        let shell = shell
-        DispatchQueue.global().async { [weak shell] in
-            shell?.requestDisconnectAndWait()
-        }
+        task.withLock { $0 }?.cancel()
     }
 
-    private func runLifecycle() {
-        defer {
-            shell.requestDisconnectAndWait()
-            shell.destroyPermanently()
-            putLifecycle(.terminated)
-            let handler = terminationHandler
-            onMainThread { handler?(self) }
-        }
-        while !closed {
-            runRound()
-            guard !closed else { break }
-            // Back off before reconnecting; terminate() signals the wait out.
-            _ = reconnectSignal.wait(timeout: .now() + reconnectDelay)
-        }
+    public var closed: Bool {
+        task.withLock { $0?.isCancelled ?? false }
     }
 
-    private func runRound() {
+    private func runLifecycle() async {
+        while !Task.isCancelled {
+            await runRound()
+            guard !Task.isCancelled else { break }
+            try? await Task.sleep(for: .seconds(reconnectDelay))
+        }
+        putLifecycle(.terminated)
+        let handler = terminationHandler
+        onMainThread { handler?(self) }
+    }
+
+    /// One connection running the forward until it drops or is cancelled.
+    /// Signs in as the terminal and the files do: with the server's own
+    /// identity, else with the automatic ones.
+    private func runRound() async {
         putLifecycle(.awaitingConnect)
-        // The lifecycle thread reads the store's worker snapshot, never the
-        // main-thread properties.
-        shell
-            .applyConnection(for: machine, timeout: RayonStore.workerTimeoutNumber)
-            .requestConnectAndWait()
-        guard shell.isConnected else {
+        let lease: SSHLease
+        do {
+            lease = try await SSHConnectionPool.shared.lease(for: machine)
+        } catch let failure as RDMachine.SSHFailure {
+            putLifecycle(failure.unreachable ? .failedConnect : .failedAuthenticate)
+            return
+        } catch {
             putLifecycle(.failedConnect)
             return
         }
-        guard let identity = RayonStore.workerAssociatedIdentity(for: machine) else {
-            putLifecycle(.failedAuthenticate)
-            return
-        }
-        identity.callAuthenticationWith(remote: shell, username: machine.sshUsernameOverride)
-        guard shell.isAuthenticated else {
-            putLifecycle(.failedAuthenticate)
-            return
-        }
+        defer { lease.release() }
         putLifecycle(.openingChannel)
-        switch info.forwardOrientation {
-        case .listenRemote:
-            shell.createPortForward(
-                withRemotePort: NSNumber(value: info.bindPort),
-                withForwardTargetHost: info.targetHost,
-                withForwardTargetPort: NSNumber(value: info.targetPort)
-            ) {
-                self.putLifecycle(.forwardRunning)
-            } withContinuationHandler: {
-                true // we are using shell.disconnect for shutdown
+        let connection = lease.connection
+        let running: @Sendable () -> Void = { [weak self] in self?.putLifecycle(.forwardRunning) }
+        do {
+            switch info.forwardOrientation {
+            case .listenRemote:
+                try await connection.runRemoteForward(
+                    bindPort: info.bindPort, targetHost: info.targetHost, targetPort: info.targetPort, onListening: running
+                )
+            case .listenLocal:
+                try await connection.runLocalForward(
+                    bindPort: info.bindPort, targetHost: info.targetHost, targetPort: info.targetPort, onListening: running
+                )
+            case .dynamicSOCKS:
+                try await connection.runDynamicForward(bindPort: info.bindPort, onListening: running)
             }
-        case .listenLocal:
-            shell.createPortForward(
-                withLocalPort: NSNumber(value: info.bindPort),
-                withForwardTargetHost: info.targetHost,
-                withForwardTargetPort: NSNumber(value: info.targetPort)
-            ) {
-                self.putLifecycle(.forwardRunning)
-            } withContinuationHandler: {
-                true // we are using shell.disconnect for shutdown
-            }
-        case .dynamicSOCKS:
-            shell.createDynamicSOCKSForward(
-                withLocalPort: NSNumber(value: info.bindPort)
-            ) {
-                self.putLifecycle(.forwardRunning)
-            } withContinuationHandler: {
-                true
-            }
+        } catch {
+            debugPrint("port forward \(info.id) ended: \(error.localizedDescription)")
         }
         putLifecycle(.forwardStopped)
     }

@@ -193,9 +193,9 @@ enum IdentityActions {
             allowsMany: true
         ) { machines in
             guard !machines.isEmpty else { return }
-            DispatchQueue.global().async {
-                let outcome = PublicKeyDeployment.deploy(pub, to: machines)
-                onMainThread {
+            Task {
+                let outcome = await PublicKeyDeployment.deploy(pub, to: machines)
+                await MainActor.run {
                     if !outcome.failed.isEmpty {
                         UIBridge.presentError(with: "Failed to deploy public key to: \(outcome.failed.joined(separator: ", ")).")
                     } else if !outcome.succeeded.isEmpty {

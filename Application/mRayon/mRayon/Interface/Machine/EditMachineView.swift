@@ -439,14 +439,14 @@ struct EditMachineView: View {
         let port = remotePort
         let chosen = associatedIdentity.flatMap { RayonStore.shared.identity($0) }
         let candidates = RayonStore.shared.identitiesForAutoAuth
-        DispatchQueue.global().async {
-            let outcome = ServerConnectionCheck.run(
+        Task {
+            let outcome = await ServerConnectionCheck.run(
                 draft,
                 identity: chosen,
                 candidates: candidates,
                 timeout: RayonStore.shared.timeoutNumber
             )
-            onMainThread {
+            await MainActor.run {
                 connecting = false
                 switch outcome {
                 case let .unreachable(refusal):

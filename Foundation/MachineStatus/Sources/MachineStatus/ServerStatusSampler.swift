@@ -4,30 +4,6 @@
 //
 
 import Foundation
-import NSRemoteShell
-
-/// Hands a value out of a @Sendable dispatch block without capturing a
-/// var, which Swift 6 diagnoses.
-private final class ConcurrentValue<Value>: @unchecked Sendable {
-    private let lock = NSLock()
-    private var value: Value
-
-    init(_ value: Value) {
-        self.value = value
-    }
-
-    func store(_ newValue: Value) {
-        lock.lock()
-        value = newValue
-        lock.unlock()
-    }
-
-    func load() -> Value {
-        lock.lock()
-        defer { lock.unlock() }
-        return value
-    }
-}
 
 /// Reads rounds of `ServerStatus` from one connection. Rates (CPU,
 /// network) are the difference between this round's counters and the
@@ -58,8 +34,6 @@ public final class ServerStatusSampler {
         var clientClock: TimeInterval
     }
 
-    private static let queue = DispatchQueue(label: "me.mizorewww.rayon.info", attributes: .concurrent)
-
     /// Hostname and os-release, read once per connection.
     private var sessionHostname: String?
     private var sessionReleaseName: String?
@@ -80,37 +54,22 @@ public final class ServerStatusSampler {
         probesGraphics = true
     }
 
+    /// Runs a command on the server and returns what it printed; empty
+    /// when the command could not run, failed or timed out.
+    public typealias Runner = @Sendable (_ command: String) async -> String
+
     /// Runs the merged monitor script and the GPU probe on two channels,
     /// then parses every section on its own: one section going missing
     /// (a hung `nvidia-smi`, an unsupported system probe) empties only its
-    /// model. `timeout` bounds each channel so a hung probe cannot freeze
-    /// the monitor loop forever. Blocks.
-    public func sample(with remote: NSRemoteShell, timeout: Double) -> Round {
-        // The shell multiplexes channels internally; claiming it Sendable
-        // is for the compiler, like the legacy model callbacks.
-        nonisolated(unsafe) let remote = remote
+    /// model. The runner bounds each command, so a hung probe cannot
+    /// freeze the monitor loop.
+    public func sample(with run: Runner) async -> Round {
         let includeStatic = sessionHostname == nil || sessionReleaseName == nil
-        let group = DispatchGroup()
-        let queue = Self.queue
-
-        let mergedOutput = ConcurrentValue("")
-        group.enter()
-        queue.async {
-            defer { group.leave() }
-            mergedOutput.store(ServerStatus.downloadResultFrom(shell: remote, command: ServerStatus.monitorCommand(includeStatic: includeStatic), timeout: timeout))
-        }
-
-        let graphicsOutput = ConcurrentValue<String?>(nil)
-        if probesGraphics {
-            group.enter()
-            queue.async {
-                defer { group.leave() }
-                graphicsOutput.store(ServerStatus.downloadResultFrom(shell: remote, command: ServerStatus.graphicsCommand, timeout: timeout))
-            }
-        }
-
-        group.wait()
-        return read(mergedOutput.load(), graphicsOutput: graphicsOutput.load(), clientClock: ProcessInfo.processInfo.systemUptime)
+        let probesGraphics = probesGraphics
+        async let merged = run(ServerStatus.monitorCommand(includeStatic: includeStatic))
+        async let graphics: String? = probesGraphics ? run(ServerStatus.graphicsCommand) : nil
+        let (mergedOutput, graphicsOutput) = await (merged, graphics)
+        return read(mergedOutput, graphicsOutput: graphicsOutput, clientClock: ProcessInfo.processInfo.systemUptime)
     }
 
     /// Turns one run of the monitor script (and of the GPU probe, when it
