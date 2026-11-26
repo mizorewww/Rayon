@@ -275,6 +275,32 @@ final class SSHLiveTests: XCTestCase {
         await connection.close()
     }
 
+    func testDownloadsDoNotFollowLinksToFolders() async throws {
+        let connection = try await connect([.password(password)])
+        let made = try await connection.execute("""
+        rm -rf /tmp/links && mkdir -p /tmp/links/deep && cd /tmp/links && echo hi > note && \
+        ln -s . self && ln -s .. up && ln -s note note-link && ln -s missing dangling && ln -s ../.. deep/top
+        """)
+        XCTAssertEqual(made.status, 0, String(decoding: made.errorOutput, as: UTF8.self))
+        let sftp = try await connection.openSFTP()
+        let local = FileManager.default.temporaryDirectory.appendingPathComponent("rayon-links-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: local) }
+
+        try await sftp.download("/tmp/links", to: local) { _ in }
+        let copied = try FileManager.default.subpathsOfDirectory(atPath: local.path).sorted()
+        XCTAssertEqual(copied, ["deep", "note", "note-link"])
+        XCTAssertEqual(try String(contentsOf: local.appendingPathComponent("note-link"), encoding: .utf8), "hi\n")
+
+        _ = try await connection.execute("mkdir -p /tmp/nested/" + Array(repeating: "d", count: 33).joined(separator: "/"))
+        do {
+            try await sftp.download("/tmp/nested", to: local.appendingPathComponent("nested")) { _ in }
+            XCTFail("downloaded 33 folders deep")
+        } catch {
+            XCTAssertTrue(error.localizedDescription.contains("32 folders deep"), error.localizedDescription)
+        }
+        await connection.close()
+    }
+
     func testSFTPListUploadDownload() async throws {
         let connection = try await connect([.password(password)])
         let sftp = try await connection.openSFTP()

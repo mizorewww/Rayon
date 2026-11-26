@@ -64,6 +64,8 @@ public struct SFTPProgress: Sendable {
 
 public struct SFTPSession: Sendable {
     private static let chunkSize = 32 * 1024
+    /// How deep a download descends into folders, as libssh2's did.
+    private static let maxDepth = 32
 
     let client: SFTPClient
 
@@ -144,17 +146,27 @@ public struct SFTPSession: Sendable {
     }
 
     /// Copies a remote file or folder to `local`, which must not exist.
+    /// Links to files inside a folder are copied as the files; links to
+    /// folders are left out, since they can lead back up.
     public func download(_ remote: String, to local: URL, progress: @escaping @Sendable (SFTPProgress) -> Void) async throws {
+        try await download(remote, to: local, depth: 0, progress: progress)
+    }
+
+    private func download(_ remote: String, to local: URL, depth: Int, progress: @escaping @Sendable (SFTPProgress) -> Void) async throws {
         let attributes = try await client.getAttributes(at: remote)
         if SFTPEntry(name: "", attributes: attributes).isDirectory {
+            guard depth < Self.maxDepth else {
+                throw CocoaError(.fileReadUnknown, userInfo: [
+                    NSLocalizedDescriptionKey: "\(remote) is more than \(Self.maxDepth) folders deep.",
+                ])
+            }
             try FileManager.default.createDirectory(at: local, withIntermediateDirectories: true)
-            for entry in try await entries(at: remote) where !entry.isLink || !entry.isDirectory {
+            for entry in try await entries(at: remote) {
                 try Task.checkCancellation()
-                try await download(
-                    (remote as NSString).appendingPathComponent(entry.name),
-                    to: local.appendingPathComponent(entry.name),
-                    progress: progress
-                )
+                let path = (remote as NSString).appendingPathComponent(entry.name)
+                // The listing describes a link itself; what it points to decides.
+                if entry.isLink, (try? await self.entry(at: path))?.isDirectory != false { continue }
+                try await download(path, to: local.appendingPathComponent(entry.name), depth: depth + 1, progress: progress)
             }
             return
         }
