@@ -41,6 +41,8 @@ public struct SSHPrivateKey: Sendable {
         }
     }
 
+    static let maxRounds: UInt32 = 1000
+
     /// What the key signs with, most preferred first.
     func offers() throws -> [NIOSSHPrivateKey] {
         switch storage {
@@ -85,6 +87,11 @@ public struct SSHPrivateKey: Sendable {
                   let salt = kdfOptions.readLengthPrefixedSlice(as: UInt32.self),
                   let rounds = kdfOptions.readInteger(as: UInt32.self)
             else { throw SSHError.unsupportedKey("The key is encrypted with an unknown key derivation (\(kdf)).") }
+            // ssh-keygen's default is 16; each round costs the same again,
+            // and a key with billions would never open.
+            guard rounds <= maxRounds else {
+                throw SSHError.unsupportedKey("The key's passphrase is derived with \(rounds) bcrypt rounds; at most \(maxRounds) are supported.")
+            }
             let tag = buffer.readBytes(length: buffer.readableBytes) ?? []
             let plain = try OpenSSHKeyCipher.decrypt(
                 Array(section.readableBytesView), tag: tag, cipher: cipher,

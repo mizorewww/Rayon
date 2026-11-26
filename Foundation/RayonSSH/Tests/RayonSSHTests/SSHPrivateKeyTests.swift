@@ -106,4 +106,19 @@ final class SSHPrivateKeyTests: XCTestCase {
         XCTAssertFalse(SSHConnection.takesRSASHA2("SSH-2.0-dropbear_2022.83"))
         XCTAssertFalse(SSHConnection.takesRSASHA2(nil))
     }
+
+    /// A key whose passphrase takes billions of bcrypt rounds is refused
+    /// rather than decrypted forever.
+    func testAKeyWithTooManyRoundsIsRefused() throws {
+        let text = try generate(["-t", "ed25519"], passphrase: "secret")
+        let body = text.components(separatedBy: "\n").filter { !$0.hasPrefix("-----") }.joined()
+        var data = try XCTUnwrap(Data(base64Encoded: body))
+        // magic, "aes256-ctr", "bcrypt", the options' length, the salt: then the rounds.
+        let rounds = 15 + (4 + 10) + (4 + 6) + 4 + (4 + 16)
+        data.replaceSubrange(rounds ..< rounds + 4, with: [0xFF, 0xFF, 0xFF, 0xFF])
+        let patched = "-----BEGIN OPENSSH PRIVATE KEY-----\n" + data.base64EncodedString() + "\n-----END OPENSSH PRIVATE KEY-----\n"
+        XCTAssertThrowsError(try SSHPrivateKey(text: patched, passphrase: "secret")) { error in
+            XCTAssertTrue(error.localizedDescription.contains("rounds"), error.localizedDescription)
+        }
+    }
 }
