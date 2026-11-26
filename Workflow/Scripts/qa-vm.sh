@@ -1,6 +1,6 @@
 #!/bin/zsh
 # qa-vm.sh — drive the headless `rayon-qa` lume VM used for Rayon UI QA.
-#   start | push <Rayon.app> | run <cmd...> | shot <out.png> | stop | ip | vnc
+#   start | grant | push <Rayon.app> | run <cmd...> | shot <out.png> | stop | ip | vnc
 set -euo pipefail
 
 VM=${QA_VM:-rayon-qa}
@@ -67,11 +67,29 @@ case $cmd in
     [[ -s $out ]] || die "empty screenshot"
     print -- "$out"
     ;;
+  grant)
+    # The cua image ships with SIP off, so cua-driver's TCC grants can be written
+    # straight into the guest's system TCC database; no click in the VM needed.
+    gssh 'zsh -s' <<'EOF'
+set -euo pipefail
+codesign -dr - /Applications/CuaDriver.app 2>/dev/null | sed -n 's/^designated => //p' > /tmp/cua.req
+csreq -r /tmp/cua.req -b /tmp/cua.req.bin
+req=$(xxd -p /tmp/cua.req.bin | tr -d '\n')
+for service in kTCCServiceAccessibility kTCCServiceScreenCapture kTCCServicePostEvent kTCCServiceListenEvent; do
+  echo lume | sudo -S -p '' sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
+    "INSERT OR REPLACE INTO access (service,client,client_type,auth_value,auth_reason,auth_version,csreq,policy_id,indirect_object_identifier_type,indirect_object_identifier,indirect_object_code_identity,flags,last_modified,pid,pid_version,boot_uuid,last_reminded) VALUES ('$service','com.trycua.driver',0,2,4,1,X'$req',NULL,0,'UNUSED',NULL,0,CAST(strftime('%s','now') AS INTEGER),NULL,NULL,'UNUSED',0);"
+done
+~/.local/bin/cua-driver stop >/dev/null 2>&1 || true
+open -g -a /Applications/CuaDriver.app --args serve
+sleep 3
+~/.local/bin/cua-driver permissions grant
+EOF
+    ;;
   stop)
     if [[ $(state) == running ]]; then "$LUME" stop "$VM" --timeout 30 >/dev/null 2>&1; fi
     print -- "$VM $(state)"
     ;;
   ip)  guest_ip ;;
   vnc) info vncUrl ;;
-  *) die "usage: qa-vm.sh start | push <App.app> | run <cmd...> | shot <out.png> | stop | ip | vnc" ;;
+  *) die "usage: qa-vm.sh start | grant | push <App.app> | run <cmd...> | shot <out.png> | stop | ip | vnc" ;;
 esac
