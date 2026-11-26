@@ -16,6 +16,7 @@ enum DBVersion: Int, CaseIterable {
     case v2 = 2
     case v3 = 3
     case v4 = 4
+    case v5 = 5
 }
 
 struct DBMigration: Sendable {
@@ -43,6 +44,10 @@ struct DBMigration: Sendable {
         },
         DBMigration(from: .v3, to: .v4) { db in
             try db.create(table: RDAppSettings.tableName, of: RDAppSettings.self)
+        },
+        DBMigration(from: .v4, to: .v5) { db in
+            // Adds KnownHostRecord.legacy.
+            try db.create(table: KnownHostRecord.tableName, of: KnownHostRecord.self)
         },
     ]
 

@@ -17,6 +17,10 @@ struct KnownHostRecord: TableCodable, Equatable {
     var type: String = ""
     var key: Data = .init()
     var added: Date = .init()
+    /// Saved by a release before 2.9, whose libssh2 preferred an ECDSA or
+    /// RSA host key: the server's Ed25519 key, asked for first now, is
+    /// then expected once rather than a sign of interception.
+    var legacy: Bool = false
 
     enum CodingKeys: String, CodingTableKey {
         typealias Root = KnownHostRecord
@@ -25,12 +29,14 @@ struct KnownHostRecord: TableCodable, Equatable {
             BindColumnConstraint(type, isNotNull: true)
             BindColumnConstraint(key, isNotNull: true)
             BindColumnConstraint(added, isNotNull: true)
+            BindColumnConstraint(legacy, isNotNull: true, defaultTo: false)
         }
 
         case name
         case type
         case key
         case added
+        case legacy
     }
 }
 

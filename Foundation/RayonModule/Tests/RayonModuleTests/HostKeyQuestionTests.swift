@@ -2,7 +2,8 @@
 //  HostKeyQuestionTests.swift
 //  RayonModuleTests
 //
-//  Only a replaced key of the same type is asked about as a warning.
+//  A replaced key is a warning, but for an old release's ECDSA or RSA key
+//  giving way to Ed25519.
 //
 
 @testable import RayonModule
@@ -21,13 +22,19 @@ final class HostKeyQuestionTests: XCTestCase {
     }
 
     /// A server saved by the libssh2 build (ECDSA) presenting Ed25519 now.
-    func testAKeyOfAnotherTypeIsAskedAboutCalmly() {
-        let question = HostKeyQuestion(host: "example.com", port: 22, offered: ed25519, saved: ecdsa)
+    func testAnOldReleasesKeyGivingWayToEd25519IsAskedAboutCalmly() {
+        let question = HostKeyQuestion(host: "example.com", port: 22, offered: ed25519, saved: ecdsa, savedByLegacyRelease: true)
         XCTAssertFalse(question.isWarning)
         XCTAssertEqual(question.title, "Trust example.com?")
         XCTAssertEqual(question.confirmTitle, "Trust and Connect")
         XCTAssertTrue(question.message.contains("ecdsa-sha2-nistp256"), question.message)
         XCTAssertFalse(question.message.contains("intercepting"), question.message)
+    }
+
+    /// Saved by this release, a key of another type is as suspect as any.
+    func testAKeyOfAnotherTypeIsAWarning() {
+        XCTAssertTrue(HostKeyQuestion(host: "example.com", port: 22, offered: ed25519, saved: ecdsa).isWarning)
+        XCTAssertTrue(HostKeyQuestion(host: "example.com", port: 22, offered: ecdsa, saved: ed25519, savedByLegacyRelease: true).isWarning)
     }
 
     func testAReplacedKeyOfTheSameTypeIsAWarning() {

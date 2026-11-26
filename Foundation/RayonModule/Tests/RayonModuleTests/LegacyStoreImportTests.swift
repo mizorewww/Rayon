@@ -130,6 +130,7 @@ final class LegacyStoreImportTests: XCTestCase {
         XCTAssertEqual(storage.record(RDPortForward.self, id: forwardID)?.forwardOrientation, .listenRemote, "RGCM1")
         XCTAssertEqual(storage.recentConnections().map(\.machine), [jumpID])
         XCTAssertEqual(storage.knownHost(named: "[bastion]:22")?.key, Data([1, 2, 3]))
+        XCTAssertEqual(storage.knownHost(named: "[bastion]:22")?.legacy, true, "saved by libssh2")
     }
 
     /// Two devices updating from the same old data make the same records:

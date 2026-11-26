@@ -116,12 +116,12 @@ public extension RDMachine {
             } catch let error as SSHError {
                 switch error {
                 case let .unknownHostKey(key):
-                    guard await HostKeyTrust.confirm(HostKeyQuestion(host: host, port: port, offered: key, saved: nil)) else {
+                    guard await HostKeyTrust.confirm(KnownHosts.shared.question(offering: key, host: host, port: port)) else {
                         throw SSHFailure(message: "The host key of \(host) was not trusted.", unreachable: true)
                     }
                     KnownHosts.shared.trust(key, host: host, port: port)
-                case let .hostKeyChanged(offered, saved):
-                    guard await HostKeyTrust.confirm(HostKeyQuestion(host: host, port: port, offered: offered, saved: saved)) else {
+                case let .hostKeyChanged(offered, _):
+                    guard await HostKeyTrust.confirm(KnownHosts.shared.question(offering: offered, host: host, port: port)) else {
                         throw SSHFailure(message: error.localizedDescription, unreachable: true)
                     }
                     KnownHosts.shared.trust(offered, host: host, port: port)

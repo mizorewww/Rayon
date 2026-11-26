@@ -29,7 +29,8 @@ public final class KnownHosts: Sendable {
         return saved == offered ? .trusted : .changed(saved: saved)
     }
 
-    /// Saves `key` as the address's key, in place of any saved before.
+    /// Saves `key` as the address's key, in place of any saved before; a
+    /// key saved by an older release is no longer treated as one.
     public func trust(_ key: HostKey, host: String, port: Int) {
         let name = Self.name(host: host, port: port)
         do {
@@ -37,6 +38,18 @@ public final class KnownHosts: Sendable {
         } catch {
             RayonStorage.logger.error("saving the host key of \(name) failed: \(error.localizedDescription)")
         }
+    }
+
+    /// What to ask the person about `offered`, a key that is not trusted.
+    public func question(offering offered: HostKey, host: String, port: Int) -> HostKeyQuestion {
+        let saved = storage.knownHost(named: Self.name(host: host, port: port))
+        return HostKeyQuestion(
+            host: host,
+            port: port,
+            offered: offered,
+            saved: saved.map { HostKey(type: $0.type, key: $0.key) },
+            savedByLegacyRelease: saved?.legacy ?? false
+        )
     }
 
     public func savedKey(host: String, port: Int) -> HostKey? {

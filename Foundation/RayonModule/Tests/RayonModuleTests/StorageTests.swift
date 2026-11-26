@@ -4,7 +4,7 @@
 //
 
 @testable import RayonModule
-import WCDBSwift
+@preconcurrency import WCDBSwift
 import XCTest
 
 final class StorageTests: XCTestCase {
@@ -356,5 +356,37 @@ final class StorageTests: XCTestCase {
         let check = Database(at: url.path)
         defer { check.close() }
         XCTAssertEqual(try check.getValue(from: StatementPragma().pragma(.userVersion))?.intValue, 999)
+    }
+
+    /// A database from before host keys knew which release saved them
+    /// keeps its keys, none of them taken for one an old release saved.
+    func testKnownHostsGainTheirLegacyMarker() throws {
+        struct V4KnownHost: TableCodable {
+            var name = "[a]:22"
+            var type = "ecdsa-sha2-nistp256"
+            var key = Data([1])
+            var added = Date()
+            enum CodingKeys: String, CodingTableKey {
+                typealias Root = V4KnownHost
+                static let objectRelationalMapping = TableBinding(CodingKeys.self) {
+                    BindColumnConstraint(name, isPrimary: true)
+                }
+
+                case name, type, key, added
+            }
+        }
+        let url = test.directory.appendingPathComponent("v4/database.db")
+        let old = try RayonStorage(databaseURL: url, secrets: test.secrets)
+        try old.db.drop(table: KnownHostRecord.tableName)
+        try old.db.create(table: KnownHostRecord.tableName, of: V4KnownHost.self)
+        try old.db.insert(V4KnownHost(), intoTable: KnownHostRecord.tableName)
+        try old.db.exec(StatementPragma().pragma(.userVersion).to(4))
+        old.close()
+
+        let reopened = try RayonStorage(databaseURL: url, secrets: test.secrets)
+        defer { reopened.close() }
+        let host = try XCTUnwrap(reopened.knownHost(named: "[a]:22"))
+        XCTAssertEqual(host.key, Data([1]))
+        XCTAssertFalse(host.legacy)
     }
 }

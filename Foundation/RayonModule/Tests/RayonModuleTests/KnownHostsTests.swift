@@ -38,6 +38,35 @@ final class KnownHostsTests: XCTestCase {
         XCTAssertEqual(hosts.status(of: retyped, host: "example.com", port: 22), .changed(saved: first))
     }
 
+    /// A server that suddenly presents a key of another type is as
+    /// suspect as one presenting another key of the same type.
+    func testAKeyOfAnotherTypeIsAWarning() {
+        hosts.trust(first, host: "example.com", port: 22)
+        let ecdsa = KnownHosts.HostKey(type: "ecdsa-sha2-nistp256", key: Data([5]))
+        XCTAssertTrue(hosts.question(offering: ecdsa, host: "example.com", port: 22).isWarning)
+        XCTAssertTrue(hosts.question(offering: other, host: "example.com", port: 22).isWarning)
+        XCTAssertFalse(hosts.question(offering: first, host: "new.example.com", port: 22).isWarning)
+    }
+
+    /// The one calm change: the ECDSA or RSA key libssh2 saw gives way to
+    /// the Ed25519 key asked for now, once.
+    func testAKeyAnOldReleaseSavedGivesWayToEd25519Once() throws {
+        let ecdsa = KnownHosts.HostKey(type: "ecdsa-sha2-nistp256", key: Data([5]))
+        let rsa = KnownHosts.HostKey(type: "ssh-rsa", key: Data([6]))
+        let name = KnownHosts.name(host: "example.com", port: 22)
+        try test.storage.saveKnownHost(KnownHostRecord(name: name, type: ecdsa.type, key: ecdsa.key, legacy: true))
+        XCTAssertFalse(hosts.question(offering: first, host: "example.com", port: 22).isWarning)
+        XCTAssertTrue(hosts.question(offering: rsa, host: "example.com", port: 22).isWarning, "only Ed25519 is preferred now")
+        try test.storage.saveKnownHost(KnownHostRecord(name: name, type: first.type, key: first.key, legacy: true))
+        XCTAssertTrue(hosts.question(offering: ecdsa, host: "example.com", port: 22).isWarning, "Ed25519 was never libssh2's choice over ECDSA")
+
+        try test.storage.saveKnownHost(KnownHostRecord(name: name, type: rsa.type, key: rsa.key, legacy: true))
+        XCTAssertFalse(hosts.question(offering: first, host: "example.com", port: 22).isWarning)
+        hosts.trust(first, host: "example.com", port: 22)
+        XCTAssertEqual(test.storage.knownHost(named: name)?.legacy, false)
+        XCTAssertTrue(hosts.question(offering: rsa, host: "example.com", port: 22).isWarning, "trusted again, the key is this release's")
+    }
+
     func testAKeyIsSavedPerAddressAndPort() {
         hosts.trust(first, host: "example.com", port: 22)
         XCTAssertEqual(hosts.status(of: first, host: "example.com", port: 2222), .unknown)

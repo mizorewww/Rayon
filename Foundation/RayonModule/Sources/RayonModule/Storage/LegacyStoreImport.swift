@@ -174,7 +174,7 @@ enum LegacyStoreImport {
             for (name, line) in hosts {
                 let parts = line.split(separator: " ", maxSplits: 1)
                 guard parts.count == 2, let key = Data(base64Encoded: String(parts[1])) else { continue }
-                let host = KnownHostRecord(name: name, type: String(parts[0]), key: key, added: now)
+                let host = KnownHostRecord(name: name, type: String(parts[0]), key: key, added: now, legacy: true)
                 try handle.insertOrIgnore([host], intoTable: KnownHostRecord.tableName)
             }
         }
