@@ -19,6 +19,10 @@ let package = Package(
     dependencies: [
         .package(name: "NSRemoteShell", path: "../../External/NSRemoteShell"),
         .package(url: "https://github.com/attaswift/BigInt.git", from: "5.7.0"),
+        .package(url: "https://github.com/Lakr233/wcdb.xcframework", from: "2.1.26102501"),
+        .package(url: "https://github.com/marksands/BetterCodable", from: "0.4.0"),
+        .package(url: "https://github.com/apple/swift-collections.git", from: "1.1.0"),
+        .package(url: "https://github.com/weichsel/ZIPFoundation", from: "0.9.20"),
         .package(name: "Keychain", path: "../Keychain"),
         .package(name: "RayonDesign", path: "../RayonDesign"),
         .package(name: "RayonEditor", path: "../RayonEditor"),
@@ -31,6 +35,10 @@ let package = Package(
             dependencies: [
                 "NSRemoteShell",
                 .product(name: "BigInt", package: "BigInt"),
+                .product(name: "WCDBSwift", package: "wcdb.xcframework"),
+                .product(name: "BetterCodable", package: "BetterCodable"),
+                .product(name: "OrderedCollections", package: "swift-collections"),
+                .product(name: "ZIPFoundation", package: "ZIPFoundation"),
                 "Keychain",
                 "RayonDesign",
                 "RayonEditor",

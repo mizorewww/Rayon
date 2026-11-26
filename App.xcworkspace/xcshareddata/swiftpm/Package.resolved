@@ -2,6 +2,15 @@
   "object" : {
     "pins" : [
       {
+        "package" : "BetterCodable",
+        "repositoryURL" : "https://github.com/marksands/BetterCodable",
+        "state" : {
+          "branch" : null,
+          "revision" : "61153170668db7a46a20a87e35e70f80b24d4eb5",
+          "version" : "0.4.0"
+        }
+      },
+      {
         "package" : "BigInt",
         "repositoryURL" : "https://github.com/attaswift/BigInt.git",
         "state" : {
@@ -155,12 +164,30 @@
         }
       },
       {
+        "package" : "wcdb.xcframework",
+        "repositoryURL" : "https://github.com/Lakr233/wcdb.xcframework",
+        "state" : {
+          "branch" : null,
+          "revision" : "1d6f5c5389bfb86d08976b69d1eb3d7ef4672f53",
+          "version" : "2.1.26102501"
+        }
+      },
+      {
         "package" : "WebRTC",
         "repositoryURL" : "https://github.com/stasel/WebRTC.git",
         "state" : {
           "branch" : null,
           "revision" : "c6cde72c7638acf8dc2b070aaecca054e9e20720",
           "version" : "157.0.0"
+        }
+      },
+      {
+        "package" : "ZIPFoundation",
+        "repositoryURL" : "https://github.com/weichsel/ZIPFoundation",
+        "state" : {
+          "branch" : null,
+          "revision" : "e7048f0569f0ba37df26f8357f560b9d25e9a284",
+          "version" : "0.9.21"
         }
       }
     ]

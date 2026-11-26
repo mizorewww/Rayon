@@ -1,6 +1,15 @@
 {
-  "originHash" : "25e0eb0a0b4466d5a1b7dd866bb5eda984ab68762108f708936c1e568a025cb4",
+  "originHash" : "ce99c8112baa1bd0efeb15f5d71ddf22bc2df19f4d0acee65ccf29c62d384914",
   "pins" : [
+    {
+      "identity" : "bettercodable",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/marksands/BetterCodable",
+      "state" : {
+        "revision" : "61153170668db7a46a20a87e35e70f80b24d4eb5",
+        "version" : "0.4.0"
+      }
+    },
     {
       "identity" : "bigint",
       "kind" : "remoteSourceControl",
@@ -155,12 +164,30 @@
       }
     },
     {
+      "identity" : "wcdb.xcframework",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/wcdb.xcframework",
+      "state" : {
+        "revision" : "1d6f5c5389bfb86d08976b69d1eb3d7ef4672f53",
+        "version" : "2.1.26102501"
+      }
+    },
+    {
       "identity" : "webrtc",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/stasel/WebRTC.git",
       "state" : {
         "revision" : "c6cde72c7638acf8dc2b070aaecca054e9e20720",
         "version" : "157.0.0"
+      }
+    },
+    {
+      "identity" : "zipfoundation",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/weichsel/ZIPFoundation",
+      "state" : {
+        "revision" : "e7048f0569f0ba37df26f8357f560b9d25e9a284",
+        "version" : "0.9.21"
       }
     }
   ],
