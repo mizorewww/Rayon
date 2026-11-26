@@ -67,10 +67,9 @@ public extension RDMachine {
         visited: Set<UUID>
     ) async throws -> (SSHConnection, RDIdentity) {
         let candidates = identity.map { [$0] } ?? autoIdentities
-        guard !candidates.isEmpty else {
-            throw SSHFailure(message: "No identity to sign in with. Choose one for the server, or let an identity authenticate automatically.", unreachable: false)
-        }
         var reasons: [String] = []
+        /// Whether a server turned an identity down: it was reached.
+        var reachedServer = false
         for candidate in candidates {
             // The name sshd sees: the server's override wins over the identity's.
             let username = candidate.loginUsername(override: sshUsernameOverride)
@@ -93,12 +92,37 @@ public extension RDMachine {
                 candidate.recordUse()
                 return (connection, candidate)
             } catch SSHError.authenticationFailed {
+                reachedServer = true
                 reasons.append("\(username) with \(candidate.signInDescription) was not accepted.")
             } catch let SSHError.agentUnavailable(reason) {
                 reasons.append("\(username) with \(candidate.signInDescription): \(reason)")
             }
         }
+        // When no identity got as far as the server (there were none, or
+        // none had a password or key), a server that cannot be reached
+        // says so first: choosing another identity would not help.
+        if !reachedServer {
+            try await reach(timeout: timeout, background: background, visited: visited)
+        }
+        guard !candidates.isEmpty else {
+            throw SSHFailure(message: "No identity to sign in with. Choose one for the server, or let an identity authenticate automatically.", unreachable: false)
+        }
         throw SSHFailure(message: (["Could not sign in to \(name.isEmpty ? remoteAddress : name)."] + reasons).joined(separator: "\n"), unreachable: false)
+    }
+
+    /// Opens the server's transport without signing in; throws an
+    /// unreachable failure when it cannot be opened.
+    private func reach(timeout: Duration, background: Bool, visited: Set<UUID>) async throws {
+        let transport = try await makeTransport(timeout: timeout, background: background, visited: visited)
+        do {
+            try await transport.reach(host: remoteAddress, port: sshPort, timeout: timeout)
+        } catch let SSHError.connectionFailed(reason) {
+            throw SSHFailure(message: transport.isWebSocket ? cloudflareReason(reason) : reason, unreachable: true)
+        } catch let refusal as SSHWebSocketEndpoint.Refusal {
+            throw SSHFailure(message: cloudflareReason(refusal), unreachable: true)
+        } catch {
+            throw SSHFailure(message: SSHTransport.describe(error), unreachable: true)
+        }
     }
 
     /// The port connected to, and the host key saved under: 22 when the

@@ -65,6 +65,15 @@ extension SSHTransport {
         }
     }
 
+    /// Opens the stream to the server and closes it again, signing in to
+    /// nothing: whether the server can be reached at all. A jump host is
+    /// given over and closed, as `SSHConnection.connect` does.
+    public func reach(host: String, port: Int, timeout: Duration) async throws {
+        defer { if case let .jump(bastion) = self { Task { await bastion.close() } } }
+        let channel = try await makeChannel(host: host, port: port, timeout: TimeAmount(timeout))
+        try? await channel.close()
+    }
+
     private static func onEventLoopGroup(
         own: Bool,
         _ connect: (NIOTSEventLoopGroup) async throws -> Channel
