@@ -117,14 +117,35 @@ public extension TerminalManager {
     }
 
     /// The panes shown with `focused` in front: its split group's tabs in
-    /// order, or the tab alone.
+    /// order, which may be on other servers, or the tab alone.
     func visiblePanes(for focused: Context) -> [Context] {
-        if let group = splitGroup(containing: focused.id) {
-            let siblings = focused.tabSiblings
-            let matched = group.memberIDs.compactMap { id in siblings.first { $0.id == id } }
-            if matched.count >= 2 { return matched }
-        }
-        return [focused]
+        let ids = splitGroups.visiblePaneIDs(focusedID: focused.id, openIDs: sessionContexts.map(\.id))
+        guard ids.count >= 2 else { return [focused] }
+        return ids.compactMap { id in sessionContexts.first { $0.id == id } }
+    }
+
+    /// Whether the split `focused` is in shows tabs of more than one
+    /// server, Quick Connect command or the local shell.
+    func splitSpansServers(_ focused: Context) -> Bool {
+        Set(visiblePanes(for: focused).map(\.tabGroupKey)).count > 1
+    }
+
+    /// The open tabs that could join the split `focused` is in: every tab
+    /// not already shown in it, other servers' first.
+    func splitCandidates(for focused: Context) -> [Context] {
+        let shown = Set(visiblePanes(for: focused).map(\.id))
+        let others = sessionContexts.filter { !shown.contains($0.id) }
+        return others.filter { $0.tabGroupKey != focused.tabGroupKey }
+            + others.filter { $0.tabGroupKey == focused.tabGroupKey }
+    }
+
+    /// The layout a split takes when a tab picked from another server joins
+    /// it beside `anchorID`: a grid once it has three panes or more, else
+    /// what it has.
+    func layoutForJoining(_ anchorID: Context.ID) -> SplitOrientation {
+        let group = splitGroup(containing: anchorID)
+        let count = (group?.memberIDs.count ?? 1) + 1
+        return count >= 3 ? .grid : (group?.orientation ?? .horizontal)
     }
 
     /// Drops the tab `droppedID` on the terminal showing `anchor`, in

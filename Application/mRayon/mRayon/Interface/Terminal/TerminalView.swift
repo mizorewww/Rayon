@@ -173,6 +173,17 @@ struct TerminalView: View {
         let panes = panes
         if panes.count == 1, let single = panes.first {
             paneSurface(for: single, showHeader: false, totalPanes: 1, index: 0)
+        } else if splitOrientation == .grid {
+            VStack(spacing: 1) {
+                ForEach(SplitGrid.rows(Array(panes.enumerated())), id: \.first?.element.id) { row in
+                    HStack(spacing: 1) {
+                        ForEach(row, id: \.element.id) { index, pane in
+                            paneSurface(for: pane, showHeader: true, totalPanes: panes.count, index: index)
+                        }
+                    }
+                }
+            }
+            .background(Color.rxHairline)
         } else if splitOrientation == .horizontal {
             HStack(spacing: 1) {
                 ForEach(Array(panes.enumerated()), id: \.element.id) { index, pane in
@@ -576,14 +587,13 @@ private struct TerminalPaneHeader: View {
                 Spacer()
                 if isLast {
                     Button {
-                        let next: TerminalManager.SplitOrientation = orientation == .horizontal ? .vertical : .horizontal
                         withAnimation(.rxQuick) {
-                            TerminalManager.shared.setSplitOrientation(for: pane.id, orientation: next)
+                            TerminalManager.shared.setSplitOrientation(for: pane.id, orientation: orientation.next)
                         }
                     } label: {
-                        Image(systemName: orientation == .horizontal ? "rectangle.split.1x2" : "rectangle.split.2x1")
+                        Image(systemName: orientation.next.systemImage)
                     }
-                    .accessibilityLabel("Switch split orientation")
+                    .accessibilityLabel("Lay out as \(orientation.next.title)")
                 }
                 Button(action: detach) {
                     Image(systemName: "rectangle.on.rectangle.slash")

@@ -17,9 +17,38 @@ public final class TerminalManager: ObservableObject {
 
     private init() {}
 
+    /// How a split lays out its panes: side by side, stacked, or in rows
+    /// and columns (see `SplitGrid`).
     public enum SplitOrientation: String, CaseIterable, Sendable {
         case horizontal
         case vertical
+        case grid
+
+        /// The layout the orientation switch moves to: side by side, then
+        /// stacked, then a grid, then side by side again.
+        public var next: SplitOrientation {
+            switch self {
+            case .horizontal: return .vertical
+            case .vertical: return .grid
+            case .grid: return .horizontal
+            }
+        }
+
+        public var systemImage: String {
+            switch self {
+            case .horizontal: return "rectangle.split.2x1"
+            case .vertical: return "rectangle.split.1x2"
+            case .grid: return "square.grid.2x2"
+            }
+        }
+
+        public var title: String {
+            switch self {
+            case .horizontal: return "Side by Side"
+            case .vertical: return "Stacked"
+            case .grid: return "Grid"
+            }
+        }
     }
 
     public struct SplitGroup: Identifiable, Equatable {
@@ -139,21 +168,7 @@ public final class TerminalManager: ObservableObject {
         insertBeforeAnchor: Bool = false
     ) {
         guard anchorID != newID else { return }
-        removeFromSplitGroups(newID)
-
-        if let idx = splitGroups.firstIndex(where: { $0.memberIDs.contains(anchorID) }) {
-            var group = splitGroups[idx]
-            group.orientation = orientation
-            if let anchorPos = group.memberIDs.firstIndex(of: anchorID) {
-                group.memberIDs.insert(newID, at: insertBeforeAnchor ? anchorPos : anchorPos + 1)
-            } else {
-                group.memberIDs.append(newID)
-            }
-            splitGroups[idx] = group
-        } else {
-            let members = insertBeforeAnchor ? [newID, anchorID] : [anchorID, newID]
-            splitGroups.append(SplitGroup(memberIDs: members, orientation: orientation))
-        }
+        splitGroups.group(anchorID: anchorID, newID: newID, orientation: orientation, insertBeforeAnchor: insertBeforeAnchor)
 
         // Keep grouped tabs adjacent in `sessionContexts` in the exact order of `memberIDs`.
         if let group = splitGroup(containing: anchorID) {
@@ -171,12 +186,7 @@ public final class TerminalManager: ObservableObject {
     }
 
     private func removeFromSplitGroups(_ id: Context.ID) {
-        for idx in splitGroups.indices.reversed() {
-            splitGroups[idx].memberIDs.removeAll { $0 == id }
-            if splitGroups[idx].memberIDs.count < 2 {
-                splitGroups.remove(at: idx)
-            }
-        }
+        splitGroups.removeMember(id)
     }
 
     private func alignSessionOrder(for group: SplitGroup) {
@@ -206,6 +216,85 @@ public final class TerminalManager: ObservableObject {
         {
             let mItem = splitGroups[gIdx].memberIDs.remove(at: mFrom)
             splitGroups[gIdx].memberIDs.insert(mItem, at: mTo)
+        }
+    }
+}
+
+/// Splits as plain data: which tabs share a split, by ID. Every tab can
+/// join any split, whichever server it is connected to.
+public extension Array where Element == TerminalManager.SplitGroup {
+    func group(containing id: UUID) -> TerminalManager.SplitGroup? {
+        first { $0.memberIDs.contains(id) }
+    }
+
+    /// Puts `newID` next to `anchorID` (after it, or before it), taking it
+    /// out of any split it was in. The anchor's split takes `orientation`;
+    /// when the anchor is on its own, the two start a new split.
+    mutating func group(
+        anchorID: UUID,
+        newID: UUID,
+        orientation: TerminalManager.SplitOrientation,
+        insertBeforeAnchor: Bool = false
+    ) {
+        guard anchorID != newID else { return }
+        removeMember(newID)
+        if let idx = firstIndex(where: { $0.memberIDs.contains(anchorID) }) {
+            var group = self[idx]
+            group.orientation = orientation
+            if let anchorPos = group.memberIDs.firstIndex(of: anchorID) {
+                group.memberIDs.insert(newID, at: insertBeforeAnchor ? anchorPos : anchorPos + 1)
+            } else {
+                group.memberIDs.append(newID)
+            }
+            self[idx] = group
+        } else {
+            let members = insertBeforeAnchor ? [newID, anchorID] : [anchorID, newID]
+            append(TerminalManager.SplitGroup(memberIDs: members, orientation: orientation))
+        }
+    }
+
+    /// Takes `id` out of its split; a split left with one tab ends.
+    mutating func removeMember(_ id: UUID) {
+        for idx in indices.reversed() {
+            self[idx].memberIDs.removeAll { $0 == id }
+            if self[idx].memberIDs.count < 2 {
+                remove(at: idx)
+            }
+        }
+    }
+
+    /// The tabs shown with `focusedID` in front, in split order, among the
+    /// tabs still open (`openIDs`): its split, or the tab alone.
+    func visiblePaneIDs(focusedID: UUID, openIDs: [UUID]) -> [UUID] {
+        if let group = group(containing: focusedID) {
+            let open = Set(openIDs)
+            let matched = group.memberIDs.filter { open.contains($0) }
+            if matched.count >= 2 { return matched }
+        }
+        return [focusedID]
+    }
+}
+
+/// Where the panes of a grid split go: as many columns as rows, or one
+/// more column, filled row by row; the last row may be short, and its
+/// panes share its width.
+public enum SplitGrid {
+    /// The columns and rows for `count` panes: 2 → 2×1, 3 and 4 → 2×2,
+    /// 5 and 6 → 3×2, 7 to 9 → 3×3.
+    public static func dimensions(for count: Int) -> (columns: Int, rows: Int) {
+        guard count > 0 else { return (0, 0) }
+        var columns = 1
+        while columns * columns < count { columns += 1 }
+        let rows = (count + columns - 1) / columns
+        return (columns, rows)
+    }
+
+    /// `items` cut into the grid's rows, in order.
+    public static func rows<T>(_ items: [T]) -> [[T]] {
+        let columns = dimensions(for: items.count).columns
+        guard columns > 0 else { return [] }
+        return stride(from: 0, to: items.count, by: columns).map {
+            Array(items[$0 ..< Swift.min($0 + columns, items.count)])
         }
     }
 }
