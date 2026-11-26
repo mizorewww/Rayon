@@ -20,7 +20,6 @@ struct TerminalPage: View {
     @State private var surfaceGeoSize: CGSize = .init(width: 800, height: 500)
     @State private var showSearch = false
     @State private var searchQuery = ""
-    @State private var selectedMatchIndex = 0
     @State private var showSnippetDrawer = false
     @Environment(\.isActivePage) private var isActive
 
@@ -47,11 +46,6 @@ struct TerminalPage: View {
 
     private var splitOrientation: TerminalManager.SplitOrientation {
         currentSplitGroup?.orientation ?? .horizontal
-    }
-
-    private var searchMatches: [(lineNumber: Int, line: String)] {
-        guard showSearch else { return [] }
-        return context.termInterface.searchTranscript(searchQuery)
     }
 
     var body: some View {
@@ -485,10 +479,10 @@ struct TerminalPage: View {
         return title.isEmpty || title == pane.displayName ? pane.displayName : "\(pane.displayName) · \(title)"
     }
 
+    /// Ghostty searches the screen and scrollback itself: it highlights every
+    /// match and scrolls the selected one into view.
     private var searchBar: some View {
-        let matches = searchMatches
-        let safeIndex = matches.isEmpty ? 0 : min(selectedMatchIndex, matches.count - 1)
-        return VStack(spacing: 0) {
+        VStack(spacing: 0) {
             HStack(spacing: RX.Space.s2) {
                 Image(systemName: "magnifyingglass")
                     .font(.system(size: 12))
@@ -496,27 +490,25 @@ struct TerminalPage: View {
                 TextField("Find in terminal output…", text: $searchQuery)
                     .textFieldStyle(.plain)
                     .font(.rxBody)
-                    .onChange(of: searchQuery) { _ in selectedMatchIndex = max(0, searchMatches.count - 1) }
+                    .onSubmit { context.termInterface.showNextMatch() }
+                    .onChange(of: searchQuery) { context.termInterface.search($0) }
                 if !searchQuery.isEmpty {
-                    Text(matches.isEmpty ? "0 matches" : "\(safeIndex + 1) of \(matches.count)")
-                        .font(.system(size: 11).monospacedDigit())
-                        .foregroundStyle(.rxInkSecondary)
                     Button {
-                        guard !matches.isEmpty else { return }
-                        selectedMatchIndex = (safeIndex - 1 + matches.count) % matches.count
+                        context.termInterface.showNextMatch(backwards: true)
                     } label: {
                         Image(systemName: "chevron.up").font(.system(size: 11, weight: .semibold))
                     }
                     .buttonStyle(.plain)
-                    .disabled(matches.isEmpty)
+                    .keyboardShortcut("g", modifiers: [.command, .shift])
+                    .help("Previous Match")
                     Button {
-                        guard !matches.isEmpty else { return }
-                        selectedMatchIndex = (safeIndex + 1) % matches.count
+                        context.termInterface.showNextMatch()
                     } label: {
                         Image(systemName: "chevron.down").font(.system(size: 11, weight: .semibold))
                     }
                     .buttonStyle(.plain)
-                    .disabled(matches.isEmpty)
+                    .keyboardShortcut("g", modifiers: .command)
+                    .help("Next Match")
                 }
                 Button {
                     showSearch = false
@@ -530,29 +522,11 @@ struct TerminalPage: View {
             .padding(.horizontal, RX.Space.s3)
             .frame(height: 34)
             .background(Color.rxSurface)
-            if !matches.isEmpty {
-                Hairline()
-                HStack(spacing: RX.Space.s2) {
-                    Text("Line \(matches[safeIndex].lineNumber)")
-                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(.rxAccent)
-                    Text(matches[safeIndex].line)
-                        .font(.rxCode)
-                        .foregroundStyle(.rxInk)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .textSelection(.enabled)
-                    Spacer()
-                    Button("Copy Line") {
-                        UIBridge.sendPasteboard(str: matches[safeIndex].line)
-                    }
-                    .buttonStyle(.rx(size: .small))
-                }
-                .padding(.horizontal, RX.Space.s3)
-                .frame(height: 28)
-                .background(Color.rxSurface.opacity(0.92))
-            }
             Hairline()
+        }
+        .onDisappear {
+            context.termInterface.endSearch()
+            searchQuery = ""
         }
     }
 

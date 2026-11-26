@@ -225,6 +225,30 @@ final class NativeTerminalTests: XCTestCase {
         XCTAssertTrue(terminal.session.backend.readViewportText()?.contains("before attach") == true)
     }
 
+    /// Find uses Ghostty's scrollback search: navigating to a match scrolls
+    /// the viewport to it, and ending the search leaves the viewport usable.
+    @MainActor
+    func testSearchScrollsViewportToMatchInScrollback() async throws {
+        let terminal = RayonTerminalView()
+        let window = TestHost(terminal.session.platformView())
+        defer { window.close() }
+        try await Task.sleep(for: .milliseconds(150))
+        terminal.write("rayon-needle\r\n" + (0..<200).map { "filler \($0)\r\n" }.joined())
+        XCTAssertTrue(terminal.session.backend.waitForPendingOutput())
+        XCTAssertFalse(terminal.session.backend.readViewportText()?.contains("rayon-needle") == true)
+
+        terminal.search("rayon-needle")
+        terminal.showNextMatch()
+        var found = false
+        for _ in 0..<50 where !found {
+            try await Task.sleep(for: .milliseconds(20))
+            terminal.showNextMatch()
+            found = terminal.session.backend.readViewportText()?.contains("rayon-needle") == true
+        }
+        XCTAssertTrue(found, "The viewport moves to the match in scrollback")
+        terminal.endSearch()
+    }
+
     @MainActor
     func testLastSessionReferenceMayBeReleasedBySSHWorker() async throws {
         let owner = SessionOwner()
@@ -236,7 +260,7 @@ final class NativeTerminalTests: XCTestCase {
             window.show(view)
         }
         try await Task.sleep(for: .milliseconds(100))
-        owner.session!.output.write(Data("live teardown surface".utf8))
+        owner.session!.backend.receive(Data("live teardown surface".utf8))
         XCTAssertTrue(owner.session!.backend.waitForPendingOutput())
         XCTAssertTrue(owner.session!.backend.readViewportText()?.contains("live teardown surface") == true)
         window.close()

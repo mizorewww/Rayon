@@ -19,18 +19,23 @@ public struct RayonTerminalView: Sendable {
 
     nonisolated public init() { session = RayonTerminalSession() }
 
-    nonisolated public func write(_ string: String) { session.output.write(Data(string.utf8)) }
+    nonisolated public func write(_ string: String) { session.backend.receive(Data(string.utf8)) }
 
-    nonisolated public func searchTranscript(_ query: String) -> [(lineNumber: Int, line: String)] {
-        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return [] }
-        let needle = trimmed.lowercased()
-        let lines = session.output.transcriptLines()
-        var matches: [(lineNumber: Int, line: String)] = []
-        for (idx, line) in lines.enumerated() where line.lowercased().contains(needle) {
-            matches.append((idx + 1, line))
-        }
-        return matches
+    /// Searches the terminal's screen and scrollback with Ghostty's own
+    /// search: every match is highlighted and the viewport moves to the
+    /// selected one. An empty query ends the search.
+    @MainActor public func search(_ query: String) {
+        let needle = query.replacingOccurrences(of: "\n", with: " ")
+        _ = session.platformView().performBindingAction(needle.isEmpty ? "end_search" : "search:\(needle)")
+    }
+
+    /// Selects the next (or previous) match and scrolls it into view.
+    @MainActor public func showNextMatch(backwards: Bool = false) {
+        _ = session.platformView().performBindingAction("navigate_search:\(backwards ? "previous" : "next")")
+    }
+
+    @MainActor public func endSearch() {
+        _ = session.platformView().performBindingAction("end_search")
     }
 
     nonisolated public func setTerminalFontSize(with size: Int, preferConfigured: Bool = false) {
@@ -129,8 +134,9 @@ public final class TerminalSurfaceBridge: @unchecked Sendable {
 /// and all Ghostty view operations are explicitly main-actor isolated.
 final class RayonTerminalSession: @unchecked Sendable {
     let callbacks: TerminalCallbacks
+    /// Output that arrives before the view attaches is kept by Ghostty itself
+    /// (up to 1 MiB) and replayed on attach.
     let backend: InMemoryTerminalSession
-    let output: TerminalOutputBuffer
     @MainActor private var presentation: TerminalPresentation?
 
     init() {
@@ -141,7 +147,6 @@ final class RayonTerminalSession: @unchecked Sendable {
             resize: { callbacks.receiveSize(columns: Int($0.columns), rows: Int($0.rows)) }
         )
         self.backend = backend
-        output = TerminalOutputBuffer { backend.receive($0) }
     }
 
     @MainActor func platformView() -> PlatformTerminalView {
@@ -183,7 +188,6 @@ private final class TerminalPresentation: NSObject, TerminalSurfaceTitleDelegate
 {
     let view: PlatformTerminalView
     private let callbacks: TerminalCallbacks
-    private let output: TerminalOutputBuffer
     private var initialFontPreferenceApplied = false
     private var didAttach = false
 
@@ -193,7 +197,6 @@ private final class TerminalPresentation: NSObject, TerminalSurfaceTitleDelegate
 
     init(session: RayonTerminalSession) {
         callbacks = session.callbacks
-        output = session.output
         #if os(macOS)
             view = PlatformTerminalView(frame: .zero)
         #else
@@ -241,10 +244,9 @@ private final class TerminalPresentation: NSObject, TerminalSurfaceTitleDelegate
 
     func terminalDidAttachSurface(_ surface: TerminalSurface) {
         if !didAttach { applyConfiguredFontSize(); didAttach = true }
-        output.setAttached(true)
     }
 
-    func terminalDidDetachSurface() { output.setAttached(false) }
+    func terminalDidDetachSurface() {}
     func terminalDidChangeTitle(_ title: String) { callbacks.receiveTitle(title) }
     func terminalDidRingBell() { callbacks.receiveBell() }
 

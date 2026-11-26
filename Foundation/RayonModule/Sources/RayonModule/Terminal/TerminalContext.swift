@@ -314,7 +314,7 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
         } withWriteDataBuffer: { [weak self] in
             self?.getBuffer() ?? ""
         } withOutputDataBuffer: { [weak self] output in
-            // TerminalOutputBuffer and RayonTerminalView.write are thread-safe;
+            // RayonTerminalView.write is thread-safe (Ghostty queues output);
             // write directly from the SSH worker thread to avoid flooding the main queue.
             self?.surface.write(output)
         } withContinuationHandler: { [weak self] in

@@ -38,7 +38,6 @@ struct TerminalView: View {
     @State private var canvasSize: CGSize = .init(width: 400, height: 400)
     @State private var showSearch = false
     @State private var searchQuery = ""
-    @State private var selectedMatchIndex = 0
     @State private var showSnippets = false
 
     /// Below this width only the tab in front shows, and splits are not offered.
@@ -61,11 +60,6 @@ struct TerminalView: View {
 
     private var splitOrientation: TerminalManager.SplitOrientation {
         terminals.splitGroup(containing: focused.id)?.orientation ?? .horizontal
-    }
-
-    private var searchMatches: [(lineNumber: Int, line: String)] {
-        guard showSearch else { return [] }
-        return focused.termInterface.searchTranscript(searchQuery)
     }
 
     var body: some View {
@@ -261,10 +255,10 @@ struct TerminalView: View {
 
     // MARK: - Find
 
+    /// Ghostty searches the screen and scrollback itself: it highlights every
+    /// match and scrolls the selected one into view.
     private var searchBar: some View {
-        let matches = searchMatches
-        let safeIndex = matches.isEmpty ? 0 : min(selectedMatchIndex, matches.count - 1)
-        return VStack(spacing: 0) {
+        VStack(spacing: 0) {
             HStack(spacing: RX.Space.s2) {
                 Image(systemName: "magnifyingglass")
                     .foregroundStyle(.rxInkSecondary)
@@ -272,22 +266,17 @@ struct TerminalView: View {
                     .textInputAutocapitalization(.never)
                     .disableAutocorrection(true)
                     .submitLabel(.search)
-                    .onSubmit { step(1, in: matches) }
-                    .onChange(of: searchQuery) { _ in selectedMatchIndex = max(0, searchMatches.count - 1) }
+                    .onSubmit { focused.termInterface.showNextMatch() }
+                    .onChange(of: searchQuery) { focused.termInterface.search($0) }
                 if !searchQuery.isEmpty {
-                    Text(matches.isEmpty ? "0 matches" : "\(safeIndex + 1) of \(matches.count)")
-                        .font(.footnote.monospacedDigit())
-                        .foregroundStyle(.rxInkSecondary)
-                    Button { step(-1, in: matches) } label: {
+                    Button { focused.termInterface.showNextMatch(backwards: true) } label: {
                         Image(systemName: "chevron.up")
                     }
-                    .disabled(matches.isEmpty)
                     .keyboardShortcut("g", modifiers: [.command, .shift])
                     .accessibilityLabel("Previous Match")
-                    Button { step(1, in: matches) } label: {
+                    Button { focused.termInterface.showNextMatch() } label: {
                         Image(systemName: "chevron.down")
                     }
-                    .disabled(matches.isEmpty)
                     .keyboardShortcut("g", modifiers: .command)
                     .accessibilityLabel("Next Match")
                 }
@@ -303,35 +292,12 @@ struct TerminalView: View {
             .padding(.horizontal, RX.Space.s3)
             .frame(height: 40)
             .background(Color.rxSurface)
-            if !matches.isEmpty {
-                Hairline()
-                HStack(spacing: RX.Space.s2) {
-                    Text("Line \(matches[safeIndex].lineNumber)")
-                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(.rxAccent)
-                    Text(matches[safeIndex].line)
-                        .font(.rxCode)
-                        .foregroundStyle(.rxInk)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                    Spacer()
-                    Button("Copy Line") {
-                        UIBridge.sendPasteboard(str: matches[safeIndex].line)
-                    }
-                    .font(.footnote.weight(.semibold))
-                }
-                .padding(.horizontal, RX.Space.s3)
-                .frame(height: 32)
-                .background(Color.rxSurface.opacity(0.92))
-            }
             Hairline()
         }
-    }
-
-    private func step(_ delta: Int, in matches: [(lineNumber: Int, line: String)]) {
-        guard !matches.isEmpty else { return }
-        let safeIndex = min(selectedMatchIndex, matches.count - 1)
-        selectedMatchIndex = (safeIndex + delta + matches.count) % matches.count
+        .onDisappear {
+            focused.termInterface.endSearch()
+            searchQuery = ""
+        }
     }
 
     private func disconnectedBanner(for target: TerminalContext) -> some View {
