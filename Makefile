@@ -52,7 +52,7 @@ test:
 resolve:
 	xcodebuild -resolvePackageDependencies -workspace $(WORKSPACE) -scheme Rayon
 	xcodebuild -resolvePackageDependencies -workspace $(WORKSPACE) -scheme mRayon
-	for package in $(RESOLVED_PACKAGES); do swift package --package-path "$$package" resolve; done
+	for package in $(RESOLVED_PACKAGES); do swift package --package-path "$$package" resolve || exit 1; done
 
 scan-license:
 	bash Workflow/Scripts/scan-license.sh
