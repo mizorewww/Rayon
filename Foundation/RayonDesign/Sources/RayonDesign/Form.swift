@@ -234,7 +234,10 @@ public struct NumberFieldRow: View {
     public var body: some View {
         RXFormRow(title, description: description) {
             HStack(spacing: RX.Space.s2) {
+                // The row shows the title; a form would show it again,
+                // squeezed, as the field's own label.
                 TextField(title, text: $text)
+                    .labelsHidden()
                     .multilineTextAlignment(.trailing)
                     .textFieldStyle(.rx)
                     .frame(width: 72)
