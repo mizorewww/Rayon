@@ -24,11 +24,13 @@ Rayon is an SSH / server workflow client for macOS and iOS: terminals, files, po
 - `Application/mRayon` — iOS app.
 - `Foundation/*` — Swift packages: `RayonModule` (models, store, SSH, sync, remote desktop), `RayonTerminal` (Ghostty terminal), `RayonEditor`, `RayonDesign`, `MachineStatus` / `MachineStatusView` (monitoring), `SymbolPicker`, `Keychain`.
 - `External/NSRemoteShell` — legacy Objective-C libssh2 wrapper (scheduled for replacement).
-- `Workflow/Scripts` — build, install and release scripts.
+- `Workflow/Scripts` — build, install and release scripts, behind the root `Makefile`.
 
 ## Build & Verify
 
-- Open `App.xcworkspace`. Build the Mac app with `bash Workflow/Scripts/build-macos.sh` (Debug bundle id `me.mizorewww.rayon.debug`, its own sandbox container). Swift packages can be tested with `swift test` in their directory.
+- `make` lists the targets. `make build-macos` builds the Mac app (Debug bundle id `me.mizorewww.rayon.debug`, its own sandbox container), `make build-ios` the iOS app for the simulator, `make test` runs every Swift package's tests; `CONFIGURATION=Release` switches configuration. Products land in `.build/DerivedData`. Or open `App.xcworkspace`.
+- Both apps take their version from `Configuration/Version.xcconfig`. `make scan-license` fails when a pinned dependency is missing from `Resources/LICENSE`; add its notice when you add a dependency.
+- CI (`.github/workflows/ci.yml`) runs `make build-macos`, `make build-ios`, `make test` and `make scan-license` on every pull request; auto-merge waits for it.
 - A change is done when it builds for every platform it touches, its tests pass, and the affected feature works in the running app.
 - UI verification uses `cua-driver` (AX-driven clicks/typing on Rayon's pid). Never inject global keyboard/mouse input (System Events keystrokes, CGEvent), and never loop relaunching the app — launch once, then drive it in place.
 - Do not connect to the user's real servers or accounts for testing; use local hosts (e.g. a local `sshd` / container) or the debug preview hooks in `RayonApp.swift`.
