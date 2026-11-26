@@ -65,6 +65,11 @@ public struct CloudSyncPreferences: Equatable, Sendable {
         defaults.set(terminalSettings, forKey: Key.terminalSettings)
     }
 
+    /// The tables whose records go to iCloud and come from it.
+    var syncedTables: Set<String> {
+        Set(RayonStorage.recordTypes.map { $0.tableName }.filter { syncs(table: $0) })
+    }
+
     /// Whether records of `table` go to iCloud and come from it.
     func syncs(table: String) -> Bool {
         guard isOn else { return false }

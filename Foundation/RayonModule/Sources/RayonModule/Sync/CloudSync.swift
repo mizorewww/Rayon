@@ -45,6 +45,12 @@ public actor CloudSync {
         storage.databaseURL.deletingLastPathComponent().appendingPathComponent("sync-state.json")
     }
 
+    /// The tables the engine state was built with: records of any other
+    /// table it fetched were dropped.
+    private var scopesURL: URL {
+        storage.databaseURL.deletingLastPathComponent().appendingPathComponent("sync-scopes.json")
+    }
+
     private var assetDirectory: URL {
         storage.databaseURL.deletingLastPathComponent().appendingPathComponent("SyncAssets", isDirectory: true)
     }
@@ -89,13 +95,31 @@ public actor CloudSync {
             publish(.unavailable)
             return
         }
+        let tables = new.syncedTables
+        if Self.needsRefetch(covered: loadScopes(), syncing: tables) {
+            // A kind let in again: what other devices changed while it was
+            // left out came and was dropped, and the engine's change token
+            // is past it. Everything is fetched again, and what is here
+            // goes out on top of it.
+            Self.logger.info("sync scopes widened; fetching everything again")
+            stop()
+            saveState(nil)
+            storage.removeAllSystemFields()
+        }
+        saveScopes(tables)
         if engine == nil {
             start()
         } else if new != old {
-            // A kind just let in: what is here goes out, what is there comes in.
             scheduleUploads()
         }
         await syncNow()
+    }
+
+    /// Whether the engine state, built while only `covered` synced (nil:
+    /// unknown, or none yet), lacks changes of a table that syncs now.
+    static func needsRefetch(covered: Set<String>?, syncing: Set<String>) -> Bool {
+        guard let covered else { return false }
+        return !syncing.isSubset(of: covered)
     }
 
     private func start() {
@@ -147,9 +171,21 @@ public actor CloudSync {
         return try? JSONDecoder().decode(CKSyncEngine.State.Serialization.self, from: data)
     }
 
+    private func loadScopes() -> Set<String>? {
+        guard FileManager.default.fileExists(atPath: stateURL.path),
+              let data = try? Data(contentsOf: scopesURL)
+        else { return nil }
+        return try? JSONDecoder().decode(Set<String>.self, from: data)
+    }
+
+    private func saveScopes(_ tables: Set<String>) {
+        try? JSONEncoder().encode(tables).write(to: scopesURL, options: .atomic)
+    }
+
     private func saveState(_ state: CKSyncEngine.State.Serialization?) {
         guard let state else {
             try? FileManager.default.removeItem(at: stateURL)
+            try? FileManager.default.removeItem(at: scopesURL)
             return
         }
         guard let data = try? JSONEncoder().encode(state) else { return }

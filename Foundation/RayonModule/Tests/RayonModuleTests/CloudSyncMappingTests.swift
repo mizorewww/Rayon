@@ -151,4 +151,19 @@ final class CloudSyncMappingTests: XCTestCase {
         preferences.save(to: defaults)
         XCTAssertEqual(CloudSyncPreferences(defaults: defaults), preferences)
     }
+
+    /// While a kind is left out, the engine drops what it fetches of it and
+    /// moves on; letting it in again fetches everything again, or the other
+    /// devices' changes made in between would never arrive.
+    func testLettingAKindInAgainFetchesEverything() {
+        let all = CloudSyncPreferences(isOn: true).syncedTables
+        XCTAssertEqual(all, Set(RayonStorage.recordTypes.map { $0.tableName }))
+        let withoutSnippets = CloudSyncPreferences(isOn: true, snippets: false).syncedTables
+        XCTAssertFalse(withoutSnippets.contains(RDSnippet.tableName))
+
+        XCTAssertTrue(CloudSync.needsRefetch(covered: withoutSnippets, syncing: all))
+        XCTAssertFalse(CloudSync.needsRefetch(covered: all, syncing: withoutSnippets), "leaving a kind out needs nothing")
+        XCTAssertFalse(CloudSync.needsRefetch(covered: all, syncing: all))
+        XCTAssertFalse(CloudSync.needsRefetch(covered: nil, syncing: all), "a first start fetches everything anyway")
+    }
 }
