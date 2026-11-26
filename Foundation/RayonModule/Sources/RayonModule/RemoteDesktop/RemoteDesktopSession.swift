@@ -21,7 +21,8 @@ import os
 @MainActor
 public final class RemoteDesktopSession: ObservableObject, Identifiable {
     public let id: UUID = .init()
-    public let machine: RDMachine
+    /// The server as saved when the session last connected.
+    public private(set) var machine: RDMachine
     public let protocolType: RDMachine.RemoteDesktopProtocolType
 
     @Published public private(set) var phase: RemoteDesktopPhase = .idle
@@ -134,9 +135,10 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
     /// Builds the backend and starts connecting.
     public func connect() {
         guard phase == .idle || phase.isTerminal else { return }
-        // A choice saved since (another window, another device): the
-        // connection asks for it.
+        // Details saved since (a corrected password, another window's
+        // stream choice): a reconnect uses them, not those it opened with.
         if let saved = RayonStore.shared.machine(machine.id) {
+            machine = saved
             streamSettings = RemoteDesktopStreamSettings(machine: saved)
         }
         if let existing = driver {
