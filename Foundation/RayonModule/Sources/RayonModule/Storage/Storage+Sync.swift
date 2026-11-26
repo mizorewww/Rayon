@@ -130,7 +130,13 @@ extension RayonStorage {
         let local = row(T.self, id: remote.id).map(withSecrets)
         switch RecordMerge.resolve(local: local, remote: remote) {
         case .same:
-            return .unchanged
+            // The same change, whose secrets this device could not read
+            // (the keychain items stayed on the device a backup came from):
+            // the other device's fill them in.
+            guard let local, local.secretsUnread, !remote.removed, remote.secrets != T.Secrets() else { return .unchanged }
+            let present = try writeSecrets(of: remote)
+            try db.run(transaction: { handle in try self.notePresence(present, of: remote, handle: handle) })
+            return .tookRemote
         case .keepLocal:
             guard let local else { return .unchanged }
             try db.run(transaction: { handle in
@@ -140,10 +146,12 @@ extension RayonStorage {
             return .keptLocal
         case let .takeRemote(record):
             var record = record
+            record.secretsUnread = false
             if record.removed { record.secrets = .init() }
-            try writeSecrets(of: record)
+            let present = try writeSecrets(of: record)
             try db.run(transaction: { handle in
                 try handle.insertOrReplace([record], intoTable: T.tableName)
+                try self.notePresence(present, of: record, handle: handle)
                 // What came from there need not go back.
                 try handle.delete(
                     fromTable: UploadQueueEntry.tableName,
@@ -167,6 +175,7 @@ extension RayonStorage {
                     where: UploadQueueEntry.Properties.tableName == T.tableName
                         && UploadQueueEntry.Properties.objectId == id.uuidString
                 )
+                try handle.delete(fromTable: SecretPresence.tableName, where: SecretPresence.Properties.account == "\(T.tableName).\(id.uuidString)")
             })
             try? secrets.remove("\(T.tableName).\(id.uuidString)")
         }

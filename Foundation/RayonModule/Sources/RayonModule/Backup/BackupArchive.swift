@@ -20,6 +20,7 @@ public enum BackupError: LocalizedError, Equatable {
     case passwordRequired
     case wrongPassword
     case damaged(String)
+    case secretsUnavailable
 
     public var errorDescription: String? {
         switch self {
@@ -29,6 +30,7 @@ public enum BackupError: LocalizedError, Equatable {
         case .passwordRequired: "This backup is protected by a password."
         case .wrongPassword: "The password is not the one this backup was protected with."
         case let .damaged(detail): "The backup is damaged: \(detail)"
+        case .secretsUnavailable: "Some passwords and keys cannot be read from the keychain now. Unlock the device and try again."
         }
     }
 }

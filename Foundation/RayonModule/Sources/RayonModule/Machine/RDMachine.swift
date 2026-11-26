@@ -63,6 +63,7 @@ public struct RDMachine: StoredRecord {
     public var modified = Date()
     public var removed = false
     public var secrets = Secrets()
+    public var secretsUnread = false
 
     public var vncPassword: String {
         get { secrets.vncPassword }

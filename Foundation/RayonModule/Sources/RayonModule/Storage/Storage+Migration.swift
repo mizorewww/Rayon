@@ -14,6 +14,7 @@ enum DBVersion: Int, CaseIterable {
     case empty = 0
     case v1 = 1
     case v2 = 2
+    case v3 = 3
 }
 
 struct DBMigration: Sendable {
@@ -35,6 +36,9 @@ struct DBMigration: Sendable {
         },
         DBMigration(from: .v1, to: .v2) { db in
             try db.create(table: RDTerminalSettings.tableName, of: RDTerminalSettings.self)
+        },
+        DBMigration(from: .v2, to: .v3) { db in
+            try db.create(table: SecretPresence.tableName, of: SecretPresence.self)
         },
     ]
 

@@ -50,6 +50,7 @@ public enum DataBackup {
                 let records = storage.records(T.self)
                 try snapshot.insert(records, intoTable: T.tableName)
                 guard includeSecrets, T.Secrets.self != NoSecrets.self else { return }
+                if records.contains(where: \.secretsUnread) { throw BackupError.secretsUnavailable }
                 for record in records where record.secrets != T.Secrets() {
                     secrets[record.secretAccount] = try JSONEncoder().encode(record.secrets)
                 }
@@ -156,6 +157,7 @@ public extension RayonStore {
             guard !contents.includesSecrets, let existing else { return record }
             var record = record
             record.secrets = existing.secrets
+            record.secretsUnread = existing.secretsUnread
             return record
         }
         contents.folders.forEach { save(merged($0, folder($0.id))) }

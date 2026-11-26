@@ -178,6 +178,12 @@ public actor CloudSync {
 
     func ckRecord(for id: CKRecord.ID) -> CKRecord? {
         guard let record = storage.recordToSend(named: id.recordName) else { return nil }
+        // Sending it would send its secrets as empty, and every device
+        // would clear its own. It stays queued until they can be read.
+        guard !record.secretsUnread else {
+            Self.logger.error("not sending \(id.recordName): its secrets cannot be read now")
+            return nil
+        }
         func encode<T: StoredRecord>(_ record: T) -> CKRecord? {
             try? CloudRecordCoding.ckRecord(
                 for: record,

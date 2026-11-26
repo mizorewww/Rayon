@@ -12,6 +12,9 @@
 import Combine
 import Foundation
 import os
+#if canImport(UIKit)
+    import UIKit
+#endif
 
 @MainActor
 public final class RayonStore: ObservableObject {
@@ -64,7 +67,20 @@ public final class RayonStore: ObservableObject {
         snippets = storage.records(RDSnippet.self)
         portForwards = storage.records(RDPortForward.self)
         recentRecord = storage.recentConnections().compactMap(RecentConnection.init(record:))
+        #if canImport(UIKit)
+            // Launched in the background before the first unlock, the
+            // keychain gave no secrets; once it does, they are read.
+            protectedDataObserver = NotificationCenter.default.addObserver(
+                forName: UIApplication.protectedDataDidBecomeAvailableNotification, object: nil, queue: .main
+            ) { [weak self] _ in
+                MainActor.assumeIsolated { self?.reload() }
+            }
+        #endif
     }
+
+    #if canImport(UIKit)
+        private var protectedDataObserver: (any NSObjectProtocol)?
+    #endif
 
     /// Reads everything from the database again, after it was changed from
     /// elsewhere (sync, a restored backup).

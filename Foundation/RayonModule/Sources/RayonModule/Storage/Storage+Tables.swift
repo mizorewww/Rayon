@@ -103,6 +103,24 @@ struct SyncMetadata: TableCodable, Equatable {
     }
 }
 
+/// A record whose secrets are in the keychain. When the keychain has no
+/// item for it, the item is missing (left on the device a backup came
+/// from), not empty, and the record's secrets count as unread.
+struct SecretPresence: TableCodable, Equatable {
+    static let tableName = "SecretPresence"
+
+    var account: String = ""
+
+    enum CodingKeys: String, CodingTableKey {
+        typealias Root = SecretPresence
+        static let objectRelationalMapping = TableBinding(CodingKeys.self) {
+            BindColumnConstraint(account, isPrimary: true)
+        }
+
+        case account
+    }
+}
+
 extension RayonStorage {
     func enqueueUpload<T: StoredRecord>(_: T.Type, id: UUID, modified: Date, handle: Handle) throws {
         let entry = UploadQueueEntry(tableName: T.tableName, objectId: id, modified: modified)

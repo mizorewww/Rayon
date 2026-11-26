@@ -21,6 +21,11 @@ public protocol StoredRecord: TableCodable, Identifiable, Equatable, Sendable wh
     var modified: Date { get set }
     var removed: Bool { get set }
     var secrets: Secrets { get set }
+    /// The keychain did not give the secrets when the record was read
+    /// (locked before the first unlock, or the items stayed on the device a
+    /// backup came from): `secrets` says nothing about them, and nothing
+    /// may write or send them.
+    var secretsUnread: Bool { get set }
 
     /// The record without what belongs to this device alone (when a server
     /// was last used, say), which neither syncs nor counts as a change.
@@ -34,6 +39,13 @@ public protocol StoredRecord: TableCodable, Identifiable, Equatable, Sendable wh
 public extension StoredRecord {
     var syncedContent: Self { self }
     func keepingLocalState(of _: Self) -> Self { self }
+}
+
+public extension StoredRecord where Secrets == NoSecrets {
+    var secretsUnread: Bool {
+        get { false }
+        set {}
+    }
 }
 
 /// The secrets of a record, kept in the keychain under the record's id.
@@ -52,6 +64,8 @@ extension StoredRecord {
         var rhs = other.syncedContent
         lhs.modified = .distantPast
         rhs.modified = .distantPast
+        lhs.secretsUnread = false
+        rhs.secretsUnread = false
         return lhs != rhs
     }
 

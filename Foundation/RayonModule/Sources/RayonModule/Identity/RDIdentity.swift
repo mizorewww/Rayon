@@ -34,6 +34,7 @@ public struct RDIdentity: StoredRecord {
     public var modified = Date()
     public var removed = false
     public var secrets = Secrets()
+    public var secretsUnread = false
 
     public var password: String {
         get { secrets.password }

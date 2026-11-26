@@ -102,6 +102,17 @@ public extension RayonStorage {
     func save<T: StoredRecord>(_ record: T, changed: Date? = nil) throws -> T {
         var record = record
         let existing = row(T.self, id: record.id).map(withSecrets)
+        if record.secretsUnread {
+            if record.secrets == T.Secrets(), let existing {
+                // Nothing typed in their place: the keychain's stay, read
+                // now if it gives them.
+                record.secrets = existing.secrets
+                record.secretsUnread = existing.secretsUnread
+            } else {
+                // New ones typed in: they are written.
+                record.secretsUnread = false
+            }
+        }
         if let existing, !existing.removed, !record.differsInSyncedContent(from: existing) {
             record.modified = existing.modified
             record.removed = false
@@ -110,9 +121,10 @@ public extension RayonStorage {
         }
         record.modified = (changed ?? Date()).wholeMilliseconds
         record.removed = false
-        try writeSecrets(of: record)
+        let present = try writeSecrets(of: record)
         try db.run(transaction: { handle in
             try handle.insertOrReplace([record], intoTable: T.tableName)
+            try self.notePresence(present, of: record, handle: handle)
             try self.enqueueUpload(T.self, id: record.id, modified: record.modified, handle: handle)
         })
         NotificationCenter.default.post(name: Self.didQueueChanges, object: self)
@@ -135,6 +147,7 @@ public extension RayonStorage {
         try db.run(transaction: { handle in
             try handle.insertOrReplace(deleted, intoTable: T.tableName)
             for row in deleted {
+                try self.notePresence(false, of: row, handle: handle)
                 try self.enqueueUpload(T.self, id: row.id, modified: now, handle: handle)
             }
         })
@@ -189,6 +202,7 @@ final class RecordInserter {
         if T.Secrets.self != NoSecrets.self, record.secrets != T.Secrets() {
             secretAccounts.append(record.secretAccount)
             try storage.secrets.setValue(record.secrets, for: record.secretAccount)
+            try storage.notePresence(true, of: record, handle: handle)
         }
         try handle.insert([record], intoTable: T.tableName)
         try storage.enqueueUpload(T.self, id: record.id, modified: record.modified, handle: handle)
@@ -229,23 +243,52 @@ extension RayonStorage {
         try? db.getObject(fromTable: T.tableName, where: idColumn == id.uuidString)
     }
 
+    /// The row with its secrets from the keychain, or marked unread when
+    /// the keychain does not give them.
     func withSecrets<T: StoredRecord>(_ row: T) -> T {
-        guard T.Secrets.self != NoSecrets.self else { return row }
+        guard T.Secrets.self != NoSecrets.self, !row.removed else { return row }
         var row = row
         do {
-            row.secrets = try secrets.value(T.Secrets.self, for: row.secretAccount) ?? .init()
+            if let value = try secrets.value(T.Secrets.self, for: row.secretAccount) {
+                row.secrets = value
+                // Rows saved before the database noted this learn it here.
+                if !hasSecrets(row) { try? db.insertOrReplace([SecretPresence(account: row.secretAccount)], intoTable: SecretPresence.tableName) }
+            } else if hasSecrets(row) {
+                Self.logger.error("the secrets of \(row.secretAccount) are missing from the keychain")
+                row.secretsUnread = true
+            }
         } catch {
             Self.logger.error("reading the secrets of \(row.secretAccount) failed: \(error.localizedDescription)")
+            row.secretsUnread = true
         }
         return row
     }
 
-    func writeSecrets<T: StoredRecord>(of record: T) throws {
-        guard T.Secrets.self != NoSecrets.self else { return }
+    private func hasSecrets<T: StoredRecord>(_ row: T) -> Bool {
+        ((try? db.getObject(fromTable: SecretPresence.tableName, where: SecretPresence.Properties.account == row.secretAccount)) as SecretPresence?) != nil
+    }
+
+    /// Writes the record's secrets to the keychain, unless they were never
+    /// read. Returns whether the record has secrets now, for
+    /// `notePresence`; nil when nothing was written.
+    func writeSecrets<T: StoredRecord>(of record: T) throws -> Bool? {
+        guard T.Secrets.self != NoSecrets.self, !record.secretsUnread else { return nil }
         if record.secrets == T.Secrets() {
             try secrets.remove(record.secretAccount)
+            return false
+        }
+        try secrets.setValue(record.secrets, for: record.secretAccount)
+        return true
+    }
+
+    /// Notes in the database whether the record's secrets are in the
+    /// keychain; nil leaves it as it is.
+    func notePresence<T: StoredRecord>(_ present: Bool?, of record: T, handle: Handle) throws {
+        guard T.Secrets.self != NoSecrets.self, let present else { return }
+        if present {
+            try handle.insertOrReplace([SecretPresence(account: record.secretAccount)], intoTable: SecretPresence.tableName)
         } else {
-            try secrets.setValue(record.secrets, for: record.secretAccount)
+            try handle.delete(fromTable: SecretPresence.tableName, where: SecretPresence.Properties.account == record.secretAccount)
         }
     }
 }
