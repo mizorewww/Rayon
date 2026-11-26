@@ -19,11 +19,12 @@ public func rxUsageColor(_ percent: Double, base: Color = .rxAccent) -> Color {
 /// A 6pt rounded track on `surface-sunken` with one or more segments.
 public struct UsageBar: View {
     public struct Segment {
-        let label: String
+        /// What VoiceOver names the segment by; a single-value bar needs none.
+        let label: String?
         let fraction: Double
         let color: Color
 
-        public init(_ label: String = "value", _ fraction: Double, _ color: Color) {
+        public init(_ label: String? = nil, _ fraction: Double, _ color: Color) {
             self.label = label
             self.fraction = fraction
             self.color = color
@@ -42,7 +43,7 @@ public struct UsageBar: View {
     public init(fraction: Double, color: Color = .rxAccent, thresholds: Bool = false, height: CGFloat = 6) {
         let clamped = max(0, min(1, fraction.isFinite ? fraction : 0))
         let tint = thresholds ? rxUsageColor(clamped * 100, base: color) : color
-        segments = [Segment("value", clamped, tint)]
+        segments = [Segment(nil, clamped, tint)]
         self.height = height
     }
 
@@ -56,6 +57,18 @@ public struct UsageBar: View {
         .background(Capsule().fill(Color.rxSurfaceSunken))
         .clipShape(Capsule())
         .animation(.easeOut(duration: 0.3), value: segments.map(\.fraction))
+        .accessibilityElement()
+        .accessibilityValue(accessibilityValue)
+    }
+
+    /// "User 12%, System 4%", or just "45%" for a single-value bar.
+    private var accessibilityValue: String {
+        segments.map { segment in
+            let fraction = min(1, max(0, segment.fraction.isFinite ? segment.fraction : 0))
+            let percent = fraction.formatted(.percent.precision(.fractionLength(0)))
+            return segment.label.map { "\($0) \(percent)" } ?? percent
+        }
+        .joined(separator: ", ")
     }
 }
 
