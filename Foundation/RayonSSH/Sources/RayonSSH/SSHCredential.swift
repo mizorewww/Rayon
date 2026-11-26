@@ -22,6 +22,8 @@ struct SignInOffer: Sendable {
     /// The same RSA key signing with SHA-256, then SHA-1, for a server
     /// that may not take the SHA-512 signature `offer` makes.
     var fallbacks: [NIOSSHUserAuthenticationOffer.Offer] = []
+    /// The agent signs: it may wait for the person first.
+    var usesAgent = false
 
     /// `keys` are one key's signature algorithms, most preferred first.
     init?(_ keys: [NIOSSHPrivateKey]) {
@@ -36,15 +38,20 @@ struct SignInOffer: Sendable {
 }
 
 extension SSHCredential {
-    /// What signing in with this credential offers the server, in order.
-    func offers() throws -> [SignInOffer] {
+    /// What signing in with this credential offers the server, in order;
+    /// the agent's keys add the time they wait for the agent to `agentWait`.
+    func offers(agentWait: AgentWait) throws -> [SignInOffer] {
         switch self {
         case let .password(password):
             [SignInOffer(password: password)]
         case let .privateKey(key):
             try [SignInOffer(key.offers())].compactMap(\.self)
         case let .agent(agent):
-            try agent.offers().compactMap(SignInOffer.init)
+            try agent.offers(wait: agentWait).compactMap { keys in
+                var offer = SignInOffer(keys)
+                offer?.usesAgent = true
+                return offer
+            }
         }
     }
 }

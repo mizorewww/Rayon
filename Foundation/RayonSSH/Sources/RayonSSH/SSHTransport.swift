@@ -29,25 +29,19 @@ public enum SSHTransport: Sendable {
 }
 
 extension SSHTransport {
-    func makeChannel(host: String, port: Int, timeout: TimeAmount) async throws -> Channel {
+    /// With `ownEventLoop`, a TCP or WebSocket connection runs on an event
+    /// loop of its own, ended when it closes, so that blocking it holds no
+    /// other connection. A socket's and a jump's channel stay where they are.
+    func makeChannel(host: String, port: Int, timeout: TimeAmount, ownEventLoop: Bool = false) async throws -> Channel {
         switch self {
         case .tcp:
-            do {
-                return try await NIOTSConnectionBootstrap(group: NIOTSEventLoopGroup.singleton)
-                    .connectTimeout(timeout)
-                    .channelOption(NIOTSChannelOptions.waitForActivity, value: false)
-                    .channelInitializer { channel in
-                        channel.eventLoop.makeCompletedFuture {
-                            try channel.pipeline.syncOperations.addHandler(SSHBannerGate())
-                        }
-                    }
-                    .connect(host: host, port: port)
-                    .get()
-            } catch {
-                throw SSHError.connectionFailed("Unable to connect to \(host):\(port) (\(Self.describe(error))).")
+            return try await Self.onEventLoopGroup(own: ownEventLoop) { group in
+                try await Self.connectTCP(host: host, port: port, timeout: timeout, group: group)
             }
         case let .webSocket(endpoint):
-            return try await endpoint.connect(timeout: timeout)
+            return try await Self.onEventLoopGroup(own: ownEventLoop) { group in
+                try await endpoint.connect(timeout: timeout, group: group)
+            }
         case let .socket(open):
             let descriptor = try await open()
             do {
@@ -67,6 +61,39 @@ extension SSHTransport {
             return try await bastion.openRawDirectTCPIP(host: host, port: port) { channel in
                 try channel.pipeline.syncOperations.addHandler(SSHBannerGate())
             }
+        }
+    }
+
+    private static func onEventLoopGroup(
+        own: Bool,
+        _ connect: (NIOTSEventLoopGroup) async throws -> Channel
+    ) async throws -> Channel {
+        guard own else { return try await connect(.singleton) }
+        let group = NIOTSEventLoopGroup(loopCount: 1)
+        do {
+            let channel = try await connect(group)
+            channel.closeFuture.whenComplete { _ in group.shutdownGracefully { _ in } }
+            return channel
+        } catch {
+            group.shutdownGracefully { _ in }
+            throw error
+        }
+    }
+
+    private static func connectTCP(host: String, port: Int, timeout: TimeAmount, group: NIOTSEventLoopGroup) async throws -> Channel {
+        do {
+            return try await NIOTSConnectionBootstrap(group: group)
+                .connectTimeout(timeout)
+                .channelOption(NIOTSChannelOptions.waitForActivity, value: false)
+                .channelInitializer { channel in
+                    channel.eventLoop.makeCompletedFuture {
+                        try channel.pipeline.syncOperations.addHandler(SSHBannerGate())
+                    }
+                }
+                .connect(host: host, port: port)
+                .get()
+        } catch {
+            throw SSHError.connectionFailed("Unable to connect to \(host):\(port) (\(describe(error))).")
         }
     }
 

@@ -89,14 +89,20 @@ public actor SSHConnection {
     }
 
     private static func signIn(_ configuration: Configuration) async throws -> SSHConnection {
-        let offers = try configuration.credentials.flatMap { try $0.offers() }
+        let agentWait = AgentWait()
+        let offers = try configuration.credentials.flatMap { try $0.offers(agentWait: agentWait) }
         guard !offers.isEmpty else { throw SSHError.authenticationFailed }
         var lastError: Error = SSHError.authenticationFailed
         var serverVersion: String?
         for offer in offers {
             for attempt in [offer.offer] + offer.fallbacks {
                 do {
-                    return try await connect(configuration, offering: attempt, serverVersion: &serverVersion)
+                    return try await connect(
+                        configuration,
+                        offering: attempt,
+                        agentWait: offer.usesAgent ? agentWait : nil,
+                        serverVersion: &serverVersion
+                    )
                 } catch SSHError.authenticationFailed {
                     lastError = SSHError.authenticationFailed
                     try Task.checkCancellation()
@@ -130,14 +136,20 @@ public actor SSHConnection {
 
     /// One attempt with one offer. `serverVersion` is set to the server's
     /// identification once it is known, whether or not the attempt works.
+    ///
+    /// An offer the agent signs (`agentWait`) blocks its connection's event
+    /// loop while the agent asks the person, so such a connection gets an
+    /// event loop of its own where the transport allows, and the time the
+    /// agent takes does not count against the timeout.
     private static func connect(
         _ configuration: Configuration,
         offering offer: NIOSSHUserAuthenticationOffer.Offer,
+        agentWait: AgentWait?,
         serverVersion: inout String?
     ) async throws -> SSHConnection {
         let timeout = TimeAmount(configuration.timeout)
         let channel = try await configuration.transport.makeChannel(
-            host: configuration.host, port: configuration.port, timeout: timeout
+            host: configuration.host, port: configuration.port, timeout: timeout, ownEventLoop: agentWait != nil
         )
         let gate: NIOLoopBound<SSHBannerGate>
         do {
@@ -164,9 +176,19 @@ public actor SSHConnection {
         // end when the task is cancelled. Citadel gives up only after its
         // own 10 seconds, and a closed channel (one through a jump host
         // waits for the bastion to confirm) does not end it sooner, so
-        // this does not wait for Citadel.
+        // this does not wait for Citadel. The deadline is kept off the
+        // channel's event loop, which a sign request to the agent holds.
         let signedIn = channel.eventLoop.makePromise(of: SSHClient.self)
-        let deadline = channel.eventLoop.scheduleTask(in: timeout) {
+        let started = ContinuousClock.now
+        let waitedBefore = agentWait?.waited ?? .zero
+        let deadline = Task {
+            var limit = started + configuration.timeout
+            while true {
+                try await Task.sleep(until: limit, clock: .continuous)
+                let extended = started + configuration.timeout + ((agentWait?.waited ?? .zero) - waitedBefore)
+                guard extended > .now else { break }
+                limit = extended
+            }
             signedIn.fail(SSHError.connectionFailed("Timed out signing in to \(configuration.host)."))
         }
         signedIn.futureResult.whenComplete { _ in deadline.cancel() }

@@ -38,8 +38,8 @@ public struct SSHWebSocketEndpoint: Sendable {
         public let location: String?
     }
 
-    func connect(timeout: TimeAmount) async throws -> Channel {
-        let eventLoop = NIOTSEventLoopGroup.singleton.next()
+    func connect(timeout: TimeAmount, group: NIOTSEventLoopGroup = .singleton) async throws -> Channel {
+        let eventLoop = group.next()
         let upgraded = eventLoop.makePromise(of: Void.self)
         guard var bootstrap = NIOTSConnectionBootstrap(validatingGroup: eventLoop) else {
             throw SSHError.connectionFailed("No event loop for the WebSocket to \(host).")

@@ -173,6 +173,39 @@ final class SSHLiveTests: XCTestCase {
         XCTAssertEqual(accepted.withLock { $0 }, 2)
     }
 
+    /// An agent asking the person first (three seconds here) holds its
+    /// own connection only: the others answer meanwhile, and the wait
+    /// does not count against signing in, whose timeout is shorter.
+    func testAnAgentWaitingForThePersonHoldsNothingElse() async throws {
+        let (slow, server) = try await Self.slowAgent(in: agent(holding: ["ecdsa"]), signDelay: .seconds(3))
+        defer { server.close(promise: nil) }
+        var others: [SSHConnection] = []
+        // At least one on every shared event loop.
+        for _ in 0 ..< 2 * System.coreCount {
+            try await others.append(connect([.password(password)]))
+        }
+        let configuration = SSHConnection.Configuration(
+            host: "127.0.0.1", port: port, username: user, credentials: [.agent(slow)],
+            timeout: .seconds(2), hostKeyStatus: { _ in .trusted }
+        )
+        let signing = Task { try await SSHConnection.connect(configuration) }
+        try await Task.sleep(for: .seconds(1))
+        let slowest = try await withThrowingTaskGroup(of: Duration.self) { group in
+            for other in others {
+                group.addTask {
+                    let started = ContinuousClock.now
+                    _ = try await other.execute("true")
+                    return ContinuousClock.now - started
+                }
+            }
+            return try await group.reduce(Duration.zero) { max($0, $1) }
+        }
+        XCTAssertLessThan(slowest, .seconds(1), "another connection waited for the agent")
+        let connection = try await signing.value
+        await connection.close()
+        for other in others { await other.close() }
+    }
+
     func testAnEmptyOrMissingAgent() async throws {
         do {
             _ = try await connect([.agent(agent(holding: []))])
@@ -700,6 +733,45 @@ final class SSHLiveTests: XCTestCase {
             }
             .bind(host: "127.0.0.1", port: 0)
             .get()
+    }
+
+    /// An agent in front of `agent` that passes sign requests on only after
+    /// `signDelay`, as one asking for a confirmation does.
+    private static func slowAgent(in agent: SSHAgent, signDelay: TimeAmount) async throws -> (SSHAgent, Channel) {
+        final class Relay: ChannelInboundHandler {
+            typealias InboundIn = ByteBuffer
+            let peer: Channel
+            let signDelay: TimeAmount
+            init(peer: Channel, signDelay: TimeAmount) { self.peer = peer; self.signDelay = signDelay }
+            func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+                let bytes = unwrapInboundIn(data)
+                let peer = peer
+                // A request's type follows its four-byte length; 13 signs.
+                let delay = bytes.getInteger(at: bytes.readerIndex + 4, as: UInt8.self) == 13 ? signDelay : .zero
+                context.eventLoop.scheduleTask(in: delay) { peer.writeAndFlush(bytes, promise: nil) }
+            }
+            func channelInactive(context: ChannelHandlerContext) {
+                peer.close(promise: nil)
+            }
+        }
+        let path = FileManager.default.temporaryDirectory.appendingPathComponent("rayon-slow-\(UUID().uuidString.prefix(8))").path
+        let upstream = agent.socketPath
+        let server = try await ServerBootstrap(group: MultiThreadedEventLoopGroup.singleton)
+            .childChannelInitializer { inbound in
+                ClientBootstrap(group: inbound.eventLoop)
+                    .channelInitializer { outbound in
+                        outbound.eventLoop.makeCompletedFuture {
+                            try outbound.pipeline.syncOperations.addHandler(Relay(peer: inbound, signDelay: .zero))
+                        }
+                    }
+                    .connect(unixDomainSocketPath: upstream)
+                    .flatMapThrowing { outbound in
+                        try inbound.pipeline.syncOperations.addHandler(Relay(peer: outbound, signDelay: signDelay))
+                    }
+            }
+            .bind(unixDomainSocketPath: path, cleanupExistingSocketFile: true)
+            .get()
+        return (SSHAgent(socketPath: path), server)
     }
 
     private static func freePort() throws -> Int {

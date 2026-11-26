@@ -9,13 +9,16 @@
 //  swift-nio-ssh asks a key for its signature synchronously, so the sign
 //  request is a blocking round trip on the agent's local socket; an agent
 //  that asks the person first (a confirmation, Touch ID) holds the
-//  connection's event loop until it answers, at most `timeout`.
+//  connection's event loop until it answers, at most `timeout`. Such a
+//  connection runs on an event loop of its own, and the wait is not
+//  counted against signing in (SSHConnection).
 //
 
 import Darwin
 import Foundation
 import NIOCore
 import NIOSSH
+import Synchronization
 
 public struct SSHAgent: Sendable {
     /// One key the agent holds.
@@ -159,23 +162,23 @@ extension SSHAgent {
     /// order, each key's signature algorithms most preferred first: an RSA
     /// key's SHA-512, then SHA-256, then SHA-1. Key types the agent holds
     /// but cannot sign in with here (certificates) are left out.
-    func offers() throws -> [[NIOSSHPrivateKey]] {
+    func offers(wait: AgentWait) throws -> [[NIOSSHPrivateKey]] {
         try identities().map { identity -> [NIOSSHPrivateKey] in
             switch identity.type {
-            case "ssh-ed25519": [key(AgentEd25519.self, identity)]
-            case "ecdsa-sha2-nistp256": [key(AgentP256.self, identity)]
-            case "ecdsa-sha2-nistp384": [key(AgentP384.self, identity)]
-            case "ecdsa-sha2-nistp521": [key(AgentP521.self, identity)]
-            case "sk-ssh-ed25519@openssh.com": [key(AgentSKEd25519.self, identity)]
-            case "sk-ecdsa-sha2-nistp256@openssh.com": [key(AgentSKP256.self, identity)]
-            case "ssh-rsa": [key(AgentRSASHA512.self, identity), key(AgentRSASHA256.self, identity), key(AgentRSASHA1.self, identity)]
+            case "ssh-ed25519": [key(AgentEd25519.self, identity, wait)]
+            case "ecdsa-sha2-nistp256": [key(AgentP256.self, identity, wait)]
+            case "ecdsa-sha2-nistp384": [key(AgentP384.self, identity, wait)]
+            case "ecdsa-sha2-nistp521": [key(AgentP521.self, identity, wait)]
+            case "sk-ssh-ed25519@openssh.com": [key(AgentSKEd25519.self, identity, wait)]
+            case "sk-ecdsa-sha2-nistp256@openssh.com": [key(AgentSKP256.self, identity, wait)]
+            case "ssh-rsa": [key(AgentRSASHA512.self, identity, wait), key(AgentRSASHA256.self, identity, wait), key(AgentRSASHA1.self, identity, wait)]
             default: []
             }
         }
     }
 
-    private func key<Algorithm: AgentAlgorithm>(_: Algorithm.Type, _ identity: Identity) -> NIOSSHPrivateKey {
-        NIOSSHPrivateKey(custom: AgentKey<Algorithm>(agent: self, blob: identity.blob))
+    private func key<Algorithm: AgentAlgorithm>(_: Algorithm.Type, _ identity: Identity, _ wait: AgentWait) -> NIOSSHPrivateKey {
+        NIOSSHPrivateKey(custom: AgentKey<Algorithm>(agent: self, blob: identity.blob, wait: wait))
     }
 }
 
@@ -215,10 +218,12 @@ final class AgentKey<Algorithm: AgentAlgorithm>: NIOSSHPrivateKeyProtocol, Senda
 
     let agent: SSHAgent
     let blob: [UInt8]
+    let wait: AgentWait
 
-    init(agent: SSHAgent, blob: [UInt8]) {
+    init(agent: SSHAgent, blob: [UInt8], wait: AgentWait) {
         self.agent = agent
         self.blob = blob
+        self.wait = wait
     }
 
     var publicKey: NIOSSHPublicKeyProtocol {
@@ -226,11 +231,33 @@ final class AgentKey<Algorithm: AgentAlgorithm>: NIOSSHPrivateKeyProtocol, Senda
     }
 
     func signature<D: DataProtocol>(for data: D) throws -> NIOSSHSignatureProtocol {
-        var signature = try agent.sign(Array(data), with: blob, flags: Algorithm.flags)
+        var signature = try wait.measure { try agent.sign(Array(data), with: blob, flags: Algorithm.flags) }
         guard signature.readSSHText() == Algorithm.name else {
             throw AgentSignedAnotherAlgorithm(algorithm: Algorithm.name)
         }
         return AgentSignature<Algorithm>(rawRepresentation: Data(signature.readableBytesView))
+    }
+}
+
+/// How long signing in has waited for the agent, which may be asking the
+/// person (a confirmation, Touch ID): that is not the server being slow.
+final class AgentWait: Sendable {
+    private let state = Mutex<(total: Duration, since: ContinuousClock.Instant?)>((.zero, nil))
+
+    func measure<T>(_ body: () throws -> T) rethrows -> T {
+        state.withLock { $0.since = .now }
+        defer {
+            state.withLock { state in
+                state.total += state.since.map { .now - $0 } ?? .zero
+                state.since = nil
+            }
+        }
+        return try body()
+    }
+
+    /// The time waited so far, a wait still going on included.
+    var waited: Duration {
+        state.withLock { $0.total + ($0.since.map { .now - $0 } ?? .zero) }
     }
 }
 
