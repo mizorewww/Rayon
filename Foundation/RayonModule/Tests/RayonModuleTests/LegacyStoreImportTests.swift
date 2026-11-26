@@ -60,7 +60,7 @@ final class LegacyStoreImportTests: XCTestCase {
     @discardableResult
     private func runImport(masterKey: String? = nil, forget: @escaping () -> Void = {}) -> Bool {
         let key = masterKey ?? master
-        return LegacyStoreImport.runIfNeeded(into: storage, defaults: defaults, masterKey: { key }, forgetMasterKey: forget)
+        return LegacyStoreImport.runIfNeeded(into: storage, defaults: defaults, masterKey: { key }, forgetMasterKey: forget) == .imported
     }
 
     func testImportsWhat24Wrote() throws {
@@ -206,10 +206,53 @@ final class LegacyStoreImportTests: XCTestCase {
         XCTAssertEqual(storage.record(RDMachine.self, id: serverID)?.name, "Renamed")
     }
 
-    func testWithoutTheMasterKeyNothingIsTouched() throws {
+    func testWithoutTheMasterKeyNothingIsTouchedAndTheUserIsTold() throws {
         try load("v2.4")
-        XCTAssertFalse(LegacyStoreImport.runIfNeeded(into: storage, defaults: defaults, masterKey: { nil }, forgetMasterKey: {}))
+        let outcome = LegacyStoreImport.runIfNeeded(into: storage, defaults: defaults, masterKey: { nil }, forgetMasterKey: {})
+        guard case let .blocked(reason) = outcome else { return XCTFail("\(outcome)") }
+        XCTAssertTrue(reason.contains("keychain"))
         XCTAssertNotNil(defaults.object(forKey: "machineGroupEncrypted"))
         XCTAssertFalse(defaults.bool(forKey: LegacyStoreImport.doneKey))
+
+        // Saving something meanwhile does not end the attempts.
+        try storage.save(RDMachine(remoteAddress: "new", remotePort: "22", name: "Added"))
+        XCTAssertTrue(runImport())
+        XCTAssertEqual(storage.records(RDMachine.self).count, 3)
+    }
+
+    func testUnreadableDataIsReportedToTheUser() throws {
+        try load("v2.4")
+        let outcome = LegacyStoreImport.runIfNeeded(into: storage, defaults: defaults, masterKey: { "6F9619FF-8B86-D011-B42D-00C04FC964FF" }, forgetMasterKey: {})
+        guard case let .blocked(reason) = outcome else { return XCTFail("\(outcome)") }
+        XCTAssertTrue(reason.contains("its servers could not be decrypted"), reason)
+    }
+
+    /// Up to 2.4 the master key was kept under the name of the app's former
+    /// maintainer; 2.8 still read it there, and so does the import.
+    func testTheMasterKeyIsFoundUnderItsFormerName() throws {
+        XCTAssertEqual(LegacyStoreImport.masterKeyItems.map(\.service), ["me.mizorewww.rayon.kcAccess", "wiki.qaq.rayon.kcAccess"])
+        XCTAssertEqual(LegacyStoreImport.masterKeyItems.map(\.account), ["me.mizorewww.rayon.MasterCrypto", "wiki.qaq.rayon.MasterCrypto"])
+
+        let items: [(service: String, account: String)] = [
+            ("me.mizorewww.rayon.tests.current.\(UUID().uuidString)", "me.mizorewww.rayon.MasterCrypto"),
+            ("me.mizorewww.rayon.tests.former.\(UUID().uuidString)", "wiki.qaq.rayon.MasterCrypto"),
+        ]
+        defer { LegacyStoreImport.removeMasterKey(items: items) }
+        XCTAssertNil(LegacyStoreImport.readMasterKey(from: items))
+        XCTAssertEqual(SecItemAdd([
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: items[1].service,
+            kSecAttrAccount as String: items[1].account,
+            kSecValueData as String: Data(master.utf8),
+        ] as CFDictionary, nil), errSecSuccess)
+        XCTAssertEqual(LegacyStoreImport.readMasterKey(from: items), master)
+
+        try load("v2.4")
+        XCTAssertEqual(LegacyStoreImport.runIfNeeded(
+            into: storage, defaults: defaults,
+            masterKey: { LegacyStoreImport.readMasterKey(from: items) },
+            forgetMasterKey: { LegacyStoreImport.removeMasterKey(items: items) }
+        ), .imported)
+        XCTAssertNil(LegacyStoreImport.readMasterKey(from: items), "forgotten once imported")
     }
 }

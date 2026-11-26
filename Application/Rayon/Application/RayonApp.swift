@@ -21,6 +21,9 @@ struct RayonApp: App {
         #endif
         _ = RayonStore.shared
         CloudSyncModel.shared.start()
+        if let problem = RayonStore.shared.legacyImportProblem {
+            UIBridge.presentError(with: problem, delay: 1)
+        }
 
         PortForwardBackend.shared.onError = { UIBridge.presentError(with: $0) }
         FileTransferInterface.uiHandler = MacFileTransferUIHandler()

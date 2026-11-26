@@ -42,9 +42,21 @@ enum LegacyStoreImport {
         ] + sealed.map { $0 + ".corrupt" }
     }
 
-    /// The keychain item that held the master key.
-    static let masterKeyService = "me.mizorewww.rayon.kcAccess"
-    static let masterKeyAccount = "me.mizorewww.rayon.MasterCrypto"
+    /// The keychain items that held the master key: the name used since
+    /// 2.5, then the one before it, which 2.8 still read.
+    static let masterKeyItems: [(service: String, account: String)] = [
+        ("me.mizorewww.rayon.kcAccess", "me.mizorewww.rayon.MasterCrypto"),
+        ("wiki.qaq.rayon.kcAccess", "wiki.qaq.rayon.MasterCrypto"),
+    ]
+
+    enum Outcome: Equatable {
+        /// There was nothing (left) to import.
+        case nothingToImport
+        case imported
+        /// The old data is there and stays there, but could not be
+        /// imported; the next launch tries again. Says why, for the user.
+        case blocked(String)
+    }
 
     /// Imports what the previous release stored, if it has not been. Without
     /// the master key, or when any of it cannot be read, nothing is touched
@@ -53,31 +65,33 @@ enum LegacyStoreImport {
     static func runIfNeeded(
         into storage: RayonStorage,
         defaults: UserDefaults = .standard,
-        masterKey: () -> String? = readMasterKey,
-        forgetMasterKey: () -> Void = removeMasterKey
-    ) -> Bool {
-        guard !defaults.bool(forKey: doneKey) else { return false }
+        masterKey: () -> String? = { readMasterKey() },
+        forgetMasterKey: () -> Void = { removeMasterKey() }
+    ) -> Outcome {
+        guard !defaults.bool(forKey: doneKey) else { return .nothingToImport }
         guard Key.sealed.contains(where: { defaults.object(forKey: $0) != nil }) else {
             defaults.set(true, forKey: doneKey)
-            return false
+            return .nothingToImport
         }
+        let lead = "The servers, identities and snippets saved by the previous version of Rayon could not be opened"
+        let kept = "They are kept as they are, and Rayon tries again on its next launch."
         guard let master = masterKey(), !master.isEmpty else {
             RayonStorage.logger.error("legacy import: the master key is not readable; trying again on the next launch")
-            return false
+            return .blocked("\(lead): the key that protects them could not be read from the keychain. \(kept)")
         }
         let opener = Opener(masterKey: master)
         do {
             try importRecords(from: defaults, opener: opener, into: storage)
         } catch {
             RayonStorage.logger.error("legacy import failed: \(error.localizedDescription)")
-            return false
+            return .blocked("\(lead) (\(error.localizedDescription)). \(kept)")
         }
         for key in Key.sealed + Key.obsolete {
             defaults.removeObject(forKey: key)
         }
         defaults.set(true, forKey: doneKey)
         forgetMasterKey()
-        return true
+        return .imported
     }
 
     enum Failure: LocalizedError {
@@ -85,7 +99,13 @@ enum LegacyStoreImport {
 
         var errorDescription: String? {
             switch self {
-            case let .unreadable(key): "\(key) could not be decrypted or read"
+            case let .unreadable(key):
+                let names = [
+                    Key.machines: "servers", Key.identities: "identities", Key.snippets: "snippets",
+                    Key.portForwards: "port forwards", Key.folders: "folders",
+                    Key.recent: "recent connections", Key.knownHosts: "host keys",
+                ]
+                return "its \(names[key] ?? key) could not be decrypted or read"
             }
         }
     }
@@ -225,27 +245,36 @@ enum LegacyStoreImport {
         }
     }
 
-    static func readMasterKey() -> String? {
-        var result: CFTypeRef?
-        let status = SecItemCopyMatching([
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: masterKeyService,
-            kSecAttrAccount as String: masterKeyAccount,
-            kSecReturnData as String: true,
-            kSecMatchLimit as String: kSecMatchLimitOne,
-        ] as CFDictionary, &result)
-        guard status == errSecSuccess, let data = result as? Data else { return nil }
-        return String(data: data, encoding: .utf8)
+    /// The first master key found, as 2.8 looked for it.
+    static func readMasterKey(from items: [(service: String, account: String)] = masterKeyItems) -> String? {
+        for item in items {
+            var result: CFTypeRef?
+            let status = SecItemCopyMatching([
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: item.service,
+                kSecAttrAccount as String: item.account,
+                kSecReturnData as String: true,
+                kSecMatchLimit as String: kSecMatchLimitOne,
+            ] as CFDictionary, &result)
+            if status == errSecSuccess, let data = result as? Data,
+               let key = String(data: data, encoding: .utf8), key.count > 2
+            {
+                return key
+            }
+        }
+        return nil
     }
 
-    /// The master key, and the passphrase key the old iCloud sync kept in
+    /// The master keys, and the passphrase key the old iCloud sync kept in
     /// the iCloud keychain.
-    static func removeMasterKey() {
-        SecItemDelete([
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: masterKeyService,
-            kSecAttrAccount as String: masterKeyAccount,
-        ] as CFDictionary)
+    static func removeMasterKey(items: [(service: String, account: String)] = masterKeyItems) {
+        for item in items {
+            SecItemDelete([
+                kSecClass as String: kSecClassGenericPassword,
+                kSecAttrService as String: item.service,
+                kSecAttrAccount as String: item.account,
+            ] as CFDictionary)
+        }
         SecItemDelete([
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: "me.mizorewww.rayon.sync.key",

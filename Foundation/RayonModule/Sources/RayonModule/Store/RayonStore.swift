@@ -16,10 +16,16 @@ import os
 @MainActor
 public final class RayonStore: ObservableObject {
     public static let shared: RayonStore = {
-        LegacyStoreImport.runIfNeeded(into: .shared)
+        let legacy = LegacyStoreImport.runIfNeeded(into: .shared)
         RayonStorage.shared.purgeTombstones()
-        return RayonStore(storage: .shared)
+        let store = RayonStore(storage: .shared)
+        if case let .blocked(reason) = legacy { store.legacyImportProblem = reason }
+        return store
     }()
+
+    /// Why the previous version's data could not be brought over, when it
+    /// could not; the apps tell the user at launch.
+    public private(set) var legacyImportProblem: String?
 
     public nonisolated let storage: RayonStorage
 
