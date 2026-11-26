@@ -1,13 +1,14 @@
 import Foundation
 import GhosttyTheme
 
-/// Every theme `theme = …` can name: libghostty-spm's `GhosttyThemeCatalog`,
-/// then the themes Rayon offered before that it does not have yet
-/// (`themes.json`), so no theme someone picked goes away.
+/// Every theme `theme = …` can name: the themes Rayon offered before that
+/// libghostty-spm's `GhosttyThemeCatalog` lacks or defines otherwise
+/// (`themes.json`), so no theme someone picked goes away or looks different,
+/// then the rest of the catalog.
 enum TerminalThemes {
     static let all: [GhosttyThemeDefinition] = {
-        let known = Set(GhosttyThemeCatalog.allThemes.map(\.name))
-        return (GhosttyThemeCatalog.allThemes + supplement.filter { !known.contains($0.name) })
+        let kept = Set(supplement.map(\.name))
+        return (supplement + GhosttyThemeCatalog.allThemes.filter { !kept.contains($0.name) })
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }()
 

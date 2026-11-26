@@ -49,6 +49,26 @@ final class ConfigurationTests: XCTestCase {
         }
     }
 
+    /// The themes GhosttyTheme defines otherwise look as they did before.
+    func testThemesLookAsTheyDidBefore() throws {
+        let before: [String: (background: String, selection: String?, color8: String?)] = [
+            "Adwaita": ("#ffffff", "#1d1d20", "#5d5d5d"),
+            "Adwaita Dark": ("#1c1c1f", "#ffffff", "#5e5c64"),
+            "Catppuccin Frappe": ("#303446", "#f2d5cf", "#626880"),
+            "Catppuccin Latte": ("#eff1f5", "#dc8a78", "#acb0be"),
+            "Catppuccin Macchiato": ("#24273a", "#f4dbd6", "#5b6078"),
+            "Catppuccin Mocha": ("#1e1e2e", "#f5e0dc", "#585b70"),
+            "Dark Modern": ("#1f1f1f", "#3a3d41", "#666666"),
+            "Electron Highlighter": ("#23283d", "#293257", "#4b5b8c"),
+        ]
+        for (name, colors) in before {
+            let theme = try XCTUnwrap(TerminalThemes.theme(named: name), name)
+            XCTAssertEqual(theme.color("background"), colors.background, name)
+            XCTAssertEqual(theme.color("selection-background"), colors.selection, name)
+            XCTAssertEqual(theme.paletteColor(8), colors.color8, name)
+        }
+    }
+
     func testConfigTextKeepsWhatItDoesNotTouch() throws {
         var text = GhosttyConfigText("# mine\nfont-size = 12\n\nunknown-future = x\nkeybind = a=ignore\nkeybind = b=ignore\n")
         text.set("keybind", ["c=ignore"])
