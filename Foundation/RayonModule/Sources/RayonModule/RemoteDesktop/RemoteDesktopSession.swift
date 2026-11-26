@@ -126,9 +126,13 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
     /// from a closed page in the device's log.
     nonisolated static let log = Logger(subsystem: "me.mizorewww.rayon", category: "remote-desktop")
 
-    public init(machine: RDMachine, protocolType: RDMachine.RemoteDesktopProtocolType) {
+    /// Where the server's saved details are read and written.
+    private let store: RayonStore
+
+    public init(machine: RDMachine, protocolType: RDMachine.RemoteDesktopProtocolType, store: RayonStore = .shared) {
         self.machine = machine
         self.protocolType = protocolType
+        self.store = store
         streamSettings = RemoteDesktopStreamSettings(machine: machine)
     }
 
@@ -137,7 +141,7 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
         guard phase == .idle || phase.isTerminal else { return }
         // Details saved since (a corrected password, another window's
         // stream choice): a reconnect uses them, not those it opened with.
-        if let saved = RayonStore.shared.machine(machine.id) {
+        if let saved = store.machine(machine.id) {
             machine = saved
             streamSettings = RemoteDesktopStreamSettings(machine: saved)
         }
@@ -295,7 +299,6 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
     }
 
     private func save(_ settings: RemoteDesktopStreamSettings) {
-        let store = RayonStore.shared
         guard var record = store.machine(machine.id) else { return }
         record.uuFPS = settings.fps
         record.uuQuality = settings.quality
