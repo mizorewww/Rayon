@@ -23,7 +23,7 @@ let package = Package(
         .package(name: "RayonDesign", path: "../RayonDesign"),
         .package(name: "RayonEditor", path: "../RayonEditor"),
         .package(name: "RayonTerminal", path: "../RayonTerminal"),
-        .package(url: "https://github.com/mizorewww/UURemoteKit.git", from: "0.1.1"),
+        .package(url: "https://github.com/mizorewww/UURemoteKit.git", from: "0.1.2"),
     ],
     targets: [
         .target(
