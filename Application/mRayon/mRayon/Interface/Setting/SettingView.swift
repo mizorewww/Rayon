@@ -318,6 +318,9 @@ private struct AcknowledgementSettings: View {
             RXFormRow("Terminal", description: "Ghostty and its configuration catalog (MIT, Ghostty contributors).") {
                 EmptyView()
             }
+            RXFormRow("Libraries", description: LicenseNotices.bundledLibraries.joined(separator: " · ")) {
+                EmptyView()
+            }
         }
     }
 }

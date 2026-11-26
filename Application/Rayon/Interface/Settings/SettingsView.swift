@@ -399,7 +399,7 @@ private struct AcknowledgementSettings: View {
             RXFormRow("Terminal", description: "Ghostty, its configuration catalog and app icon presets (MIT, Ghostty contributors).") {
                 EmptyView()
             }
-            RXFormRow("Libraries", description: "libssh2 · NSRemoteShell · Ghostty · Runestone · SymbolPicker · Keychain") {
+            RXFormRow("Libraries", description: LicenseNotices.bundledLibraries.joined(separator: " · ")) {
                 EmptyView()
             }
         }
