@@ -49,11 +49,11 @@ final class IOSHostKeyTrustHandler: HostKeyTrustHandler {
             alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { _ in
                 continuation.resume(returning: false)
             })
-            let trust = UIAlertAction(title: question.confirmTitle, style: question.saved == nil ? .default : .destructive) { _ in
+            let trust = UIAlertAction(title: question.confirmTitle, style: question.isWarning ? .destructive : .default) { _ in
                 continuation.resume(returning: true)
             }
             alert.addAction(trust)
-            if question.saved == nil { alert.preferredAction = trust }
+            if !question.isWarning { alert.preferredAction = trust }
             guard let presenter = UIWindow.shutUpKeyWindow?.topMostViewController else {
                 continuation.resume(returning: false)
                 return

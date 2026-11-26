@@ -59,7 +59,7 @@ final class MacFileTransferUIHandler: FileTransferUIHandler {
 /// whose default answer is Cancel.
 final class MacHostKeyTrustHandler: HostKeyTrustHandler {
     @MainActor func confirm(_ question: HostKeyQuestion) async -> Bool {
-        let changed = question.saved != nil
+        let changed = question.isWarning
         let buttons = changed ? ["Cancel", question.confirmTitle] : [question.confirmTitle, "Cancel"]
         return await withCheckedContinuation { continuation in
             UIBridge.alert(
