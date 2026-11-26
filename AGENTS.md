@@ -33,7 +33,7 @@ Rayon is an SSH / server workflow client for macOS and iOS: terminals, files, po
 - Both apps take their version from `Configuration/Version.xcconfig`. `make scan-license` fails when a pinned dependency is missing from `Resources/LICENSE`; add its notice when you add a dependency.
 - CI (`.github/workflows/ci.yml`) runs `make build-macos`, `make build-ios`, `make test` and `make scan-license` on every pull request; auto-merge waits for it.
 - A change is done when it builds for every platform it touches, its tests pass, and the affected feature works in the running app.
-- UI verification uses `cua-driver` in the background: launch with its `launch_app` (never `open` or `bring_to_front`) and drive Rayon by pid with AX actions, so the user's foreground is never touched. Never inject global keyboard/mouse input (System Events keystrokes, CGEvent), and never loop relaunching the app — launch once, then drive it in place.
+- UI verification uses `cua-driver`'s background computer use only: launch with its `launch_app` (never `open`, `bring_to_front` or `delivery_mode: foreground`), look through screenshots (`get_window_state` with `include_accessibility_tree: false`), and act with background pixel clicks and key presses targeted at Rayon's pid. Don't use accessibility APIs (element indices/tokens, `type_text`, `set_value`, `invoke_menu`), System Events or global input, and never loop relaunching the app.
 - Do not connect to the user's real servers or accounts for testing; use local hosts (e.g. a local `sshd` / container) or the debug preview hooks in `RayonApp.swift`.
 
 ## Style
