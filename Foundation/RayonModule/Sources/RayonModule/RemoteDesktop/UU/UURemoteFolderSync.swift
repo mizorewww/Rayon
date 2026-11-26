@@ -11,22 +11,13 @@
 //  id: the same everywhere, iCloud sync keeps one of it.
 //
 
-import CryptoKit
 import Foundation
 import UURemoteKit
 
 public enum UURemoteFolderSync {
     /// The id of the server for a UU device, the same on every device.
     public static func machineID(for deviceID: String) -> UUID {
-        let hash = Array(SHA256.hash(data: Data("me.mizorewww.rayon.uu-device.\(deviceID)".utf8)))
-        var bytes = Array(hash.prefix(16))
-        // A name-based UUID (version 5 layout, RFC 4122 variant).
-        bytes[6] = (bytes[6] & 0x0F) | 0x50
-        bytes[8] = (bytes[8] & 0x3F) | 0x80
-        return UUID(uuid: (
-            bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
-            bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]
-        ))
+        UUID(derivedFrom: "me.mizorewww.rayon.uu-device.\(deviceID)")
     }
 
     /// A server for a device, in `folder`.
