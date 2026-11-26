@@ -280,4 +280,31 @@ final class StorageTests: XCTestCase {
         store.deleteMachines([machine.id])
         XCTAssertNil(RayonStore.workerMachine(for: machine.id))
     }
+
+    /// Saves here and merges of other devices' older versions running at
+    /// once: every save wins over the stale version and stays queued.
+    func testSavesAndMergesDoNotOverwriteEachOther() async throws {
+        let original = try storage.save(RDMachine(remoteAddress: "a", remotePort: "22", name: "v0"))
+        var stale = original
+        stale.name = "stale"
+        stale.modified = original.modified.addingTimeInterval(-60)
+        let storage = storage
+        let older = stale
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask {
+                for index in 1 ... 100 {
+                    var edit = storage.record(RDMachine.self, id: original.id)!
+                    edit.name = "v\(index)"
+                    _ = try? storage.save(edit)
+                }
+            }
+            group.addTask {
+                for _ in 1 ... 100 {
+                    _ = try? storage.mergeRemote(older)
+                }
+            }
+        }
+        XCTAssertEqual(storage.record(RDMachine.self, id: original.id)?.name, "v100")
+        XCTAssertEqual(storage.pendingUploads().map(\.objectId), [original.id])
+    }
 }

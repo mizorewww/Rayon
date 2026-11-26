@@ -10,6 +10,7 @@
 
 import Foundation
 import os
+import Synchronization
 @preconcurrency import WCDBSwift
 
 public final class RayonStorage: Sendable {
@@ -24,6 +25,10 @@ public final class RayonStorage: Sendable {
 
     let db: Database
     let secrets: SecretStore
+    /// Saves, deletions and merges from iCloud one at a time: each reads the
+    /// record, decides, then writes it and its secrets, and must not do so
+    /// on a version another one is replacing.
+    let writes = Mutex(())
     public let databaseURL: URL
 
     public init(databaseURL: URL, secrets: SecretStore = .shared) throws {
@@ -100,6 +105,10 @@ public extension RayonStorage {
     /// device's own fields alone does neither. Returns the record as written.
     @discardableResult
     func save<T: StoredRecord>(_ record: T, changed: Date? = nil) throws -> T {
+        try writes.withLock { _ in try saveLocked(record, changed: changed) }
+    }
+
+    private func saveLocked<T: StoredRecord>(_ record: T, changed: Date?) throws -> T {
         var record = record
         let existing = row(T.self, id: record.id).map(withSecrets)
         if record.secretsUnread {
@@ -134,6 +143,10 @@ public extension RayonStorage {
     /// Marks the records deleted, forgets their secrets and queues the
     /// deletions for iCloud.
     func delete<T: StoredRecord>(_: T.Type, ids: [UUID]) throws {
+        try writes.withLock { _ in try deleteLocked(T.self, ids: ids) }
+    }
+
+    private func deleteLocked<T: StoredRecord>(_: T.Type, ids: [UUID]) throws {
         let now = Date()
         var deleted: [T] = []
         for id in ids {
@@ -220,6 +233,10 @@ extension RayonStorage {
     /// and queues them for iCloud, all in one transaction: when anything
     /// fails, nothing is kept, the secrets written to the keychain included.
     func insertMissing(_ write: (RecordInserter) throws -> Void) throws {
+        try writes.withLock { _ in try insertMissingLocked(write) }
+    }
+
+    private func insertMissingLocked(_ write: (RecordInserter) throws -> Void) throws {
         var inserter: RecordInserter?
         do {
             try withoutActuallyEscaping(write) { write in

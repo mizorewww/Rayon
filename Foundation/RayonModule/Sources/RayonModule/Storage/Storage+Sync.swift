@@ -127,6 +127,12 @@ extension RayonStorage {
     /// record taken from there keeps what belongs to this device.
     @discardableResult
     func mergeRemote<T: StoredRecord>(_ remote: T) throws -> MergeOutcome {
+        // A save here in between would be overwritten, and its queued
+        // upload taken off the queue.
+        try writes.withLock { _ in try mergeRemoteLocked(remote) }
+    }
+
+    private func mergeRemoteLocked<T: StoredRecord>(_ remote: T) throws -> MergeOutcome {
         let local = row(T.self, id: remote.id).map(withSecrets)
         switch RecordMerge.resolve(local: local, remote: remote) {
         case .same:
@@ -167,6 +173,10 @@ extension RayonStorage {
     /// here too, with its secrets and anything queued for it.
     func removeForSync(table: String, id: UUID) {
         guard let type = Self.recordType(named: table) else { return }
+        writes.withLock { _ in removeForSyncLocked(type, table: table, id: id) }
+    }
+
+    private func removeForSyncLocked(_ type: any StoredRecord.Type, table: String, id: UUID) {
         func remove<T: StoredRecord>(_: T.Type) {
             try? db.run(transaction: { handle in
                 try handle.delete(fromTable: T.tableName, where: Column(named: "id") == id.uuidString)
