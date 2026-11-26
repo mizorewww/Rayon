@@ -277,3 +277,45 @@ final class LegacyBackupTests: XCTestCase {
         XCTAssertThrowsError(try DataBackup.read(url, password: nil)) { XCTAssertEqual($0 as? BackupError, .notABackup) }
     }
 }
+
+/// The original app's hidden importer: its stored values as a property
+/// list, each sealed under a key pasted after it. The 2.4 and 2.8 store
+/// fixtures are such values, under the fixtures' master key.
+@MainActor
+final class PastedImportTests: XCTestCase {
+    private var target: TestStorage!
+    private let key = "3F2504E0-4F89-11D3-9A0C-0305E82C3301"
+
+    override func setUp() async throws {
+        target = try TestStorage()
+    }
+
+    override func tearDown() async throws {
+        target = nil
+    }
+
+    private func fixture(_ name: String) throws -> Data {
+        try Data(contentsOf: XCTUnwrap(Bundle.module.url(forResource: name, withExtension: "plist", subdirectory: "Fixtures/Legacy")))
+    }
+
+    func testPastedDataIsImportedWithItsKey() throws {
+        let store = target.store()
+        let result = try store.importPasted(fixture("v2.4"), key: key)
+        XCTAssertEqual(result.machines, 2)
+        XCTAssertEqual(result.identities, 1)
+        XCTAssertEqual(store.identities.first?.password, "hunter2")
+        XCTAssertEqual(store.folderName(of: try XCTUnwrap(store.machines.first { $0.name == "Inner" })), "Production")
+
+        XCTAssertEqual(try store.importPasted(fixture("v2.8"), key: key).machines, 2)
+        XCTAssertEqual(store.machines.first { $0.name == "Inner" }?.vncPassword, "vnc-secret")
+    }
+
+    func testAWrongKeyImportsNothing() throws {
+        let store = target.store()
+        XCTAssertThrowsError(try store.importPasted(fixture("v2.8"), key: "not the key at all")) {
+            XCTAssertEqual($0 as? BackupError, .wrongPassword)
+        }
+        XCTAssertTrue(store.machines.isEmpty)
+        XCTAssertThrowsError(try store.importPasted(Data("hello".utf8), key: key))
+    }
+}

@@ -61,6 +61,8 @@ struct QuickConnectCard: View {
     @EnvironmentObject var store: RayonStore
     @State private var command = ""
     @State private var suggestion: String?
+    /// Data pasted for the hidden importer, waiting for its key.
+    @State private var importData: Data?
 
     var parsed: SSHCommandReader? {
         SSHCommandReader(quickConnect: command)
@@ -105,6 +107,7 @@ struct QuickConnectCard: View {
                     }
                     .disabled(!canConnect)
                     .opacity(canConnect ? 1 : 0.35)
+                    .simultaneousGesture(LongPressGesture().onEnded { _ in importFromPasteboard() })
                     .accessibilityLabel("Connect")
                 }
                 .padding(.leading, RX.Space.s4)
@@ -188,6 +191,23 @@ struct QuickConnectCard: View {
             for: command,
             in: store.recentRecord.lazy.map(\.equivalentSSHCommand)
         )
+    }
+
+    /// Hidden importer kept from the original app: long-press Connect with the
+    /// exported data, then again with its key, on the pasteboard.
+    func importFromPasteboard() {
+        guard let paste = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
+        if let data = importData {
+            importData = nil
+            do {
+                let result = try store.importPasted(data, key: paste)
+                UIBridge.presentSuccess(with: "Data imported", subtitle: result.summary)
+            } catch {
+                UIBridge.presentError(with: "Could not import: \(error.localizedDescription)")
+            }
+        } else if let data = Data(base64Encoded: paste) {
+            importData = data
+        }
     }
 }
 
