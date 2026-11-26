@@ -359,6 +359,9 @@ public actor CloudSync {
 
 extension CloudSync: CKSyncEngineDelegate {
     public func handleEvent(_ event: CKSyncEngine.Event, syncEngine: CKSyncEngine) async {
+        // An engine stopped (sync turned off, or started afresh) may still
+        // deliver; its state must not be saved over the current one.
+        guard syncEngine === engine else { return }
         handle(event, engine: syncEngine)
     }
 
@@ -366,6 +369,7 @@ extension CloudSync: CKSyncEngineDelegate {
         _ context: CKSyncEngine.SendChangesContext,
         syncEngine: CKSyncEngine
     ) async -> CKSyncEngine.RecordZoneChangeBatch? {
-        await nextBatch(context, engine: syncEngine)
+        guard syncEngine === engine else { return nil }
+        return await nextBatch(context, engine: syncEngine)
     }
 }
