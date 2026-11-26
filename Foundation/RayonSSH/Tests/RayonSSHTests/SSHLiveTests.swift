@@ -335,6 +335,73 @@ final class SSHLiveTests: XCTestCase {
         await connection.close()
     }
 
+    // MARK: Closing under a flood
+
+    // A channel this side closes while the server is still sending: the
+    // data that arrives before the server's close must not make
+    // swift-nio-ssh adjust the window of a channel it already closed.
+
+    func testCancellingAFloodingCommand() async throws {
+        let connection = try await connect([.password(password)])
+        for _ in 0 ..< 20 {
+            let started = Task { try await connection.execute("yes") { _, _ in } }
+            try await Task.sleep(for: .milliseconds(200))
+            started.cancel()
+            _ = try? await started.value
+        }
+        let after = try await connection.execute("echo still")
+        XCTAssertEqual(String(decoding: after.output, as: UTF8.self), "still\n")
+        await connection.close()
+    }
+
+    func testAFloodingCommandThatTimesOut() async throws {
+        let connection = try await connect([.password(password)])
+        for _ in 0 ..< 20 {
+            do {
+                _ = try await connection.execute("yes", timeout: .milliseconds(300)) { _, _ in }
+                XCTFail("a flood past its timeout succeeded")
+            } catch SSHError.timedOut {}
+        }
+        let after = try await connection.execute("echo still")
+        XCTAssertEqual(String(decoding: after.output, as: UTF8.self), "still\n")
+        await connection.close()
+    }
+
+    func testClosingAFloodingShell() async throws {
+        let connection = try await connect([.password(password)])
+        for _ in 0 ..< 20 {
+            let shell = try await connection.openShell(terminalType: "xterm", columns: 80, rows: 24)
+            let (input, typing) = AsyncStream<ByteBuffer>.makeStream()
+            let screen = Screen()
+            let run = Task { try await shell.run(input: input) { await screen.append($0) } }
+            typing.yield(ByteBuffer(string: "echo FLOOD-$((1+1)); yes\n"))
+            try await screen.wait(for: "FLOOD-2")
+            try await Task.sleep(for: .milliseconds(100))
+            shell.close()
+            typing.finish()
+            _ = try? await run.value
+        }
+        let after = try await connection.execute("echo still")
+        XCTAssertEqual(String(decoding: after.output, as: UTF8.self), "still\n")
+        await connection.close()
+    }
+
+    func testClosingAConnectionWhileChildrenFlood() async throws {
+        for _ in 0 ..< 10 {
+            let connection = try await connect([.password(password)])
+            let shell = try await connection.openShell(terminalType: "xterm", columns: 80, rows: 24)
+            let (input, typing) = AsyncStream<ByteBuffer>.makeStream()
+            let run = Task { try await shell.run(input: input) { _ in } }
+            typing.yield(ByteBuffer(string: "yes\n"))
+            let commands = (0 ..< 3).map { _ in Task { try await connection.execute("yes") { _, _ in } } }
+            try await Task.sleep(for: .milliseconds(300))
+            await connection.close()
+            typing.finish()
+            _ = try? await run.value
+            for command in commands { _ = try? await command.value }
+        }
+    }
+
     // MARK: SFTP
 
     func testUploadsKeepTheirPermissions() async throws {

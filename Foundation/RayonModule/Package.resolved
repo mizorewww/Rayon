@@ -1,5 +1,5 @@
 {
-  "originHash" : "4bbc40de289f92e458c9c28d1641abd43254fdbff274657bd31327c695c5f5dd",
+  "originHash" : "33f52cd3f2d5123b80873160ade89244065132271b22c3859eb1d81f13543ac4",
   "pins" : [
     {
       "identity" : "bettercodable",
@@ -166,10 +166,9 @@
     {
       "identity" : "swift-nio-ssh",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Joannis/swift-nio-ssh.git",
+      "location" : "https://github.com/mizorewww/swift-nio-ssh.git",
       "state" : {
-        "revision" : "791437a67f5394b13060314c778c0f63124803b1",
-        "version" : "0.3.5"
+        "revision" : "71fb9f87bd1be78745c28058a504ac8d1bfe4dda"
       }
     },
     {

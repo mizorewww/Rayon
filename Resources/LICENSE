@@ -1332,8 +1332,8 @@ SOFTWARE.
 
 ---
 
-SwiftNIO SSH 0.3.5 (Joannis fork, used by Citadel)
-https://github.com/Joannis/swift-nio-ssh
+SwiftNIO SSH 0.3.5 (Citadel's Joannis fork, with fixes from apple/swift-nio-ssh)
+https://github.com/mizorewww/swift-nio-ssh
 
 
                                  Apache License
