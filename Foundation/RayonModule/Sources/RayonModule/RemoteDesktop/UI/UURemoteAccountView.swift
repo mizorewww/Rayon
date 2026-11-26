@@ -22,7 +22,7 @@ import SwiftUI
 /// when omitted the view only creates the session in
 /// `RemoteDesktopManager`.
 public struct UURemoteAccountView: View {
-    @ObservedObject private var account = UURemoteAccountStore.shared
+    @ObservedObject private var account = UURemoteAccount.shared
     /// Called with the machine id to open a desktop session on.
     public var onConnectDesktop: ((RDMachine.ID) -> Void)?
     /// Called with the machine id to open a terminal on; nil hides Terminal.

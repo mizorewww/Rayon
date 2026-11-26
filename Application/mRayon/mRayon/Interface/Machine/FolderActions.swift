@@ -63,7 +63,7 @@ enum FolderActions {
     static func refreshLinked() {
         Task { @MainActor in
             do {
-                try await UURemoteAccountStore.shared.refreshDevices()
+                try await UURemoteAccount.shared.refreshDevices()
             } catch {
                 UIBridge.presentError(with: error.localizedDescription)
             }
@@ -119,7 +119,7 @@ struct FolderSectionHeader: View {
     let name: String
     let count: Int
     @EnvironmentObject var store: RayonStore
-    @ObservedObject private var account = UURemoteAccountStore.shared
+    @ObservedObject private var account = UURemoteAccount.shared
 
     private var folder: RDFolder? { store.folder(named: name) }
 
@@ -165,7 +165,7 @@ struct FolderSectionHeader: View {
 struct FolderMenuItems: View {
     let name: String
     @ObservedObject private var store = RayonStore.shared
-    @ObservedObject private var account = UURemoteAccountStore.shared
+    @ObservedObject private var account = UURemoteAccount.shared
 
     var body: some View {
         let folder = store.folder(named: name)

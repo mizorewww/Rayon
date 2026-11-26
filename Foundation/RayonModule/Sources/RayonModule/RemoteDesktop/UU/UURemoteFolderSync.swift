@@ -13,6 +13,7 @@
 
 import CryptoKit
 import Foundation
+import UURemoteKit
 
 public enum UURemoteFolderSync {
     /// Marks a server as pulled from an account, so a refresh may remove it.
@@ -85,7 +86,7 @@ public enum UURemoteFolderSync {
     /// Brings the servers in `folder` up to date with `devices`. `ownDeviceID`
     /// is the device Rayon signed in as, which is not a server.
     public static func apply(devices: [UUDeviceInfo], folder: String, ownDeviceID: String = "", to group: inout RDMachineGroup) {
-        let desktops = devices.filter { $0.isDesktop && $0.deviceID != ownDeviceID }
+        let desktops = devices.filter { $0.isComputer && !$0.isRegistration(of: UURemoteAccount.clientName) && $0.deviceID != ownDeviceID }
         let present = Set(desktops.map(\.deviceID))
         for device in desktops {
             if var machine = group.machines.first(where: { $0.uuDeviceID == device.deviceID }) {

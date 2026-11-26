@@ -27,3 +27,17 @@ final class TerminalShutdownTests: XCTestCase {
         XCTAssertEqual(context.getBuffer(), "")
     }
 }
+
+/// A terminal renderer that keeps what it is sent, and types on request.
+final class RecordingSurface: TerminalSessionSurface, @unchecked Sendable {
+    private let lock = NSLock()
+    private var written = ""
+    private var buffer: ((String) -> Void)?
+    var text: String { lock.withLock { written } }
+    func type(_ string: String) { buffer?(string) }
+    func write(_ string: String) { lock.withLock { written += string } }
+    func setupBellChain(_: @escaping () -> Void) {}
+    func setupBufferChain(_ callback: @escaping (String) -> Void) { buffer = callback }
+    func setupTitleChain(_: @escaping (String) -> Void) {}
+    func setupSizeChain(_: @escaping (CGSize) -> Void) {}
+}

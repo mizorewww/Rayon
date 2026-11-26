@@ -66,7 +66,7 @@ public enum RemoteDesktopDriverFactory {
         case .vnc:
             return VNCRFBDriver(machine: machine, session: session)
         case .uuRemote:
-            return UURemoteDriver(session: session)
+            return UURemoteDesktopDriver(session: session)
         }
     }
 }

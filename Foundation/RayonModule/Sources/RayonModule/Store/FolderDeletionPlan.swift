@@ -19,7 +19,7 @@ public struct FolderDeletionPlan {
     public let informative: String?
     public let confirmTitle: String
 
-    public init(folder name: String, store: RayonStore = .shared, account: UURemoteAccountStore = .shared) {
+    public init(folder name: String, store: RayonStore = .shared, account: UURemoteAccount = .shared) {
         self.name = name
         unlinksAccount = account.isLoggedIn && store.folder(named: name) == account.folder(store: store)
         let count = store.machines(inFolder: name).count
@@ -31,7 +31,7 @@ public struct FolderDeletionPlan {
         confirmTitle = unlinksAccount ? "Delete and Sign Out" : "Delete Folder"
     }
 
-    public func perform(store: RayonStore = .shared, account: UURemoteAccountStore = .shared) {
+    public func perform(store: RayonStore = .shared, account: UURemoteAccount = .shared) {
         if unlinksAccount { account.logout() }
         store.deleteFolder(name)
     }

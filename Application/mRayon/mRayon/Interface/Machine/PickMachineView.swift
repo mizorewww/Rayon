@@ -16,7 +16,7 @@ struct PickMachineView: View {
     @Binding var selection: [RDMachine.ID]
     @State var rawSelection: [RDMachine.ID] = []
     @State var searchKey = ""
-    @ObservedObject var uuAccount = UURemoteAccountStore.shared
+    @ObservedObject var uuAccount = UURemoteAccount.shared
 
     init(selection: Binding<[RDMachine.ID]>, canSelectMany: Bool = true) {
         _selection = selection

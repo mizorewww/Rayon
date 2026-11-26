@@ -14,7 +14,7 @@ import SwiftUI
 struct RemoteDesktopsView: View {
     @EnvironmentObject var store: RayonStore
     @ObservedObject var desktops = RemoteDesktopManager.shared
-    @ObservedObject var account = UURemoteAccountStore.shared
+    @ObservedObject var account = UURemoteAccount.shared
     @ObservedObject var nearby = VNCDiscovery.shared
 
     @State private var searchText = ""
@@ -137,7 +137,7 @@ struct RemoteDesktopsView: View {
                             .foregroundStyle(.rxDanger)
                     } else {
                         Text(account.isLoggedIn
-                            ? "\(UURemoteAccountStore.deviceCount(account.desktopDevices.count)), in the \"\(account.folder(store: store)?.name ?? "UU Remote")\" folder on Servers"
+                            ? "\(UURemoteAccount.deviceCount(account.desktopDevices.count)), in the \"\(account.folder(store: store)?.name ?? "UU Remote")\" folder on Servers"
                             : "Sign in, and the account's devices appear in a folder on Servers.")
                             .font(.rxHelp)
                             .foregroundStyle(.rxInkSecondary)
@@ -210,7 +210,7 @@ private struct NearbyHostRow: View {
 /// and Open / Close.
 private struct DesktopServerRow: View {
     let machine: RDMachine
-    @ObservedObject private var account = UURemoteAccountStore.shared
+    @ObservedObject private var account = UURemoteAccount.shared
     /// The open session, if any; observed so the dot follows its phase.
     let session: RemoteDesktopSession?
     @EnvironmentObject var store: RayonStore

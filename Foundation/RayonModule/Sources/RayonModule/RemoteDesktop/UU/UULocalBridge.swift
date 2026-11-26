@@ -1,12 +1,12 @@
 //
-//  UURemoteLocalBridge.swift
+//  UULocalBridge.swift
 //  RayonModule
 //
 //  Optional local helpers: the official `uuremote://` URL scheme (iOS/Android
 //  remote-control handoff) and the installed `uuyc-cli` command-line client at
 //  /Applications/UURemote.app/Contents/Helpers/uuyc-cli. These wrap the
-//  first-party integrations the user may already have; the native driver above
-//  is what actually runs a session.
+//  first-party integrations the user may already have; UURemoteKit is what
+//  actually runs a session.
 //
 
 import Foundation

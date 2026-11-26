@@ -19,7 +19,7 @@ struct ServerPickerSheet: View {
     let onComplete: ([RDMachine.ID]?) -> Void
 
     @EnvironmentObject var store: RayonStore
-    @ObservedObject private var uuAccount = UURemoteAccountStore.shared
+    @ObservedObject private var uuAccount = UURemoteAccount.shared
     @State private var selection: Set<RDMachine.ID>
     @State private var searchText = ""
 
@@ -443,7 +443,7 @@ struct SplitWithServerSheet: View {
 
     @EnvironmentObject var store: RayonStore
     @ObservedObject private var terminals = TerminalManager.shared
-    @ObservedObject private var uuAccount = UURemoteAccountStore.shared
+    @ObservedObject private var uuAccount = UURemoteAccount.shared
     @State private var selection: Choice?
     @State private var searchText = ""
 

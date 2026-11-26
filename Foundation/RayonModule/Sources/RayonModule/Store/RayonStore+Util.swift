@@ -86,7 +86,7 @@ public extension RayonStore {
                     let currentSaved = defaults.persistentDomain(forName: d) ?? [:]
                     let currentMachines = (currentSaved["machineGroupEncrypted"] as? Data)?.count ?? 0
                     let containerMachines = (containerDict["machineGroupEncrypted"] as? Data)?.count ?? 0
-                    if containerMachines > currentMachines || currentSaved["me.mizorewww.rayon.uuremote.account"] == nil {
+                    if containerMachines > currentMachines {
                         for (k, v) in containerDict where !k.hasPrefix("NSWindow Frame") && !k.hasPrefix("NSSplitView") {
                             defaults.set(v, forKey: k)
                         }

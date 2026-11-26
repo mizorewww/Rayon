@@ -44,7 +44,7 @@ struct ServerEditorSheet: View {
     @State private var uuAssistID = ""
     @State private var uuAssistCode = ""
 
-    @ObservedObject private var uuAccount = UURemoteAccountStore.shared
+    @ObservedObject private var uuAccount = UURemoteAccount.shared
 
     @State private var connecting = false
     @State private var error: String?
@@ -292,7 +292,7 @@ struct ServerEditorSheet: View {
             }
             .buttonStyle(.rx)
             if uuAccount.isLoggedIn {
-                Text(UURemoteAccountStore.deviceCount(uuAccount.desktopDevices.count))
+                Text(UURemoteAccount.deviceCount(uuAccount.desktopDevices.count))
                     .font(.rxCaption)
                     .foregroundStyle(.rxInkSecondary)
             }

@@ -255,11 +255,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if let path = ProcessInfo.processInfo.environment["RAYON_PREVIEW_UU_SESSION"] {
                 let open = ProcessInfo.processInfo.environment["RAYON_PREVIEW_OPEN"]?.split(separator: ":", maxSplits: 1).map(String.init)
                 Task { @MainActor in
-                    await UURemoteAccountStore.shared.adoptSessionForPreview(from: URL(fileURLWithPath: path))
+                    await UURemoteAccount.shared.adoptSessionForPreview(from: URL(fileURLWithPath: path))
                     guard let open, open.count == 2,
                           let machine = RayonStore.shared.machineGroup.machines.first(where: { machine in
                               machine.isUURemoteDevice && machine.name == open[1]
-                                  && UURemoteAccountStore.shared.devices.contains { $0.deviceID == machine.uuDeviceID }
+                                  && UURemoteAccount.shared.devices.contains { $0.deviceID == machine.uuDeviceID }
                           })
                     else { return }
                     if open[0] == "terminal" { AppRouter.shared.openTerminal(machine: machine.id) }

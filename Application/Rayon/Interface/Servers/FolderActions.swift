@@ -112,7 +112,7 @@ struct FolderHeaderRow: View {
     let name: String
     let count: Int
     @EnvironmentObject var store: RayonStore
-    @ObservedObject private var account = UURemoteAccountStore.shared
+    @ObservedObject private var account = UURemoteAccount.shared
     @State private var refreshing = false
     @State private var refreshError: String?
 

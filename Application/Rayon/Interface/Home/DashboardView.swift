@@ -73,7 +73,7 @@ struct ServerTile: View {
     // subscription SessionTabs makes.
     @ObservedObject var terminals = TerminalManager.shared
     /// For a UU device's online state.
-    @ObservedObject private var account = UURemoteAccountStore.shared
+    @ObservedObject private var account = UURemoteAccount.shared
     @State private var hovered = false
 
     var body: some View {

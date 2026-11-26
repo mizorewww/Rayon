@@ -41,7 +41,7 @@ struct EditMachineView: View {
     @State var uuAssistID: String
     @State var uuAssistCode: String
     @State var openUUAccount = false
-    @ObservedObject var uuAccount = UURemoteAccountStore.shared
+    @ObservedObject var uuAccount = UURemoteAccount.shared
 
     // Extra
     @State var fileTransferLoginPath: String

@@ -14,7 +14,7 @@ struct ServersView: View {
     @EnvironmentObject var store: RayonStore
     @ObservedObject var router = AppRouter.shared
     /// The toolbar names the account item by whether one is signed in.
-    @ObservedObject private var account = UURemoteAccountStore.shared
+    @ObservedObject private var account = UURemoteAccount.shared
 
     @State private var searchText = ""
     @State private var selection: RDMachine.ID?
@@ -364,7 +364,7 @@ private struct ServerRow: View {
 /// it was online at the last refresh.
 private struct UUDeviceStatus: View {
     let machine: RDMachine
-    @ObservedObject private var account = UURemoteAccountStore.shared
+    @ObservedObject private var account = UURemoteAccount.shared
 
     var body: some View {
         let device = account.devices.first { $0.deviceID == machine.uuDeviceID }
@@ -385,7 +385,7 @@ private struct UUDeviceStatus: View {
 private struct UUReachable<Content: View>: View {
     let machine: RDMachine
     @ViewBuilder let content: Content
-    @ObservedObject private var account = UURemoteAccountStore.shared
+    @ObservedObject private var account = UURemoteAccount.shared
 
     var body: some View {
         if machine.isUURemoteDevice {

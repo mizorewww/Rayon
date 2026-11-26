@@ -9,6 +9,7 @@
 
 import Foundation
 import ObjectiveC
+import UURemoteKit
 
 extension TerminalContext {
     /// Event-driven UU Remote terminal loop: wakes immediately on keystrokes,
@@ -66,7 +67,7 @@ private final class UUTerminalLink {
     let machine: RDMachine
     let finished: DispatchSemaphore
     let wake: DispatchSemaphore
-    private var driver: UURemoteDriver?
+    private var connection: UURemoteConnection?
     private var terminalID: UInt32?
     private var sentSize: CGSize = .zero
     private var openedAt = Date.distantFuture
@@ -85,12 +86,12 @@ private final class UUTerminalLink {
         Task { @MainActor [weak self, weak context] in
             guard let self, let context else { return }
             do {
-                let connection = try await UURemoteConnections.shared.acquire(for: self.machine)
+                let connection = try await UURemoteConnections.shared.acquire(self.machine.uuTarget)
                 guard !self.ended else {
-                    UURemoteConnections.shared.release(self.machine, driver: connection)
+                    UURemoteConnections.shared.release(connection)
                     return
                 }
-                self.driver = connection
+                self.connection = connection
                 self.sentSize = size
                 let attaching = context.uuSessionID
                 self.openedAt = attaching == nil ? Date() : .distantPast
@@ -106,8 +107,8 @@ private final class UUTerminalLink {
                 if attaching != nil {
                     context.putInformation("[*] Resumed the session on \(self.machine.name)")
                     let cols = Int(max(size.width, 8)), rows = Int(max(size.height, 8))
-                    connection.sendTerminalResize(cols: cols, rows: max(rows - 1, 8), sessionID: id)
-                    connection.sendTerminalResize(cols: cols, rows: rows, sessionID: id)
+                    connection.resizeTerminal(cols: cols, rows: max(rows - 1, 8), sessionID: id)
+                    connection.resizeTerminal(cols: cols, rows: rows, sessionID: id)
                 }
                 self.wake.signal()
             } catch {
@@ -123,15 +124,15 @@ private final class UUTerminalLink {
         case .stdout, .error:
             let text = decoder.decode(frame.payload)
             if !text.isEmpty { context.surface.write(text) }
-        case .openResp:
-            if let reply = UUTerminalJSON.decodeOpenResponse(frame.payload), reply.code != 0 {
-                context.putInformation("[!] The device refused the terminal: \(reply.message) (\(reply.code))")
+        case .openResponse:
+            if let refusal = frame.openFailure {
+                context.putInformation("[!] The device refused the terminal: \(refusal.message) (\(refusal.code))")
                 context.uuSessionID = nil
                 finished.signal()
                 wake.signal()
             }
         case .exit:
-            let code = UUTerminalJSON.decodeExit(frame.payload).map { " (exit \($0))" } ?? ""
+            let code = frame.exitCode.map { " (exit \($0))" } ?? ""
             context.putInformation("\r\n[*] Shell ended\(code)")
             context.uuSessionID = nil
             finished.signal()
@@ -145,16 +146,16 @@ private final class UUTerminalLink {
     }
 
     func pump(typed: String, size: CGSize, context: TerminalContext) {
-        guard let driver, let id = terminalID, !ended else { return }
-        if driver.isClosed {
-            resume(after: driver, size: size, context: context)
+        guard let connection, let id = terminalID, !ended else { return }
+        if connection.isClosed {
+            resume(after: connection, size: size, context: context)
             return
         }
         let input = Date().timeIntervalSince(openedAt) < Self.startupReplyWindow ? TerminalReplies.dropping(from: typed) : typed
-        if !input.isEmpty { driver.sendTerminalStdin(Data(input.utf8), sessionID: id) }
+        if !input.isEmpty { connection.sendTerminalInput(Data(input.utf8), sessionID: id) }
         if size != sentSize, size.width >= 8, size.height >= 8 {
             sentSize = size
-            driver.sendTerminalResize(cols: Int(size.width), rows: Int(size.height), sessionID: id)
+            connection.resizeTerminal(cols: Int(size.width), rows: Int(size.height), sessionID: id)
         }
     }
 
@@ -163,10 +164,10 @@ private final class UUTerminalLink {
     /// The connection dropped under the tab. The host keeps the session
     /// through it, so the tab attaches to it again on a new connection, a few
     /// times at most: a device that keeps dropping it ends the tab.
-    private func resume(after dropped: UURemoteDriver, size: CGSize, context: TerminalContext) {
-        self.driver = nil
+    private func resume(after dropped: UURemoteConnection, size: CGSize, context: TerminalContext) {
+        self.connection = nil
         terminalID = nil
-        UURemoteConnections.shared.release(machine, driver: dropped)
+        UURemoteConnections.shared.release(dropped)
         let now = Date()
         resumes = resumes.filter { now.timeIntervalSince($0) < Self.resumeWindow }
         // A desktop's connection ends when the desktop is closed, which is
@@ -194,9 +195,9 @@ private final class UUTerminalLink {
     func end() {
         guard !ended else { return }
         ended = true
-        guard let driver else { return }
-        if let id = terminalID, !driver.isClosed { driver.detachTerminal(id) }
-        UURemoteConnections.shared.release(machine, driver: driver)
+        guard let connection else { return }
+        if let id = terminalID, !connection.isClosed { connection.detachTerminal(id) }
+        UURemoteConnections.shared.release(connection)
     }
 }
 

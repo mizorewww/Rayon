@@ -311,7 +311,7 @@ private struct MonitorSettings: View {
 
 /// The NetEase UU Remote account behind the remote desktop feature.
 private struct UURemoteSettings: View {
-    @ObservedObject private var account = UURemoteAccountStore.shared
+    @ObservedObject private var account = UURemoteAccount.shared
 
     var body: some View {
         RXDividedStack {
@@ -342,7 +342,7 @@ private struct UURemoteSettings: View {
                     description: "Desktop devices on this account; add them as servers from the account panel."
                 ) {
                     HStack(spacing: RX.Space.s3) {
-                        Text(UURemoteAccountStore.deviceCount(account.desktopDevices.count))
+                        Text(UURemoteAccount.deviceCount(account.desktopDevices.count))
                             .foregroundStyle(.rxInkSecondary)
                         Button("Refresh") {
                             Task { try? await account.refreshDevices() }
