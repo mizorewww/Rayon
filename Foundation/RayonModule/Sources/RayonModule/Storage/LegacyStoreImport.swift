@@ -131,13 +131,7 @@ enum LegacyStoreImport {
         // Before 2.5 the host keys were a plain dictionary.
         let hosts = try (defaults.object(forKey: Key.knownHosts) as? [String: String]) ?? open(Key.knownHosts, as: [String: String].self)
 
-        // A server named its folder; a name no folder records is a folder too.
-        // The old folders synced by name, each device under its own id:
-        // the id comes from the name now, the same on every device.
-        for name in Set(machines.map(\.group)) where !name.isEmpty && !folders.contains(where: { $0.name == name }) {
-            folders.append(RDFolder(id: RDFolder.id(named: name), name: name))
-        }
-        let folderIDs = Dictionary(folders.map { ($0.name, $0.id) }, uniquingKeysWith: { first, _ in first })
+        let folderIDs = addFolders(namedBy: machines, to: &folders)
 
         // All of it or none. What the database already has stays as it is:
         // the user may have added or changed things while the old values
@@ -165,6 +159,17 @@ enum LegacyStoreImport {
                 try handle.insertOrIgnore([host], intoTable: KnownHostRecord.tableName)
             }
         }
+    }
+
+    /// A server named its folder; a name no folder records is a folder too.
+    /// The old folders synced by name, each device under its own id: the
+    /// id comes from the name now, the same on every device. Returns the
+    /// folders' ids by name.
+    static func addFolders(namedBy machines: [Machine], to folders: inout [RDFolder]) -> [String: RDFolder.ID] {
+        for name in Set(machines.map(\.group)) where !name.isEmpty && !folders.contains(where: { $0.name == name }) {
+            folders.append(RDFolder(id: RDFolder.id(named: name), name: name))
+        }
+        return Dictionary(folders.map { ($0.name, $0.id) }, uniquingKeysWith: { first, _ in first })
     }
 
     /// When an imported record counts as changed: long before anything

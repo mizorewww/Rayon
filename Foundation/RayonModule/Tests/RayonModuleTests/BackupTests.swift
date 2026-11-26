@@ -210,3 +210,70 @@ final class BackupTests: XCTestCase {
         }
     }
 }
+
+/// The backups 2.7 and 2.8 exported, written by 2.8's own code (see
+/// LegacyStoreImportTests): v2.8-backup.json as plain JSON,
+/// v2.8-backup-passphrase.json sealed with the passphrase "correct horse".
+/// Their server "Inner" jumps through "Bastion", which jumps back.
+@MainActor
+final class LegacyBackupTests: XCTestCase {
+    private var target: TestStorage!
+
+    override func setUp() async throws {
+        target = try TestStorage()
+    }
+
+    override func tearDown() async throws {
+        target = nil
+    }
+
+    private func fixture(_ name: String) throws -> URL {
+        try XCTUnwrap(Bundle.module.url(forResource: name, withExtension: "json", subdirectory: "Fixtures/Legacy"))
+    }
+
+    private let identityID = UUID(uuidString: "11111111-1111-4111-8111-111111111111")!
+    private let serverID = UUID(uuidString: "22222222-2222-4222-8222-222222222222")!
+    private let jumpID = UUID(uuidString: "33333333-3333-4333-8333-333333333333")!
+
+    private func check(_ contents: DataBackupContents) throws {
+        let store = target.store()
+        let result = store.restore(contents)
+        XCTAssertEqual(result, .init(machines: 2, identities: 1, snippets: 1, forwards: 1, refused: 0))
+
+        let identity = try XCTUnwrap(store.identity(identityID))
+        XCTAssertEqual(identity.password, "hunter2")
+        XCTAssertEqual(identity.privateKey, "KEY")
+        let server = try XCTUnwrap(store.machine(serverID))
+        XCTAssertEqual(server.sshUsername, "deploy")
+        XCTAssertEqual(server.vncPassword, "vnc-secret")
+        XCTAssertEqual(server.vncPort, "5901")
+        XCTAssertEqual(store.folderName(of: server), "Production")
+        XCTAssertEqual(store.folderName(of: try XCTUnwrap(store.machine(jumpID))), "Lost", "a folder only a server named")
+        XCTAssertEqual(store.snippets.first?.symbol, "clock")
+        XCTAssertEqual(store.portForwards.first?.bindPort, 8080)
+        for machine in store.machines {
+            XCTAssertNoThrow(try machine.proxyJumpChain { store.machine($0) }, "the loop is cut")
+        }
+    }
+
+    func testAPlainBackupIsRestored() throws {
+        let url = try fixture("v2.8-backup")
+        XCTAssertFalse(DataBackup.needsPassword(url))
+        try check(DataBackup.read(url, password: nil))
+    }
+
+    func testASealedBackupNeedsItsPassphrase() throws {
+        let url = try fixture("v2.8-backup-passphrase")
+        XCTAssertTrue(DataBackup.needsPassword(url))
+        XCTAssertThrowsError(try DataBackup.read(url, password: nil)) { XCTAssertEqual($0 as? BackupError, .passwordRequired) }
+        XCTAssertThrowsError(try DataBackup.read(url, password: "wrong")) { XCTAssertEqual($0 as? BackupError, .wrongPassword) }
+        try check(DataBackup.read(url, password: " correct horse "))
+    }
+
+    func testOtherFilesAreNotBackups() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: url) }
+        try Data("{\"hello\": 1}".utf8).write(to: url)
+        XCTAssertThrowsError(try DataBackup.read(url, password: nil)) { XCTAssertEqual($0 as? BackupError, .notABackup) }
+    }
+}

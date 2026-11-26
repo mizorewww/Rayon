@@ -78,12 +78,24 @@ public enum DataBackup {
 
     /// Whether opening the backup at `url` needs its password.
     public static func needsPassword(_ url: URL) -> Bool {
-        BackupArchive.isEncrypted(url)
+        if let legacy = legacyData(url) { return LegacyBackup.isSealed(legacy) }
+        return BackupArchive.isEncrypted(url)
+    }
+
+    /// The file at `url` when it is not an archive: perhaps a backup 2.7 or
+    /// 2.8 exported.
+    private static func legacyData(_ url: URL) -> Data? {
+        guard let data = try? Data(contentsOf: url, options: .mappedIfSafe),
+              !data.starts(with: Data("PK".utf8))
+        else { return nil }
+        return data
     }
 
     /// Reads the backup at `url` completely; throws on anything wrong
-    /// (a wrong password among it) before anything is restored.
+    /// (a wrong password among it) before anything is restored. A backup
+    /// 2.7 or 2.8 exported is read too.
     public static func read(_ url: URL, password: String?) throws -> DataBackupContents {
+        if let legacy = legacyData(url) { return try LegacyBackup.read(legacy, password: password) }
         let (manifest, files) = try BackupArchive.read(url, kind: .data, password: password)
         guard let database = files[databaseFile] else { throw BackupError.damaged("it has no database") }
         let secrets: [String: Data]
