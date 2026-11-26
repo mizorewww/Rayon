@@ -13,6 +13,7 @@ import Foundation
 import Network
 import NIOCore
 import NIOPosix
+import NIOSSH
 import NIOTransportServices
 
 public enum SSHTransport: Sendable {
@@ -97,9 +98,49 @@ extension SSHTransport {
         }
     }
 
-    static func describe(_ error: Error) -> String {
-        if let error = error as? NWError { return error.debugDescription }
-        if let error = error as? LocalizedError, let description = error.errorDescription { return description }
-        return String(describing: error)
+    /// What went wrong under SSH, worded for the person: the one mapping of
+    /// Network.framework, NIO, POSIX and SSH protocol errors, which would
+    /// otherwise show as "POSIXErrorCode(rawValue: 61): Connection refused"
+    /// or "NIOSSH.NIOSSHError error 1".
+    public static func describe(_ error: Error) -> String {
+        switch error {
+        case let error as NWError:
+            switch error {
+            case let .posix(code): return describe(code)
+            case .dns: return "the host name could not be found"
+            case let .tls(status): return "TLS failed: " + ((SecCopyErrorMessageString(status, nil) as String?) ?? "error \(status)")
+            default: return error.localizedDescription
+            }
+        case let error as IOError:
+            return POSIXErrorCode(rawValue: error.errnoCode).map(describe) ?? error.description
+        case let error as POSIXError:
+            return describe(error.code)
+        case ChannelError.connectTimeout:
+            return "the server did not answer in time"
+        case ChannelError.ioOnClosedChannel, ChannelError.alreadyClosed, ChannelError.eof, ChannelError.outputClosed, ChannelError.inputClosed:
+            return "the connection closed"
+        case let error as NIOSSHError:
+            return "the SSH session broke off (\(error.type))"
+        case let error as LocalizedError where error.errorDescription != nil:
+            return error.errorDescription ?? ""
+        default:
+            return String(describing: error)
+        }
+    }
+
+    static func describe(_ code: POSIXErrorCode) -> String {
+        switch code {
+        case .ECONNREFUSED: "connection refused; nothing is listening on that port"
+        case .ETIMEDOUT: "the server did not answer in time"
+        case .EHOSTUNREACH, .EHOSTDOWN: "the host cannot be reached"
+        case .ENETUNREACH: "the network cannot reach the host"
+        case .ENETDOWN: "the network is down"
+        case .ECONNRESET: "the server reset the connection"
+        case .ECONNABORTED: "the connection was aborted"
+        case .EPIPE, .ENOTCONN: "the connection closed"
+        case .EADDRINUSE: "the port is already in use"
+        case .EACCES, .EPERM: "the system did not allow the connection"
+        default: String(cString: strerror(code.rawValue))
+        }
     }
 }
