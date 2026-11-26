@@ -38,7 +38,8 @@ ssh-keygen -q -t rsa -b 2048 -N '' -C rsa-unknown -f "$WORK/rsa-unknown"
 # private network the server is also on.
 docker network create --internal "$NAME" >/dev/null
 docker run -d --name "$NAME-target" --network "$NAME" --network-alias target rayon-ssh-test:latest >/dev/null
-docker run -d --name "$NAME-server" -p 127.0.0.1::22 rayon-ssh-test:latest >/dev/null
+# /small is a 1 MB file system, for uploads that fail part way.
+docker run -d --name "$NAME-server" -p 127.0.0.1::22 --tmpfs /small:size=1m,mode=1777 rayon-ssh-test:latest >/dev/null
 docker network connect "$NAME" "$NAME-server"
 for role in server target; do
     docker cp "$WORK/authorized_keys" "$NAME-$role:/home/rayon/.ssh/authorized_keys"

@@ -140,29 +140,43 @@ public struct SFTPSession: Sendable {
         let total = Int64((try? FileManager.default.attributesOfItem(atPath: local.path)[.size] as? NSNumber)??.int64Value ?? 0)
         let (file, readOnly) = try await openForUpload(remote, attributes: Self.attributes(mode))
         let meter = TransferMeter(file: local.lastPathComponent, total: total, report: progress)
-        // Each write with the offset it ends at, oldest first.
-        var writes: [(Task<Void, Error>, end: UInt64)] = []
+        // Each write with the offsets it starts and ends at, oldest first.
+        // The writes run concurrently and may reach the server out of order.
+        var writes: [(Task<Void, Error>, start: UInt64, end: UInt64)] = []
+        // Where everything before has been written.
+        var written: UInt64 = 0
         do {
             var offset: UInt64 = 0
             while let data = try handle.read(upToCount: Self.chunkSize), !data.isEmpty {
                 try Task.checkCancellation()
                 if writes.count >= Self.requestsInFlight {
-                    let (write, end) = writes.removeFirst()
+                    let (write, _, end) = writes.removeFirst()
                     try await write.value
+                    written = end
                     meter.advance(to: Int64(end))
                 }
                 let at = offset
                 offset += UInt64(data.count)
-                writes.append((Task { try await file.write(ByteBuffer(data: data), at: at) }, offset))
+                writes.append((Task { try await file.write(ByteBuffer(data: data), at: at) }, at, offset))
             }
             while !writes.isEmpty {
-                let (write, end) = writes.removeFirst()
+                let (write, _, end) = writes.removeFirst()
                 try await write.value
+                written = end
                 meter.advance(to: Int64(end))
             }
             try await file.close()
         } catch {
-            for (write, _) in writes { write.cancel(); _ = await write.result }
+            for (write, start, end) in writes {
+                write.cancel()
+                let succeeded = (try? await write.value) != nil
+                if succeeded, start == written { written = end }
+            }
+            // A later write that landed after an earlier one failed would
+            // leave a hole of zeros: the file ends where it is whole.
+            var size = SFTPFileAttributes()
+            size.size = written
+            try? await file.setAttributes(to: size)
             try? await file.close()
             if let readOnly { try? await client.setAttributes(at: remote, to: Self.attributes(readOnly)) }
             throw error

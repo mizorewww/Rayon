@@ -452,6 +452,27 @@ final class SSHLiveTests: XCTestCase {
         await connection.close()
     }
 
+    /// An upload that fails part way (the server's 1 MB /small fills up)
+    /// leaves what arrived in order, never a file with a hole of zeros.
+    func testAFailedUploadLeavesNoHole() async throws {
+        let connection = try await connect([.password(password)])
+        let sftp = try await connection.openSFTP()
+        let local = FileManager.default.temporaryDirectory.appendingPathComponent("rayon-full-\(UUID().uuidString)")
+        try Data(repeating: 0x61, count: 3_000_000).write(to: local)
+        defer { try? FileManager.default.removeItem(at: local) }
+        for _ in 0 ..< 5 {
+            do {
+                try await sftp.upload(local, toDirectory: "/small") { _ in }
+                XCTFail("3 MB fit into 1 MB")
+            } catch {}
+            let check = try await connection.execute("wc -c < /small/\(local.lastPathComponent); tr -d a < /small/\(local.lastPathComponent) | wc -c; rm /small/\(local.lastPathComponent)")
+            let numbers = String(decoding: check.output, as: UTF8.self).split(separator: "\n").compactMap { Int($0.trimmingCharacters(in: .whitespaces)) }
+            XCTAssertEqual(numbers.count, 2)
+            XCTAssertEqual(numbers.last, 0, "bytes other than the file's in the \(numbers.first ?? 0) bytes left")
+        }
+        await connection.close()
+    }
+
     func testSFTPListUploadDownload() async throws {
         let connection = try await connect([.password(password)])
         let sftp = try await connection.openSFTP()
