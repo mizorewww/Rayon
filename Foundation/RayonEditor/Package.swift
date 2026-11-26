@@ -5,7 +5,7 @@ import PackageDescription
 /// Runestone on iOS and CodeEditSourceEditor on macOS.
 let package = Package(
     name: "RayonEditor",
-    platforms: [.macOS(.v13), .iOS(.v16)],
+    platforms: [.macOS(.v14), .iOS(.v17)],
     products: [
         .library(name: "RayonEditor", targets: ["RayonEditor"]),
     ],

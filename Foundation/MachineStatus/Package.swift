@@ -6,8 +6,8 @@ import PackageDescription
 let package = Package(
     name: "MachineStatus",
     platforms: [
-        .macOS(.v11),
-        .iOS(.v14),
+        .macOS(.v14),
+        .iOS(.v17),
         .watchOS(.v7),
     ],
     products: [
