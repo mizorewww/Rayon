@@ -92,11 +92,11 @@ public final class RayonStore: ObservableObject {
         static let machineRedacted = "me.mizorewww.rayon.machineRedacted"
     }
 
-    private nonisolated static func int(_ key: String, default value: Int, in defaults: UserDefaults) -> Int {
+    nonisolated static func int(_ key: String, default value: Int, in defaults: UserDefaults) -> Int {
         defaults.object(forKey: key) == nil ? value : defaults.integer(forKey: key)
     }
 
-    private nonisolated static func bool(_ key: String, default value: Bool, in defaults: UserDefaults) -> Bool {
+    nonisolated static func bool(_ key: String, default value: Bool, in defaults: UserDefaults) -> Bool {
         defaults.object(forKey: key) == nil ? value : defaults.bool(forKey: key)
     }
 

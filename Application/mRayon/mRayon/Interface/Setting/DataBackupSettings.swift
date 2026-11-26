@@ -11,14 +11,23 @@ import RayonModule
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// A backup archive as a file to save.
+/// A backup file to save: written to a temporary file first, then handed
+/// to the Files app.
 struct BackupDocument: FileDocument {
-    static var readableContentTypes: [UTType] { [.json] }
+    static var readableContentTypes: [UTType] { [.data] }
 
     let data: Data
 
     init(data: Data) {
         self.data = data
+    }
+
+    /// Writes with `write` to a temporary file and keeps what it wrote.
+    init(writing write: (URL) throws -> Void) throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: url) }
+        try write(url)
+        data = try Data(contentsOf: url)
     }
 
     init(configuration: ReadConfiguration) throws {
@@ -74,19 +83,46 @@ enum DataImport {
         )
     }
 
-    @MainActor
-    static func importBackup(from url: URL) {
+    /// A copy of a picked file the app may read for as long as it needs.
+    static func readableCopy(of url: URL) throws -> URL {
         let accessing = url.startAccessingSecurityScopedResource()
         defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+        let copy = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.copyItem(at: url, to: copy)
+        return copy
+    }
+
+    /// Restores the backup at `url`; false when its password was wrong.
+    @MainActor
+    static func restoreBackup(_ url: URL, password: String?) -> Bool {
         do {
-            let data = try Data(contentsOf: url)
-            let result = try RayonStore.shared.importBackupData(data)
+            let contents = try DataBackup.read(url, password: password)
+            let result = RayonStore.shared.restore(contents)
+            try? FileManager.default.removeItem(at: url)
             UIBridge.presentSuccess(
                 with: "Backup imported",
                 subtitle: "\(result.machines) servers, \(result.identities) identities, \(result.snippets) snippets, and \(result.forwards) port forwards."
             )
+            return true
+        } catch BackupError.wrongPassword {
+            return false
         } catch {
+            try? FileManager.default.removeItem(at: url)
             UIBridge.presentError(with: "Could not import backup: \(error.localizedDescription)")
+            return true
+        }
+    }
+
+    @MainActor
+    static func restorePreferences(from url: URL) {
+        do {
+            let copy = try readableCopy(of: url)
+            defer { try? FileManager.default.removeItem(at: copy) }
+            try PreferencesBackup.restore(from: copy)
+            RayonStore.shared.reloadPreferences()
+            UIBridge.presentSuccess(with: "Settings imported", subtitle: "The terminal's take effect when Rayon opens next.")
+        } catch {
+            UIBridge.presentError(with: "Could not import settings: \(error.localizedDescription)")
         }
     }
 }
@@ -136,11 +172,13 @@ struct SSHConfigImportMenuItems: View {
     }
 }
 
-/// Settings rows: export and import a backup; import an OpenSSH config.
+/// Settings rows: export and import a backup and the settings; import an
+/// OpenSSH config.
 struct DataBackupRows: View {
     var body: some View {
         RXDividedStack {
             BackupRow()
+            PreferencesRow()
             SSHConfigRow()
         }
     }
@@ -148,16 +186,21 @@ struct DataBackupRows: View {
 
 private struct BackupRow: View {
     @State private var exportDocument: BackupDocument?
+    @State private var choosingExport = false
     @State private var importing = false
+    /// A picked backup waiting for its password.
+    @State private var locked: URL?
+    @State private var password = ""
+    @State private var wrongPassword = false
 
     var body: some View {
         RXFormRow(
-            "Backup archive",
-            description: "Export or import all saved servers, identities, snippets, port forwards, and folders as a JSON backup file. It holds passwords and keys unencrypted."
+            "Backup",
+            description: "Servers, identities, snippets, port forwards, folders and known host keys in one file. With passwords and keys, the file is protected by a password."
         ) {
             Menu {
                 Button {
-                    export()
+                    choosingExport = true
                 } label: {
                     Label("Export Backup…", systemImage: "square.and.arrow.up")
                 }
@@ -172,11 +215,24 @@ private struct BackupRow: View {
             .buttonStyle(.rx(size: .small))
             .fixedSize()
         }
+        .sheet(isPresented: $choosingExport) {
+            BackupExportForm { includeSecrets, password in
+                choosingExport = false
+                guard let includeSecrets else { return }
+                do {
+                    exportDocument = try BackupDocument {
+                        try RayonStore.shared.exportBackup(to: $0, includeSecrets: includeSecrets, password: password)
+                    }
+                } catch {
+                    UIBridge.presentError(with: "Could not export backup: \(error.localizedDescription)")
+                }
+            }
+        }
         .fileExporter(
             isPresented: Binding(get: { exportDocument != nil }, set: { if !$0 { exportDocument = nil } }),
             document: exportDocument,
-            contentType: .json,
-            defaultFilename: "Rayon-backup.json"
+            contentType: .data,
+            defaultFilename: "Rayon.\(DataBackup.fileExtension)"
         ) { result in
             exportDocument = nil
             switch result {
@@ -186,21 +242,140 @@ private struct BackupRow: View {
                 UIBridge.presentError(with: "Could not export backup: \(error.localizedDescription)")
             }
         }
-        .fileImporter(isPresented: $importing, allowedContentTypes: [.json]) { result in
+        .fileImporter(isPresented: $importing, allowedContentTypes: [.item]) { result in
             switch result {
             case let .success(url):
-                DataImport.importBackup(from: url)
+                do {
+                    let copy = try DataImport.readableCopy(of: url)
+                    if DataBackup.needsPassword(copy) {
+                        password = ""
+                        wrongPassword = false
+                        locked = copy
+                    } else {
+                        _ = DataImport.restoreBackup(copy, password: nil)
+                    }
+                } catch {
+                    UIBridge.presentError(with: "Could not read backup: \(error.localizedDescription)")
+                }
             case let .failure(error):
                 UIBridge.presentError(with: error.localizedDescription)
             }
         }
+        .alert(
+            "Backup Password",
+            isPresented: Binding(get: { locked != nil }, set: { if !$0 { locked = nil } })
+        ) {
+            SecureField("Password", text: $password)
+            Button("Cancel", role: .cancel) {
+                if let locked { try? FileManager.default.removeItem(at: locked) }
+                locked = nil
+            }
+            Button("Import") {
+                guard let url = locked else { return }
+                locked = nil
+                if !DataImport.restoreBackup(url, password: password) {
+                    password = ""
+                    wrongPassword = true
+                    // Asked again once this alert has gone.
+                    DispatchQueue.main.async { locked = url }
+                }
+            }
+        } message: {
+            Text(wrongPassword ? "That password does not open this backup." : "This backup is protected by a password.")
+        }
     }
+}
 
-    private func export() {
-        do {
-            exportDocument = try BackupDocument(data: RayonStore.shared.exportBackupData())
-        } catch {
-            UIBridge.presentError(with: "Could not export backup: \(error.localizedDescription)")
+/// What goes in a backup, and the password that protects it.
+private struct BackupExportForm: View {
+    /// Nil when cancelled; else whether passwords and keys go in, and the
+    /// password.
+    let onComplete: (Bool?, String?) -> Void
+
+    @State private var includeSecrets = true
+    @State private var password = ""
+    @State private var confirmation = ""
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    Toggle("Include passwords and keys", isOn: $includeSecrets)
+                } footer: {
+                    Text("Passwords and keys go in only with a password; without it, the file cannot be opened.")
+                }
+                if includeSecrets {
+                    Section {
+                        SecureField("Password", text: $password)
+                        SecureField("Confirm password", text: $confirmation)
+                    } footer: {
+                        if !confirmation.isEmpty, password != confirmation {
+                            Text("The passwords differ.")
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Export Backup")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { onComplete(nil, nil) }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Export") { onComplete(includeSecrets, includeSecrets ? password : nil) }
+                        .disabled(includeSecrets && (password.isEmpty || password != confirmation))
+                }
+            }
+        }
+    }
+}
+
+private struct PreferencesRow: View {
+    @State private var exportDocument: BackupDocument?
+    @State private var importing = false
+
+    var body: some View {
+        RXFormRow(
+            "Settings",
+            description: "Rayon's settings, apart from the data, to bring to another device."
+        ) {
+            Menu {
+                Button {
+                    do {
+                        exportDocument = try BackupDocument { try PreferencesBackup.export(to: $0) }
+                    } catch {
+                        UIBridge.presentError(with: "Could not export settings: \(error.localizedDescription)")
+                    }
+                } label: {
+                    Label("Export Settings…", systemImage: "square.and.arrow.up")
+                }
+                Button {
+                    importing = true
+                } label: {
+                    Label("Import Settings…", systemImage: "square.and.arrow.down")
+                }
+            } label: {
+                Text("Settings")
+            }
+            .buttonStyle(.rx(size: .small))
+            .fixedSize()
+        }
+        .fileExporter(
+            isPresented: Binding(get: { exportDocument != nil }, set: { if !$0 { exportDocument = nil } }),
+            document: exportDocument,
+            contentType: .data,
+            defaultFilename: "Rayon.\(PreferencesBackup.fileExtension)"
+        ) { result in
+            exportDocument = nil
+            if case let .failure(error) = result {
+                UIBridge.presentError(with: "Could not export settings: \(error.localizedDescription)")
+            }
+        }
+        .fileImporter(isPresented: $importing, allowedContentTypes: [.item]) { result in
+            switch result {
+            case let .success(url): DataImport.restorePreferences(from: url)
+            case let .failure(error): UIBridge.presentError(with: error.localizedDescription)
+            }
         }
     }
 }

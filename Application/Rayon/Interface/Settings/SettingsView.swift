@@ -497,7 +497,8 @@ struct AgreementSheet: View {
     }
 }
 
-/// Manual backup export/import and OpenSSH `~/.ssh/config` importer under Settings -> General -> Data.
+/// Backups of the data and of the settings, and the OpenSSH `~/.ssh/config`
+/// importer, under Settings -> General -> Data.
 private struct DataBackupSettings: View {
     @EnvironmentObject var store: RayonStore
     @State private var statusMessage: String?
@@ -505,16 +506,36 @@ private struct DataBackupSettings: View {
     var body: some View {
         RXDividedStack {
             RXFormRow(
-                "Backup archive",
-                description: "Export or import all saved servers, identities, snippets, port forwards, and folders as a JSON backup file."
+                "Backup",
+                description: "Servers, identities, snippets, port forwards, folders and known host keys in one file. With passwords and keys, the file is protected by a password."
             ) {
                 HStack(spacing: RX.Space.s2) {
                     Button("Export Backup…") {
-                        exportBackup()
+                        SheetPresenter.present { dismiss in
+                            BackupExportSheet { includeSecrets, password in
+                                dismiss()
+                                if let includeSecrets { exportBackup(includeSecrets: includeSecrets, password: password) }
+                            }
+                        }
                     }
                     .buttonStyle(.rx)
                     Button("Import Backup…") {
                         importBackup()
+                    }
+                    .buttonStyle(.rx)
+                }
+            }
+            RXFormRow(
+                "Settings",
+                description: "Rayon's settings, apart from the data, to bring to another Mac."
+            ) {
+                HStack(spacing: RX.Space.s2) {
+                    Button("Export Settings…") {
+                        exportPreferences()
+                    }
+                    .buttonStyle(.rx)
+                    Button("Import Settings…") {
+                        importPreferences()
                     }
                     .buttonStyle(.rx)
                 }
@@ -534,15 +555,34 @@ private struct DataBackupSettings: View {
         }
     }
 
-    private func exportBackup() {
+    private func savePanel(_ title: String, name: String) -> URL? {
         let panel = NSSavePanel()
-        panel.title = "Export Rayon Backup"
-        panel.nameFieldStringValue = "Rayon-backup.json"
+        panel.title = title
+        panel.nameFieldStringValue = name
         panel.canCreateDirectories = true
-        guard panel.runModal() == .OK, let url = panel.url else { return }
+        guard panel.runModal() == .OK else { return nil }
+        return panel.url
+    }
+
+    private func chooseFile(_ message: String, then action: @escaping (URL) -> Void) {
+        UIBridge.openPanel(
+            message: message,
+            prompt: "Import",
+            directory: nil,
+            canChooseFiles: true,
+            canChooseDirectories: false,
+            allowsMultipleSelection: false,
+            canCreateDirectories: false,
+            showsHiddenFiles: false
+        ) { urls in
+            if let url = urls.first { action(url) }
+        }
+    }
+
+    private func exportBackup(includeSecrets: Bool, password: String?) {
+        guard let url = savePanel("Export Rayon Backup", name: "Rayon.\(DataBackup.fileExtension)") else { return }
         do {
-            let data = try store.exportBackupData()
-            try data.write(to: url, options: .atomic)
+            try store.exportBackup(to: url, includeSecrets: includeSecrets, password: password)
             statusMessage = "Exported backup to \(url.lastPathComponent)."
         } catch {
             UIBridge.presentError(with: "Could not export backup: \(error.localizedDescription)")
@@ -550,23 +590,55 @@ private struct DataBackupSettings: View {
     }
 
     private func importBackup() {
-        UIBridge.openPanel(
-            message: "Choose a Rayon backup file (.json)",
-            prompt: "Import",
-            directory: nil,
-            canChooseFiles: true,
-            canChooseDirectories: false,
-            allowsMultipleSelection: false,
-            canCreateDirectories: false,
-            showsHiddenFiles: true
-        ) { urls in
-            guard let url = urls.first else { return }
+        chooseFile("Choose a Rayon backup") { url in
+            if DataBackup.needsPassword(url) {
+                askPassword(for: url)
+            } else {
+                restoreBackup(url, password: nil)
+            }
+        }
+    }
+
+    private func askPassword(for url: URL, retry: Bool = false) {
+        SheetPresenter.present { dismiss in
+            BackupPasswordSheet(fileName: url.lastPathComponent, retry: retry) { password in
+                dismiss()
+                if let password { restoreBackup(url, password: password) }
+            }
+        }
+    }
+
+    private func restoreBackup(_ url: URL, password: String?) {
+        do {
+            let contents = try DataBackup.read(url, password: password)
+            let result = store.restore(contents)
+            statusMessage = "Imported \(result.machines) servers, \(result.identities) identities, \(result.snippets) snippets, and \(result.forwards) port forwards."
+        } catch BackupError.wrongPassword {
+            askPassword(for: url, retry: true)
+        } catch {
+            UIBridge.presentError(with: "Could not import backup: \(error.localizedDescription)")
+        }
+    }
+
+    private func exportPreferences() {
+        guard let url = savePanel("Export Rayon Settings", name: "Rayon.\(PreferencesBackup.fileExtension)") else { return }
+        do {
+            try PreferencesBackup.export(to: url)
+            statusMessage = "Exported settings to \(url.lastPathComponent)."
+        } catch {
+            UIBridge.presentError(with: "Could not export settings: \(error.localizedDescription)")
+        }
+    }
+
+    private func importPreferences() {
+        chooseFile("Choose exported Rayon settings") { url in
             do {
-                let data = try Data(contentsOf: url)
-                let result = try store.importBackupData(data)
-                statusMessage = "Imported \(result.machines) servers, \(result.identities) identities, \(result.snippets) snippets, and \(result.forwards) port forwards."
+                try PreferencesBackup.restore(from: url)
+                store.reloadPreferences()
+                AppearancePreference.applyStored()
+                statusMessage = "Imported settings. The terminal's take effect when Rayon opens next."
             } catch {
-                UIBridge.presentError(with: "Could not import backup: \(error.localizedDescription)")
+                UIBridge.presentError(with: "Could not import settings: \(error.localizedDescription)")
             }
         }
     }
@@ -591,5 +663,85 @@ private struct DataBackupSettings: View {
             let result = store.importOpenSSHConfig(text, baseDirectory: url.deletingLastPathComponent())
             statusMessage = "Imported \(result.importedServers) servers and \(result.importedIdentities) identities from \(url.lastPathComponent)."
         }
+    }
+}
+
+/// What goes in a backup, and the password that protects it.
+private struct BackupExportSheet: View {
+    /// Nil when cancelled; else whether passwords and keys go in, and the
+    /// password.
+    let onComplete: (Bool?, String?) -> Void
+
+    @State private var includeSecrets = true
+    @State private var password = ""
+    @State private var confirmation = ""
+
+    private var ready: Bool {
+        !includeSecrets || (!password.isEmpty && password == confirmation)
+    }
+
+    var body: some View {
+        SheetScaffold("Export Backup", lead: "Passwords and keys go in only with a password; without it, the file cannot be opened.") {
+            VStack(alignment: .leading, spacing: RX.Space.s3) {
+                Toggle("Include passwords and keys", isOn: $includeSecrets)
+                if includeSecrets {
+                    RXField("Password") {
+                        SecureField("Password", text: $password)
+                            .textFieldStyle(.rx)
+                    }
+                    RXField("Confirm password") {
+                        SecureField("Confirm password", text: $confirmation)
+                            .textFieldStyle(.rx)
+                    }
+                    if !confirmation.isEmpty, password != confirmation {
+                        HelpText("The passwords differ.", isError: true)
+                    }
+                }
+            }
+        } footer: {
+            Button("Cancel") { onComplete(nil, nil) }
+                .buttonStyle(.rx)
+                .keyboardShortcut(.cancelAction)
+            Spacer()
+            Button("Export…") { onComplete(includeSecrets, includeSecrets ? password : nil) }
+                .buttonStyle(.rxPrimary)
+                .keyboardShortcut(.defaultAction)
+                .disabled(!ready)
+        }
+        .frame(width: 440)
+    }
+}
+
+/// The password of a backup being imported.
+private struct BackupPasswordSheet: View {
+    let fileName: String
+    let retry: Bool
+    let onComplete: (String?) -> Void
+
+    @State private var password = ""
+
+    var body: some View {
+        SheetScaffold("Backup Password", lead: "\(fileName) is protected by a password.") {
+            VStack(alignment: .leading, spacing: RX.Space.s2) {
+                RXField("Password") {
+                    SecureField("Password", text: $password)
+                        .textFieldStyle(.rx)
+                        .onSubmit { if !password.isEmpty { onComplete(password) } }
+                }
+                if retry {
+                    HelpText("That password does not open this backup.", isError: true)
+                }
+            }
+        } footer: {
+            Button("Cancel") { onComplete(nil) }
+                .buttonStyle(.rx)
+                .keyboardShortcut(.cancelAction)
+            Spacer()
+            Button("Import") { onComplete(password) }
+                .buttonStyle(.rxPrimary)
+                .keyboardShortcut(.defaultAction)
+                .disabled(password.isEmpty)
+        }
+        .frame(width: 420)
     }
 }
