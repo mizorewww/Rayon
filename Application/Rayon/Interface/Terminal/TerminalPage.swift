@@ -20,6 +20,7 @@ struct TerminalPage: View {
     @State private var surfaceGeoSize: CGSize = .init(width: 800, height: 500)
     @State private var showSearch = false
     @State private var searchQuery = ""
+    @FocusState private var searchFieldFocused: Bool
     @State private var showSnippetDrawer = false
     @Environment(\.isActivePage) private var isActive
 
@@ -150,8 +151,13 @@ struct TerminalPage: View {
         .background {
             if isActive {
                 Group {
+                    // ⌘F opens the find bar, or returns to its field when open.
                     Button("Find in Terminal") {
-                        withAnimation(.rxQuick) { showSearch.toggle() }
+                        if showSearch {
+                            searchFieldFocused = true
+                        } else {
+                            withAnimation(.rxQuick) { showSearch = true }
+                        }
                     }
                     .keyboardShortcut("f", modifiers: .command)
                     Button("Split Right") {
@@ -492,6 +498,7 @@ struct TerminalPage: View {
                 TextField("Find in terminal output…", text: $searchQuery)
                     .textFieldStyle(.plain)
                     .font(.rxBody)
+                    .focused($searchFieldFocused)
                     .onSubmit { context.termInterface.showNextMatch() }
                     .onChange(of: searchQuery) { context.termInterface.search($0) }
                 if !searchQuery.isEmpty {
@@ -526,9 +533,13 @@ struct TerminalPage: View {
             .background(Color.rxSurface)
             Hairline()
         }
+        // The terminal view holds AppKit's first responder; the field takes
+        // it once it is in the window, and gives it back when the bar closes.
+        .onAppear { DispatchQueue.main.async { searchFieldFocused = true } }
         .onDisappear {
             context.termInterface.endSearch()
             searchQuery = ""
+            syncActivePanes()
         }
     }
 
