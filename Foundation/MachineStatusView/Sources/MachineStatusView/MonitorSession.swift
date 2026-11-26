@@ -249,11 +249,17 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
                     // The lease goes either way; the next round, if any,
                     // takes the pool's connection again, a new one if this
                     // one has dropped.
-                    let stillConnected = connection.isActive
+                    var linkAnswers = connection.isActive
+                    // A server that runs no command at all (paused, or a
+                    // link that has not noticed it dropped) is out of
+                    // reach, not one without a POSIX shell.
+                    if !hasReading, linkAnswers {
+                        linkAnswers = (try? await connection.execute("exit", timeout: .seconds(10))) != nil
+                    }
                     lease?.release()
                     lease = nil
                     if Task.isCancelled { return }
-                    guard Self.emptyRoundIsDeadLink(hasReading: hasReading, connectionActive: stillConnected) else {
+                    guard Self.emptyRoundIsDeadLink(hasReading: hasReading, linkAnswers: linkAnswers) else {
                         // Reconnecting would only sign in again (and stamp
                         // the store) every half minute for nothing.
                         setPhase(.unavailable)
@@ -263,7 +269,7 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
                     // as live forever. It fails, and the next round
                     // reconnects.
                     failures += 1
-                    setPhase(.failed("The server stopped answering."))
+                    setPhase(.failed(hasReading ? "The server stopped answering." : "The server isn't answering."))
                 }
             }
             let wait = failures > 0 ? min(30, 5 * failures) : refreshInterval
@@ -273,11 +279,11 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
     }
 
     /// Whether a round with nothing in it means the link died. A server
-    /// that never answered the status script on this connection is
-    /// reachable but cannot be monitored; only one that answered before,
-    /// or a connection that noticed the drop, has lost the link.
-    nonisolated static func emptyRoundIsDeadLink(hasReading: Bool, connectionActive: Bool) -> Bool {
-        hasReading || !connectionActive
+    /// that never answered the status script on this connection, but runs
+    /// other commands, is reachable and cannot be monitored; one that
+    /// answered before, or a link that runs nothing, is out of reach.
+    nonisolated static func emptyRoundIsDeadLink(hasReading: Bool, linkAnswers: Bool) -> Bool {
+        hasReading || !linkAnswers
     }
 
     /// Stamps the server's banner and last connection once per connection,

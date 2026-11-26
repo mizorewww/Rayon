@@ -80,11 +80,15 @@ final class MonitorCenterTests: XCTestCase {
 final class MonitorEmptyRoundTests: XCTestCase {
     func testAServerThatNeverAnsweredIsUnavailableNotDead() {
         // Windows OpenSSH: connected, but /bin/sh never runs the script.
-        XCTAssertFalse(MonitorSession.emptyRoundIsDeadLink(hasReading: false, connectionActive: true))
+        XCTAssertFalse(MonitorSession.emptyRoundIsDeadLink(hasReading: false, linkAnswers: true))
     }
 
-    func testAnEmptyRoundAfterAReadingOrADropIsADeadLink() {
-        XCTAssertTrue(MonitorSession.emptyRoundIsDeadLink(hasReading: true, connectionActive: true))
-        XCTAssertTrue(MonitorSession.emptyRoundIsDeadLink(hasReading: false, connectionActive: false))
+    func testAnEmptyRoundAfterAReadingIsADeadLink() {
+        XCTAssertTrue(MonitorSession.emptyRoundIsDeadLink(hasReading: true, linkAnswers: true))
+    }
+
+    func testAServerThatRunsNothingIsOutOfReach() {
+        // Paused, or a link that has not noticed it dropped.
+        XCTAssertTrue(MonitorSession.emptyRoundIsDeadLink(hasReading: false, linkAnswers: false))
     }
 }
