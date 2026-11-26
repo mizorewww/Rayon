@@ -12,13 +12,15 @@ import RayonTerminal
 
 @MainActor
 final class TerminalSettingsSync {
-    private let storage: RayonStorage
     private let settings: TerminalSettings
+    private let record: SettingsRecordSync<RDTerminalSettings>
     private var observers: [any NSObjectProtocol] = []
 
     init(storage: RayonStorage, settings: TerminalSettings) {
-        self.storage = storage
         self.settings = settings
+        record = SettingsRecordSync(storage: storage, syncs: TerminalConfigurationSync.syncs, read: { TerminalConfigurationSync.entries(of: settings) }) { values in
+            TerminalConfigurationSync.adopt(values, into: settings)
+        }
     }
 
     /// Settles which side is newer, then follows both. Before there is a
@@ -28,8 +30,8 @@ final class TerminalSettingsSync {
     func start() {
         guard observers.isEmpty else { return }
         let written = TerminalConfigurationSync.lastWritten(settings)
-        if let record = storage.record(RDTerminalSettings.self, id: RDTerminalSettings.recordID) {
-            if written.map({ $0 <= record.modified }) ?? true {
+        if let existing = record.record {
+            if written.map({ $0 <= existing.modified }) ?? true {
                 pull()
             } else {
                 push(changed: written)
@@ -49,24 +51,14 @@ final class TerminalSettingsSync {
         })
     }
 
-    /// Writes what this device has, if it differs from the record, as
-    /// changed at `changed` (now by default). A file that cannot be read
-    /// writes nothing.
+    /// Writes what changed here to the record, as changed at `changed` (now
+    /// by default). A file that cannot be read writes nothing.
     func push(changed: Date? = nil) {
-        guard let entries = TerminalConfigurationSync.entries(of: settings) else { return }
-        let existing = storage.record(RDTerminalSettings.self, id: RDTerminalSettings.recordID)
-        if existing == nil, entries.isEmpty { return }
-        if existing?.values == entries { return }
-        do {
-            try storage.save(RDTerminalSettings(entries: entries), changed: changed)
-        } catch {
-            RayonStorage.logger.error("saving the terminal settings for sync failed: \(error.localizedDescription)")
-        }
+        record.push(changed: changed)
     }
 
     /// Applies the record's settings.
     func pull() {
-        guard let record = storage.record(RDTerminalSettings.self, id: RDTerminalSettings.recordID) else { return }
-        TerminalConfigurationSync.adopt(record.values, into: settings)
+        record.pull()
     }
 }

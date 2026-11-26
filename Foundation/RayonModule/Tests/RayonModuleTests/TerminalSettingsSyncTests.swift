@@ -101,11 +101,29 @@ final class TerminalSettingsSyncTests: XCTestCase {
         var stale = RDTerminalSettings(entries: ["background": ["#000000"]])
         stale.modified = Date(timeIntervalSince1970: 1_000_000)
         XCTAssertEqual(try storage.mergeRemote(stale), .keptLocal)
-        XCTAssertEqual(record?.values, ["foreground": ["#fafafa"]])
+        XCTAssertEqual(record?.values, remote.values)
 
         // A change here is written to the record.
         TerminalConfigurationSync.adopt(["foreground": ["#fafafa"], "cursor-color": ["#ff0000"]], into: local)
         XCTAssertEqual(record?.values, ["foreground": ["#fafafa"], "cursor-color": ["#ff0000"]])
+    }
+
+    /// Another device's settings merged into the record before they are
+    /// applied here, and a change to this device's own keys in between:
+    /// what is here is not written over them.
+    func testAMergedRecordIsNotRevertedBeforeItIsApplied() throws {
+        let local = try settings("font-size = 18\nbackground = #101010\n")
+        let sync = TerminalSettingsSync(storage: storage, settings: local)
+        sync.start()
+
+        var remote = RDTerminalSettings(entries: ["background": ["#202020"]])
+        remote.modified = Date().addingTimeInterval(60).wholeMilliseconds
+        XCTAssertEqual(try storage.mergeRemote(remote), .tookRemote)
+        try local.load("font-size = 20\nbackground = #101010\n")
+        sync.push()
+        XCTAssertEqual(record?.values, ["background": ["#202020"]])
+        XCTAssertEqual(record?.modified, remote.modified)
+        XCTAssertEqual(local.contents, "font-size = 20\nbackground = #202020\n")
     }
 
     func testTheRecordRoundTripsThroughCloudKit() throws {

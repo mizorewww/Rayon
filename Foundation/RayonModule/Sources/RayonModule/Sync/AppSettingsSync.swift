@@ -30,23 +30,17 @@ final class AppSettingsSync {
         "me.mizorewww.rayon.terminfo.install",
     ]
 
-    private let storage: RayonStorage
     private let defaults: UserDefaults
-    private let applied: @MainActor () -> Void
+    private let record: SettingsRecordSync<RDAppSettings>
     private var observers: [any NSObjectProtocol] = []
-    /// Set while the record's settings are being set: each one set is not
-    /// a change here.
-    private var applying = false
 
     /// `applied` runs after another device's settings were set.
     init(storage: RayonStorage, defaults: UserDefaults, applied: @escaping @MainActor () -> Void) {
-        self.storage = storage
         self.defaults = defaults
-        self.applied = applied
-    }
-
-    private var record: RDAppSettings? {
-        storage.record(RDAppSettings.self, id: RDAppSettings.recordID)
+        record = SettingsRecordSync(storage: storage, syncs: Self.keys.contains, read: { Self.entries(in: defaults) }) { values in
+            Self.set(values, in: defaults)
+            applied()
+        }
     }
 
     /// A change made here is written to the record as it is made, so the
@@ -54,7 +48,7 @@ final class AppSettingsSync {
     /// settings are written as old, so another device's changes win.
     func start() {
         guard observers.isEmpty else { return }
-        if record != nil {
+        if record.record != nil {
             pull()
         } else {
             push(changed: Date(timeIntervalSince1970: 0))
@@ -72,9 +66,9 @@ final class AppSettingsSync {
     }
 
     /// The settings here that travel and are set.
-    func entries() -> [String: RDAppSettings.Value] {
+    static func entries(in defaults: UserDefaults) -> [String: RDAppSettings.Value] {
         var entries: [String: RDAppSettings.Value] = [:]
-        for key in Self.keys {
+        for key in keys {
             switch defaults.object(forKey: key) {
             case let number as NSNumber where CFGetTypeID(number) == CFBooleanGetTypeID():
                 entries[key] = .bool(number.boolValue)
@@ -89,27 +83,19 @@ final class AppSettingsSync {
         return entries
     }
 
-    /// Writes what this device has, if it differs from the record.
+    /// Writes what changed here to the record.
     func push(changed: Date? = nil) {
-        guard !applying else { return }
-        let entries = entries()
-        let existing = record
-        if existing == nil, entries.isEmpty { return }
-        if existing?.values == entries { return }
-        do {
-            try storage.save(RDAppSettings(entries: entries), changed: changed)
-        } catch {
-            RayonStorage.logger.error("saving the app settings for sync failed: \(error.localizedDescription)")
-        }
+        record.push(changed: changed)
     }
 
-    /// Sets the record's settings here; one it does not have is reset.
+    /// Sets the record's settings here.
     func pull() {
-        guard let record, record.values != entries() else { return }
-        let values = record.values
-        applying = true
-        defer { applying = false }
-        for key in Self.keys {
+        record.pull()
+    }
+
+    /// Sets `values` here; a setting they do not have is reset.
+    private static func set(_ values: [String: RDAppSettings.Value], in defaults: UserDefaults) {
+        for key in keys {
             switch values[key] {
             case let .bool(value): defaults.set(value, forKey: key)
             case let .int(value): defaults.set(value, forKey: key)
@@ -117,6 +103,5 @@ final class AppSettingsSync {
             case nil: defaults.removeObject(forKey: key)
             }
         }
-        applied()
     }
 }

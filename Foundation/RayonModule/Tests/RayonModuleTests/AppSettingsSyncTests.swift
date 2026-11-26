@@ -83,6 +83,46 @@ final class AppSettingsSyncTests: XCTestCase {
         XCTAssertEqual(record?.modified.millisecondsSince1970, remote.modified.millisecondsSince1970)
     }
 
+    /// Another device's settings are merged into the record on the sync
+    /// actor and applied here a moment later. A change noticed in between
+    /// (a window's frame saved, say) does not write what is here over them.
+    func testAMergedRecordIsNotRevertedBeforeItIsApplied() throws {
+        defaults.set(12, forKey: RayonStore.Key.timeout)
+        let sync = sync()
+        sync.start()
+
+        var remote = RDAppSettings(entries: [RayonStore.Key.timeout: .int(30)])
+        remote.modified = Date().addingTimeInterval(60).wholeMilliseconds
+        XCTAssertEqual(try storage.mergeRemote(remote), .tookRemote)
+        defaults.set("0 0 800 600", forKey: "NSWindow Frame Main")
+        sync.push()
+        XCTAssertEqual(record?.values, [RayonStore.Key.timeout: .int(30)])
+        XCTAssertEqual(record?.modified, remote.modified)
+        XCTAssertEqual(defaults.integer(forKey: RayonStore.Key.timeout), 30)
+
+        sync.pull()
+        XCTAssertEqual(record?.modified, remote.modified)
+        XCTAssertEqual(defaults.integer(forKey: RayonStore.Key.timeout), 30)
+    }
+
+    /// A change here and another device's to another setting, crossing:
+    /// both stay.
+    func testCrossingChangesToOtherSettingsBothStay() throws {
+        defaults.set(12, forKey: RayonStore.Key.timeout)
+        defaults.set(true, forKey: RayonStore.Key.storeRecent)
+        let sync = sync()
+        sync.start()
+
+        var remote = RDAppSettings(entries: [RayonStore.Key.timeout: .int(30), RayonStore.Key.storeRecent: .bool(true)])
+        remote.modified = Date().addingTimeInterval(60).wholeMilliseconds
+        XCTAssertEqual(try storage.mergeRemote(remote), .tookRemote)
+        defaults.set(false, forKey: RayonStore.Key.storeRecent)
+        sync.push()
+        XCTAssertEqual(record?.values, [RayonStore.Key.timeout: .int(30), RayonStore.Key.storeRecent: .bool(false)])
+        XCTAssertEqual(defaults.integer(forKey: RayonStore.Key.timeout), 30)
+        XCTAssertEqual(defaults.object(forKey: RayonStore.Key.storeRecent) as? Bool, false)
+    }
+
     func testAtLaunchTheRecordWins() {
         try? storage.save(RDAppSettings(entries: [RayonStore.Key.timeout: .int(9)]))
         defaults.set(12, forKey: RayonStore.Key.timeout)
