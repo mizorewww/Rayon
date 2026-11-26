@@ -134,8 +134,6 @@ install_ios() {
     ditto "$ios_data/Build/Products/Release-iphoneos/mRayon.app" "$app"
     cp "$profile" "$app/embedded.mobileprovision"
     local entitlements="$ios_data/Signed/entitlements.plist"
-    # The keychain access group is the one the Mac app is signed with too
-    # (build-macos.sh): sync keeps its key there, in iCloud Keychain.
     cat > "$entitlements" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -154,14 +152,24 @@ install_ios() {
 </dict>
 </plist>
 EOF
-    # A profile that grants iCloud's key-value store (not the wildcard one:
-    # that takes an app id registered with the iCloud capability) lets the
-    # app sync; the app looks for the same thing in the profile.
-    local grants
+    # A profile that grants the iCloud container (not the wildcard one: that
+    # takes an app id registered with the iCloud capability) lets the app
+    # sync; the app looks for the same thing in the profile.
+    local grants profile_plist aps
     grants="$(security cms -D -i "$profile" 2>/dev/null || true)"
-    if [[ "$grants" == *com.apple.developer.ubiquity-kvstore-identifier* ]]; then
+    if [[ "$grants" == *iCloud.me.mizorewww.rayon* ]]; then
         /usr/libexec/PlistBuddy \
-            -c "Add :com.apple.developer.ubiquity-kvstore-identifier string $team.$BUNDLE_ID" "$entitlements"
+            -c 'Add :com.apple.developer.icloud-container-identifiers array' \
+            -c 'Add :com.apple.developer.icloud-container-identifiers:0 string iCloud.me.mizorewww.rayon' \
+            -c 'Add :com.apple.developer.icloud-services array' \
+            -c 'Add :com.apple.developer.icloud-services:0 string CloudKit' "$entitlements"
+        profile_plist="$ios_data/Signed/profile.plist"
+        printf '%s' "$grants" > "$profile_plist"
+        aps="$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:aps-environment' "$profile_plist" 2>/dev/null || true)"
+        rm -f "$profile_plist"
+        if [[ -n "$aps" ]]; then
+            /usr/libexec/PlistBuddy -c "Add :aps-environment string $aps" "$entitlements"
+        fi
     fi
     # Nested code first, then the app with its entitlements.
     find "$app" -depth \( -name '*.framework' -o -name '*.dylib' -o -name '*.appex' \) -print0 \

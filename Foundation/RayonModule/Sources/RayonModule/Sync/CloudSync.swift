@@ -58,7 +58,13 @@ public actor CloudSync {
             else { return false }
             return services.contains("CloudKit")
         #else
-            return true
+            // A build installed with a provisioning profile (development,
+            // ad hoc) has iCloud only when the profile grants the container;
+            // one from the App Store carries no profile and always has.
+            guard let url = Bundle.main.url(forResource: "embedded", withExtension: "mobileprovision"),
+                  let data = try? Data(contentsOf: url)
+            else { return true }
+            return data.range(of: Data(containerIdentifier.utf8)) != nil
         #endif
     }
 

@@ -7,16 +7,17 @@
 # there is none. Override with CODE_SIGN_IDENTITY / DEVELOPMENT_TEAM.
 #
 # With a provisioning profile made for the app's bundle id and that
-# certificate, the app is also signed for iCloud's key-value store and for the
-# keychain access group shared with the iOS app (where sync keeps its key in
-# iCloud Keychain), which the system only grants with one. It is looked for by
-# provisioning-profile.sh; MAC_PROVISIONING_PROFILE names one outright.
+# certificate, the app is also signed for CloudKit (the iCloud container
+# shared with the iOS app) and with its application identifier, which the
+# data protection keychain asks for; the system grants both only with one.
+# It is looked for by provisioning-profile.sh; MAC_PROVISIONING_PROFILE names
+# one outright.
 
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-# After the team: "<team>.me.mizorewww.rayon" on every platform.
-KEYCHAIN_GROUP="me.mizorewww.rayon"
+# The iCloud container, the same for every build and platform.
+ICLOUD_CONTAINER="iCloud.me.mizorewww.rayon"
 CONFIGURATION="${1:-Debug}"
 DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-$ROOT_DIR/.build/DerivedData}"
 
@@ -71,23 +72,32 @@ sign_for_icloud() {
     # Read whole before it is searched: a search that stops at the first match
     # would fail the pipe.
     grants="$(security cms -D -i "$profile" 2>/dev/null || true)"
-    [[ "$grants" == *com.apple.developer.ubiquity-kvstore-identifier* ]] || return 0
+    [[ "$grants" == *"$ICLOUD_CONTAINER"* ]] || return 0
 
     entitlements="$(mktemp)"
     /usr/bin/codesign -d --entitlements - --xml "$APP_PATH" 2>/dev/null > "$entitlements"
-    for key in com.apple.application-identifier com.apple.developer.ubiquity-kvstore-identifier; do
+    for key in com.apple.application-identifier com.apple.developer.team-identifier \
+        com.apple.developer.icloud-container-identifiers com.apple.developer.icloud-services \
+        com.apple.developer.aps-environment keychain-access-groups \
+        com.apple.developer.ubiquity-kvstore-identifier; do
         /usr/libexec/PlistBuddy -c "Delete :$key" "$entitlements" 2>/dev/null || true
-        /usr/libexec/PlistBuddy -c "Add :$key string $DEVELOPMENT_TEAM.$bundle_id" "$entitlements"
     done
-    /usr/libexec/PlistBuddy -c 'Delete :com.apple.developer.team-identifier' "$entitlements" 2>/dev/null || true
-    /usr/libexec/PlistBuddy -c "Add :com.apple.developer.team-identifier string $DEVELOPMENT_TEAM" "$entitlements"
-    # The key that seals what is synced is kept in iCloud Keychain, in the
-    # access group the iOS app is signed with too (install.sh): the same for
-    # the Debug and Release builds, whose bundle ids differ.
-    /usr/libexec/PlistBuddy -c 'Delete :keychain-access-groups' "$entitlements" 2>/dev/null || true
-    if [[ "$grants" == *keychain-access-groups* ]]; then
-        /usr/libexec/PlistBuddy -c 'Add :keychain-access-groups array' \
-            -c "Add :keychain-access-groups:0 string $DEVELOPMENT_TEAM.$KEYCHAIN_GROUP" "$entitlements"
+    /usr/libexec/PlistBuddy \
+        -c "Add :com.apple.application-identifier string $DEVELOPMENT_TEAM.$bundle_id" \
+        -c "Add :com.apple.developer.team-identifier string $DEVELOPMENT_TEAM" \
+        -c 'Add :com.apple.developer.icloud-container-identifiers array' \
+        -c "Add :com.apple.developer.icloud-container-identifiers:0 string $ICLOUD_CONTAINER" \
+        -c 'Add :com.apple.developer.icloud-services array' \
+        -c 'Add :com.apple.developer.icloud-services:0 string CloudKit' "$entitlements"
+    # CloudKit tells the app of changes made elsewhere with a push; the
+    # profile says to which environment.
+    local profile_plist aps
+    profile_plist="$(mktemp)"
+    printf '%s' "$grants" > "$profile_plist"
+    aps="$(/usr/libexec/PlistBuddy -c 'Print :Entitlements:com.apple.developer.aps-environment' "$profile_plist" 2>/dev/null || true)"
+    rm -f "$profile_plist"
+    if [[ -n "$aps" ]]; then
+        /usr/libexec/PlistBuddy -c "Add :com.apple.developer.aps-environment string $aps" "$entitlements"
     fi
 
     cp "$profile" "$APP_PATH/Contents/embedded.provisionprofile"

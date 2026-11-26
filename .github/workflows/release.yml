@@ -85,9 +85,8 @@ jobs:
           security find-identity -v -p codesigning "$keychain" | grep -c "Developer ID Application" >/dev/null
 
           # With the app's Developer ID provisioning profile the Mac app can
-          # sync with iCloud (the key-value store, and the keychain access
-          # group for the key in iCloud Keychain); without it the app is
-          # built as before.
+          # sync with iCloud (CloudKit, in the iCloud.me.mizorewww.rayon
+          # container); without it the app is built as before.
           if [[ -n "$MAC_PROFILE" ]]; then
             printf '%s' "$MAC_PROFILE" | base64 --decode > "$RUNNER_TEMP/Rayon.provisionprofile"
             echo "MAC_PROVISIONING_PROFILE=$RUNNER_TEMP/Rayon.provisionprofile" >> "$GITHUB_ENV"

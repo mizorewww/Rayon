@@ -18,7 +18,8 @@
 #
 # The .provisionprofile lets the released Mac app sync with iCloud: at
 # developer.apple.com → Profiles, a Developer ID profile (Mac Catalyst) for the
-# app's id, which has the iCloud capability, and that certificate.
+# app's id, which has the iCloud capability with CloudKit and the container
+# iCloud.me.mizorewww.rayon, and that certificate.
 #
 # Needs the GitHub CLI, signed in (`gh auth login`), in a clone of the repository.
 
