@@ -59,6 +59,7 @@ final class VNCLiveTests: XCTestCase {
         }
 
         var image: CGImage? { lock.withLock { lastImage } }
+        var frameCount: Int { lock.withLock { frames } }
     }
 
     private func server() throws -> (host: String, port: UInt16, password: String) {
@@ -148,12 +149,19 @@ final class VNCLiveTests: XCTestCase {
         client.start()
         await fulfillment(of: [recorder.connected, recorder.framed], timeout: 15)
         XCTAssertNil(recorder.failure)
-        // Full refreshes keep flowing through the channel.
+        // Full refreshes of a noisy desktop are several MB each and must
+        // keep flowing through the channel (the old 8 KB socket pair tore
+        // the tunnel down on the first one).
+        let image = try XCTUnwrap(recorder.image)
+        XCTAssertGreaterThan(image.width * image.height * 4, 2 * 1024 * 1024, "use a desktop of at least 1024x512")
+        let before = recorder.frameCount
         for _ in 0 ..< 5 {
             client.requestUpdate(incremental: false)
+            try await Task.sleep(for: .milliseconds(500))
         }
         try await Task.sleep(for: .seconds(2))
         XCTAssertNil(recorder.failure)
+        XCTAssertGreaterThanOrEqual(recorder.frameCount - before, 3, "full frames stopped arriving")
         client.stop()
     }
 
