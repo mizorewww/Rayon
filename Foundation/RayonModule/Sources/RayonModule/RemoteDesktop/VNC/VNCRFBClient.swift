@@ -202,11 +202,14 @@ final class VNCRFBClient: Sendable {
         }
 
         // SecurityResult: u32, 0 on success. For 3.8 a failure carries a
-        // reason string; for 3.3 and 3.7 it does not.
-        let result = try await reader.read(exactly: 4).readU32BE(at: 0)
-        if result != 0 {
-            let reason = protocol38 ? try await readReasonString(reader) : nil
-            throw RemoteDesktopFailure(reason ?? "The VNC server rejected the credentials.")
+        // reason string; for 3.3 and 3.7 it does not, and after None those
+        // send no SecurityResult at all.
+        if protocol38 || selected != VNCWire.SecurityType.none.rawValue {
+            let result = try await reader.read(exactly: 4).readU32BE(at: 0)
+            if result != 0 {
+                let reason = protocol38 ? try await readReasonString(reader) : nil
+                throw RemoteDesktopFailure(reason ?? "The VNC server rejected the credentials.")
+            }
         }
 
         // ClientInit / ServerInit.

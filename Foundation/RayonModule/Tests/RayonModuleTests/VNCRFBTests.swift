@@ -644,6 +644,33 @@ final class VNCRFBTests: XCTestCase {
         XCTAssertEqual(channel.written.count, expected)
     }
 
+    /// RFB 3.3 and 3.7 send no SecurityResult after security type None:
+    /// ServerInit follows the negotiation right away.
+    func testHandshakeWithoutSecurityOn33And37() async throws {
+        for minor in [3, 7] {
+            var server = Data()
+            server.append(VNCWire.banner(major: 3, minor: minor))
+            if minor == 3 {
+                server.appendU32BE(UInt32(VNCWire.SecurityType.none.rawValue))
+            } else {
+                server.append(1)
+                server.append(VNCWire.SecurityType.none.rawValue)
+            }
+            server.append(serverInitData(width: 4, height: 2, name: "old-vnc"))
+
+            let delegate = RecordingDelegate()
+            let client = VNCRFBClient(
+                configuration: .init(host: "ignored", port: 0, password: "", shared: true,
+                                     transport: MemoryChannel(Array(server))),
+                delegate: delegate
+            )
+            await client.run()
+            XCTAssertTrue(delegate.phases.contains(.connected), "3.\(minor): \(delegate.phases)")
+            XCTAssertEqual(delegate.desktopName, "old-vnc", "3.\(minor)")
+            XCTAssertEqual(delegate.size, CGSize(width: 4, height: 2), "3.\(minor)")
+        }
+    }
+
     func testHandshakeServerRejectsPassword() async throws {
         var server = Data()
         server.append(VNCWire.banner(major: 3, minor: 8))
