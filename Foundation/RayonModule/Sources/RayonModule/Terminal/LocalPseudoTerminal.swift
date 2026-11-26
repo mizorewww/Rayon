@@ -9,6 +9,7 @@
 
 #if os(macOS)
     import Darwin
+    import Dispatch
     import RayonPTY
 
     struct LocalPseudoTerminal {
@@ -60,6 +61,21 @@
             let fileFlags = fcntl(master, F_GETFL, 0)
             if fileFlags >= 0 { _ = fcntl(master, F_SETFL, fileFlags | O_NONBLOCK) }
             return LocalPseudoTerminal(pid: pid, master: master)
+        }
+
+        /// Hangs the process up and reaps it whenever it exits, waiting on
+        /// no thread: a shell may finish its logout scripts, or ignore the
+        /// hangup, for as long as it likes. Dispatch reports a process that
+        /// is gone already as exited.
+        static func hangUp(_ pid: pid_t) {
+            kill(pid, SIGHUP)
+            let exit = DispatchSource.makeProcessSource(identifier: pid, eventMask: .exit, queue: .global(qos: .utility))
+            exit.setEventHandler {
+                var status: Int32 = 0
+                while waitpid(pid, &status, 0) < 0, errno == EINTR {}
+                exit.cancel()
+            }
+            exit.resume()
         }
     }
 #endif

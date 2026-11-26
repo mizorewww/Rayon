@@ -95,6 +95,23 @@
             XCTAssertEqual(output.trimmingCharacters(in: .whitespacesAndNewlines), "0", "the child starts with signals blocked")
         }
 
+        /// A shell that outlives the hangup (here it ignores it) is reaped
+        /// when it exits, not left a zombie.
+        func testAHungUpShellIsReapedWhenItExits() throws {
+            let terminal = try LocalPseudoTerminal.spawn(
+                executable: "/bin/zsh", arguments: ["zsh", "-f", "-c", "trap '' HUP; sleep 0.5"],
+                environment: ["PATH": "/usr/bin:/bin"], directory: "/", columns: 80, rows: 24
+            )
+            defer { close(terminal.master) }
+            Thread.sleep(forTimeInterval: 0.2)
+            LocalPseudoTerminal.hangUp(terminal.pid)
+            let deadline = Date().addingTimeInterval(5)
+            while Date() < deadline, kill(terminal.pid, 0) == 0 {
+                Thread.sleep(forTimeInterval: 0.05)
+            }
+            XCTAssertNotEqual(kill(terminal.pid, 0), 0, "the shell is still a process, or a zombie")
+        }
+
         func testMissingExecutableThrows() {
             XCTAssertThrowsError(try LocalPseudoTerminal.spawn(
                 executable: "/nonexistent/shell", arguments: ["shell"], environment: [:],

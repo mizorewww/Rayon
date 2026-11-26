@@ -78,6 +78,7 @@
             readSource.resume()
 
             var lastSize = initial
+            var exited = false
             while !closed {
                 if finished.wait(timeout: .now()) == .success { break }
                 _ = uuWakeSemaphore.wait(timeout: .now() + 0.5)
@@ -115,17 +116,16 @@
                 }
 
                 var status: Int32 = 0
-                let waited = waitpid(pid, &status, WNOHANG)
-                if waited == pid {
+                if waitpid(pid, &status, WNOHANG) == pid {
+                    exited = true
                     break
                 }
             }
 
             readSource.cancel()
             Darwin.close(masterFD)
-            kill(pid, SIGHUP)
-            var status: Int32 = 0
-            _ = waitpid(pid, &status, WNOHANG)
+            // A reaped pid may belong to another process already.
+            if !exited { LocalPseudoTerminal.hangUp(pid) }
         }
     }
 #endif
