@@ -109,7 +109,7 @@
 
         static func settings() async {
             let router = AppRouter.shared
-            router.settingsSelection = "general"
+            router.settingsNavigation.selection = .general
             report("open settings", [await settle { router.route = .settings }])
             NSLog("BENCH done")
         }

@@ -56,39 +56,27 @@ final class MRayonUITests: XCTestCase {
         screenshot("Home")
     }
 
-    func testSettingsUseTheSharedLayout() {
+    func testSettingsListTheirCategories() {
         openSettings()
-        let expected = ["General", "Connection", "Text", "Colors", "Cursor", "Window",
-                        "Mouse & Clipboard", "Keyboard", "Advanced", "About"]
         XCTAssertTrue(app.buttons["General"].firstMatch.waitForExistence(timeout: 5))
-        for title in expected {
-            let row = app.buttons[title].firstMatch
-            if !row.exists { app.swipeUp() }
-            XCTAssertTrue(row.exists, "Settings lists \(title)")
+        for title in ["General", "Connection", "Terminal", "About"] {
+            XCTAssertTrue(app.buttons[title].firstMatch.exists, "Settings lists \(title)")
         }
         screenshot("Settings")
     }
 
-    func testTextSettingsOfferInstalledFonts() {
+    func testTerminalSettingsShowPreviewAndConfigFile() {
         openSettings()
-        app.buttons["Text"].firstMatch.tap()
-        XCTAssertTrue(app.staticTexts["Font"].firstMatch.waitForExistence(timeout: 5))
+        app.buttons["Terminal"].firstMatch.tap()
+        XCTAssertTrue(app.staticTexts["Theme"].firstMatch.waitForExistence(timeout: 5))
         XCTAssertTrue(app.staticTexts["Size"].firstMatch.exists)
-        screenshot("Text")
+        screenshot("Terminal")
 
-        app.buttons["Built-in (JetBrains Mono)"].firstMatch.tap()
-        XCTAssertTrue(app.buttons["Menlo"].firstMatch.waitForExistence(timeout: 5), "The picker lists installed fonts")
-        screenshot("Font picker")
-    }
-
-    func testKeyboardShortcutsReadAsKeyCaps() {
-        openSettings()
-        let keyboard = app.buttons["Keyboard"].firstMatch
-        if !keyboard.exists { app.swipeUp() }
-        keyboard.tap()
-        XCTAssertTrue(app.staticTexts["Copy"].firstMatch.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["⌘C"].firstMatch.exists)
-        screenshot("Keyboard")
+        let open = app.buttons["Open in Editor"].firstMatch
+        if !open.exists { app.swipeUp() }
+        open.tap()
+        XCTAssertTrue(app.navigationBars["config.ghostty"].waitForExistence(timeout: 5), "The config file opens in the editor")
+        screenshot("config.ghostty")
     }
 
     /// Opens a Quick Connect session to a closed local port: the Ghostty terminal

@@ -31,7 +31,7 @@ struct MainView: View {
                         ))
                 }
                 if settingsOpened || router.route == .settings {
-                    SettingsView(active: router.route == .settings)
+                    SettingsView()
                         .opacity(router.route == .settings ? 1 : 0)
                         .animation(router.route == .settings ? .easeOut(duration: 0.16) : nil, value: router.route == .settings)
                         .allowsHitTesting(router.route == .settings)

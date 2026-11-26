@@ -82,7 +82,7 @@ download the disk image from [Releases](https://github.com/mizorewww/Rayon/relea
    usage; the toolbar switcher moves between the three.
 3. **Quick Connect**: type `user@host`, `user@host:2222`, a saved server's name or a full
    `ssh` command on Home.
-4. **Settings** (⌘,) cover the app and the terminal. Ghostty coverage is described in
+4. **Settings** (⌘,) cover the app and the terminal. How the terminal is configured is described in
    [CONFIGURATION.md](Foundation/RayonTerminal/CONFIGURATION.md).
 
 ## Build from source
