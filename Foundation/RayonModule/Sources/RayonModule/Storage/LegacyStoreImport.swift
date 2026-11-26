@@ -178,13 +178,7 @@ enum LegacyStoreImport {
     /// content: two devices importing the same record agree on it, and
     /// when their copies differ, every device keeps the same one.
     static func importedDate<T: StoredRecord>(of record: T) -> Date {
-        var content = record.syncedContent
-        content.modified = Date(timeIntervalSinceReferenceDate: 0)
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = .sortedKeys
-        encoder.dateEncodingStrategy = .millisecondsSince1970
-        let data = (try? encoder.encode(RecordPayload(content))) ?? Data()
-        let milliseconds = SHA256.hash(data: data).prefix(4).reduce(UInt64(0)) { $0 << 8 | UInt64($1) }
+        let milliseconds = SHA256.hash(data: record.syncedContentData).prefix(4).reduce(UInt64(0)) { $0 << 8 | UInt64($1) }
         return Date(timeIntervalSinceReferenceDate: TimeInterval(milliseconds) / 1000)
     }
 

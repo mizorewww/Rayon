@@ -69,6 +69,17 @@ extension StoredRecord {
         return lhs != rhs
     }
 
+    /// What syncs of the record, as the same bytes on every device: for
+    /// telling versions apart by their content alone.
+    var syncedContentData: Data {
+        var content = syncedContent
+        content.modified = Date(timeIntervalSinceReferenceDate: 0)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        encoder.dateEncodingStrategy = .millisecondsSince1970
+        return (try? encoder.encode(RecordPayload(content))) ?? Data()
+    }
+
     var secretAccount: String { "\(Self.tableName).\(id.uuidString)" }
 }
 
@@ -111,9 +122,12 @@ public struct RecordPayload<Record: StoredRecord>: Codable {
 }
 
 /// How a record from another device and the one here are merged: the one
-/// changed last wins.
+/// changed last wins. Two different versions changed at the same time (first
+/// records, stamped as old on each device) are told apart by their content,
+/// so every device keeps the same one.
 enum RecordMerge<Record: StoredRecord>: Equatable {
-    /// Nothing to do: they are the same change.
+    /// Nothing to do: they are the same change, or the secrets here could
+    /// not be read to tell.
     case same
     /// The one here is newer and goes out again.
     case keepLocal
@@ -124,7 +138,11 @@ enum RecordMerge<Record: StoredRecord>: Equatable {
         guard let local else { return .takeRemote(remote) }
         let here = local.modified.millisecondsSince1970
         let there = remote.modified.millisecondsSince1970
-        if here == there { return .same }
+        if here == there {
+            guard !local.secretsUnread, local.differsInSyncedContent(from: remote) else { return .same }
+            return remote.syncedContentData.lexicographicallyPrecedes(local.syncedContentData)
+                ? .keepLocal : .takeRemote(remote.keepingLocalState(of: local))
+        }
         if here > there { return .keepLocal }
         return .takeRemote(remote.keepingLocalState(of: local))
     }

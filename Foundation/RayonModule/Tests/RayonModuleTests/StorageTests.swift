@@ -134,9 +134,27 @@ final class StorageTests: XCTestCase {
 
         remote.modified = Date(timeIntervalSince1970: 50)
         XCTAssertEqual(RecordMerge.resolve(local: local, remote: remote), .keepLocal)
-        remote.modified = local.modified
-        XCTAssertEqual(RecordMerge.resolve(local: local, remote: remote), .same)
+        var unchanged = local
+        unchanged.lastBanner = ""
+        XCTAssertEqual(RecordMerge.resolve(local: local, remote: unchanged), .same)
         XCTAssertEqual(RecordMerge.resolve(local: nil, remote: remote), .takeRemote(remote))
+    }
+
+    /// Two devices' first app settings, both stamped as old: the same one
+    /// wins on both, so they end up with the same settings.
+    func testVersionsChangedAtTheSameTimeConverge() throws {
+        var mine = RDAppSettings(entries: [RayonStore.Key.timeout: .int(12)])
+        mine.modified = Date(timeIntervalSince1970: 0)
+        var theirs = RDAppSettings(entries: [RayonStore.Key.timeout: .int(30)])
+        theirs.modified = mine.modified
+
+        let here = RecordMerge.resolve(local: mine, remote: theirs)
+        let there = RecordMerge.resolve(local: theirs, remote: mine)
+        let winnerHere = here == .keepLocal ? mine : (here == .takeRemote(theirs) ? theirs : nil)
+        let winnerThere = there == .keepLocal ? theirs : (there == .takeRemote(mine) ? mine : nil)
+        XCTAssertNotNil(winnerHere)
+        XCTAssertEqual(winnerHere, winnerThere)
+        XCTAssertEqual(RecordMerge.resolve(local: mine, remote: mine), .same)
     }
 
     /// A version from a device whose clock is ahead is not newer than an
