@@ -5,6 +5,7 @@
 //  Identities grouped by group, with the editor beside the list.
 //
 
+import LocalAuthentication
 import RayonModule
 import SwiftUI
 
@@ -338,8 +339,7 @@ struct IdentityForm: View {
             } else if draft.method == .password {
                 HStack(alignment: .top, spacing: RX.Space.s4) {
                     RXField("Password") {
-                        SecureField("Required", text: $draft.password)
-                            .textFieldStyle(.rx)
+                        RevealablePasswordField(placeholder: "Required", text: $draft.password)
                     }
                     RXField("Comment") {
                         TextField("Optional", text: $draft.comment)
@@ -466,5 +466,47 @@ struct IdentityEditorSheet: View {
             .disabled(!draft.isValid)
         }
         .frame(width: 520)
+    }
+}
+
+/// A password field whose text shows only after the Mac's owner confirms
+/// with Touch ID or the login password, as on iPhone.
+private struct RevealablePasswordField: View {
+    let placeholder: String
+    @Binding var text: String
+    @State private var revealed = false
+
+    var body: some View {
+        HStack(spacing: RX.Space.s2) {
+            Group {
+                if revealed {
+                    TextField(placeholder, text: $text)
+                } else {
+                    SecureField(placeholder, text: $text)
+                }
+            }
+            .textFieldStyle(.rx)
+            if !text.isEmpty {
+                RXIconButton(revealed ? "Hide Password" : "Show Password", systemImage: revealed ? "eye.slash" : "eye") {
+                    if revealed {
+                        revealed = false
+                    } else {
+                        Task { revealed = await Self.ownerConfirms() }
+                    }
+                }
+            }
+        }
+    }
+
+    /// Touch ID, a paired watch or the login password. A Mac with none of
+    /// them set up cannot confirm, and the password stays hidden.
+    @MainActor
+    static func ownerConfirms() async -> Bool {
+        let context = LAContext()
+        do {
+            return try await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "show the identity's password")
+        } catch {
+            return false
+        }
     }
 }
