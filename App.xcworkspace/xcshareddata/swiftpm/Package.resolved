@@ -1,43 +1,142 @@
 {
-  "object": {
-    "pins": [
+  "object" : {
+    "pins" : [
       {
-        "package": "BigInt",
-        "repositoryURL": "https://github.com/attaswift/BigInt.git",
-        "state": {
-          "branch": null,
-          "revision": "e07e00fa1fd435143a2dcf8b7eec9a7710b2fdfe",
-          "version": "5.7.0"
+        "package" : "BigInt",
+        "repositoryURL" : "https://github.com/attaswift/BigInt.git",
+        "state" : {
+          "branch" : null,
+          "revision" : "e07e00fa1fd435143a2dcf8b7eec9a7710b2fdfe",
+          "version" : "5.7.0"
         }
       },
       {
-        "package": "DisplayLink",
-        "repositoryURL": "https://github.com/Lakr233/DisplayLink.git",
-        "state": {
-          "branch": null,
-          "revision": "41bea2661e04bebcb1c4f15fc0b6197850100fdd",
-          "version": "3.0.1"
+        "package" : "CodeEditLanguages",
+        "repositoryURL" : "https://github.com/CodeEditApp/CodeEditLanguages",
+        "state" : {
+          "branch" : null,
+          "revision" : "331d5dbc5fc8513be5848fce8a2a312908f36a11",
+          "version" : "0.1.20"
         }
       },
       {
-        "package": "GhosttyKit",
-        "repositoryURL": "https://github.com/Lakr233/libghostty-spm.git",
-        "state": {
-          "branch": null,
-          "revision": "cffef22c16dd61d22ebef539ae2ff1624db77363",
-          "version": "2.2.2026100703"
+        "package" : "CodeEditSourceEditor",
+        "repositoryURL" : "https://github.com/CodeEditApp/CodeEditSourceEditor",
+        "state" : {
+          "branch" : null,
+          "revision" : "424453d2232c9912933a3b5a1f3d3df669404ed0",
+          "version" : "0.15.2"
         }
       },
       {
-        "package": "Runestone",
-        "repositoryURL": "https://github.com/Lakr233/Runestone.xcframework",
-        "state": {
-          "branch": null,
-          "revision": "90576ae5769b1e0ba49b8616cf2de045a8dc36af",
-          "version": "0.3.2"
+        "package" : "CodeEditSymbols",
+        "repositoryURL" : "https://github.com/CodeEditApp/CodeEditSymbols.git",
+        "state" : {
+          "branch" : null,
+          "revision" : "ae69712b08571c4469c2ed5cd38ad9f19439793e",
+          "version" : "0.2.3"
+        }
+      },
+      {
+        "package" : "CodeEditTextView",
+        "repositoryURL" : "https://github.com/CodeEditApp/CodeEditTextView.git",
+        "state" : {
+          "branch" : null,
+          "revision" : "d7ac3f11f22ec2e820187acce8f3a3fb7aa8ddec",
+          "version" : "0.12.1"
+        }
+      },
+      {
+        "package" : "DisplayLink",
+        "repositoryURL" : "https://github.com/Lakr233/DisplayLink.git",
+        "state" : {
+          "branch" : null,
+          "revision" : "41bea2661e04bebcb1c4f15fc0b6197850100fdd",
+          "version" : "3.0.1"
+        }
+      },
+      {
+        "package" : "GhosttyKit",
+        "repositoryURL" : "https://github.com/Lakr233/libghostty-spm.git",
+        "state" : {
+          "branch" : null,
+          "revision" : "cffef22c16dd61d22ebef539ae2ff1624db77363",
+          "version" : "2.2.2026100703"
+        }
+      },
+      {
+        "package" : "Rearrange",
+        "repositoryURL" : "https://github.com/ChimeHQ/Rearrange",
+        "state" : {
+          "branch" : null,
+          "revision" : "4de8be41dba304192e87dc0a11e0aa39e72aa2e8",
+          "version" : "2.1.1"
+        }
+      },
+      {
+        "package" : "Runestone",
+        "repositoryURL" : "https://github.com/Lakr233/Runestone.xcframework",
+        "state" : {
+          "branch" : null,
+          "revision" : "90576ae5769b1e0ba49b8616cf2de045a8dc36af",
+          "version" : "0.3.2"
+        }
+      },
+      {
+        "package" : "swift-collections",
+        "repositoryURL" : "https://github.com/apple/swift-collections.git",
+        "state" : {
+          "branch" : null,
+          "revision" : "88754449ab766a739610b660e117762115fabc9c",
+          "version" : "1.7.6"
+        }
+      },
+      {
+        "package" : "SwiftLintPlugin",
+        "repositoryURL" : "https://github.com/lukepistrol/SwiftLintPlugin",
+        "state" : {
+          "branch" : null,
+          "revision" : "b384a67cf45d9989aed5aab23e226cbc7bc2cd54",
+          "version" : "0.65.0"
+        }
+      },
+      {
+        "package" : "SwiftTreeSitter",
+        "repositoryURL" : "https://github.com/ChimeHQ/SwiftTreeSitter.git",
+        "state" : {
+          "branch" : null,
+          "revision" : "08ef81eb8620617b55b08868126707ad72bf754f",
+          "version" : "0.25.0"
+        }
+      },
+      {
+        "package" : "TextFormation",
+        "repositoryURL" : "https://github.com/ChimeHQ/TextFormation",
+        "state" : {
+          "branch" : null,
+          "revision" : "b1ce9a14bd86042bba4de62236028dc4ce9db6a1",
+          "version" : "0.9.0"
+        }
+      },
+      {
+        "package" : "TextStory",
+        "repositoryURL" : "https://github.com/ChimeHQ/TextStory",
+        "state" : {
+          "branch" : null,
+          "revision" : "a52db1a2eca74d37c8c19bf3165416941632ed45",
+          "version" : "0.9.2"
+        }
+      },
+      {
+        "package" : "TreeSitter",
+        "repositoryURL" : "https://github.com/tree-sitter/tree-sitter",
+        "state" : {
+          "branch" : null,
+          "revision" : "da6fe9beb4f7f67beb75914ca8e0d48ae48d6406",
+          "version" : "0.25.10"
         }
       }
     ]
   },
-  "version": 1
+  "version" : 1
 }

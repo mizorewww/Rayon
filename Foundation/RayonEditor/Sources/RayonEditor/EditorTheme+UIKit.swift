@@ -15,19 +15,6 @@ final class EditorTheme: Runestone.Theme {
         lineNumberFont = .monospacedDigitSystemFont(ofSize: size * 0.85, weight: .regular)
     }
 
-    private static func dynamic(light: UIColor, dark: UIColor) -> UIColor {
-        UIColor { $0.userInterfaceStyle == .dark ? dark : light }
-    }
-
-    private static func hex(_ value: UInt32) -> UIColor {
-        UIColor(
-            red: CGFloat((value >> 16) & 0xFF) / 255,
-            green: CGFloat((value >> 8) & 0xFF) / 255,
-            blue: CGFloat(value & 0xFF) / 255,
-            alpha: 1
-        )
-    }
-
     let textColor = UIColor(Color.rxInk)
     let gutterBackgroundColor = UIColor.clear
     let gutterHairlineColor = UIColor(Color.rxHairline)
@@ -40,15 +27,15 @@ final class EditorTheme: Runestone.Theme {
     let pageGuideBackgroundColor = UIColor.clear
     let markedTextBackgroundColor = UIColor(Color.rxAccent).withAlphaComponent(0.15)
 
-    // Syntax colours: muted enough for long reading, distinct in both modes.
-    private let keyword = dynamic(light: hex(0x9B2393), dark: hex(0xFC5FA3))
-    private let string = dynamic(light: hex(0xC41A16), dark: hex(0xFC6A5D))
-    private let number = dynamic(light: hex(0x1C00CF), dark: hex(0xD0BF69))
-    private let comment = dynamic(light: hex(0x5D6C79), dark: hex(0x7F8C98))
-    private let type = dynamic(light: hex(0x0B4F79), dark: hex(0x5DD8FF))
-    private let function = dynamic(light: hex(0x326D74), dark: hex(0x67B7A4))
-    private let property = dynamic(light: hex(0x3E8087), dark: hex(0x9EF1DD))
-    private let constant = dynamic(light: hex(0x6C36A9), dark: hex(0xD0A8FF))
+    // Syntax colours, shared with the Mac editor.
+    private let keyword = UIColor(EditorPalette.keyword)
+    private let string = UIColor(EditorPalette.string)
+    private let number = UIColor(EditorPalette.number)
+    private let comment = UIColor(EditorPalette.comment)
+    private let type = UIColor(EditorPalette.type)
+    private let function = UIColor(EditorPalette.function)
+    private let property = UIColor(EditorPalette.property)
+    private let constant = UIColor(EditorPalette.constant)
 
     func textColor(for highlightName: String) -> UIColor? {
         if highlightName.hasPrefix("variable.builtin") { return constant }
@@ -68,6 +55,15 @@ final class EditorTheme: Runestone.Theme {
 
     func fontTraits(for highlightName: String) -> FontTraits {
         highlightName.hasPrefix("comment") ? [.italic] : []
+    }
+}
+
+private extension UIColor {
+    convenience init(_ swatch: EditorPalette.Swatch) {
+        self.init { traits in
+            let rgb = swatch.components(dark: traits.userInterfaceStyle == .dark)
+            return UIColor(red: rgb.red, green: rgb.green, blue: rgb.blue, alpha: 1)
+        }
     }
 }
 #endif

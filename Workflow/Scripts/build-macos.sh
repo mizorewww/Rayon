@@ -37,12 +37,15 @@ if [[ "$CODE_SIGN_IDENTITY" != "-" && -z "${DEVELOPMENT_TEAM:-}" ]]; then
 fi
 DEVELOPMENT_TEAM="${DEVELOPMENT_TEAM:-}"
 
+# The code editor's CodeEditSourceEditor runs a SwiftLint build plug-in, which
+# xcodebuild would otherwise refuse to run until it is trusted in Xcode.
 xcodebuild \
     -workspace "$ROOT_DIR/App.xcworkspace" \
     -scheme Rayon \
     -configuration "$CONFIGURATION" \
     -destination 'generic/platform=macOS' \
     -derivedDataPath "$DERIVED_DATA_PATH" \
+    -skipPackagePluginValidation \
     ARCHS='arm64 x86_64' \
     ONLY_ACTIVE_ARCH=NO \
     COMPILER_INDEX_STORE_ENABLE=NO \
