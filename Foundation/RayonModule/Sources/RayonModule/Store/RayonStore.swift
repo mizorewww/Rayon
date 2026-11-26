@@ -306,10 +306,11 @@ public extension RayonStore {
     }
 
     /// The servers the server `id` (nil: a new one) could jump through:
-    /// every SSH server but itself. One whose own jumps lead back to it, or
-    /// a remote desktop never reached over SSH, is listed with the reason it
-    /// cannot be chosen; UU Remote devices and servers without an address
-    /// are not SSH servers to jump through and are left out.
+    /// every SSH server but itself. One whose own jumps lead back to it is
+    /// listed with the reason it cannot be chosen; UU Remote devices and
+    /// servers without an address are not SSH servers to jump through and
+    /// are left out. A remote desktop stays choosable: a VNC box may run
+    /// sshd too, and connecting through it says so if it does not.
     func jumpServerChoices(for id: RDMachine.ID?) -> [JumpServerChoice] {
         var probe = id.flatMap(machine) ?? RDMachine(id: id ?? UUID())
         probe.transport = .proxyJump
@@ -318,9 +319,6 @@ public extension RayonStore {
             probe.proxyJumpMachineID = candidate.id
             if problem(saving: probe) != nil {
                 return JumpServerChoice(machine: candidate, unavailableReason: "its jumps lead back here")
-            }
-            if candidate.hasRemoteDesktop, candidate.lastBanner.isEmpty {
-                return JumpServerChoice(machine: candidate, unavailableReason: "remote desktop, never reached over SSH")
             }
             return JumpServerChoice(machine: candidate, unavailableReason: nil)
         }

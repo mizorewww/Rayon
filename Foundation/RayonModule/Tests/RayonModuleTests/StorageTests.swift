@@ -233,10 +233,10 @@ final class StorageTests: XCTestCase {
         XCTAssertTrue(store.portForwards.isEmpty)
     }
 
-    /// A jump server that would lead back, or a remote desktop never
-    /// reached over SSH, is listed but cannot be chosen; a server whose
-    /// jumps loop already (from another device, or a backup) still saves
-    /// what it records of its connections.
+    /// A jump server that would lead back is listed but cannot be chosen;
+    /// a remote desktop never reached over SSH can, as it may run sshd too.
+    /// A server whose jumps loop already (from another device, or a
+    /// backup) still saves what it records of its connections.
     @MainActor
     func testJumpServersThatWouldLoopCannotBeChosen() throws {
         let store = test.store()
@@ -252,12 +252,9 @@ final class StorageTests: XCTestCase {
         func choosable(_ id: RDMachine.ID?) -> Set<String> {
             Set(store.jumpServerChoices(for: id).filter { $0.unavailableReason == nil }.map(\.machine.name))
         }
-        XCTAssertEqual(choosable(a.id), [], "b jumps through a")
+        XCTAssertEqual(choosable(a.id), ["vnc"], "b jumps through a")
         XCTAssertEqual(Set(store.jumpServerChoices(for: a.id).map(\.machine.name)), ["b", "vnc"])
-        XCTAssertEqual(choosable(b.id), ["a"])
-        XCTAssertEqual(choosable(nil), ["a", "b"])
-        desktop.lastBanner = "SSH-2.0-OpenSSH_9.7"
-        XCTAssertTrue(store.save(desktop))
+        XCTAssertEqual(choosable(b.id), ["a", "vnc"])
         XCTAssertEqual(choosable(nil), ["a", "b", "vnc"])
 
         var looping = a
