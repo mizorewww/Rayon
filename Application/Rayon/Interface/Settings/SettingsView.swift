@@ -33,6 +33,9 @@ struct SettingsView: View {
                 ConfigHostSettingsSection(id: "general.recent", keywords: "recent servers history quick connect commands record remember") {
                     RecentSettings().environmentObject(store)
                 },
+                ConfigHostSettingsSection(id: "general.sync", keywords: "icloud sync cloud servers identities snippets port forwards credentials devices") {
+                    CloudSyncSettings()
+                },
                 ConfigHostSettingsSection(id: "general.data", keywords: "backup export import restore ssh config openssh archive") {
                     DataBackupSettings().environmentObject(store)
                 },
@@ -743,5 +746,27 @@ private struct BackupPasswordSheet: View {
                 .disabled(password.isEmpty)
         }
         .frame(width: 420)
+    }
+}
+
+/// iCloud sync: on or off, and which kinds of records go.
+private struct CloudSyncSettings: View {
+    @ObservedObject var sync = CloudSyncModel.shared
+
+    var body: some View {
+        RXDividedStack {
+            SwitchRow(
+                "Sync with iCloud",
+                description: sync.preferences.isOn ? sync.statusText : "Keep your data the same on every device signed in to your iCloud account. Passwords and keys travel end-to-end encrypted.",
+                isOn: $sync.preferences.isOn
+            )
+            Group {
+                SwitchRow("Servers", description: "With their folders.", isOn: $sync.preferences.servers)
+                SwitchRow("Identities", description: "Including passwords and private keys.", isOn: $sync.preferences.identities)
+                SwitchRow("Snippets", isOn: $sync.preferences.snippets)
+                SwitchRow("Port forwards", isOn: $sync.preferences.portForwards)
+            }
+            .disabled(!sync.preferences.isOn)
+        }
     }
 }

@@ -20,6 +20,7 @@ struct RayonApp: App {
             NSLog(CommandLine.arguments.joined(separator: "\n"))
         #endif
         _ = RayonStore.shared
+        CloudSyncModel.shared.start()
 
         PortForwardBackend.shared.onError = { UIBridge.presentError(with: $0) }
         FileTransferInterface.uiHandler = MacFileTransferUIHandler()

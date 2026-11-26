@@ -25,6 +25,7 @@ struct mRayonApp: App {
 
         _ = LogRedirect.shared
         _ = RayonStore.shared
+        CloudSyncModel.shared.start()
 
         NSLog("static main completed")
     }
