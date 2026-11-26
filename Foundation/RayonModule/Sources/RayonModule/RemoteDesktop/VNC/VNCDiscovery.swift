@@ -8,7 +8,9 @@
 //  address DHCP hands out.
 //
 
+import dnssd
 import Foundation
+import Network
 
 /// One advertised screen-sharing service.
 public struct VNCDiscoveredHost: Identifiable, Equatable, Sendable {
@@ -41,10 +43,12 @@ public struct VNCDiscoveredHost: Identifiable, Equatable, Sendable {
     }
 }
 
-/// Browses `_rfb._tcp` while something shows the result. Browsing runs on the
-/// main run loop; start and stop from the main thread.
+/// Browses `_rfb._tcp` while something shows the result: an `NWBrowser`
+/// lists the services, and each is resolved to its host name and port
+/// with `DNSServiceResolve` (Network.framework resolves to addresses only).
+/// Start and stop from the main actor; every callback lands there.
 @MainActor
-public final class VNCDiscovery: NSObject, ObservableObject {
+public final class VNCDiscovery: ObservableObject {
     public static let shared = VNCDiscovery()
 
     @Published public private(set) var hosts: [VNCDiscoveredHost] = []
@@ -54,10 +58,9 @@ public final class VNCDiscovery: NSObject, ObservableObject {
     /// means little.
     @Published public private(set) var isSearching = false
 
-    private var browser: NetServiceBrowser?
-    /// Services found and being resolved, by name; kept so the resolve
-    /// callbacks have a live object.
-    private var services: [String: NetService] = [:]
+    private var browser: NWBrowser?
+    /// Services being resolved or resolved, by service name.
+    private var resolutions: [String: Resolution] = [:]
     private var watchers = 0
 
     /// Starts browsing for the first watcher.
@@ -65,13 +68,19 @@ public final class VNCDiscovery: NSObject, ObservableObject {
         watchers += 1
         guard browser == nil else { return }
         failure = nil
-        let browser = NetServiceBrowser()
-        browser.delegate = self
-        browser.searchForServices(ofType: "_rfb._tcp.", inDomain: "local.")
+        let browser = NWBrowser(for: .bonjour(type: "_rfb._tcp", domain: "local."), using: .tcp)
+        browser.stateUpdateHandler = { [weak self] state in
+            MainActor.assumeIsolated { self?.browserChanged(state) }
+        }
+        browser.browseResultsChangedHandler = { [weak self] results, _ in
+            MainActor.assumeIsolated { self?.resultsChanged(results) }
+        }
+        browser.start(queue: .main)
         self.browser = browser
         isSearching = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 6) { [weak self] in
-            MainActor.assumeIsolated { self?.isSearching = false }
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(6))
+            self?.isSearching = false
         }
     }
 
@@ -79,65 +88,94 @@ public final class VNCDiscovery: NSObject, ObservableObject {
     public func stop() {
         watchers = max(0, watchers - 1)
         guard watchers == 0 else { return }
-        browser?.stop()
+        browser?.cancel()
         browser = nil
-        services.values.forEach { $0.stop() }
-        services.removeAll()
+        resolutions.values.forEach { $0.cancel() }
+        resolutions.removeAll()
         hosts.removeAll()
     }
 
-    private func found(_ service: NetService) {
-        services.removeValue(forKey: service.name)?.stop()
-        services[service.name] = service
-        service.delegate = self
-        service.resolve(withTimeout: 10)
+    private func browserChanged(_ state: NWBrowser.State) {
+        // PolicyDenied: no local network access, or the service type is
+        // not declared in NSBonjourServices. Other waits (no network yet)
+        // resolve themselves.
+        let denied = NWError.dns(DNSServiceErrorType(kDNSServiceErr_PolicyDenied))
+        switch state {
+        case .waiting(denied), .failed(denied):
+            failure = "Rayon may not look on the local network. Allow it in System Settings › Privacy & Security › Local Network."
+        case let .failed(error):
+            failure = "Could not look for screen-sharing hosts (\(error.localizedDescription))."
+        default:
+            return
+        }
+        browser?.cancel()
+        browser = nil
     }
 
-    private func resolved(_ service: NetService) {
-        guard let hostName = service.hostName, service.port > 0 else { return }
+    private func resultsChanged(_ results: Set<NWBrowser.Result>) {
+        var services: [String: NWBrowser.Result] = [:]
+        for result in results {
+            if case let .service(name, _, _, _) = result.endpoint { services[name] = result }
+        }
+        for name in resolutions.keys where services[name] == nil {
+            resolutions.removeValue(forKey: name)?.cancel()
+            hosts.removeAll { $0.name == name }
+        }
+        for (name, result) in services where resolutions[name] == nil {
+            guard case let .service(_, type, domain, interface) = result.endpoint else { continue }
+            resolutions[name] = Resolution(
+                name: name, type: type, domain: domain,
+                interfaceIndex: interface.map { UInt32($0.index) } ?? 0
+            ) { [weak self] hostName, port in
+                self?.resolved(name: name, hostName: hostName, port: port)
+            }
+        }
+    }
+
+    private func resolved(name: String, hostName: String, port: Int) {
+        guard port > 0 else { return }
         let host = VNCDiscoveredHost(
-            name: service.name,
+            name: name,
             hostName: hostName.trimmingCharacters(in: CharacterSet(charactersIn: ".")),
-            port: service.port
+            port: port
         )
         hosts.removeAll { $0.name == host.name }
         hosts.append(host)
         hosts.sort { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
-
-    private func removed(_ service: NetService) {
-        services.removeValue(forKey: service.name)?.stop()
-        hosts.removeAll { $0.name == service.name }
-    }
 }
 
-// The browser and services are scheduled on the main run loop, so their
-// callbacks arrive on the main thread.
-extension VNCDiscovery: NetServiceBrowserDelegate, NetServiceDelegate {
-    public nonisolated func netServiceBrowser(_: NetServiceBrowser, didFind service: NetService, moreComing _: Bool) {
-        nonisolated(unsafe) let service = service
-        MainActor.assumeIsolated { found(service) }
-    }
+/// One `DNSServiceResolve`, answering on the main queue until cancelled.
+@MainActor
+private final class Resolution {
+    typealias Handler = @MainActor (_ hostName: String, _ port: Int) -> Void
 
-    public nonisolated func netServiceBrowser(_: NetServiceBrowser, didRemove service: NetService, moreComing _: Bool) {
-        nonisolated(unsafe) let service = service
-        MainActor.assumeIsolated { removed(service) }
-    }
+    private var reference: DNSServiceRef?
+    private let handler: Handler
 
-    public nonisolated func netServiceBrowser(_: NetServiceBrowser, didNotSearch errorDict: [String: NSNumber]) {
-        let code = errorDict[NetService.errorCode]?.intValue ?? 0
-        MainActor.assumeIsolated {
-            browser = nil
-            // -72008: the app may not browse (no local network access, or
-            // the service type is not declared in NSBonjourServices).
-            failure = code == -72008
-                ? "Rayon may not look on the local network. Allow it in System Settings › Privacy & Security › Local Network."
-                : "Could not look for screen-sharing hosts (\(code))."
+    init(name: String, type: String, domain: String, interfaceIndex: UInt32, handler: @escaping Handler) {
+        self.handler = handler
+        let context = Unmanaged.passUnretained(self).toOpaque()
+        let status = DNSServiceResolve(&reference, 0, interfaceIndex, name, type, domain, { _, _, _, error, _, hostTarget, port, _, _, context in
+            guard error == kDNSServiceErr_NoError, let hostTarget, let context else { return }
+            let hostName = String(cString: hostTarget)
+            MainActor.assumeIsolated {
+                let resolution = Unmanaged<Resolution>.fromOpaque(context).takeUnretainedValue()
+                resolution.handler(hostName, Int(UInt16(bigEndian: port)))
+            }
+        }, context)
+        guard status == kDNSServiceErr_NoError, let reference else {
+            self.reference = nil
+            return
         }
+        DNSServiceSetDispatchQueue(reference, .main)
     }
 
-    public nonisolated func netServiceDidResolveAddress(_ sender: NetService) {
-        nonisolated(unsafe) let sender = sender
-        MainActor.assumeIsolated { resolved(sender) }
+    /// Stops resolving. Call before releasing: the callback holds `self`
+    /// unretained, and deallocating the reference on the callback queue
+    /// guarantees no further callback.
+    func cancel() {
+        if let reference { DNSServiceRefDeallocate(reference) }
+        reference = nil
     }
 }
