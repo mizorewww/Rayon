@@ -11,6 +11,8 @@ import NIOCore
 public enum SSHCredential: Sendable {
     case password(String)
     case privateKey(SSHPrivateKey)
+    /// Each key the agent holds.
+    case agent(SSHAgent)
 }
 
 extension SSHCredential {
@@ -22,6 +24,8 @@ extension SSHCredential {
             return [.password(.init(password: password))]
         case let .privateKey(key):
             return try key.offers().map { .privateKey(.init(privateKey: $0)) }
+        case let .agent(agent):
+            return try agent.offers().map { .privateKey(.init(privateKey: $0)) }
         }
     }
 }

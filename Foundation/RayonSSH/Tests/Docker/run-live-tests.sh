@@ -31,6 +31,8 @@ ssh-keygen -q -t rsa -b 2048 -N 'key-passphrase' -C rsa-encrypted -f "$WORK/rsa-
 ssh-keygen -q -t ecdsa -b 384 -N 'key-passphrase' -C ecdsa-encrypted -f "$WORK/ecdsa-encrypted"
 ssh-keygen -q -t rsa -b 2048 -m PEM -N 'key-passphrase' -C rsa-pem-encrypted -f "$WORK/rsa-pem-encrypted"
 cat "$WORK"/*.pub > "$WORK/authorized_keys"
+# A key the servers do not know, for the agent to try first.
+ssh-keygen -q -t rsa -b 2048 -N '' -C rsa-unknown -f "$WORK/rsa-unknown"
 
 # The server is published on the host's loopback; the target is only on a
 # private network the server is also on.

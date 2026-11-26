@@ -259,7 +259,7 @@ public struct SSHPrivateKey: Sendable {
     private static let malformed = SSHError.unsupportedKey("The private key is damaged or incomplete.")
 }
 
-private extension ByteBuffer {
+extension ByteBuffer {
     mutating func readSSHText() -> String? {
         readLengthPrefixedSlice(as: UInt32.self).map { String(buffer: $0) }
     }

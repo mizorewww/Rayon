@@ -16,6 +16,8 @@ public enum SSHError: Error, Sendable, Equatable, LocalizedError {
     case connectionFailed(String)
     /// A private key could not be read.
     case unsupportedKey(String)
+    /// The SSH agent could not be reached or would not sign.
+    case agentUnavailable(String)
     /// The server refused to open a channel.
     case channelRejected(String)
     /// A command did not finish in time.
@@ -36,6 +38,8 @@ public enum SSHError: Error, Sendable, Equatable, LocalizedError {
         case let .connectionFailed(reason):
             reason
         case let .unsupportedKey(reason):
+            reason
+        case let .agentUnavailable(reason):
             reason
         case let .channelRejected(reason):
             reason

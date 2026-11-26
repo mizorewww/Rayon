@@ -92,6 +92,66 @@ final class SSHLiveTests: XCTestCase {
         XCTAssertThrowsError(try key("ed25519-encrypted", passphrase: "wrong"))
     }
 
+    /// An ssh-agent of this machine's, on a socket of its own, holding
+    /// `names`; stopped when the test ends.
+    private func agent(holding names: [String]) throws -> SSHAgent {
+        let socket = FileManager.default.temporaryDirectory.appendingPathComponent("rayon-agent-\(UUID().uuidString.prefix(8))").path
+        let daemon = Process()
+        daemon.executableURL = URL(fileURLWithPath: "/usr/bin/ssh-agent")
+        daemon.arguments = ["-D", "-a", socket]
+        daemon.standardOutput = FileHandle.nullDevice
+        try daemon.run()
+        addTeardownBlock {
+            daemon.terminate()
+            try? FileManager.default.removeItem(atPath: socket)
+        }
+        for _ in 0 ..< 50 where !FileManager.default.fileExists(atPath: socket) {
+            Thread.sleep(forTimeInterval: 0.1)
+        }
+        for name in names {
+            let add = Process()
+            add.executableURL = URL(fileURLWithPath: "/usr/bin/ssh-add")
+            add.arguments = ["-q", keys.appendingPathComponent(name).path]
+            add.environment = ["SSH_AUTH_SOCK": socket]
+            try add.run()
+            add.waitUntilExit()
+            XCTAssertEqual(add.terminationStatus, 0, name)
+        }
+        return SSHAgent(socketPath: socket)
+    }
+
+    func testTheAgentSignsWithEachKeyType() async throws {
+        for name in ["ed25519", "ecdsa", "rsa"] {
+            let agent = try agent(holding: [name])
+            XCTAssertEqual(try agent.identities().map(\.comment), [name])
+            let connection = try await connect([.agent(agent)])
+            let result = try await connection.execute("whoami")
+            XCTAssertEqual(String(decoding: result.output, as: UTF8.self), "rayon\n", name)
+            await connection.close()
+        }
+    }
+
+    func testTheAgentTriesEveryKeyItHolds() async throws {
+        // rsa-unknown is not in authorized_keys; the agent lists it first.
+        let agent = try agent(holding: ["rsa-unknown", "ecdsa"])
+        XCTAssertEqual(try agent.identities().count, 2)
+        let connection = try await connect([.agent(agent)])
+        await connection.close()
+    }
+
+    func testAnEmptyOrMissingAgent() async throws {
+        do {
+            _ = try await connect([.agent(agent(holding: []))])
+            XCTFail("signed in with no key")
+        } catch SSHError.authenticationFailed {}
+        do {
+            _ = try await connect([.agent(SSHAgent(socketPath: "/nonexistent/agent.sock"))])
+            XCTFail("signed in with no agent")
+        } catch let SSHError.agentUnavailable(reason) {
+            XCTAssertTrue(reason.contains("/nonexistent/agent.sock"), reason)
+        }
+    }
+
     func testAKeyIsTriedAfterAPasswordTheServerRefuses() async throws {
         let connection = try await connect([.password("wrong"), key("ed25519")])
         await connection.close()
