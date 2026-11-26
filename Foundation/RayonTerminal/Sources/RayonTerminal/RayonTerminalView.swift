@@ -29,9 +29,11 @@ public struct RayonTerminalView: Sendable {
         _ = session.platformView().performBindingAction(needle.isEmpty ? "end_search" : "search:\(needle)")
     }
 
-    /// Selects the next (or previous) match and scrolls it into view.
+    /// Selects the next match further down the output (or, `backwards`,
+    /// further up) and scrolls it into view. Ghostty searches from the
+    /// newest output back, so its `next` is the one above.
     @MainActor public func showNextMatch(backwards: Bool = false) {
-        _ = session.platformView().performBindingAction("navigate_search:\(backwards ? "previous" : "next")")
+        _ = session.platformView().performBindingAction("navigate_search:\(backwards ? "next" : "previous")")
     }
 
     @MainActor public func endSearch() {

@@ -249,6 +249,39 @@ final class NativeTerminalTests: XCTestCase {
         terminal.endSearch()
     }
 
+    /// The next match is further down the output, the previous one further
+    /// up, as in every find bar.
+    @MainActor
+    func testNextMatchIsFurtherDown() async throws {
+        let terminal = RayonTerminalView()
+        let window = TestHost(terminal.session.platformView())
+        defer { window.close() }
+        try await Task.sleep(for: .milliseconds(150))
+        let filler = { (tag: String) in (0..<120).map { "\(tag) \($0)\r\n" }.joined() }
+        terminal.write("needle-top\r\n" + filler("a") + "needle-middle\r\n" + filler("b") + "needle-bottom\r\n" + filler("c"))
+        XCTAssertTrue(terminal.session.backend.waitForPendingOutput())
+        func shows(_ text: String) -> Bool {
+            terminal.session.backend.readViewportText()?.contains(text) == true
+        }
+
+        terminal.search("needle-")
+        var atTop = false
+        for _ in 0..<50 where !atTop {
+            terminal.showNextMatch(backwards: true)
+            try await Task.sleep(for: .milliseconds(20))
+            atTop = shows("needle-top")
+        }
+        XCTAssertTrue(atTop, "Going up reaches the top match")
+        terminal.showNextMatch()
+        var down = false
+        for _ in 0..<50 where !down {
+            try await Task.sleep(for: .milliseconds(20))
+            down = shows("needle-middle")
+        }
+        XCTAssertTrue(down, "The next match from the top one is the one below it, not the last")
+        terminal.endSearch()
+    }
+
     @MainActor
     func testLastSessionReferenceMayBeReleasedBySSHWorker() async throws {
         let owner = SessionOwner()
