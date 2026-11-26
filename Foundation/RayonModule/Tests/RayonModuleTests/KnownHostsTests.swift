@@ -67,6 +67,17 @@ final class KnownHostsTests: XCTestCase {
         XCTAssertTrue(hosts.question(offering: rsa, host: "example.com", port: 22).isWarning, "trusted again, the key is this release's")
     }
 
+    /// A server that only has the key libssh2 saw keeps presenting it; a
+    /// later Ed25519 key is then as suspect as any other change.
+    func testAKeyAnOldReleaseSavedLosesItsGraceOnceItMatches() throws {
+        let ecdsa = KnownHosts.HostKey(type: "ecdsa-sha2-nistp256", key: Data([5]))
+        let name = KnownHosts.name(host: "example.com", port: 22)
+        try test.storage.saveKnownHost(KnownHostRecord(name: name, type: ecdsa.type, key: ecdsa.key, legacy: true))
+        XCTAssertEqual(hosts.status(of: ecdsa, host: "example.com", port: 22), .trusted)
+        XCTAssertEqual(test.storage.knownHost(named: name)?.legacy, false)
+        XCTAssertTrue(hosts.question(offering: first, host: "example.com", port: 22).isWarning)
+    }
+
     func testAKeyIsSavedPerAddressAndPort() {
         hosts.trust(first, host: "example.com", port: 22)
         XCTAssertEqual(hosts.status(of: first, host: "example.com", port: 2222), .unknown)

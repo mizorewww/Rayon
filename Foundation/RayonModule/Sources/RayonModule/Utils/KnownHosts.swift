@@ -23,10 +23,25 @@ public final class KnownHosts: Sendable {
         self.storage = storage
     }
 
-    /// Whether `offered` is the key saved for the address.
+    /// Whether `offered` is the key saved for the address. A key an older
+    /// release saved that the server still presents is this release's from
+    /// now on: its grace for an Ed25519 key covers only the first
+    /// connection after the upgrade, not one made months later by someone
+    /// answering in the server's place.
     public func status(of offered: HostKey, host: String, port: Int) -> SSHHostKeyStatus {
-        guard let saved = savedKey(host: host, port: port) else { return .unknown }
-        return saved == offered ? .trusted : .changed(saved: saved)
+        let name = Self.name(host: host, port: port)
+        guard var record = storage.knownHost(named: name) else { return .unknown }
+        let saved = HostKey(type: record.type, key: record.key)
+        guard saved == offered else { return .changed(saved: saved) }
+        if record.legacy {
+            record.legacy = false
+            do {
+                try storage.saveKnownHost(record)
+            } catch {
+                RayonStorage.logger.error("updating the host key of \(name) failed: \(error.localizedDescription)")
+            }
+        }
+        return .trusted
     }
 
     /// Saves `key` as the address's key, in place of any saved before; a
