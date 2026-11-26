@@ -98,7 +98,13 @@ public actor SSHConnection {
         let offers = try await NIOThreadPool.singleton.runIfActive {
             try credentials.flatMap { try $0.offers(agentWait: agentWait) }
         }
-        guard !offers.isEmpty else { throw SSHError.authenticationFailed }
+        // Nothing was offered, so the server was not asked: an empty agent
+        // is not the server turning the person down, and whoever reports
+        // it still checks that the server can be reached.
+        guard !offers.isEmpty else {
+            let usesAgent = credentials.contains { if case .agent = $0 { true } else { false } }
+            throw usesAgent ? SSHError.agentUnavailable("The SSH agent holds no keys.") : SSHError.authenticationFailed
+        }
         var lastError: Error = SSHError.authenticationFailed
         var serverVersion: String?
         for offer in offers {

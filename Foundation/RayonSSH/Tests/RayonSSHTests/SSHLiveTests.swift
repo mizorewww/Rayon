@@ -228,7 +228,11 @@ final class SSHLiveTests: XCTestCase {
         do {
             _ = try await connect([.agent(agent(holding: []))])
             XCTFail("signed in with no key")
-        } catch SSHError.authenticationFailed {}
+        } catch let SSHError.agentUnavailable(reason) {
+            // Not authenticationFailed: the server was never asked, so the
+            // app still checks whether it can be reached.
+            XCTAssertEqual(reason, "The SSH agent holds no keys.")
+        }
         do {
             _ = try await connect([.agent(SSHAgent(socketPath: "/nonexistent/agent.sock"))])
             XCTFail("signed in with no agent")
