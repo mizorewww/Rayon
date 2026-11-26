@@ -200,6 +200,23 @@ final class LegacyStoreImportTests: XCTestCase {
         }
     }
 
+    /// 2.8 set aside a value it could not read as "<key>.corrupt", and it
+    /// may be the only copy: one that opens is imported and removed, one
+    /// that does not is kept.
+    func testCopiesSetAsideBy28AreImportedOrKept() throws {
+        try load("v2.8")
+        defaults.set(defaults.data(forKey: LegacyStoreImport.Key.snippets), forKey: LegacyStoreImport.Key.snippets + ".corrupt")
+        defaults.removeObject(forKey: LegacyStoreImport.Key.snippets)
+        let unreadable = Data("RGCM2 not a sealed box".utf8)
+        defaults.set(unreadable, forKey: LegacyStoreImport.Key.identities + ".corrupt")
+
+        XCTAssertTrue(runImport())
+        XCTAssertEqual(storage.record(RDSnippet.self, id: snippetID)?.code, "uptime")
+        XCTAssertNotNil(storage.record(RDIdentity.self, id: identityID))
+        XCTAssertNil(defaults.object(forKey: LegacyStoreImport.Key.snippets + ".corrupt"))
+        XCTAssertEqual(defaults.data(forKey: LegacyStoreImport.Key.identities + ".corrupt"), unreadable)
+    }
+
     func testTheWrongKeyImportsNothing() throws {
         try load("v2.4")
         XCTAssertFalse(runImport(masterKey: "6F9619FF-8B86-D011-B42D-00C04FC964FF"))

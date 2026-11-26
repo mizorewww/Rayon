@@ -39,7 +39,7 @@ enum LegacyStoreImport {
         static let obsolete = [
             "machineRedacted", "openInterfaceAutomatically",
             "me.mizorewww.rayon.sync.settings", "me.mizorewww.rayon.debug.sync",
-        ] + sealed.map { $0 + ".corrupt" }
+        ]
     }
 
     /// The keychain items that held the master key: the name used since
@@ -80,13 +80,14 @@ enum LegacyStoreImport {
             return .blocked("\(lead): the key that protects them could not be read from the keychain. \(kept)")
         }
         let opener = Opener(masterKey: master)
+        let copies: [String]
         do {
-            try importRecords(from: defaults, opener: opener, into: storage)
+            copies = try importRecords(from: defaults, opener: opener, into: storage)
         } catch {
             RayonStorage.logger.error("legacy import failed: \(error.localizedDescription)")
             return .blocked("\(lead) (\(error.localizedDescription)). \(kept)")
         }
-        for key in Key.sealed + Key.obsolete {
+        for key in Key.sealed + Key.obsolete + copies {
             defaults.removeObject(forKey: key)
         }
         defaults.set(true, forKey: doneKey)
@@ -110,7 +111,8 @@ enum LegacyStoreImport {
         }
     }
 
-    private static func importRecords(from defaults: UserDefaults, opener: Opener, into storage: RayonStorage) throws {
+    /// Returns the keys of the copies 2.8 set aside that were imported.
+    private static func importRecords(from defaults: UserDefaults, opener: Opener, into storage: RayonStorage) throws -> [String] {
         /// A value that is there but cannot be read stops the import: the
         /// rest is not worth losing it for.
         func open<T: Decodable>(_ key: String, as _: T.Type) throws -> T? {
@@ -122,14 +124,31 @@ enum LegacyStoreImport {
             return value
         }
 
-        let machines = try open(Key.machines, as: MachineGroup.self)?.machines ?? []
-        let identities = try open(Key.identities, as: IdentityGroup.self)?.identities ?? []
-        let snippets = try open(Key.snippets, as: SnippetGroup.self)?.snippets ?? []
-        let forwards = try open(Key.portForwards, as: PortForwardGroup.self)?.forwards ?? []
-        var folders = try (open(Key.folders, as: FolderGroup.self)?.folders ?? []).map(\.folder)
-        let recent = try open(Key.recent, as: [RayonStore.RecentConnection].self)
+        /// 2.8 set a value it could not read aside under "<key>.corrupt" and
+        /// started the key afresh, so the copy may hold the only record of
+        /// what the user had. One that opens now is imported after the
+        /// value itself (whose records win); one that does not stays.
+        var copies: [String] = []
+        func openCopy<T: Decodable>(_ key: String, as type: T.Type) -> T? {
+            let copy = key + ".corrupt"
+            guard let value = try? open(copy, as: type) else { return nil }
+            copies.append(copy)
+            return value
+        }
+        func both<Group: Decodable, Element>(_ key: String, as type: Group.Type, _ elements: (Group) -> [Element]) throws -> [Element] {
+            try (open(key, as: type).map(elements) ?? []) + (openCopy(key, as: type).map(elements) ?? [])
+        }
+
+        var seenMachines = Set<UUID>()
+        let machines = try both(Key.machines, as: MachineGroup.self, \.machines).filter { seenMachines.insert($0.id).inserted }
+        let identities = try both(Key.identities, as: IdentityGroup.self, \.identities)
+        let snippets = try both(Key.snippets, as: SnippetGroup.self, \.snippets)
+        let forwards = try both(Key.portForwards, as: PortForwardGroup.self, \.forwards)
+        var folders = try both(Key.folders, as: FolderGroup.self, \.folders).map(\.folder)
+        let recent = try open(Key.recent, as: [RayonStore.RecentConnection].self) ?? openCopy(Key.recent, as: [RayonStore.RecentConnection].self)
         // Before 2.5 the host keys were a plain dictionary.
-        let hosts = try (defaults.object(forKey: Key.knownHosts) as? [String: String]) ?? open(Key.knownHosts, as: [String: String].self)
+        let ownHosts = try (defaults.object(forKey: Key.knownHosts) as? [String: String]) ?? open(Key.knownHosts, as: [String: String].self)
+        let hosts = (openCopy(Key.knownHosts, as: [String: String].self) ?? [:]).merging(ownHosts ?? [:]) { _, own in own }
 
         let folderIDs = addFolders(namedBy: machines, to: &folders)
 
@@ -152,13 +171,14 @@ enum LegacyStoreImport {
             if let recent, try handle.getValue(on: Column(named: "id").count(), fromTable: RecentConnectionRecord.tableName).intValue == 0 {
                 try handle.insert(recent.enumerated().map { $1.record(at: $0) }, intoTable: RecentConnectionRecord.tableName)
             }
-            for (name, line) in hosts ?? [:] {
+            for (name, line) in hosts {
                 let parts = line.split(separator: " ", maxSplits: 1)
                 guard parts.count == 2, let key = Data(base64Encoded: String(parts[1])) else { continue }
                 let host = KnownHostRecord(name: name, type: String(parts[0]), key: key, added: now)
                 try handle.insertOrIgnore([host], intoTable: KnownHostRecord.tableName)
             }
         }
+        return copies
     }
 
     /// A server named its folder; a name no folder records is a folder too.
