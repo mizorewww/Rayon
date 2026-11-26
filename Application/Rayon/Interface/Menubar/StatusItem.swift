@@ -29,8 +29,6 @@ final class MenubarStatusItem: NSObject, Identifiable, NSPopoverDelegate {
     private var outsideClickMonitor: Any?
 
     private var frameIndex = 0
-    private var currentInterval: Double = 0
-    private var animationTimer: Timer?
 
     static let frameNames = (0 ... 4).map { "cat_frame_\($0)" }
     static let crashFrameName = "cat_frame_crash"
@@ -68,15 +66,6 @@ final class MenubarStatusItem: NSObject, Identifiable, NSPopoverDelegate {
         debugPrint("\(self) \(#function)")
     }
 
-    enum CatSpeed: TimeInterval {
-        case light = 0.05
-        case fast = 0.1
-        case run = 0.25
-        case walk = 0.5
-        case hang = 1
-        case broken = -1
-    }
-
     @objc private func statusButtonClicked() {
         if NSApp.currentEvent?.type == .rightMouseUp || NSEvent.modifierFlags.contains(.control) {
             showContextMenu()
@@ -105,7 +94,10 @@ final class MenubarStatusItem: NSObject, Identifiable, NSPopoverDelegate {
         NSApp.terminate(nil)
     }
 
-    func updateDisplay(title: String, frameInterval: Double) {
+    /// Called once per monitor round, never on a timer: the cat takes one
+    /// step per reading while the server answers and lies down when it
+    /// does not.
+    func updateDisplay(title: String, reachable: Bool) {
         guard let button = statusItem.button else { return }
         if title.isEmpty {
             button.attributedTitle = NSAttributedString(string: "")
@@ -123,28 +115,12 @@ final class MenubarStatusItem: NSObject, Identifiable, NSPopoverDelegate {
                 ]
             )
         }
-        guard frameInterval != currentInterval else { return }
-        currentInterval = frameInterval
-        animationTimer?.invalidate()
-        animationTimer = nil
-        guard frameInterval > 0, !frames.isEmpty else {
+        guard reachable, !frames.isEmpty else {
             button.image = idleFrame
             return
         }
-        let timer = Timer(timeInterval: frameInterval, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated {
-                self?.advanceFrame()
-            }
-        }
-        RunLoop.main.add(timer, forMode: .common)
-        animationTimer = timer
-        advanceFrame()
-    }
-
-    private func advanceFrame() {
-        guard !frames.isEmpty else { return }
         frameIndex = (frameIndex + 1) % frames.count
-        statusItem.button?.image = frames[frameIndex]
+        button.image = frames[frameIndex]
     }
 
     func togglePopover() {
@@ -198,8 +174,6 @@ final class MenubarStatusItem: NSObject, Identifiable, NSPopoverDelegate {
     }
 
     func closeThisItem() {
-        animationTimer?.invalidate()
-        animationTimer = nil
         closePopover()
         NSStatusBar.system.removeStatusItem(statusItem)
         MonitorCenter.shared.release(session)
