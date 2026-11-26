@@ -10,8 +10,6 @@ RUN apk add --no-cache openssh openssh-sftp-server socat \
     'PasswordAuthentication yes' \
     'AllowTcpForwarding yes' \
     'Subsystem sftp internal-sftp' \
-    '# Citadel signs with an encrypted OpenSSH RSA key in SHA-1 only.' \
-    'PubkeyAcceptedAlgorithms +ssh-rsa' \
     >> /etc/ssh/sshd_config
 # On the container's loopback, for the forwarding tests: an echo service,
 # and one that greets and hangs up before the client is done.

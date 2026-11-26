@@ -23,9 +23,6 @@ public struct SSHPrivateKey: Sendable {
         case p384(P384.Signing.PrivateKey)
         case p521(P521.Signing.PrivateKey)
         case rsa(_RSA.Signing.PrivateKey)
-        /// A passphrase-protected OpenSSH RSA key: Citadel decrypts it but
-        /// only signs SHA-1 with what it reads, so only ssh-rsa is offered.
-        case sha1RSA(text: String, passphrase: Data)
     }
 
     let storage: Storage
@@ -57,8 +54,6 @@ public struct SSHPrivateKey: Sendable {
                 NIOSSHPrivateKey(custom: RSAUserKey<RSASHA256>(key)),
                 NIOSSHPrivateKey(custom: RSAUserKey<RSASHA1>(key)),
             ]
-        case let .sha1RSA(text, passphrase):
-            return try [NIOSSHPrivateKey(custom: Insecure.RSA.PrivateKey(sshRsa: text, decryptionKey: passphrase))]
         }
     }
 
@@ -74,40 +69,38 @@ public struct SSHPrivateKey: Sendable {
         let magic = Array("openssh-key-v1\0".utf8)
         guard buffer.readBytes(length: magic.count) == magic,
               let cipher = buffer.readSSHText(),
-              buffer.readSSHText() != nil, // kdf
-              buffer.readLengthPrefixedSlice(as: UInt32.self) != nil, // kdf options
+              let kdf = buffer.readSSHText(),
+              var kdfOptions = buffer.readLengthPrefixedSlice(as: UInt32.self),
               buffer.readInteger(as: UInt32.self) == 1,
               var publicKey = buffer.readLengthPrefixedSlice(as: UInt32.self),
               let type = publicKey.readSSHText(),
               var section = buffer.readLengthPrefixedSlice(as: UInt32.self)
         else { throw malformed }
 
-        guard cipher == "none" else {
+        if cipher != "none" {
             guard let passphrase else {
                 throw SSHError.unsupportedKey("The private key is protected by a passphrase. Enter it as the identity's password.")
             }
-            let secret = Data(passphrase.utf8)
-            do {
-                switch type {
-                case "ssh-ed25519":
-                    return try .ed25519(Curve25519.Signing.PrivateKey(sshEd25519: text, decryptionKey: secret))
-                case "ssh-rsa":
-                    _ = try Insecure.RSA.PrivateKey(sshRsa: text, decryptionKey: secret)
-                    return .sha1RSA(text: text, passphrase: secret)
-                default:
-                    throw SSHError.unsupportedKey("Passphrase-protected \(type) keys in OpenSSH format are not supported. Remove the passphrase (ssh-keygen -p) or use an Ed25519 key.")
-                }
-            } catch let error as SSHError {
-                throw error
-            } catch {
-                throw SSHError.unsupportedKey("The private key could not be decrypted. Check the identity's password, which is the key's passphrase.")
-            }
+            guard kdf == "bcrypt",
+                  let salt = kdfOptions.readLengthPrefixedSlice(as: UInt32.self),
+                  let rounds = kdfOptions.readInteger(as: UInt32.self)
+            else { throw SSHError.unsupportedKey("The key is encrypted with an unknown key derivation (\(kdf)).") }
+            let tag = buffer.readBytes(length: buffer.readableBytes) ?? []
+            let plain = try OpenSSHKeyCipher.decrypt(
+                Array(section.readableBytesView), tag: tag, cipher: cipher,
+                passphrase: Array(passphrase.utf8), salt: Array(salt.readableBytesView), rounds: rounds
+            )
+            section = ByteBuffer(bytes: plain)
         }
 
+        // The check integers match only when the passphrase was right.
         guard let check1 = section.readInteger(as: UInt32.self),
-              section.readInteger(as: UInt32.self) == check1,
-              section.readSSHText() == type
+              let check2 = section.readInteger(as: UInt32.self)
         else { throw malformed }
+        guard check1 == check2 else {
+            throw SSHError.unsupportedKey("The private key could not be decrypted. Check the identity's password, which is the key's passphrase.")
+        }
+        guard section.readSSHText() == type else { throw malformed }
         switch type {
         case "ssh-ed25519":
             guard section.readLengthPrefixedSlice(as: UInt32.self) != nil,

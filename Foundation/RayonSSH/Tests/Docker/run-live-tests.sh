@@ -28,6 +28,7 @@ ssh-keygen -q -t rsa -b 3072 -N '' -C rsa -f "$WORK/rsa"
 ssh-keygen -q -t rsa -b 2048 -m PEM -N '' -C rsa-pem -f "$WORK/rsa-pem"
 ssh-keygen -q -t ed25519 -N 'key-passphrase' -C ed25519-encrypted -f "$WORK/ed25519-encrypted"
 ssh-keygen -q -t rsa -b 2048 -N 'key-passphrase' -C rsa-encrypted -f "$WORK/rsa-encrypted"
+ssh-keygen -q -t ecdsa -b 384 -N 'key-passphrase' -C ecdsa-encrypted -f "$WORK/ecdsa-encrypted"
 ssh-keygen -q -t rsa -b 2048 -m PEM -N 'key-passphrase' -C rsa-pem-encrypted -f "$WORK/rsa-pem-encrypted"
 cat "$WORK"/*.pub > "$WORK/authorized_keys"
 

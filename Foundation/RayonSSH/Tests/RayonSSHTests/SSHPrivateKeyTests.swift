@@ -51,14 +51,30 @@ final class SSHPrivateKeyTests: XCTestCase {
     func testEncryptedOpenSSHKeys() throws {
         let ed25519 = try generate(["-t", "ed25519"], passphrase: "secret")
         XCTAssertEqual(try offers(ed25519, passphrase: "secret"), 1)
-        XCTAssertThrowsError(try offers(ed25519, passphrase: "wrong"))
+        XCTAssertThrowsError(try offers(ed25519, passphrase: "wrong")) { error in
+            XCTAssertTrue(error.localizedDescription.contains("could not be decrypted"), error.localizedDescription)
+        }
         XCTAssertThrowsError(try offers(ed25519)) { error in
             XCTAssertTrue(error.localizedDescription.contains("passphrase"), error.localizedDescription)
         }
         let rsa = try generate(["-t", "rsa", "-b", "2048"], passphrase: "secret")
-        XCTAssertEqual(try offers(rsa, passphrase: "secret"), 1, "Citadel signs these with SHA-1 only")
-        let ecdsa = try generate(["-t", "ecdsa"], passphrase: "secret")
-        XCTAssertThrowsError(try offers(ecdsa, passphrase: "secret")) { error in
+        XCTAssertEqual(try offers(rsa, passphrase: "secret"), 3, "rsa-sha2-512, rsa-sha2-256 and ssh-rsa")
+        for bits in ["256", "384", "521"] {
+            let ecdsa = try generate(["-t", "ecdsa", "-b", bits], passphrase: "secret")
+            XCTAssertEqual(try offers(ecdsa, passphrase: "secret"), 1, bits)
+            XCTAssertThrowsError(try offers(ecdsa, passphrase: "wrong"), bits)
+        }
+    }
+
+    /// Every cipher `ssh-keygen -Z` can write a key with.
+    func testEveryKeyCipher() throws {
+        for cipher in ["aes128-ctr", "aes192-ctr", "aes256-ctr", "aes128-cbc", "aes192-cbc", "aes256-cbc", "aes128-gcm@openssh.com", "aes256-gcm@openssh.com"] {
+            let key = try generate(["-t", "ecdsa", "-Z", cipher], passphrase: "secret")
+            XCTAssertEqual(try offers(key, passphrase: "secret"), 1, cipher)
+            XCTAssertThrowsError(try offers(key, passphrase: "wrong"), cipher)
+        }
+        let chacha = try generate(["-t", "ed25519", "-Z", "chacha20-poly1305@openssh.com"], passphrase: "secret")
+        XCTAssertThrowsError(try offers(chacha, passphrase: "secret")) { error in
             XCTAssertTrue(error.localizedDescription.contains("not supported"), error.localizedDescription)
         }
     }

@@ -77,6 +77,7 @@ final class SSHLiveTests: XCTestCase {
             ("rsa-pem", ""),
             ("ed25519-encrypted", "key-passphrase"),
             ("rsa-encrypted", "key-passphrase"),
+            ("ecdsa-encrypted", "key-passphrase"),
             ("rsa-pem-encrypted", "key-passphrase"),
         ]
         for (name, passphrase) in cases {
