@@ -39,15 +39,22 @@ jobs:
     outputs:
       run: ${{ steps.gate.outputs.run }}
     steps:
-      # Skip the push of the reviewer's own fix, which would otherwise review it again.
+      # Skip, with a notice rather than a failure, while the repository lacks the
+      # secrets the review needs; and skip the push of the reviewer's own fix,
+      # which would otherwise review it again.
       - id: gate
         env:
           GH_TOKEN: ${{ github.token }}
           ACTION: ${{ github.event.action }}
           SHA: ${{ github.event.pull_request.head.sha }}
+          HAS_CLAUDE: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+          HAS_MAINTAINER: ${{ secrets.MAINTAINER_TOKEN != '' }}
         run: |
           run=true
-          if [ "$ACTION" = synchronize ] &&
+          if [ "$HAS_CLAUDE" != true ] || [ "$HAS_MAINTAINER" != true ]; then
+            echo "::notice::Review skipped: set the CLAUDE_CODE_OAUTH_TOKEN and MAINTAINER_TOKEN secrets to turn it on."
+            run=false
+          elif [ "$ACTION" = synchronize ] &&
              [ "$(gh api "repos/$GITHUB_REPOSITORY/commits/$SHA" --jq .commit.committer.name)" = "claude[bot]" ]; then
             run=false
           fi
@@ -140,8 +147,8 @@ jobs:
 
             Judge the change against this repository's own rules: README, CONTRIBUTING.md,
             AGENTS.md or CLAUDE.md, and docs/ where present, and the existing code and tests.
-            This repository is the maintainer's fork of Lakr233/Rayon, carrying the maintainer's own
-            changes; a change meant for Lakr233/Rayon itself belongs there.
+            This repository is Rayon itself: its original author, Lakr233, transferred the project
+            and its artwork to the maintainer, who develops it here.
             Look for, most severe first: correctness bugs with the concrete input that breaks;
             security problems; behavior changes the docs do not describe; weakened or deleted
             tests; missing regression tests; docs or CHANGELOG out of step.
@@ -154,8 +161,7 @@ jobs:
             Choose `action`. We do not wait for authors: a pull request worth having is finished
             and merged by us now.
             - "close" (only if you may): the pull request is not needed: spam or empty changes;
-              anything unrelated to this project; changes meant for Lakr233/Rayon rather than this
-              fork; changes already merged or duplicated by an
+              anything unrelated to this project; changes already merged or duplicated by an
               open PR; behavior that is already correct, so the change only rewords, reformats or
               churns code; new features, integrations or services outside the project's scope;
               or a purpose that contradicts the project's documented rules or direction. `summary` thanks the author, states the
