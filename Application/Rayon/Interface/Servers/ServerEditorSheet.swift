@@ -418,28 +418,22 @@ struct ServerEditorSheet: View {
         let draft = draft
         let chosen = identity.flatMap { store.identity($0) }
         let candidates = store.identitiesForAutoAuth
+        let timeout = store.timeoutNumber
         Task {
-            let outcome = await ServerConnectionCheck.run(
-                draft,
-                identity: chosen,
-                candidates: candidates,
-                timeout: RayonStore.shared.timeoutNumber
-            )
-            await MainActor.run {
-                connecting = false
-                if case let .unreachable(refusal) = outcome {
-                    error = refusal ?? "Could not reach \(host) on port \(port)."
-                } else if case let .authenticated(authenticatedWith, banner) = outcome {
-                    finishCreation(banner: banner, identity: authenticatedWith)
-                } else if chosen != nil {
-                    error = "The selected identity could not sign in to \(host)."
-                } else {
-                    error = "No identity that authenticates automatically could sign in. Choose an identity."
-                    IdentityPickerPanel.present { picked in
-                        guard let picked else { return }
-                        identity = picked
-                        createAndConnect()
-                    }
+            let outcome = await ServerConnectionCheck.run(draft, identity: chosen, candidates: candidates, timeout: timeout)
+            connecting = false
+            if case let .unreachable(refusal) = outcome {
+                error = refusal ?? "Could not reach \(host) on port \(port)."
+            } else if case let .authenticated(authenticatedWith, banner) = outcome {
+                finishCreation(banner: banner, identity: authenticatedWith)
+            } else if chosen != nil {
+                error = "The selected identity could not sign in to \(host)."
+            } else {
+                error = "No identity that authenticates automatically could sign in. Choose an identity."
+                IdentityPickerPanel.present { picked in
+                    guard let picked else { return }
+                    identity = picked
+                    createAndConnect()
                 }
             }
         }

@@ -439,40 +439,31 @@ struct EditMachineView: View {
         let port = remotePort
         let chosen = associatedIdentity.flatMap { RayonStore.shared.identity($0) }
         let candidates = RayonStore.shared.identitiesForAutoAuth
+        let timeout = RayonStore.shared.timeoutNumber
         Task {
-            let outcome = await ServerConnectionCheck.run(
-                draft,
-                identity: chosen,
-                candidates: candidates,
-                timeout: RayonStore.shared.timeoutNumber
-            )
-            await MainActor.run {
-                connecting = false
-                switch outcome {
-                case let .unreachable(refusal):
-                    connectError = refusal ?? "Could not reach \(host) on port \(port)."
-                case let .authenticated(identity, banner):
-                    var created = draft
-                    created.associatedIdentity = identity
-                    created.lastBanner = banner
-                    created.lastConnection = Date()
-                    RayonStore.shared.save(created)
-                    dismiss()
-                    // The terminal waits for this sheet to go.
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        TerminalManager.shared.begin(for: created.id)
-                    }
-                case .rejected:
-                    if chosen != nil {
-                        connectError = "The selected identity could not sign in to \(host)."
-                    } else {
-                        connectError = "No identity that authenticates automatically could sign in. Choose an identity."
-                        Task { @MainActor in
-                            guard let picked = await RayonUtil.selectIdentity() else { return }
-                            associatedIdentity = picked
-                            createAndConnect()
-                        }
-                    }
+            let outcome = await ServerConnectionCheck.run(draft, identity: chosen, candidates: candidates, timeout: timeout)
+            connecting = false
+            switch outcome {
+            case let .unreachable(refusal):
+                connectError = refusal ?? "Could not reach \(host) on port \(port)."
+            case let .authenticated(identity, banner):
+                var created = draft
+                created.associatedIdentity = identity
+                created.lastBanner = banner
+                created.lastConnection = Date()
+                RayonStore.shared.save(created)
+                dismiss()
+                // The terminal waits for this sheet to go.
+                try? await Task.sleep(for: .milliseconds(500))
+                TerminalManager.shared.begin(for: created.id)
+            case .rejected:
+                if chosen != nil {
+                    connectError = "The selected identity could not sign in to \(host)."
+                } else {
+                    connectError = "No identity that authenticates automatically could sign in. Choose an identity."
+                    guard let picked = await RayonUtil.selectIdentity() else { return }
+                    associatedIdentity = picked
+                    createAndConnect()
                 }
             }
         }
