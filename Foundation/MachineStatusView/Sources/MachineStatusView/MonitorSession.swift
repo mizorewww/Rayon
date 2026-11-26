@@ -250,11 +250,13 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
                     // takes the pool's connection again, a new one if this
                     // one has dropped.
                     var linkAnswers = connection.isActive
-                    // A server that runs no command at all (paused, or a
+                    // A server that does not answer at all (paused, or a
                     // link that has not noticed it dropped) is out of
-                    // reach, not one without a POSIX shell.
+                    // reach, not one without a POSIX shell. Asked without
+                    // running anything: an account that may not run
+                    // commands (internal-sftp, git-shell) answers too.
                     if !hasReading, linkAnswers {
-                        linkAnswers = (try? await connection.execute("exit", timeout: .seconds(10))) != nil
+                        linkAnswers = await connection.answers(within: .seconds(10))
                     }
                     lease?.release()
                     lease = nil

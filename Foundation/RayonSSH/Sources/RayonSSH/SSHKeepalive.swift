@@ -69,11 +69,14 @@ final class SSHKeepalive: ChannelInboundHandler, RemovableChannelHandler {
         schedule(context)
     }
 
-    /// swift-nio-ssh sends only TCP-forwarding global requests, so the ask
-    /// is to cancel a forward that does not exist; servers answer it with a
-    /// refusal, which is all the reply needed.
     private func ping(_ context: ChannelHandlerContext) {
         guard let ssh = try? context.pipeline.syncOperations.handler(type: NIOSSHHandler.self) else { return }
-        ssh.sendTCPForwardingRequest(.cancel(host: "keepalive@rayon", port: 0), promise: nil)
+        ssh.sendTCPForwardingRequest(Self.ask, promise: nil)
     }
+
+    /// swift-nio-ssh sends only TCP-forwarding global requests, so the ask
+    /// is to cancel a forward that does not exist; servers answer it with a
+    /// refusal, which is all the reply needed. It runs nothing on the
+    /// server, so an account that may not run commands answers it too.
+    static let ask = GlobalRequest.TCPForwardingRequest.cancel(host: "keepalive@rayon", port: 0)
 }

@@ -253,6 +253,37 @@ public actor SSHConnection {
         channel.isActive
     }
 
+    /// Whether the server answers the keepalive's ask within `timeout`.
+    /// Nothing runs on the server, so an account restricted to SFTP or
+    /// git-shell answers as well as any: only a server out of reach does not.
+    public nonisolated func answers(within timeout: Duration) async -> Bool {
+        let channel = channel
+        let eventLoop = channel.eventLoop
+        let reply = eventLoop.makePromise(of: Void.self)
+        let deadline = eventLoop.scheduleTask(in: TimeAmount(timeout)) { reply.fail(SSHError.timedOut) }
+        reply.futureResult.whenComplete { _ in deadline.cancel() }
+        channel.closeFuture.whenComplete { _ in reply.fail(SSHError.disconnected) }
+        eventLoop.execute {
+            guard let ssh = try? channel.pipeline.syncOperations.handler(type: NIOSSHHandler.self) else {
+                reply.fail(SSHError.disconnected)
+                return
+            }
+            let answer = eventLoop.makePromise(of: GlobalRequest.TCPForwardingResponse?.self)
+            ssh.sendTCPForwardingRequest(SSHKeepalive.ask, promise: answer)
+            answer.futureResult.whenComplete { result in
+                switch result {
+                case .success:
+                    reply.succeed()
+                case let .failure(error as NIOSSHError) where error.type == .globalRequestRefused:
+                    reply.succeed()
+                case let .failure(error):
+                    reply.fail(error)
+                }
+            }
+        }
+        return (try? await reply.futureResult.get()) != nil
+    }
+
     /// Completes when the connection closes, for whatever reason.
     public nonisolated var closed: EventLoopFuture<Void> {
         channel.closeFuture

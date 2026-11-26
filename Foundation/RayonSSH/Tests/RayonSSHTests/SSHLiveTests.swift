@@ -37,6 +37,7 @@ final class SSHLiveTests: XCTestCase {
 
     private func connect(
         _ credentials: [SSHCredential],
+        username: String? = nil,
         host: String = "127.0.0.1",
         port: Int? = nil,
         transport: SSHTransport = .tcp,
@@ -45,7 +46,7 @@ final class SSHLiveTests: XCTestCase {
         try await SSHConnection.connect(.init(
             host: host,
             port: port ?? self.port,
-            username: user,
+            username: username ?? user,
             credentials: credentials,
             transport: transport,
             timeout: .seconds(10),
@@ -731,6 +732,22 @@ final class SSHLiveTests: XCTestCase {
             _ = try await connection.execute("true")
             XCTFail("a command ran on a closed connection")
         } catch SSHError.disconnected {}
+    }
+
+    /// An account that may run no command (ForceCommand internal-sftp)
+    /// still answers the keepalive's ask; only a frozen server does not.
+    func testAnAccountThatRunsNoCommandStillAnswers() async throws {
+        let connection = try await connect([.password(password)], username: "sftponly")
+        let ran = try? await connection.execute("exit", timeout: .seconds(2))
+        XCTAssertNotEqual(ran?.status, 0, "the account ran a command")
+        let answers = await connection.answers(within: .seconds(5))
+        XCTAssertTrue(answers)
+        try freezeServer()
+        let started = ContinuousClock.now
+        let frozenAnswers = await connection.answers(within: .seconds(2))
+        XCTAssertFalse(frozenAnswers)
+        XCTAssertLessThan(ContinuousClock.now - started, .seconds(4))
+        await connection.close()
     }
 
     func testOpeningAChannelOnAFrozenServerEnds() async throws {
