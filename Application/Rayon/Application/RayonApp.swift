@@ -20,7 +20,6 @@ struct RayonApp: App {
             NSLog(CommandLine.arguments.joined(separator: "\n"))
         #endif
         _ = RayonStore.shared
-        CloudSync.shared.start()
 
         PortForwardBackend.shared.onError = { UIBridge.presentError(with: $0) }
         FileTransferInterface.uiHandler = MacFileTransferUIHandler()
@@ -207,17 +206,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         AppearancePreference.applyStored()
         RayonTerminalView.setCopyOnSelect(RayonStore.shared.terminalCopyOnSelect)
         RayonTerminalView.setClipboardSharing(RayonStore.shared.terminalClipboardSharing)
-        // The appearance and copy on select may come from another device,
-        // through iCloud.
-        windowObservers.append(
-            NotificationCenter.default.addObserver(forName: CloudSync.settingsDidChange, object: nil, queue: .main) { _ in
-                MainActor.assumeIsolated {
-                    AppearancePreference.applyStored()
-                    RayonTerminalView.setCopyOnSelect(RayonStore.shared.terminalCopyOnSelect)
-                    RayonTerminalView.setClipboardSharing(RayonStore.shared.terminalClipboardSharing)
-                }
-            }
-        )
         installShortcutMonitor()
         installWindowPolicyObservers()
         MenubarTool.shared.restore()

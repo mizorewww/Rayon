@@ -25,7 +25,6 @@ struct mRayonApp: App {
 
         _ = LogRedirect.shared
         _ = RayonStore.shared
-        CloudSync.shared.start()
 
         NSLog("static main completed")
     }
@@ -57,13 +56,6 @@ struct mRayonApp: App {
                 }
                 .onChange(of: store.licenseAgreed) { _ in
                     checkAgreement()
-                }
-                // The appearance and copy on select may come from another
-                // device, through iCloud.
-                .onReceive(NotificationCenter.default.publisher(for: CloudSync.settingsDidChange)) { _ in
-                    AppearancePreference.applyStored()
-                    RayonTerminalView.setCopyOnSelect(store.terminalCopyOnSelect)
-                    RayonTerminalView.setClipboardSharing(store.terminalClipboardSharing)
                 }
         }
     }

@@ -28,9 +28,6 @@ struct SettingView: View {
                 ConfigHostSettingsSection(id: "general.recent", keywords: "recent servers history quick connect commands record remember") {
                     RecentSettings()
                 },
-                ConfigHostSettingsSection(id: "general.sync", keywords: "icloud sync cloud encrypted passphrase servers identities credentials devices") {
-                    CloudSyncSettings()
-                },
                 ConfigHostSettingsSection(id: "general.data", keywords: "data container files log diagnostics backup export import restore ssh config openssh archive") {
                     DataSettings()
                 },
