@@ -257,8 +257,33 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
         }
     }
 
+    /// The folders shown before and after this one, for Back and Forward.
+    @Published public private(set) var history = FolderHistory()
+
+    public var canGoBack: Bool { history.canGoBack }
+    public var canGoForward: Bool { history.canGoForward }
+
     public func navigate(path: String) {
         guard connectionAvailableCheckPassed() else { return }
+        history.visit(from: currentDir, to: path)
+        currentDir = path
+        loadCurrentFileList()
+    }
+
+    /// Shows the folder shown before this one.
+    public func goBack() {
+        guard canGoBack, connectionAvailableCheckPassed(),
+              let path = history.goBack(from: currentDir)
+        else { return }
+        currentDir = path
+        loadCurrentFileList()
+    }
+
+    /// Shows the folder that Back left.
+    public func goForward() {
+        guard canGoForward, connectionAvailableCheckPassed(),
+              let path = history.goForward(from: currentDir)
+        else { return }
         currentDir = path
         loadCurrentFileList()
     }

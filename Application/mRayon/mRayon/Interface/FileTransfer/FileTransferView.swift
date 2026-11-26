@@ -86,6 +86,12 @@ struct FileTransferView: View {
     /// iPad hardware keyboard: the Mac's Files shortcuts.
     private var keyboardShortcuts: some View {
         Group {
+            Button("Back") { context.goBack() }
+                .keyboardShortcut("[", modifiers: .command)
+                .disabled(!context.canGoBack || busy || !context.connected)
+            Button("Forward") { context.goForward() }
+                .keyboardShortcut("]", modifiers: .command)
+                .disabled(!context.canGoForward || busy || !context.connected)
             Button("Enclosing Folder") { goUp() }
                 .keyboardShortcut(.upArrow, modifiers: .command)
                 .disabled(context.currentUrl.pathComponents.count <= 1 || busy || !context.connected)
@@ -185,6 +191,18 @@ struct FileTransferView: View {
     var bottomToolbar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack {
+                Button { context.goBack() } label: {
+                    Label("Back", systemImage: "chevron.left")
+                        .labelStyle(.iconOnly)
+                }
+                .buttonStyle(.rx(size: .small))
+                .disabled(!context.connected || !context.canGoBack)
+                Button { context.goForward() } label: {
+                    Label("Forward", systemImage: "chevron.right")
+                        .labelStyle(.iconOnly)
+                }
+                .buttonStyle(.rx(size: .small))
+                .disabled(!context.connected || !context.canGoForward)
                 Button { goUp() } label: {
                     Label("Up", systemImage: "arrow.up")
                 }
@@ -360,9 +378,7 @@ struct FileTransferView: View {
         while url.pathComponents.count > cnt, !url.pathComponents.isEmpty {
             url.deleteLastPathComponent()
         }
-        debugPrint(url.path)
-        context.currentDir = url.path
-        context.loadCurrentFileList()
+        context.navigate(path: url.path)
     }
 
     struct RemoteFileElement: View {
