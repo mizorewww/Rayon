@@ -5,24 +5,8 @@
 //  Created by Lakr Aream on 2022/2/12.
 //
 
-import Combine
 import Foundation
 import NSRemoteShell
-
-/// Mirror of RayonModule's `onMainThread`; MachineStatus sits below
-/// RayonModule in the package graph and cannot import it.
-/// - Parameter run: the job to be fired on the main thread
-func onMainThread(delay: Double = 0, run: @escaping () -> Void) {
-    // Preserve the legacy model callbacks without claiming the models are Sendable.
-    nonisolated(unsafe) let run = run
-    guard delay == 0, Thread.isMainThread else {
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-            run()
-        }
-        return
-    }
-    run()
-}
 
 /// Hands a value out of a @Sendable dispatch block without capturing a
 /// var, which Swift 6 diagnoses.
@@ -47,9 +31,22 @@ private final class ConcurrentValue<Value>: @unchecked Sendable {
     }
 }
 
-public class ServerStatus: ObservableObject, Equatable {
-    public init() {}
+/// One round of a server's readings. A value, so a monitor publishes a
+/// whole round at once and views redraw once per round.
+public struct ServerStatus: Equatable, Sendable {
+    public var processor: ProcessorInfo = .init()
+    public var fileSystem: FileSystemInfo = .init()
+    public var memory: MemoryInfo = .init()
+    public var system: SystemInfo = .init()
+    public var network: NetworkInfo = .init()
+    public var processes: TopProcessesInfo = .init()
+    /// Most servers have no GPU.
+    public var graphics: GraphicsInfo?
 
+    public init() {}
+}
+
+extension ServerStatus {
     /// The merged monitor script echoes this marker on its own line ahead
     /// of each section; `ProcParsers.splitMonitorSections` only opens a
     /// section on a full-line match, which kernel /proc payloads, df rows
@@ -146,60 +143,40 @@ public class ServerStatus: ObservableObject, Equatable {
         return result
     }
 
-    // Not @Published on purpose: a refresh replaces every group in one
-    // batch and sends a single objectWillChange (see requestInfoAndWait),
-    // where six per-property publishes used to redraw every card six
-    // times per round.
-    public var processor: ProcessorInfo = .init()
-    public var fileSystem: FileSystemInfo = .init()
-    public var memory: MemoryInfo = .init()
-    public var system: SystemInfo = .init()
-    public var network: NetworkInfo = .init()
-    public var processes: TopProcessesInfo = .init()
+}
 
-    // not all server have gpu, bro
-    public var graphics: GraphicsInfo? = nil
-
-    public static func == (lhs: ServerStatus, rhs: ServerStatus) -> Bool {
-        lhs.processor == rhs.processor &&
-            lhs.fileSystem == rhs.fileSystem &&
-            lhs.memory == rhs.memory &&
-            lhs.system == rhs.system &&
-            lhs.network == rhs.network &&
-            lhs.processes == rhs.processes &&
-            lhs.graphics == rhs.graphics
-    }
-
+/// Reads rounds of `ServerStatus` from one connection. It remembers what
+/// cannot change while the connection stays up, so call
+/// `resetSessionStatics` after a reconnect. Not thread-safe: one monitor
+/// loop owns it and calls it serially.
+public final class ServerStatusSampler {
     private static let queue = DispatchQueue(label: "me.mizorewww.rayon.info", attributes: .concurrent)
 
-    /// Hostname and os-release cannot change while a connection stays up,
-    /// so they are read once and reused until the monitor reports a
-    /// reconnect via `resetSessionStatics`.
-    private let staticsLock = NSLock()
+    /// Hostname and os-release, read once per connection.
     private var sessionHostname: String?
     private var sessionReleaseName: String?
 
-    /// Drops the once-per-connection static readings so the next refresh
-    /// pulls them again.
+    public init() {}
+
+    /// Drops the once-per-connection readings so the next round pulls
+    /// them again.
     public func resetSessionStatics() {
-        staticsLock.lock()
         sessionHostname = nil
         sessionReleaseName = nil
-        staticsLock.unlock()
     }
 
     /// Runs the merged monitor script and the GPU probe on two channels,
     /// then parses every section on its own: one section going missing
     /// (a hung `nvidia-smi`, an unsupported system probe) empties only its
     /// model. `timeout` bounds each channel so a hung probe cannot freeze
-    /// the monitor loop forever.
-    public func requestInfoAndWait(with remote: NSRemoteShell, timeout: Double) {
+    /// the monitor loop forever. Blocks; nil when the round produced no
+    /// reading at all (a dropped connection), which must not be shown or
+    /// recorded as zeros.
+    public func sample(with remote: NSRemoteShell, timeout: Double) -> ServerStatus? {
         // The shell multiplexes channels internally; claiming it Sendable
         // is for the compiler, like the legacy model callbacks.
         nonisolated(unsafe) let remote = remote
-        staticsLock.lock()
         let includeStatic = sessionHostname == nil || sessionReleaseName == nil
-        staticsLock.unlock()
         let group = DispatchGroup()
         let queue = Self.queue
 
@@ -207,87 +184,71 @@ public class ServerStatus: ObservableObject, Equatable {
         group.enter()
         queue.async {
             defer { group.leave() }
-            mergedOutput.store(Self.downloadResultFrom(shell: remote, command: Self.monitorCommand(includeStatic: includeStatic), timeout: timeout))
+            mergedOutput.store(ServerStatus.downloadResultFrom(shell: remote, command: ServerStatus.monitorCommand(includeStatic: includeStatic), timeout: timeout))
         }
 
-        let graphicsResult = ConcurrentValue<GraphicsInfo?>(nil)
+        let graphicsResult = ConcurrentValue<ServerStatus.GraphicsInfo?>(nil)
         group.enter()
         queue.async {
             defer { group.leave() }
-            graphicsResult.store(GraphicsInfo(withRemote: remote, timeout: timeout))
+            graphicsResult.store(ServerStatus.GraphicsInfo(withRemote: remote, timeout: timeout))
         }
 
         group.wait()
 
         let sections = ProcParsers.splitMonitorSections(mergedOutput.load())
-        let isDarwin = sections["platform"]?.trimmingCharacters(in: .whitespacesAndNewlines) == "Darwin"
+        guard let platform = sections["platform"]?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !platform.isEmpty
+        else {
+            return nil
+        }
+        let isDarwin = platform == "Darwin"
         if includeStatic {
             // Only a non-empty reading is cached; a failed probe is retried
             // on the next round instead of sticking a placeholder.
             let hostname = (sections["hostname"] ?? "").replacingOccurrences(of: "\n", with: "")
             let releasePayload = (sections["os-release"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            staticsLock.lock()
             if !hostname.isEmpty { sessionHostname = hostname }
             if !releasePayload.isEmpty {
                 sessionReleaseName = isDarwin
                     ? ProcParsers.parseDarwinReleaseName(releasePayload)
                     : ProcParsers.parseOsReleaseName(releasePayload)
             }
-            staticsLock.unlock()
         }
-        staticsLock.lock()
-        let hostname = sessionHostname ?? ""
-        let releaseName = sessionReleaseName ?? ""
-        staticsLock.unlock()
 
         let tsBefore = ProcParsers.parseUptime(sections["ts-a"] ?? "")
         let tsAfter = ProcParsers.parseUptime(sections["ts-b"] ?? "")
         let elapsed = (tsAfter > tsBefore && tsBefore > 0) ? max(0.5, tsAfter - tsBefore) : 1.0
 
-        let processor: ProcessorInfo
-        let network: NetworkInfo
-        let memory: MemoryInfo
-        let load: SystemLoadInternal
+        var status = ServerStatus()
+        let load: ServerStatus.SystemLoadInternal
         let uptime: Double
         if isDarwin {
-            processor = ProcessorInfo(darwinTop: sections["darwin-top"]) ?? .init()
-            network = NetworkInfo(netstatBefore: sections["net-a"], netstatAfter: sections["net-b"], interval: elapsed) ?? .init()
-            memory = MemoryInfo(darwinMemory: sections["mem"] ?? "")
+            status.processor = ServerStatus.ProcessorInfo(darwinTop: sections["darwin-top"]) ?? .init()
+            status.network = ServerStatus.NetworkInfo(netstatBefore: sections["net-a"], netstatAfter: sections["net-b"], interval: elapsed) ?? .init()
+            status.memory = ServerStatus.MemoryInfo(darwinMemory: sections["mem"] ?? "")
             load = ProcParsers.parseDarwinTopLoad(sections["darwin-top"] ?? "")
             uptime = ProcParsers.parseDarwinUptime(sections["uptime"] ?? "")
         } else {
-            processor = ProcessorInfo(statBefore: sections["cpu-a"], statAfter: sections["cpu-b"]) ?? .init()
-            network = NetworkInfo(netDevBefore: sections["net-a"], netDevAfter: sections["net-b"], interval: elapsed) ?? .init()
-            memory = MemoryInfo(meminfo: sections["mem"] ?? "")
+            status.processor = ServerStatus.ProcessorInfo(statBefore: sections["cpu-a"], statAfter: sections["cpu-b"]) ?? .init()
+            status.network = ServerStatus.NetworkInfo(netDevBefore: sections["net-a"], netDevAfter: sections["net-b"], interval: elapsed) ?? .init()
+            status.memory = ServerStatus.MemoryInfo(meminfo: sections["mem"] ?? "")
             load = ProcParsers.parseLoadavg(sections["loadavg"] ?? "")
             uptime = ProcParsers.parseUptime(sections["uptime"] ?? "")
         }
-        let fileSystem = FileSystemInfo(dfPk: sections["df"] ?? "")
-        let processes = TopProcessesInfo(cpuSection: sections["procs-cpu"] ?? "", memorySection: sections["procs-mem"] ?? "")
-        let system = SystemInfo(
-            release: releaseName,
+        status.fileSystem = ServerStatus.FileSystemInfo(dfPk: sections["df"] ?? "")
+        status.processes = ServerStatus.TopProcessesInfo(cpuSection: sections["procs-cpu"] ?? "", memorySection: sections["procs-mem"] ?? "")
+        status.system = ServerStatus.SystemInfo(
+            release: sessionReleaseName ?? "",
             uptimeInSec: uptime,
-            hostname: hostname,
+            hostname: sessionHostname ?? "",
             runningProcs: load.runningProcess,
             totalProcs: load.totalProcess,
             load1: load.load1avg,
             load5: load.load5avg,
             load15: load.load15avg
         )
-        let graphics = graphicsResult.load()
-
-        onMainThread { [weak self] in
-            guard let self else { return }
-            // One publish per refresh: the whole batch lands behind a
-            // single objectWillChange.
-            objectWillChange.send()
-            self.processor = processor
-            self.fileSystem = fileSystem
-            self.memory = memory
-            self.system = system
-            self.network = network
-            self.processes = processes
-            self.graphics = graphics
-        }
+        status.graphics = graphicsResult.load()
+        return status
     }
 }

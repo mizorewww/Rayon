@@ -9,7 +9,7 @@ import Foundation
 
 public extension ServerStatus {
     /// 服务器 CPU 信息
-    struct ProcessorInfo: Codable, Equatable {
+    struct ProcessorInfo: Codable, Equatable, Sendable {
         public var summary: ProcessPercentInfo
         public var cores: [ProcessPercentInfo]
         public init() {
@@ -88,7 +88,7 @@ public extension ServerStatus {
     }
 
     /// 服务器 CPU 信息 这里全部是百分比
-    struct ProcessPercentInfo: Codable, Equatable, Identifiable {
+    struct ProcessPercentInfo: Codable, Equatable, Identifiable, Sendable {
         /// Stable across refreshes: the kernel names cores cpu0…cpuN.
         public var id: String { name }
 

@@ -9,10 +9,10 @@ import Foundation
 
 public extension ServerStatus {
     /// 服务器 NET 信息
-    struct NetworkInfo: Codable, Equatable, Hashable {
+    struct NetworkInfo: Codable, Equatable, Hashable, Sendable {
         public let elements: [NetworkInfoElement]
 
-        public struct NetworkInfoElement: Codable, Equatable, Hashable, Identifiable {
+        public struct NetworkInfoElement: Codable, Equatable, Hashable, Identifiable, Sendable {
             /// Stable across refreshes: the parser keeps one row per device.
             public var id: String { device }
 
