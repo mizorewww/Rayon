@@ -2,7 +2,7 @@
 //  FileTransferPage.swift
 //  Rayon (macOS)
 //
-//  SFTP inside the main window: Up, breadcrumb, Go to Folder, filter, Reload,
+//  SFTP inside the main window: Back, Forward, Up, breadcrumb, Go to Folder, filter, Reload,
 //  New Folder, Upload, Download. Table: name, size, modified, permissions, owner.
 //  Transfer card with speed and Cancel. Drag files in to upload. Double-click a
 //  file to edit it.
@@ -15,11 +15,13 @@ import UniformTypeIdentifiers
 struct FileTransferPage: View {
     @ObservedObject var context: FileTransferContext
     @EnvironmentObject var store: RayonStore
+    @Environment(\.isActivePage) private var isActive
 
     @State private var filter = ""
     @State private var selection: FileTransferContext.RemoteFile?
     @State private var prompt: FilePrompt?
     @State private var dropTargeted = false
+    @State private var pointerHistory = FolderHistoryPointer()
 
     /// The whole folder in the table's order: folders first, then by name.
     /// Sorted when the folder changes, not on every redraw: a transfer's
@@ -81,6 +83,12 @@ struct FileTransferPage: View {
                 if let selection { download(selection) }
             }
         ) {
+            ToolbarAction("Back", systemImage: "chevron.left") { context.goBack() }
+                .disabled(!context.canGoBack || busy || !context.connected)
+                .keyboardShortcut("[", modifiers: .command)
+            ToolbarAction("Forward", systemImage: "chevron.right") { context.goForward() }
+                .disabled(!context.canGoForward || busy || !context.connected)
+                .keyboardShortcut("]", modifiers: .command)
             ToolbarAction("Enclosing Folder", systemImage: "arrow.up") { goUp() }
                 .disabled(context.currentUrl.pathComponents.count <= 1 || busy || !context.connected)
                 .keyboardShortcut(.upArrow, modifiers: .command)
@@ -166,6 +174,11 @@ struct FileTransferPage: View {
         .onChange(of: context.currentDir) { _ in selection = nil }
         .onReceive(context.$currentFileList) { arrange($0) }
         .onChange(of: filter) { _ in applyFilter() }
+        // The mouse's back and forward buttons, and a swipe, step through
+        // the folders while this page is the one shown.
+        .onAppear { pointerHistory.update(active: isActive, context: context) }
+        .onChange(of: isActive) { active in pointerHistory.update(active: active, context: context) }
+        .onDisappear { pointerHistory.update(active: false, context: context) }
         #if DEBUG
             .onReceive(NotificationCenter.default.publisher(for: .benchFiles)) { note in
                 if let index = note.userInfo?["select"] as? Int, files.indices.contains(index) { selection = files[index] }
@@ -352,6 +365,48 @@ struct FileTransferPage: View {
         group.notify(queue: .main) {
             if !urls.values.isEmpty { context.upload(urls: urls.values) }
         }
+        return true
+    }
+}
+
+/// Watches the window's events for the mouse's back and forward buttons and
+/// for a swipe, while a Files page is shown, and steps through its folders.
+@MainActor
+private final class FolderHistoryPointer {
+    private var monitor: Any?
+
+    func update(active: Bool, context: FileTransferContext) {
+        if let monitor {
+            NSEvent.removeMonitor(monitor)
+            self.monitor = nil
+        }
+        guard active else { return }
+        monitor = NSEvent.addLocalMonitorForEvents(matching: [.otherMouseDown, .swipe]) { [weak context] event in
+            guard let context, Self.handle(event, context: context) else { return event }
+            return nil
+        }
+    }
+
+    /// Steps back or forward for the event; false when it is not one for Files.
+    private static func handle(_ event: NSEvent, context: FileTransferContext) -> Bool {
+        guard let window = event.window,
+              MainWindow.ordinaryWindows.contains(window),
+              !RayonUtil.isShowingSheetOrModal
+        else { return false }
+        let back: Bool
+        switch event.type {
+        case .otherMouseDown where event.buttonNumber == 3:
+            back = true
+        case .otherMouseDown where event.buttonNumber == 4:
+            back = false
+        case .swipe where event.deltaX != 0:
+            // As in Safari and Finder: a swipe to the right goes back.
+            back = event.deltaX > 0
+        default:
+            return false
+        }
+        guard context.connected, !context.processConnection, !context.isProgressRunning else { return true }
+        if back { context.goBack() } else { context.goForward() }
         return true
     }
 }
