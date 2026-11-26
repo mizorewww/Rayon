@@ -108,9 +108,14 @@ public struct SFTPSession: Sendable {
         guard FileManager.default.fileExists(atPath: local.path, isDirectory: &isDirectory) else {
             throw CocoaError(.fileNoSuchFile, userInfo: [NSFilePathErrorKey: local.path])
         }
+        // New files and folders get the local permission bits (less the
+        // server's umask), as scp and sftp -p do; existing ones keep theirs.
+        var attributes = SFTPFileAttributes()
+        attributes.permissions = (try? FileManager.default.attributesOfItem(atPath: local.path)[.posixPermissions] as? NSNumber)?
+            .map { $0.uint32Value & 0o777 }
         if isDirectory.boolValue {
             if (try? await client.getAttributes(at: remote)) == nil {
-                try await client.createDirectory(atPath: remote)
+                try await client.createDirectory(atPath: remote, attributes: attributes)
             }
             for child in try FileManager.default.contentsOfDirectory(at: local, includingPropertiesForKeys: nil) {
                 try Task.checkCancellation()
@@ -121,7 +126,7 @@ public struct SFTPSession: Sendable {
         let handle = try FileHandle(forReadingFrom: local)
         defer { try? handle.close() }
         let total = Int64((try? FileManager.default.attributesOfItem(atPath: local.path)[.size] as? NSNumber)??.int64Value ?? 0)
-        let file = try await client.openFile(filePath: remote, flags: [.write, .create, .truncate])
+        let file = try await client.openFile(filePath: remote, flags: [.write, .create, .truncate], attributes: attributes)
         let meter = TransferMeter(file: local.lastPathComponent, total: total, report: progress)
         do {
             var offset: UInt64 = 0

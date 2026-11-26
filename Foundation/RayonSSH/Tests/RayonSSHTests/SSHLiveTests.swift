@@ -253,6 +253,28 @@ final class SSHLiveTests: XCTestCase {
 
     // MARK: SFTP
 
+    func testUploadsKeepTheirPermissions() async throws {
+        let connection = try await connect([.password(password)])
+        let sftp = try await connection.openSFTP()
+        let local = FileManager.default.temporaryDirectory.appendingPathComponent("rayon-modes-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: local, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: local) }
+        for (name, mode) in [("tool.sh", 0o755), ("secret", 0o600)] {
+            let file = local.appendingPathComponent(name)
+            try Data("x".utf8).write(to: file)
+            try FileManager.default.setAttributes([.posixPermissions: mode], ofItemAtPath: file.path)
+        }
+        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: local.path)
+
+        try await sftp.upload(local, toDirectory: "/tmp") { _ in }
+        let remote = "/tmp/" + local.lastPathComponent
+        let modes = try await Dictionary(uniqueKeysWithValues: sftp.entries(at: remote).map { ($0.name, $0.permissions.map { $0 & 0o777 }) })
+        XCTAssertEqual(modes, ["tool.sh": 0o755, "secret": 0o600])
+        let folder = try await sftp.entry(at: remote)
+        XCTAssertEqual(folder.permissions.map { $0 & 0o777 }, 0o700)
+        await connection.close()
+    }
+
     func testSFTPListUploadDownload() async throws {
         let connection = try await connect([.password(password)])
         let sftp = try await connection.openSFTP()
