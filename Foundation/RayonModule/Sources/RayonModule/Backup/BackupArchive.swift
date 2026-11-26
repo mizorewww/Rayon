@@ -64,6 +64,9 @@ struct BackupManifest: Codable, Equatable {
 /// Writes and reads the files of a backup.
 enum BackupArchive {
     static let pbkdfRounds = 600_000
+    /// The most rounds a backup may ask for: more would take minutes, and
+    /// past UInt32 the count cannot even be passed on.
+    static let maxPBKDFRounds = 10_000_000
 
     /// Zips `files` (name → contents) with a manifest into `url`; with a
     /// password each file is sealed.
@@ -157,7 +160,9 @@ enum BackupArchive {
     }
 
     static func deriveKey(password: String, encryption: BackupManifest.Encryption) throws -> SymmetricKey {
-        guard encryption.kdf == "pbkdf2-sha256", encryption.rounds > 0, !encryption.salt.isEmpty else {
+        guard encryption.kdf == "pbkdf2-sha256", !encryption.salt.isEmpty,
+              (1 ... maxPBKDFRounds).contains(encryption.rounds)
+        else {
             throw BackupError.damaged("unknown key derivation")
         }
         let passwordData = Data(password.utf8)

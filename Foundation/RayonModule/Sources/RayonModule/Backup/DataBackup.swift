@@ -142,17 +142,48 @@ public enum DataBackup {
     }
 }
 
+public extension DataBackup {
+    /// `read`, off the main actor: deriving the key from a password takes
+    /// a while.
+    static func load(_ url: URL, password: String?) async throws -> DataBackupContents {
+        try await Task.detached(priority: .userInitiated) { try read(url, password: password) }.value
+    }
+}
+
 public extension RayonStore {
-    /// Writes a backup of everything saved.
-    func exportBackup(to url: URL, includeSecrets: Bool, password: String?) throws {
-        try DataBackup.export(from: storage, to: url, includeSecrets: includeSecrets, password: password)
+    /// Writes a backup of everything saved, off the main actor.
+    func exportBackup(to url: URL, includeSecrets: Bool, password: String?) async throws {
+        let storage = storage
+        try await Task.detached(priority: .userInitiated) {
+            try DataBackup.export(from: storage, to: url, includeSecrets: includeSecrets, password: password)
+        }.value
+    }
+
+    /// What a restore saved, and how many records it could not save.
+    struct RestoreResult: Equatable, Sendable {
+        public var machines = 0
+        public var identities = 0
+        public var snippets = 0
+        public var forwards = 0
+        public var refused = 0
+
+        /// "3 servers, 1 identity, …", and what was not saved.
+        public var summary: String {
+            var text = "\(machines) servers, \(identities) identities, \(snippets) snippets, and \(forwards) port forwards"
+            if refused > 0 { text += "; \(refused) could not be saved" }
+            return text + "."
+        }
     }
 
     /// Adds what a backup holds, replacing records with the same id.
     /// Without the backup's passwords and keys, a record already here keeps
     /// its own.
     @discardableResult
-    func restore(_ contents: DataBackupContents) -> (machines: Int, identities: Int, snippets: Int, forwards: Int) {
+    func restore(_ contents: DataBackupContents) -> RestoreResult {
+        var result = RestoreResult()
+        func count(_ saved: Bool, _ path: WritableKeyPath<RestoreResult, Int>) {
+            if saved { result[keyPath: path] += 1 } else { result.refused += 1 }
+        }
         func merged<T: StoredRecord>(_ record: T, _ existing: T?) -> T {
             guard !contents.includesSecrets, let existing else { return record }
             var record = record
@@ -167,22 +198,28 @@ public extension RayonStore {
             if let existing = folder(named: backup.name), existing.id != backup.id {
                 folderIDs[backup.id] = existing.id
             } else {
-                save(merged(backup, folder(backup.id)))
-                folderIDs[backup.id] = backup.id
+                if save(merged(backup, folder(backup.id))) { folderIDs[backup.id] = backup.id } else { result.refused += 1 }
             }
         }
-        contents.identities.forEach { save(merged($0, identity($0.id))) }
-        for var machine in contents.machines {
+        for identity in contents.identities {
+            count(save(merged(identity, self.identity(identity.id))), \.identities)
+        }
+        // Jumps that would loop with the servers here are cut, or the
+        // servers could not be saved.
+        let restoring = Set(contents.machines.map(\.id))
+        let cut = RDMachine.breakingProxyJumpLoops(machines.filter { !restoring.contains($0.id) } + contents.machines)
+            .filter { restoring.contains($0.id) }
+        for var machine in cut {
             // In a folder of the backup, or one here; else the default one,
             // where it can be seen.
             machine.folderId = machine.folderId.flatMap { folderIDs[$0] ?? folder($0)?.id }
-            save(merged(machine, self.machine(machine.id)))
+            count(save(merged(machine, self.machine(machine.id))), \.machines)
         }
-        contents.snippets.forEach { save($0) }
-        contents.portForwards.forEach { save($0) }
+        contents.snippets.forEach { count(save($0), \.snippets) }
+        contents.portForwards.forEach { count(save($0), \.forwards) }
         for host in contents.knownHosts where storage.knownHost(named: host.name) == nil {
             try? storage.saveKnownHost(host)
         }
-        return (contents.machines.count, contents.identities.count, contents.snippets.count, contents.portForwards.count)
+        return result
     }
 }

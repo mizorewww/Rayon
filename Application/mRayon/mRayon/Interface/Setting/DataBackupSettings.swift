@@ -94,14 +94,14 @@ enum DataImport {
 
     /// Restores the backup at `url`; false when its password was wrong.
     @MainActor
-    static func restoreBackup(_ url: URL, password: String?) -> Bool {
+    static func restoreBackup(_ url: URL, password: String?) async -> Bool {
         do {
-            let contents = try DataBackup.read(url, password: password)
+            let contents = try await DataBackup.load(url, password: password)
             let result = RayonStore.shared.restore(contents)
             try? FileManager.default.removeItem(at: url)
             UIBridge.presentSuccess(
                 with: "Backup imported",
-                subtitle: "\(result.machines) servers, \(result.identities) identities, \(result.snippets) snippets, and \(result.forwards) port forwards."
+                subtitle: result.summary
             )
             return true
         } catch BackupError.wrongPassword {
@@ -219,12 +219,15 @@ private struct BackupRow: View {
             BackupExportForm { includeSecrets, password in
                 choosingExport = false
                 guard let includeSecrets else { return }
-                do {
-                    exportDocument = try BackupDocument {
-                        try RayonStore.shared.exportBackup(to: $0, includeSecrets: includeSecrets, password: password)
+                Task {
+                    let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+                    defer { try? FileManager.default.removeItem(at: url) }
+                    do {
+                        try await RayonStore.shared.exportBackup(to: url, includeSecrets: includeSecrets, password: password)
+                        exportDocument = try BackupDocument(data: Data(contentsOf: url))
+                    } catch {
+                        UIBridge.presentError(with: "Could not export backup: \(error.localizedDescription)")
                     }
-                } catch {
-                    UIBridge.presentError(with: "Could not export backup: \(error.localizedDescription)")
                 }
             }
         }
@@ -252,7 +255,7 @@ private struct BackupRow: View {
                         wrongPassword = false
                         locked = copy
                     } else {
-                        _ = DataImport.restoreBackup(copy, password: nil)
+                        Task { _ = await DataImport.restoreBackup(copy, password: nil) }
                     }
                 } catch {
                     UIBridge.presentError(with: "Could not read backup: \(error.localizedDescription)")
@@ -273,11 +276,13 @@ private struct BackupRow: View {
             Button("Import") {
                 guard let url = locked else { return }
                 locked = nil
-                if !DataImport.restoreBackup(url, password: password) {
-                    password = ""
-                    wrongPassword = true
-                    // Asked again once this alert has gone.
-                    DispatchQueue.main.async { locked = url }
+                let typed = password
+                Task {
+                    if await !DataImport.restoreBackup(url, password: typed) {
+                        password = ""
+                        wrongPassword = true
+                        locked = url
+                    }
                 }
             }
         } message: {

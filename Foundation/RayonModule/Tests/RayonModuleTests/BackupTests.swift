@@ -39,9 +39,9 @@ final class BackupTests: XCTestCase {
         return (machine, identity)
     }
 
-    func testARoundTripKeepsEverythingWithThePassword() throws {
+    func testARoundTripKeepsEverythingWithThePassword() async throws {
         let (machine, identity) = seed()
-        try source.store().exportBackup(to: file, includeSecrets: true, password: "correct horse")
+        try await source.store().exportBackup(to: file, includeSecrets: true, password: "correct horse")
         XCTAssertTrue(DataBackup.needsPassword(file))
 
         let contents = try DataBackup.read(file, password: "correct horse")
@@ -61,8 +61,6 @@ final class BackupTests: XCTestCase {
         XCTAssertNil(raw.range(of: Data("hunter2".utf8)))
     }
 
-    /// A wrong password is refused, never answered with another key, and
-    /// nothing is restored.
     /// A folder of the backup whose name is taken here is that folder: no
     /// second folder of the name, and the servers in it go there. A server
     /// whose folder is in neither goes to the default one.
@@ -86,9 +84,11 @@ final class BackupTests: XCTestCase {
         XCTAssertTrue(store.machines(inFolder: nil).contains { $0.id == stranded.id })
     }
 
-    func testAWrongPasswordIsRefused() throws {
+    /// A wrong password is refused, never answered with another key, and
+    /// nothing is restored.
+    func testAWrongPasswordIsRefused() async throws {
         _ = seed()
-        try source.store().exportBackup(to: file, includeSecrets: true, password: "correct horse")
+        try await source.store().exportBackup(to: file, includeSecrets: true, password: "correct horse")
         XCTAssertThrowsError(try DataBackup.read(file, password: "battery staple")) {
             XCTAssertEqual($0 as? BackupError, .wrongPassword)
         }
@@ -100,16 +100,16 @@ final class BackupTests: XCTestCase {
 
     func testSecretsNeedAPassword() {
         _ = seed()
-        XCTAssertThrowsError(try source.store().exportBackup(to: file, includeSecrets: true, password: "")) {
+        XCTAssertThrowsError(try DataBackup.export(from: source.storage, to: file, includeSecrets: true, password: "")) {
             XCTAssertEqual($0 as? BackupError, .passwordRequired)
         }
     }
 
     /// Without its secrets a backup needs no password, and restoring it
     /// keeps the passwords already here.
-    func testABackupWithoutSecretsKeepsTheOnesHere() throws {
+    func testABackupWithoutSecretsKeepsTheOnesHere() async throws {
         let (_, identity) = seed()
-        try source.store().exportBackup(to: file, includeSecrets: false, password: nil)
+        try await source.store().exportBackup(to: file, includeSecrets: false, password: nil)
         XCTAssertFalse(DataBackup.needsPassword(file))
 
         let contents = try DataBackup.read(file, password: nil)
@@ -176,5 +176,37 @@ final class BackupTests: XCTestCase {
         try PreferencesBackup.restore(from: file, into: defaults, terminal: terminal)
         XCTAssertTrue(terminal.contents.contains("background = #654321"))
         XCTAssertNil(defaults.object(forKey: "me.mizorewww.rayon.ghosttyConfiguration.v1"))
+    }
+
+    /// A backup asking for more key derivation rounds than any Rayon writes
+    /// is refused at once, not derived for hours (or crashed on).
+    func testAbsurdKeyDerivationIsRefused() {
+        for rounds in [0, BackupArchive.maxPBKDFRounds + 1, Int(UInt32.max) + 1] {
+            XCTAssertThrowsError(try BackupArchive.deriveKey(
+                password: "pw",
+                encryption: BackupManifest.Encryption(salt: Data([1, 2, 3]), rounds: rounds)
+            ))
+        }
+    }
+
+    /// The counts say what was saved; a server whose jumps would loop with
+    /// the servers here is cut free rather than refused.
+    func testTheCountsAreWhatWasSaved() throws {
+        let store = target.store()
+        var here = RDMachine(remoteAddress: "here", remotePort: "22", name: "here")
+        var restored = RDMachine(remoteAddress: "restored", remotePort: "22", name: "restored")
+        restored.transport = .proxyJump
+        restored.proxyJumpMachineID = here.id
+        XCTAssertTrue(store.save(here))
+        here.transport = .proxyJump
+        here.proxyJumpMachineID = restored.id
+        var contents = DataBackupContents()
+        contents.machines = [restored, here]
+        let result = store.restore(contents)
+        XCTAssertEqual(result.machines, 2)
+        XCTAssertEqual(result.refused, 0)
+        for machine in store.machines {
+            XCTAssertNoThrow(try machine.proxyJumpChain { store.machine($0) })
+        }
     }
 }

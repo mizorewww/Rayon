@@ -584,11 +584,13 @@ private struct DataBackupSettings: View {
 
     private func exportBackup(includeSecrets: Bool, password: String?) {
         guard let url = savePanel("Export Rayon Backup", name: "Rayon.\(DataBackup.fileExtension)") else { return }
-        do {
-            try store.exportBackup(to: url, includeSecrets: includeSecrets, password: password)
-            statusMessage = "Exported backup to \(url.lastPathComponent)."
-        } catch {
-            UIBridge.presentError(with: "Could not export backup: \(error.localizedDescription)")
+        Task {
+            do {
+                try await store.exportBackup(to: url, includeSecrets: includeSecrets, password: password)
+                statusMessage = "Exported backup to \(url.lastPathComponent)."
+            } catch {
+                UIBridge.presentError(with: "Could not export backup: \(error.localizedDescription)")
+            }
         }
     }
 
@@ -612,14 +614,16 @@ private struct DataBackupSettings: View {
     }
 
     private func restoreBackup(_ url: URL, password: String?) {
-        do {
-            let contents = try DataBackup.read(url, password: password)
-            let result = store.restore(contents)
-            statusMessage = "Imported \(result.machines) servers, \(result.identities) identities, \(result.snippets) snippets, and \(result.forwards) port forwards."
-        } catch BackupError.wrongPassword {
-            askPassword(for: url, retry: true)
-        } catch {
-            UIBridge.presentError(with: "Could not import backup: \(error.localizedDescription)")
+        Task {
+            do {
+                let contents = try await DataBackup.load(url, password: password)
+                let result = store.restore(contents)
+                statusMessage = "Imported \(result.summary)"
+            } catch BackupError.wrongPassword {
+                askPassword(for: url, retry: true)
+            } catch {
+                UIBridge.presentError(with: "Could not import backup: \(error.localizedDescription)")
+            }
         }
     }
 
