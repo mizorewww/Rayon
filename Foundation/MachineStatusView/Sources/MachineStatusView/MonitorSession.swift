@@ -89,6 +89,9 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
     public enum Phase: Equatable {
         case connecting
         case connected
+        /// Connected, but the server does not run the status script (no
+        /// POSIX shell, as on Windows OpenSSH). Not retried on its own.
+        case unavailable
         case failed(String)
         case closed
     }
@@ -187,6 +190,8 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
     private func updateLoop() async {
         let sampler = ServerStatusSampler()
         var failures = 0
+        /// Whether this connection produced a reading yet.
+        var hasReading = false
         var lease: SSHLease?
         defer { lease?.release() }
         while !Task.isCancelled {
@@ -197,6 +202,7 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
                 // Statics and counters belong to the connection; a reconnect may land
                 // on a reimaged or different host.
                 sampler.resetConnection()
+                hasReading = false
                 do {
                     let leased = try await SSHConnectionPool.shared.lease(for: machine)
                     lease = leased
@@ -224,25 +230,35 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
                 switch round {
                 case let .status(status):
                     failures = 0
+                    hasReading = true
                     setPhase(.connected)
                     snapshot = snapshot.recording(status)
                 case .baseline:
                     failures = 0
+                    hasReading = true
                     setPhase(.connected)
                     // Rates need a second reading; take it after a second
                     // instead of a whole interval.
                     try? await Task.sleep(nanoseconds: NSEC_PER_SEC)
                     continue
                 case .empty:
-                    // Nothing came back though the connection is up: a
-                    // dead link would otherwise show its last numbers as
-                    // live forever. It fails, and the next round reconnects.
-                    // The lease goes; the next round takes the pool's
-                    // connection again, a new one if this one has dropped.
-                    failures += 1
+                    // The lease goes either way; the next round, if any,
+                    // takes the pool's connection again, a new one if this
+                    // one has dropped.
+                    let stillConnected = connection.isActive
                     lease?.release()
                     lease = nil
-                    if Task.isCancelled { break }
+                    if Task.isCancelled { return }
+                    guard Self.emptyRoundIsDeadLink(hasReading: hasReading, connectionActive: stillConnected) else {
+                        // Reconnecting would only sign in again (and stamp
+                        // the store) every half minute for nothing.
+                        setPhase(.unavailable)
+                        return
+                    }
+                    // A dead link would otherwise show its last numbers
+                    // as live forever. It fails, and the next round
+                    // reconnects.
+                    failures += 1
                     setPhase(.failed("The server stopped answering."))
                 }
             }
@@ -250,6 +266,14 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
             // Cancellation from shutdown() lands here right away.
             try? await Task.sleep(nanoseconds: UInt64(wait) * NSEC_PER_SEC)
         }
+    }
+
+    /// Whether a round with nothing in it means the link died. A server
+    /// that never answered the status script on this connection is
+    /// reachable but cannot be monitored; only one that answered before,
+    /// or a connection that noticed the drop, has lost the link.
+    nonisolated static func emptyRoundIsDeadLink(hasReading: Bool, connectionActive: Bool) -> Bool {
+        hasReading || !connectionActive
     }
 
     /// Stamps the server's banner and last connection once per connection,

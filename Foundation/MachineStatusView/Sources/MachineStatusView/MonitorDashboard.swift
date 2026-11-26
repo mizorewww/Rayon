@@ -100,6 +100,14 @@ public struct MonitorPlaceholder: View {
                     actionTitle: retry == nil ? nil : "Try Again",
                     action: retry
                 )
+            case .unavailable:
+                EmptyStateView(
+                    "Status isn't available",
+                    systemImage: "waveform.path.ecg",
+                    message: "This server doesn't run the status script; it needs a POSIX shell.",
+                    actionTitle: retry == nil ? nil : "Try Again",
+                    action: retry
+                )
             case .closed:
                 EmptyStateView("Monitor closed", systemImage: "waveform.path.ecg")
             default:
