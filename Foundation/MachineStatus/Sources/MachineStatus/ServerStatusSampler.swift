@@ -64,6 +64,9 @@ public final class ServerStatusSampler {
     private var sessionHostname: String?
     private var sessionReleaseName: String?
     private var previous: Counters?
+    /// Off once the server has shown it has no `nvidia-smi` (or is a Mac),
+    /// so most servers stop paying for a second channel every round.
+    private(set) var probesGraphics = true
 
     public init() {}
 
@@ -74,6 +77,7 @@ public final class ServerStatusSampler {
         sessionHostname = nil
         sessionReleaseName = nil
         previous = nil
+        probesGraphics = true
     }
 
     /// Runs the merged monitor script and the GPU probe on two channels,
@@ -96,20 +100,23 @@ public final class ServerStatusSampler {
             mergedOutput.store(ServerStatus.downloadResultFrom(shell: remote, command: ServerStatus.monitorCommand(includeStatic: includeStatic), timeout: timeout))
         }
 
-        let graphicsResult = ConcurrentValue<ServerStatus.GraphicsInfo?>(nil)
-        group.enter()
-        queue.async {
-            defer { group.leave() }
-            graphicsResult.store(ServerStatus.GraphicsInfo(withRemote: remote, timeout: timeout))
+        let graphicsOutput = ConcurrentValue<String?>(nil)
+        if probesGraphics {
+            group.enter()
+            queue.async {
+                defer { group.leave() }
+                graphicsOutput.store(ServerStatus.downloadResultFrom(shell: remote, command: ServerStatus.graphicsCommand, timeout: timeout))
+            }
         }
 
         group.wait()
-        return read(mergedOutput.load(), graphics: graphicsResult.load(), clientClock: ProcessInfo.processInfo.systemUptime)
+        return read(mergedOutput.load(), graphicsOutput: graphicsOutput.load(), clientClock: ProcessInfo.processInfo.systemUptime)
     }
 
-    /// Turns one run of the monitor script into a round. `clientClock` is
-    /// a monotonic time of arrival, the fallback clock for rates.
-    func read(_ output: String, graphics: ServerStatus.GraphicsInfo?, clientClock: TimeInterval) -> Round {
+    /// Turns one run of the monitor script (and of the GPU probe, when it
+    /// ran) into a round. `clientClock` is a monotonic time of arrival,
+    /// the fallback clock for rates.
+    func read(_ output: String, graphicsOutput: String?, clientClock: TimeInterval) -> Round {
         let includeStatic = sessionHostname == nil || sessionReleaseName == nil
         let sections = ProcParsers.splitMonitorSections(output)
         guard let platform = sections["platform"]?.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -118,6 +125,9 @@ public final class ServerStatusSampler {
             return .empty
         }
         let isDarwin = platform == "Darwin"
+        if isDarwin || graphicsOutput?.contains(ServerStatus.noGraphicsMarker) == true {
+            probesGraphics = false
+        }
         if includeStatic {
             // Only a non-empty reading is cached; a failed probe is retried
             // on the next round instead of sticking a placeholder.
@@ -200,7 +210,7 @@ public final class ServerStatusSampler {
             load5: load.load5avg,
             load15: load.load15avg
         )
-        status.graphics = graphics
+        status.graphics = graphicsOutput.flatMap(ServerStatus.GraphicsInfo.parseCSV)
         return .status(status)
     }
 }

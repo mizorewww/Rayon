@@ -37,9 +37,11 @@ extension ServerStatus {
     /// and translated headers. Every script runs in the C locale.
     static let localeExport = "LC_ALL=C; export LC_ALL"
 
-    /// `nvidia-smi` stays a command of its own: it is slow and missing on
-    /// most machines, and its failure must not cost the other sections.
-    static let graphicsScript = localeExport + "; nvidia-smi --query-gpu=driver_version,uuid,name,memory.total,memory.used,memory.free,vbios_version,fan.speed,utilization.gpu,utilization.memory --format=csv,noheader,nounits 2>/dev/null || echo \"no nvidia gpu available\""
+    /// `nvidia-smi` stays a command of its own: it is slow, and its
+    /// failure must not cost the other sections. A server without it says
+    /// so with `noGraphicsMarker`, and the sampler stops asking.
+    static let graphicsScript = localeExport + "; if command -v nvidia-smi >/dev/null 2>&1; then nvidia-smi --query-gpu=driver_version,uuid,name,memory.total,memory.used,memory.free,vbios_version,fan.speed,utilization.gpu,utilization.memory --format=csv,noheader,nounits 2>/dev/null; else echo \"\(noGraphicsMarker)\"; fi"
+    static let noGraphicsMarker = "no nvidia-smi"
 
     /// Hands `script` to `/bin/sh` whatever the login shell is. An exec
     /// channel runs its command through the user's login shell, so POSIX

@@ -59,7 +59,7 @@ final class ProcParsersTests: XCTestCase {
         XCTAssertEqual(graphics?.units.first?.fan_speed, "35 %")
         XCTAssertEqual(graphics?.units.first?.utilization.gpu_util, 72)
         XCTAssertEqual(graphics?.units.last?.fan_speed, "[N/A]")
-        XCTAssertNil(ServerStatus.GraphicsInfo.parseCSV("no nvidia gpu available"))
+        XCTAssertNil(ServerStatus.GraphicsInfo.parseCSV(ServerStatus.noGraphicsMarker))
     }
 
     func testSwapUsageIsRelativeToSwapTotal() {
@@ -331,9 +331,9 @@ final class ProcParsersTests: XCTestCase {
 
     func testSamplerDiffsCountersAcrossRounds() {
         let sampler = ServerStatusSampler()
-        XCTAssertEqual(sampler.read(linuxRound(user: 100, idle: 100, uptime: "10.00", rx: 0), graphics: nil, clientClock: 0), .baseline)
+        XCTAssertEqual(sampler.read(linuxRound(user: 100, idle: 100, uptime: "10.00", rx: 0), graphicsOutput: nil, clientClock: 0), .baseline)
         // The client clock is ignored while the server's uptime advances.
-        guard case let .status(status) = sampler.read(linuxRound(user: 175, idle: 125, uptime: "12.00", rx: 4000), graphics: nil, clientClock: 99) else {
+        guard case let .status(status) = sampler.read(linuxRound(user: 175, idle: 125, uptime: "12.00", rx: 4000), graphicsOutput: nil, clientClock: 99) else {
             return XCTFail("the second round must read")
         }
         XCTAssertEqual(status.processor.summary.sumUsed, 75, accuracy: 0.001)
@@ -346,13 +346,30 @@ final class ProcParsersTests: XCTestCase {
 
     func testAnEmptyRoundKeepsTheBaseline() {
         let sampler = ServerStatusSampler()
-        _ = sampler.read(linuxRound(user: 100, idle: 100, uptime: "10.00", rx: 0), graphics: nil, clientClock: 0)
-        XCTAssertEqual(sampler.read("", graphics: nil, clientClock: 1), .empty)
-        guard case .status = sampler.read(linuxRound(user: 150, idle: 150, uptime: "11.00", rx: 0), graphics: nil, clientClock: 2) else {
+        _ = sampler.read(linuxRound(user: 100, idle: 100, uptime: "10.00", rx: 0), graphicsOutput: nil, clientClock: 0)
+        XCTAssertEqual(sampler.read("", graphicsOutput: nil, clientClock: 1), .empty)
+        guard case .status = sampler.read(linuxRound(user: 150, idle: 150, uptime: "11.00", rx: 0), graphicsOutput: nil, clientClock: 2) else {
             return XCTFail("an empty round must not cost the baseline")
         }
         sampler.resetConnection()
-        XCTAssertEqual(sampler.read(linuxRound(user: 200, idle: 200, uptime: "12.00", rx: 0), graphics: nil, clientClock: 3), .baseline)
+        XCTAssertEqual(sampler.read(linuxRound(user: 200, idle: 200, uptime: "12.00", rx: 0), graphicsOutput: nil, clientClock: 3), .baseline)
+    }
+
+    func testTheGPUIsProbedUntilTheServerShowsItHasNone() throws {
+        let sampler = ServerStatusSampler()
+        let csv = "550.54.14, GPU-1, NVIDIA L4, 24564, 4096, 20468, 95.02, 35, 72, 18"
+        _ = sampler.read(linuxRound(user: 100, idle: 100, uptime: "10.00", rx: 0), graphicsOutput: csv, clientClock: 0)
+        guard case let .status(status) = sampler.read(linuxRound(user: 150, idle: 150, uptime: "11.00", rx: 0), graphicsOutput: csv, clientClock: 1) else {
+            return XCTFail("the second round must read")
+        }
+        XCTAssertEqual(status.graphics?.units.first?.name, "NVIDIA L4")
+        // An empty answer (a dropped channel) proves nothing.
+        _ = sampler.read(linuxRound(user: 200, idle: 200, uptime: "12.00", rx: 0), graphicsOutput: "", clientClock: 2)
+        XCTAssertTrue(sampler.probesGraphics)
+        _ = sampler.read(linuxRound(user: 250, idle: 250, uptime: "13.00", rx: 0), graphicsOutput: ServerStatus.noGraphicsMarker + "\n", clientClock: 3)
+        XCTAssertFalse(sampler.probesGraphics)
+        sampler.resetConnection()
+        XCTAssertTrue(sampler.probesGraphics)
     }
 
     // MARK: - /proc/uptime

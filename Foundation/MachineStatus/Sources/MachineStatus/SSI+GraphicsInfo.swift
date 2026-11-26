@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import NSRemoteShell
 
 public extension ServerStatus {
     /// 服务器 GPU 信息
@@ -27,14 +26,6 @@ public extension ServerStatus {
         public init(version: String, units: [SingleGraphicsInfo]) {
             self.version = version
             self.units = units
-        }
-
-        public init?(withRemote shell: NSRemoteShell, timeout: Double) {
-            let downloadResult = downloadResultFrom(shell: shell, command: ServerStatus.graphicsCommand, timeout: timeout)
-            guard let parsed = Self.parseCSV(downloadResult) else {
-                return nil
-            }
-            self = parsed
         }
 
         /// Parses `nvidia-smi --query-gpu=driver_version,uuid,name,memory.total,memory.used,memory.free,vbios_version,fan.speed,utilization.gpu,utilization.memory --format=csv,noheader,nounits`

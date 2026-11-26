@@ -76,10 +76,10 @@
             let sampler = ServerStatusSampler()
             let command = ServerStatus.monitorCommand(includeStatic: true)
             let first = try run(command, shell: "/bin/sh")
-            XCTAssertEqual(sampler.read(first.output, graphics: nil, clientClock: ProcessInfo.processInfo.systemUptime), .baseline)
+            XCTAssertEqual(sampler.read(first.output, graphicsOutput: nil, clientClock: ProcessInfo.processInfo.systemUptime), .baseline)
             Thread.sleep(forTimeInterval: 1)
             let second = try run(command, shell: "/bin/sh")
-            guard case let .status(status) = sampler.read(second.output, graphics: nil, clientClock: ProcessInfo.processInfo.systemUptime) else {
+            guard case let .status(status) = sampler.read(second.output, graphicsOutput: nil, clientClock: ProcessInfo.processInfo.systemUptime) else {
                 return XCTFail("the second round must read")
             }
             XCTAssertGreaterThan(status.processor.summary.sumUsed, 0)
