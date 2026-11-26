@@ -115,6 +115,7 @@ public extension RayonStorage {
             try handle.insertOrReplace([record], intoTable: T.tableName)
             try self.enqueueUpload(T.self, id: record.id, modified: record.modified, handle: handle)
         })
+        NotificationCenter.default.post(name: Self.didQueueChanges, object: self)
         return record
     }
 
@@ -140,6 +141,7 @@ public extension RayonStorage {
         for row in deleted {
             try? secrets.remove(row.secretAccount)
         }
+        NotificationCenter.default.post(name: Self.didQueueChanges, object: self)
     }
 
     /// Whether any record was ever written, deleted ones included.
