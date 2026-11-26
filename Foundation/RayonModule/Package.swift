@@ -52,7 +52,8 @@ let package = Package(
                 "RayonModule",
                 "RayonSSH",
                 .product(name: "BigInt", package: "BigInt"),
-            ]
+            ],
+            resources: [.copy("Fixtures")]
         ),
     ]
 )

@@ -2,14 +2,18 @@
 //  LegacyStoreImport.swift
 //  RayonModule
 //
-//  Moves what the previous release kept — groups of records sealed with
-//  AES-GCM under a master key in the keychain and stored in UserDefaults —
-//  into the database and the keychain, once, on the first launch after the
-//  update, then removes the old values. It reads that release's format only.
-//  The whole file goes away once no one updates from that release any more.
+//  Moves what the previous releases kept — groups of records sealed under a
+//  master key in the keychain and stored in UserDefaults — into the database
+//  and the keychain, once, on the first launch after the update, then
+//  removes the old values. 2.8 rewrote a group only when it changed, so a
+//  group may still be in any format an older release wrote (AES-CBC, then
+//  AES-GCM "RGCM1", then "RGCM2"), and a server's settings may still be in
+//  its attachment. All of it is read, or nothing is imported.
+//
 //
 
 import BetterCodable
+import CommonCrypto
 import CryptoKit
 import Foundation
 import Security
@@ -24,13 +28,15 @@ enum LegacyStoreImport {
         static let portForwards = "portForwardEncrypted"
         static let folders = "folderGroupEncrypted"
         static let recent = "recentRecordEncrypted"
-        static let redacted = "machineRedacted"
-        static let openInterface = "openInterfaceAutomatically"
         static let knownHosts = "me.mizorewww.rayon.knownHosts"
 
-        static let sealed = [machines, identities, snippets, portForwards, folders, recent, redacted, openInterface, knownHosts]
-        /// Left behind by the previous release and read by nothing now.
+        static let sealed = [machines, identities, snippets, portForwards, folders, recent, knownHosts]
+        /// Left behind by the previous releases and read by nothing now.
+        /// (The redaction level and "open interface automatically" were
+        /// meant to be sealed too, but a property list cannot hold a bare
+        /// number or flag, so they never were written.)
         static let obsolete = [
+            "machineRedacted", "openInterfaceAutomatically",
             "me.mizorewww.rayon.sync.settings", "me.mizorewww.rayon.debug.sync",
         ] + sealed.map { $0 + ".corrupt" }
     }
@@ -40,7 +46,8 @@ enum LegacyStoreImport {
     static let masterKeyAccount = "me.mizorewww.rayon.MasterCrypto"
 
     /// Imports what the previous release stored, if it has not been. Without
-    /// the master key nothing is touched, and the next launch tries again.
+    /// the master key, or when any of it cannot be read, nothing is touched
+    /// and the next launch tries again.
     @discardableResult
     static func runIfNeeded(
         into storage: RayonStorage,
@@ -79,26 +86,36 @@ enum LegacyStoreImport {
         return true
     }
 
-    private static func importRecords(from defaults: UserDefaults, opener: Opener, into storage: RayonStorage) throws {
-        func open<T: Decodable>(_ key: String, as _: T.Type) -> T? {
-            guard let sealed = defaults.data(forKey: key) else { return nil }
-            guard let plain = opener.open(sealed) else {
-                RayonStorage.logger.error("legacy import: \(key) could not be decrypted")
-                return nil
-            }
-            do {
-                return try PropertyListDecoder().decode(T.self, from: plain)
-            } catch {
-                RayonStorage.logger.error("legacy import: \(key) could not be read: \(error.localizedDescription)")
-                return nil
+    enum Failure: LocalizedError {
+        case unreadable(key: String)
+
+        var errorDescription: String? {
+            switch self {
+            case let .unreadable(key): "\(key) could not be decrypted or read"
             }
         }
+    }
 
-        let machines = open(Key.machines, as: MachineGroup.self)?.machines ?? []
-        let identities = open(Key.identities, as: IdentityGroup.self)?.identities ?? []
-        let snippets = open(Key.snippets, as: SnippetGroup.self)?.snippets ?? []
-        let forwards = open(Key.portForwards, as: PortForwardGroup.self)?.forwards ?? []
-        var folders = (open(Key.folders, as: FolderGroup.self)?.folders ?? []).map(\.folder)
+    private static func importRecords(from defaults: UserDefaults, opener: Opener, into storage: RayonStorage) throws {
+        /// A value that is there but cannot be read stops the import: the
+        /// rest is not worth losing it for.
+        func open<T: Decodable>(_ key: String, as _: T.Type) throws -> T? {
+            guard let object = defaults.object(forKey: key) else { return nil }
+            guard let sealed = object as? Data,
+                  let plain = opener.open(sealed),
+                  let value = try? PropertyListDecoder().decode(T.self, from: plain)
+            else { throw Failure.unreadable(key: key) }
+            return value
+        }
+
+        let machines = try open(Key.machines, as: MachineGroup.self)?.machines ?? []
+        let identities = try open(Key.identities, as: IdentityGroup.self)?.identities ?? []
+        let snippets = try open(Key.snippets, as: SnippetGroup.self)?.snippets ?? []
+        let forwards = try open(Key.portForwards, as: PortForwardGroup.self)?.forwards ?? []
+        var folders = try (open(Key.folders, as: FolderGroup.self)?.folders ?? []).map(\.folder)
+        let recent = try open(Key.recent, as: [RayonStore.RecentConnection].self)
+        // Before 2.5 the host keys were a plain dictionary.
+        let hosts = try (defaults.object(forKey: Key.knownHosts) as? [String: String]) ?? open(Key.knownHosts, as: [String: String].self)
 
         // A server named its folder; a name no folder records is a folder too.
         for name in Set(machines.map(\.group)) where !name.isEmpty && !folders.contains(where: { $0.name == name }) {
@@ -122,16 +139,10 @@ enum LegacyStoreImport {
             try storage.save(forward.forward)
         }
 
-        if let recent = open(Key.recent, as: [RayonStore.RecentConnection].self) {
+        if let recent {
             try storage.saveRecentConnections(recent.enumerated().map { $1.record(at: $0) })
         }
-        if let level = open(Key.redacted, as: Int.self) {
-            defaults.set(level, forKey: RayonStore.Key.machineRedacted)
-        }
-        if let open = open(Key.openInterface, as: Bool.self) {
-            defaults.set(open, forKey: RayonStore.Key.openInterfaceAutomatically)
-        }
-        if let hosts = open(Key.knownHosts, as: [String: String].self) {
+        if let hosts {
             for (name, line) in hosts {
                 let parts = line.split(separator: " ", maxSplits: 1)
                 guard parts.count == 2, let key = Data(base64Encoded: String(parts[1])) else { continue }
@@ -140,13 +151,20 @@ enum LegacyStoreImport {
         }
     }
 
-    // MARK: - The previous release's encryption
+    // MARK: - The previous releases' encryption
 
-    /// AES-256-GCM under a key derived with HKDF-SHA256 from the master key,
-    /// prefixed "RGCM2".
+    /// What 2.8's AES engine read, under the master key:
+    /// - "RGCM2": AES-256-GCM under a key derived with HKDF-SHA256 (2.7, 2.8);
+    /// - "RGCM1": AES-256-GCM under the key string itself, cut or repeated
+    ///   to 32 characters (2.5 to 2.6.2);
+    /// - no prefix: AES-CBC with PKCS7 padding under that key, and the key
+    ///   cut or repeated to 16 characters as the IV (up to 2.4).
     struct Opener {
         static let prefix = Data("RGCM2".utf8)
+        static let gcm1Prefix = Data("RGCM1".utf8)
         let key: SymmetricKey
+        let legacyKey: Data?
+        let legacyIV: Data?
 
         init(masterKey: String) {
             key = HKDF<SHA256>.deriveKey(
@@ -155,21 +173,56 @@ enum LegacyStoreImport {
                 info: Data("catussh-aes-256-gcm".utf8),
                 outputByteCount: 32
             )
+            // As those releases did it: in characters, then as UTF-8.
+            func fitted(_ string: String, to count: Int) -> Data {
+                var string = string
+                while string.count < count { string += string }
+                while string.count > count { string.removeLast() }
+                return Data(string.utf8)
+            }
+            if masterKey.count >= kCCKeySizeAES128 {
+                legacyKey = fitted(masterKey, to: 32)
+                legacyIV = fitted(masterKey, to: kCCBlockSizeAES128)
+            } else {
+                legacyKey = nil
+                legacyIV = nil
+            }
         }
 
         func open(_ data: Data) -> Data? {
-            guard data.starts(with: Self.prefix),
-                  let box = try? CryptoKit.AES.GCM.SealedBox(combined: data.dropFirst(Self.prefix.count))
-            else { return nil }
+            if data.starts(with: Self.prefix) {
+                return openGCM(data.dropFirst(Self.prefix.count), key: key)
+            }
+            if data.starts(with: Self.gcm1Prefix) {
+                return legacyKey.flatMap { openGCM(data.dropFirst(Self.gcm1Prefix.count), key: SymmetricKey(data: $0)) }
+            }
+            return openCBC(data)
+        }
+
+        private func openGCM(_ combined: Data, key: SymmetricKey) -> Data? {
+            guard let box = try? CryptoKit.AES.GCM.SealedBox(combined: combined) else { return nil }
             return try? CryptoKit.AES.GCM.open(box, using: key)
         }
 
-        /// What the previous release wrote, for tests.
-        func seal(_ data: Data) throws -> Data {
-            guard let combined = try CryptoKit.AES.GCM.seal(data, using: key).combined else {
-                throw CocoaError(.coderInvalidValue)
+        private func openCBC(_ data: Data) -> Data? {
+            guard let legacyKey, let legacyIV else { return nil }
+            var plain = Data(count: data.count + kCCBlockSizeAES128)
+            var length = 0
+            let status = plain.withUnsafeMutableBytes { out in
+                data.withUnsafeBytes { input in
+                    legacyIV.withUnsafeBytes { iv in
+                        legacyKey.withUnsafeBytes { key in
+                            CCCrypt(
+                                CCOperation(kCCDecrypt), CCAlgorithm(kCCAlgorithmAES), CCOptions(kCCOptionPKCS7Padding),
+                                key.baseAddress, legacyKey.count, iv.baseAddress,
+                                input.baseAddress, data.count, out.baseAddress, out.count, &length
+                            )
+                        }
+                    }
+                }
             }
-            return Self.prefix + combined
+            guard status == kCCSuccess else { return nil }
+            return plain.prefix(length)
         }
     }
 
@@ -205,12 +258,6 @@ enum LegacyStoreImport {
 // MARK: - The previous release's records
 
 extension LegacyStoreImport {
-    enum EmptyString: DefaultCodableStrategy { static var defaultValue: String { "" } }
-    enum Slash: DefaultCodableStrategy { static var defaultValue: String { "/" } }
-    enum VNCPort: DefaultCodableStrategy { static var defaultValue: String { "5900" } }
-    enum Zero: DefaultCodableStrategy { static var defaultValue: Int { 0 } }
-    enum Five: DefaultCodableStrategy { static var defaultValue: Int { 5 } }
-    enum Sixty: DefaultCodableStrategy { static var defaultValue: Int { 60 } }
     enum EmptyAttachment: DefaultCodableStrategy { static var defaultValue: [String: String] { [:] } }
 
     struct MachineGroup: Decodable { @LossyArray var machines: [Machine] }
@@ -219,8 +266,9 @@ extension LegacyStoreImport {
     struct PortForwardGroup: Decodable { @LossyArray var forwards: [PortForward] }
     struct FolderGroup: Decodable { @LossyArray var folders: [Folder] }
 
-    /// The previous release wrote a field only when it differed from its
-    /// default; the defaults stand in for the rest.
+    /// 2.8 wrote a field only when it differed from its default; releases
+    /// before 2.7 kept these settings in the attachment, which 2.8 still
+    /// read them from. Both are read here as 2.8 did.
     struct Machine: Decodable {
         var id: UUID
         var remoteAddress: String
@@ -231,29 +279,81 @@ extension LegacyStoreImport {
         var lastBanner: String
         var comment: String
         var associatedIdentity: String?
-        @DefaultCodable<EmptyString> var sshUsername: String
-        @DefaultCodable<Slash> var fileTransferLoginPath: String
-        @DefaultCodable<EmptyString> var transport: String
-        @DefaultCodable<EmptyString> var cloudflareServiceTokenID: String
-        @DefaultCodable<EmptyString> var cloudflareServiceTokenSecret: String
-        @DefaultCodable<EmptyString> var remoteDesktopProtocol: String
-        @DefaultCodable<VNCPort> var vncPort: String
-        @DefaultCodable<EmptyString> var vncPassword: String
-        @DefaultCodable<EmptyString> var vncUsername: String
-        @DefaultTrue var vncShared: Bool
-        @DefaultFalse var vncOverSSH: Bool
-        @DefaultCodable<EmptyString> var uuDeviceID: String
-        @DefaultCodable<EmptyString> var uuDeviceAlias: String
-        @DefaultCodable<EmptyString> var uuAnonymousDeviceID: String
-        @DefaultCodable<EmptyString> var uuAssistID: String
-        @DefaultCodable<EmptyString> var uuAssistCode: String
-        @DefaultCodable<Zero> var uuDisplayID: Int
-        @DefaultCodable<Sixty> var uuFPS: Int
-        @DefaultCodable<Five> var uuQuality: Int
-        @DefaultFalse var uuTrueColor: Bool
-        @DefaultFalse var uuManaged: Bool
+        var sshUsername: String
+        var fileTransferLoginPath: String
+        var transport: String
+        var cloudflareServiceTokenID: String
+        var cloudflareServiceTokenSecret: String
+        var remoteDesktopProtocol: String
+        var vncPort: String
+        var vncPassword: String
+        var vncUsername: String
+        var vncShared: Bool
+        var vncOverSSH: Bool
+        var uuDeviceID: String
+        var uuDeviceAlias: String
+        var uuAnonymousDeviceID: String
+        var uuAssistID: String
+        var uuAssistCode: String
+        var uuDisplayID: Int
+        var uuFPS: Int
+        var uuQuality: Int
+        var uuTrueColor: Bool
+        var uuManaged: Bool
         var ghosttyTerminfoVersion: String?
         var proxyJumpMachineID: String?
+
+        private enum CodingKeys: String, CodingKey {
+            case id, remoteAddress, remotePort, name, group, lastConnection, lastBanner, comment
+            case associatedIdentity, sshUsername, attachment, fileTransferLoginPath, transport
+            case cloudflareServiceTokenID, cloudflareServiceTokenSecret, remoteDesktopProtocol
+            case vncPort, vncPassword, vncUsername, vncShared, vncOverSSH
+            case uuDeviceID, uuDeviceAlias, uuAnonymousDeviceID, uuAssistID, uuAssistCode
+            case uuDisplayID, uuFPS, uuQuality, uuTrueColor, uuManaged, ghosttyTerminfoVersion, proxyJumpMachineID
+        }
+
+        init(from decoder: any Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            let attachment = try c.decodeIfPresent([String: String].self, forKey: .attachment) ?? [:]
+            func string(_ key: CodingKeys, _ legacy: String, _ fallback: String) throws -> String {
+                try c.decodeIfPresent(String.self, forKey: key) ?? attachment[legacy] ?? fallback
+            }
+            func int(_ key: CodingKeys, _ legacy: String, _ fallback: Int) throws -> Int {
+                try c.decodeIfPresent(Int.self, forKey: key) ?? attachment[legacy].flatMap(Int.init) ?? fallback
+            }
+            id = try c.decode(UUID.self, forKey: .id)
+            remoteAddress = try c.decode(String.self, forKey: .remoteAddress)
+            remotePort = try c.decode(String.self, forKey: .remotePort)
+            name = try c.decode(String.self, forKey: .name)
+            group = try c.decode(String.self, forKey: .group)
+            lastConnection = try c.decode(Date.self, forKey: .lastConnection)
+            lastBanner = try c.decode(String.self, forKey: .lastBanner)
+            comment = try c.decode(String.self, forKey: .comment)
+            associatedIdentity = try c.decodeIfPresent(String.self, forKey: .associatedIdentity)
+            sshUsername = try c.decodeIfPresent(String.self, forKey: .sshUsername) ?? ""
+            fileTransferLoginPath = try string(.fileTransferLoginPath, "sftp.login.path", "/")
+            transport = try string(.transport, "transport", "")
+            cloudflareServiceTokenID = try string(.cloudflareServiceTokenID, "cloudflare.serviceToken.id", "")
+            cloudflareServiceTokenSecret = try string(.cloudflareServiceTokenSecret, "cloudflare.serviceToken.secret", "")
+            remoteDesktopProtocol = try string(.remoteDesktopProtocol, "remoteDesktop.protocol", "")
+            vncPort = try string(.vncPort, "remoteDesktop.vnc.port", "5900")
+            vncPassword = try string(.vncPassword, "remoteDesktop.vnc.password", "")
+            vncUsername = try string(.vncUsername, "remoteDesktop.vnc.username", "")
+            vncShared = try c.decodeIfPresent(Bool.self, forKey: .vncShared) ?? (attachment["remoteDesktop.vnc.shared"].map { $0 != "0" } ?? true)
+            vncOverSSH = try c.decodeIfPresent(Bool.self, forKey: .vncOverSSH) ?? (attachment["remoteDesktop.vnc.overSSH"] == "1")
+            uuDeviceID = try string(.uuDeviceID, "remoteDesktop.uu.deviceID", "")
+            uuDeviceAlias = try string(.uuDeviceAlias, "remoteDesktop.uu.deviceAlias", "")
+            uuAnonymousDeviceID = try string(.uuAnonymousDeviceID, "remoteDesktop.uu.anonymousDeviceID", "")
+            uuAssistID = try string(.uuAssistID, "remoteDesktop.uu.assistID", "")
+            uuAssistCode = try string(.uuAssistCode, "remoteDesktop.uu.assistCode", "")
+            uuDisplayID = try int(.uuDisplayID, "remoteDesktop.uu.displayID", 0)
+            uuFPS = try int(.uuFPS, "remoteDesktop.uu.fps", 60)
+            uuQuality = try int(.uuQuality, "remoteDesktop.uu.quality", 5)
+            uuTrueColor = try c.decodeIfPresent(Bool.self, forKey: .uuTrueColor) ?? false
+            uuManaged = try c.decodeIfPresent(Bool.self, forKey: .uuManaged) ?? (attachment["remoteDesktop.uu.managed"] == "1")
+            ghosttyTerminfoVersion = try c.decodeIfPresent(String.self, forKey: .ghosttyTerminfoVersion) ?? attachment["terminal.terminfo"]
+            proxyJumpMachineID = try c.decodeIfPresent(String.self, forKey: .proxyJumpMachineID) ?? attachment["proxyJump.machineID"]
+        }
 
         func machine(folderId: UUID?) -> RDMachine {
             var machine = RDMachine(
