@@ -1,6 +1,15 @@
 {
-  "originHash" : "bcced9f77655d1886bcfee314b85411cfef64652d6bfb21a633c3b16cc2bd6bb",
+  "originHash" : "0ff102bf1b58050ee4d0678cbc695577c6c5b4ea0c4afaf60b58254aca19383c",
   "pins" : [
+    {
+      "identity" : "blossomcolorpicker",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/BlossomColorPicker.git",
+      "state" : {
+        "revision" : "51be6fa6f6edca84b5f48c6a97566b9456c6e052",
+        "version" : "1.0.0"
+      }
+    },
     {
       "identity" : "displaylink",
       "kind" : "remoteSourceControl",

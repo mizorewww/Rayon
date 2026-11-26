@@ -10,6 +10,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/Lakr233/libghostty-spm.git", exact: "2.2.2026100703"),
+        .package(url: "https://github.com/Lakr233/BlossomColorPicker.git", exact: "1.0.0"),
         .package(name: "RayonDesign", path: "../RayonDesign"),
     ],
     targets: [
@@ -17,6 +18,8 @@ let package = Package(
             name: "RayonTerminal",
             dependencies: [
                 .product(name: "GhosttyTerminal", package: "libghostty-spm"),
+                .product(name: "GhosttyTheme", package: "libghostty-spm"),
+                .product(name: "BlossomColorPicker", package: "BlossomColorPicker"),
                 .product(name: "RayonDesign", package: "RayonDesign"),
             ],
             resources: [.process("Configuration/Resources")]

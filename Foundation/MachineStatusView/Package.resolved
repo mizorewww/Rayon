@@ -20,6 +20,15 @@
       }
     },
     {
+      "identity" : "blossomcolorpicker",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/BlossomColorPicker.git",
+      "state" : {
+        "revision" : "51be6fa6f6edca84b5f48c6a97566b9456c6e052",
+        "version" : "1.0.0"
+      }
+    },
+    {
       "identity" : "citadel",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/orlandos-nl/Citadel.git",
