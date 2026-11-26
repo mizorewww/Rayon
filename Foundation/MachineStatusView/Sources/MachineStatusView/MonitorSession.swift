@@ -401,33 +401,49 @@ public final class MonitorCenter: ObservableObject {
         return session
     }
 
-    /// Whether the new details reach the server differently. What is
-    /// written back while connected (banner, last connection, terminfo,
-    /// stream choices) or only shown (name, group, comment) does not count.
+    /// Whether the new details reach the server differently: only what
+    /// the SSH connection reads counts, so editing anything else (name,
+    /// remote desktop settings, written-back state) keeps the session.
     static func connectsDifferently(_ machine: RDMachine, _ identity: RDIdentity?, _ newMachine: RDMachine, _ newIdentity: RDIdentity?) -> Bool {
-        func connection(_ machine: RDMachine) -> RDMachine {
-            var machine = machine
-            machine.name = ""
-            machine.folderId = nil
-            machine.comment = ""
-            machine.modified = .distantPast
-            machine.lastConnection = .distantPast
-            machine.lastBanner = ""
-            machine.ghosttyTerminfoVersion = nil
-            machine.uuDisplayID = 0
-            machine.uuFPS = 0
-            machine.uuQuality = 0
-            return machine
+        ConnectionKey(machine, identity) != ConnectionKey(newMachine, newIdentity)
+    }
+
+    /// What `RDMachine.connectSSH` reads to reach and sign in to the server.
+    private struct ConnectionKey: Equatable {
+        let address: String
+        let port: String
+        let sshUsername: String
+        let associatedIdentity: RDIdentity.ID?
+        let transport: RDMachine.Transport
+        let cloudflareServiceTokenID: String
+        let cloudflareServiceTokenSecret: String
+        /// What the UU Remote transport tunnels to.
+        let uuTarget: [String]
+        let proxyJumpMachineID: RDMachine.ID?
+        let identityID: RDIdentity.ID?
+        let identityUsername: String?
+        let password: String?
+        let privateKey: String?
+        let publicKey: String?
+        let useSSHAgent: Bool?
+
+        init(_ machine: RDMachine, _ identity: RDIdentity?) {
+            address = machine.remoteAddress
+            port = machine.remotePort
+            sshUsername = machine.sshUsername
+            associatedIdentity = machine.associatedIdentity
+            transport = machine.transport
+            cloudflareServiceTokenID = machine.cloudflareServiceTokenID
+            cloudflareServiceTokenSecret = machine.cloudflareServiceTokenSecret
+            uuTarget = [machine.uuDeviceID, machine.uuAssistID, machine.uuAssistCode]
+            proxyJumpMachineID = machine.proxyJumpMachineID
+            identityID = identity?.id
+            identityUsername = identity?.username
+            password = identity?.password
+            privateKey = identity?.privateKey
+            publicKey = identity?.publicKey
+            useSSHAgent = identity?.useSSHAgent
         }
-        func credentials(_ identity: RDIdentity?) -> RDIdentity? {
-            guard var identity else { return nil }
-            identity.lastRecentUsed = .distantPast
-            identity.comment = ""
-            identity.group = ""
-            identity.modified = .distantPast
-            return identity
-        }
-        return connection(machine) != connection(newMachine) || credentials(identity) != credentials(newIdentity)
     }
 
     private func stopIfUnused(_ id: MonitorSession.ID) {
