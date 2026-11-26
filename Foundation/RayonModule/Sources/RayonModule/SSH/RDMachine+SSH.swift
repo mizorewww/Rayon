@@ -82,6 +82,8 @@ public extension RDMachine {
                 return (connection, candidate)
             } catch SSHError.authenticationFailed {
                 reasons.append("\(username) with \(candidate.signInDescription) was not accepted.")
+            } catch let SSHError.agentUnavailable(reason) {
+                reasons.append("\(username) with \(candidate.signInDescription): \(reason)")
             }
         }
         throw SSHFailure(message: (["Could not sign in to \(name.isEmpty ? remoteAddress : name)."] + reasons).joined(separator: "\n"), unreachable: false)
@@ -118,7 +120,7 @@ public extension RDMachine {
                         throw SSHFailure(message: error.localizedDescription, unreachable: true)
                     }
                     KnownHosts.shared.trust(offered, host: host, port: port)
-                case .authenticationFailed:
+                case .authenticationFailed, .agentUnavailable:
                     throw error
                 case let .connectionFailed(reason):
                     throw SSHFailure(message: transport.isWebSocket ? cloudflareReason(reason) : reason, unreachable: true)
@@ -209,9 +211,19 @@ private extension SSHTransport {
 extension RDIdentity {
     /// What this identity offers the server. A key's passphrase is the
     /// identity's password; a key identity does not offer the password.
-    func sshCredentials() throws -> [SSHCredential] {
+    /// `environment` is where the agent's socket is found.
+    func sshCredentials(environment: [String: String] = ProcessInfo.processInfo.environment) throws -> [SSHCredential] {
         if useSSHAgent {
-            throw SSHFailure(message: "Signing in through an SSH agent is not supported.", unreachable: false)
+            #if os(macOS)
+                // The agent of the person's login session, as ssh and
+                // libssh2 find it; launchd sets it for every app.
+                guard let socket = environment["SSH_AUTH_SOCK"], !socket.isEmpty else {
+                    throw SSHFailure(message: "No SSH agent is running for this session (SSH_AUTH_SOCK is not set).", unreachable: false)
+                }
+                return [.agent(SSHAgent(socketPath: socket))]
+            #else
+                throw SSHFailure(message: "There is no SSH agent on iOS. Give the identity its private key instead.", unreachable: false)
+            #endif
         }
         if !privateKey.isEmpty {
             return try [.privateKey(SSHPrivateKey(text: privateKey, passphrase: password))]
