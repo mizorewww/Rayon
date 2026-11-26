@@ -273,6 +273,11 @@ final class ProcParsersTests: XCTestCase {
         }
     }
 
+    func testEveryScriptRunsInTheCLocale() {
+        XCTAssertTrue(ServerStatus.monitorScript(includeStatic: false).hasPrefix("LC_ALL=C; export LC_ALL; "))
+        XCTAssertTrue(ServerStatus.graphicsScript.hasPrefix("LC_ALL=C; export LC_ALL; "))
+    }
+
     func testMonitorScriptOmitsStaticsUnlessAsked() {
         let script = ServerStatus.monitorScript(includeStatic: false)
         XCTAssertFalse(script.contains("os-release"))

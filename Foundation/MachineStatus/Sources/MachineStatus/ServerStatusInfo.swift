@@ -58,9 +58,14 @@ public class ServerStatus: ObservableObject, Equatable {
     static let sectionMarkerPrefix = "<<<RAYON-SECTION:"
     static let sectionMarkerSuffix = ">>>"
 
+    /// The parsers read decimal points and English labels; a server whose
+    /// login sets a German or French locale would print decimal commas
+    /// and translated headers. Every script runs in the C locale.
+    static let localeExport = "LC_ALL=C; export LC_ALL"
+
     /// `nvidia-smi` stays a command of its own: it is slow and missing on
     /// most machines, and its failure must not cost the other sections.
-    static let graphicsScript = "nvidia-smi --query-gpu=driver_version,uuid,name,memory.total,memory.used,memory.free,vbios_version,fan.speed,utilization.gpu,utilization.memory --format=csv,noheader,nounits 2>/dev/null || echo \"no nvidia gpu available\""
+    static let graphicsScript = localeExport + "; nvidia-smi --query-gpu=driver_version,uuid,name,memory.total,memory.used,memory.free,vbios_version,fan.speed,utilization.gpu,utilization.memory --format=csv,noheader,nounits 2>/dev/null || echo \"no nvidia gpu available\""
 
     /// Hands `script` to `/bin/sh` whatever the login shell is. An exec
     /// channel runs its command through the user's login shell, so POSIX
@@ -122,7 +127,7 @@ public class ServerStatus: ObservableObject, Equatable {
         let commands = sections.map { name, command in
             "echo '\(sectionMarkerPrefix)\(name)\(sectionMarkerSuffix)'; \(command)"
         }
-        return (["RAYON_KERNEL=\"$(/usr/bin/uname -s 2>/dev/null || uname -s)\""] + commands)
+        return ([localeExport, "RAYON_KERNEL=\"$(/usr/bin/uname -s 2>/dev/null || uname -s)\""] + commands)
             .joined(separator: "; ")
     }
 

@@ -12,11 +12,16 @@
     import XCTest
 
     final class LoginShellTests: XCTestCase {
-        private func run(_ command: String, shell: String) throws -> (output: String, status: Int32) {
+        private func run(_ command: String, shell: String, locale: String? = nil) throws -> (output: String, status: Int32) {
             let process = Process()
             process.executableURL = URL(fileURLWithPath: shell)
             process.arguments = ["-c", command]
-            process.environment = ["PATH": "/usr/bin:/bin:/usr/sbin:/sbin", "HOME": NSTemporaryDirectory()]
+            var environment = ["PATH": "/usr/bin:/bin:/usr/sbin:/sbin", "HOME": NSTemporaryDirectory()]
+            if let locale {
+                environment["LANG"] = locale
+                environment["LC_ALL"] = locale
+            }
+            process.environment = environment
             let output = Pipe()
             process.standardOutput = output
             process.standardError = Pipe()
@@ -65,6 +70,17 @@
                 XCTAssertFalse(processes.byMemory.isEmpty, shell)
                 XCTAssertNotNil(processes.byMemory.first?.residentKB, shell)
             }
+        }
+
+        func testTheMonitorCommandIgnoresTheLoginLocale() throws {
+            // A decimal-comma locale must not reach the tools the parsers read.
+            let command = ServerStatus.posixShellCommand(ServerStatus.monitorScript(includeStatic: false) + "; locale")
+            let result = try run(command, shell: "/bin/sh", locale: "de_DE.UTF-8")
+            XCTAssertEqual(result.status, 0)
+            let sections = ProcParsers.splitMonitorSections(result.output)
+            XCTAssertGreaterThan(ServerStatus.MemoryInfo(darwinMemory: sections["mem"] ?? "").memTotal, 0)
+            XCTAssertTrue(ServerStatus.FileSystemInfo(dfPk: sections["df"] ?? "").elements.contains { $0.mountPoint == "/" })
+            XCTAssertTrue(result.output.contains("LC_NUMERIC=\"C\""), result.output)
         }
 
         func testTheGraphicsCommandRunsUnderEveryLoginShell() throws {
