@@ -302,4 +302,19 @@ final class LegacyStoreImportTests: XCTestCase {
         ), .imported)
         XCTAssertNil(LegacyStoreImport.readMasterKey(from: items), "forgotten once imported")
     }
+
+    /// 2.8's iCloud sync key is in the iCloud keychain, shared with the
+    /// devices not updated yet: forgetting the master key leaves it.
+    func testForgettingTheMasterKeyLeavesTheSyncKey() throws {
+        let syncKey: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: "me.mizorewww.rayon.sync.key",
+            kSecAttrAccount as String: "me.mizorewww.rayon.tests.\(UUID().uuidString)",
+        ]
+        XCTAssertEqual(SecItemAdd(syncKey.merging([kSecValueData as String: Data("passphrase".utf8)]) { $1 } as CFDictionary, nil), errSecSuccess)
+        defer { SecItemDelete(syncKey as CFDictionary) }
+
+        LegacyStoreImport.removeMasterKey(items: [("me.mizorewww.rayon.tests.\(UUID().uuidString)", "me.mizorewww.rayon.MasterCrypto")])
+        XCTAssertEqual(SecItemCopyMatching(syncKey as CFDictionary, nil), errSecSuccess)
+    }
 }

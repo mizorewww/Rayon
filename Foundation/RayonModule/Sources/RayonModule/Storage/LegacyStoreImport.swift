@@ -277,8 +277,9 @@ enum LegacyStoreImport {
         return nil
     }
 
-    /// The master keys, and the passphrase key the old iCloud sync kept in
-    /// the iCloud keychain.
+    /// The master keys. The passphrase key the old iCloud sync kept stays:
+    /// it is in the iCloud keychain, and removing it here would remove it
+    /// from the devices still on 2.8, which then wait for it for good.
     static func removeMasterKey(items: [(service: String, account: String)] = masterKeyItems) {
         for item in items {
             SecItemDelete([
@@ -287,11 +288,6 @@ enum LegacyStoreImport {
                 kSecAttrAccount as String: item.account,
             ] as CFDictionary)
         }
-        SecItemDelete([
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: "me.mizorewww.rayon.sync.key",
-            kSecAttrSynchronizable as String: kSecAttrSynchronizableAny,
-        ] as CFDictionary)
     }
 }
 
