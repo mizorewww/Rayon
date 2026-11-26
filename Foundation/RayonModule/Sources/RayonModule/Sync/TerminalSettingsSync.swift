@@ -21,16 +21,21 @@ final class TerminalSettingsSync {
         self.settings = settings
     }
 
-    /// Settles which side is newer, then follows both.
+    /// Settles which side is newer, then follows both. Before there is a
+    /// record, these settings are written as old, so another device's
+    /// changes win: the file's time says nothing then, since moving the
+    /// settings into it at launch wrote it just now.
     func start() {
         guard observers.isEmpty else { return }
         let written = TerminalConfigurationSync.lastWritten(settings)
-        if let record = storage.record(RDTerminalSettings.self, id: RDTerminalSettings.recordID),
-           written.map({ $0 <= record.modified }) ?? true
-        {
-            pull()
+        if let record = storage.record(RDTerminalSettings.self, id: RDTerminalSettings.recordID) {
+            if written.map({ $0 <= record.modified }) ?? true {
+                pull()
+            } else {
+                push(changed: written)
+            }
         } else {
-            push(changed: written)
+            push(changed: Date(timeIntervalSince1970: 0))
         }
         observers.append(NotificationCenter.default.addObserver(
             forName: TerminalConfigurationSync.didChange, object: settings, queue: .main
@@ -44,10 +49,9 @@ final class TerminalSettingsSync {
         })
     }
 
-    /// Writes what this device has, if it differs from the record. A first
-    /// record from settings that have not changed keeps the file's time, so
-    /// it does not win over another device's later change. A file that
-    /// cannot be read writes nothing.
+    /// Writes what this device has, if it differs from the record, as
+    /// changed at `changed` (now by default). A file that cannot be read
+    /// writes nothing.
     func push(changed: Date? = nil) {
         guard let entries = TerminalConfigurationSync.entries(of: settings) else { return }
         let existing = storage.record(RDTerminalSettings.self, id: RDTerminalSettings.recordID)

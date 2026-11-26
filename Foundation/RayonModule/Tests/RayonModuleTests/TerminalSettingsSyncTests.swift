@@ -45,9 +45,26 @@ final class TerminalSettingsSyncTests: XCTestCase {
         XCTAssertEqual(record?.values, ["background": ["#101010"]])
         XCTAssertEqual(storage.pendingUploads().map(\.tableName), [RDTerminalSettings.tableName])
 
-        // A record from settings nobody changed is not newer than another device's.
-        let written = try XCTUnwrap(TerminalConfigurationSync.lastWritten(local))
-        XCTAssertEqual(record?.modified.millisecondsSince1970, written.wholeMilliseconds.millisecondsSince1970)
+        // A first record is older than any other device's.
+        XCTAssertEqual(record?.modified, Date(timeIntervalSince1970: 0))
+    }
+
+    /// Settings moved into config.ghostty at launch, on a device that
+    /// updates late: the file is new, the settings in it are not, and they
+    /// do not win over a change made since on another device.
+    func testMigratedSettingsAreNotNewerThanAnotherDevicesChange() throws {
+        let defaults = UserDefaults(suiteName: "rayon-tests-\(UUID().uuidString)")!
+        let legacy = try JSONSerialization.data(withJSONObject: ["document": ["overrides": ["background": ["#202020"]]]])
+        defaults.set(legacy, forKey: "me.mizorewww.rayon.ghosttyConfiguration.v1")
+        let folder = test.directory.appending(path: "terminal-\(UUID().uuidString)")
+        let local = TerminalSettings(fileURL: folder.appending(path: "config.ghostty"), defaults: defaults)
+        XCTAssertEqual(TerminalConfigurationSync.entries(of: local), ["background": ["#202020"]])
+        TerminalSettingsSync(storage: storage, settings: local).start()
+
+        var remote = RDTerminalSettings(entries: ["background": ["#ffffff"]])
+        remote.modified = Date().addingTimeInterval(-3600).wholeMilliseconds
+        XCTAssertEqual(try storage.mergeRemote(remote), .tookRemote)
+        XCTAssertEqual(record?.values, ["background": ["#ffffff"]])
     }
 
     func testDefaultsAloneWriteNothing() throws {
