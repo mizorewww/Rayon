@@ -333,14 +333,21 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
                 if !text.isEmpty { self?.surface.write(text) }
             }
         } catch {
-            // A dropped connection fails the shell with swift-nio-ssh's
-            // error, whose description is only "NIOSSHError error 1".
             if continueDecision {
-                putInformation("[!] " + (connection.isActive ? error.localizedDescription : "The connection to \(machine.remoteAddress) was lost."))
+                putInformation("[!] " + Self.shellEndedMessage(error, linkActive: connection.isActive, address: machine.remoteAddress))
             }
         }
         ssh.withLock { $0.shell = nil; $0.input = nil }
         debugPrint("\(self) \(#function) ended \(machine.id)")
+    }
+
+    /// Why the shell ended, worded for the person. A dropped connection
+    /// fails the shell with swift-nio-ssh's error, whose description is
+    /// only "NIOSSHError error 1", and the link may not read as closed yet.
+    static func shellEndedMessage(_ error: Error, linkActive: Bool, address: String) -> String {
+        linkActive
+            ? "The shell ended (\(SSHTransport.describe(error)))."
+            : "The connection to \(address) was lost."
     }
 
     /// How many leading bytes end on a whole UTF-8 character.

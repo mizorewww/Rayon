@@ -8,6 +8,15 @@ import XCTest
 
 @MainActor
 final class TerminalShutdownTests: XCTestCase {
+    /// A shell that fails before its link reads as closed says why in
+    /// words, not as an error dump.
+    func testAShellThatEndsSaysWhyInWords() {
+        let reset = TerminalContext.shellEndedMessage(POSIXError(.ECONNRESET), linkActive: true, address: "example.com")
+        XCTAssertEqual(reset, "The shell ended (the server reset the connection).")
+        let lost = TerminalContext.shellEndedMessage(POSIXError(.ECONNRESET), linkActive: false, address: "example.com")
+        XCTAssertEqual(lost, "The connection to example.com was lost.")
+    }
+
     /// A session that ends turns the modes a program may have left on off
     /// before it says so, and keeps nothing typed for the next one.
     func testAnEndingSessionResetsTerminalModes() async throws {
