@@ -1,106 +1,95 @@
-import GhosttyTerminal
 import XCTest
 @testable import RayonTerminal
 
 final class ConfigurationTests: XCTestCase {
-    func testSettingAKeyKeepsEverythingElseAsWritten() throws {
-        var config = GhosttyConfigText("# mine\nfont-size = 13\n\nkeybind = ctrl+a=text:a\nkeybind = ctrl+b=text:b\nfont-family = \"Menlo\"\n")
-        XCTAssertEqual(config.value("font-family"), "Menlo")
-        XCTAssertEqual(config.values("keybind"), ["ctrl+a=text:a", "ctrl+b=text:b"])
-
-        config.set("keybind", ["ctrl+c=text:c"])
-        config.set("font-size", ["15"])
-        config.set("theme", ["Dracula"])
-        config.set("font-family", [])
-        XCTAssertEqual(config.text, "# mine\nfont-size = 15\n\nkeybind = ctrl+c=text:c\ntheme = Dracula\n")
-
-        XCTAssertThrowsError(try GhosttyConfigText("font-size = 13\nnot a setting").entries())
+    func testCatalogCoversEverySettingExactlyOnce() {
+        let catalog = ConfigCatalog.shared
+        XCTAssertEqual(catalog.registry.count, 200)
+        XCTAssertEqual(catalog.themes.count, 633)
+        let ids = catalog.navigation.flatMap(\.settingIDs)
+        XCTAssertEqual(Set(ids), Set(catalog.registry.keys))
+        XCTAssertEqual(ids.count, Set(ids).count)
+        XCTAssertEqual(catalog.registry["quitAfterLastWindowClosed"]?.defaultValue, .scalar("false"))
     }
-
-    func testThemeNamesForOneOrBothAppearances() {
-        XCTAssertTrue(RayonTerminalConfiguration.themeNames("Dracula") == ("Dracula", "Dracula"))
-        XCTAssertTrue(RayonTerminalConfiguration.themeNames("light:Alabaster, dark:Dracula") == ("Alabaster", "Dracula"))
-    }
-
-    /// Explicit lines win over the theme, the app's clipboard policy over
-    /// the file, and a configuration Ghostty rejects changes nothing.
-    @MainActor
-    func testApplyLayersThemeFileAndClipboardPolicy() throws {
-        let controller = TerminalController(configuration: .default)
-        let config = GhosttyConfigText("theme = Dracula\nbackground = #223344\nclipboard-write = allow\n")
-        try RayonTerminalConfiguration.apply(config, to: controller)
-        let dark = controller.theme.dark.rendered
-        XCTAssertNotNil(dark.range(of: "background = #223344", options: .backwards))
-        XCTAssertGreaterThan(
-            dark.range(of: "background = #223344")!.lowerBound,
-            dark.range(of: "background = ")!.lowerBound,
-            "The file's background comes after the theme's"
-        )
-        XCTAssertFalse(dark.contains("theme ="))
-        XCTAssertTrue(dark.hasSuffix("clipboard-write = \(RayonTerminalConfiguration.clipboardSharing ? "allow" : "deny")"))
-
-        let before = controller.theme
-        XCTAssertThrowsError(try RayonTerminalConfiguration.apply(GhosttyConfigText("font-size = big"), to: controller))
-        XCTAssertThrowsError(try RayonTerminalConfiguration.apply(GhosttyConfigText("theme = No Such Theme"), to: controller))
-        XCTAssertEqual(controller.theme, before)
-    }
-
-    /// Saving writes the file only after Ghostty accepts it, and every
-    /// terminal, open or new, takes the new font size.
-    @MainActor
-    func testSaveAppliesToOpenTerminalsAndWritesTheFile() async throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        let original = RayonTerminalConfiguration.fileURL
-        let originalContents = RayonTerminalConfiguration.contents
-        RayonTerminalConfiguration.fileURL = folder.appendingPathComponent("config.ghostty")
-        defer {
-            try? RayonTerminalConfiguration.save(originalContents)
-            RayonTerminalConfiguration.fileURL = original
-            try? FileManager.default.removeItem(at: folder)
+    func testSettingsLayoutShowsEveryAppliedSettingOnce() {
+        let keys = ConfigLayout.categories.flatMap(\.keys)
+        XCTAssertEqual(keys.count, Set(keys).count, "a setting appears in two places")
+        XCTAssertEqual(Set(keys), ConfigCatalog.RayonKeys, "Settings and the applied keys disagree")
+        for key in keys {
+            XCTAssertNotNil(ConfigCatalog.shared.setting(key: key), "\(key) is not in the catalog")
         }
-
-        TestHost.prepare()
-        let terminal = RayonTerminalView()
-        let native = terminal.session.platformView()
-        let window = TestHost(native)
-        defer { window.close() }
-        try await Task.sleep(for: .milliseconds(100))
-        terminal.write("configuration survival marker\r\n")
-        XCTAssertTrue(terminal.session.backend.waitForPendingOutput())
-
-        var reported: Double?
-        RayonTerminalConfiguration.onFontSizeChange = { reported = $0 }
-        defer { RayonTerminalConfiguration.onFontSizeChange = nil }
-        try RayonTerminalConfiguration.save("font-size = 13.5\ntheme = 3024 Night\n")
-        try await Task.sleep(for: .milliseconds(100))
-        XCTAssertEqual(native.fontSize, 13.5)
-        XCTAssertEqual(reported, 13.5)
-        XCTAssertTrue(terminal.session.backend.readViewportText()?.contains("configuration survival marker") == true)
-        XCTAssertEqual(try String(contentsOf: RayonTerminalConfiguration.fileURL, encoding: .utf8), "font-size = 13.5\ntheme = 3024 Night\n")
-
-        XCTAssertThrowsError(try RayonTerminalConfiguration.save("font-size = big"))
-        XCTAssertEqual(RayonTerminalConfiguration.contents, "font-size = 13.5\ntheme = 3024 Night\n")
-
-        let next = RayonTerminalView()
-        let second = TestHost(next.session.platformView())
-        defer { second.close() }
-        try await Task.sleep(for: .milliseconds(100))
-        XCTAssertEqual(next.session.platformView().fontSize, 13.5)
+        XCTAssertEqual(ConfigLayout.categories.map(\.id).count, Set(ConfigLayout.categories.map(\.id)).count)
     }
-
-    @MainActor
-    func testSyncSeesAndAdoptsKeys() throws {
-        let folder = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-        let original = RayonTerminalConfiguration.fileURL
-        let originalContents = RayonTerminalConfiguration.contents
-        RayonTerminalConfiguration.fileURL = folder.appendingPathComponent("config.ghostty")
-        defer {
-            try? RayonTerminalConfiguration.save(originalContents)
-            RayonTerminalConfiguration.fileURL = original
-            try? FileManager.default.removeItem(at: folder)
-        }
-        try RayonTerminalConfiguration.save("font-size = 12\nkeybind = ctrl+a=text:a\n")
-        TerminalConfigurationSync.adopt(["font-size": nil, "cursor-style": ["bar"]])
-        XCTAssertEqual(TerminalConfigurationSync.overrides, ["keybind": ["ctrl+a=text:a"], "cursor-style": ["bar"]])
+    func testShortcutsReadAsKeyCaps() {
+        XCTAssertEqual(KeybindingNames.step("super+shift+k"), "⇧⌘K")
+        XCTAssertEqual(KeybindingNames.step("super+physical:four"), "⌘4")
+        XCTAssertEqual(KeybindingNames.step("ctrl+alt+arrow_left"), "⌃⌥←")
+        XCTAssertEqual(KeybindingNames.step("super+equal"), "⌘=")
+        XCTAssertEqual(KeybindingNames.summary(ConfigKeybinding("super+equal=increase_font_size:1")), "Make Text Bigger (1 pt)")
+        XCTAssertEqual(KeybindingNames.summary(ConfigKeybinding("super+backspace=text:\\x15")), "Delete to Start of Line")
+        XCTAssertEqual(KeybindingNames.summary(ConfigKeybinding("alt+arrow_left=esc:b")), "Move Back a Word")
+        XCTAssertFalse(KeybindingNames.applies(ConfigKeybinding("super+t=new_tab")))
+        XCTAssertTrue(KeybindingNames.applies(ConfigKeybinding("super+k=clear_screen")))
+    }
+    func testCodepointMappingRoundTrip() {
+        let mapping = CodepointMapping("U+E000-U+F8FF,U+F0000-U+FFFFD=Symbols Nerd Font")
+        XCTAssertEqual(mapping?.family, "Symbols Nerd Font")
+        XCTAssertEqual(CodepointRangeSet.describe(mapping?.ranges ?? ""), "Nerd Font icons")
+        XCTAssertEqual(mapping?.rendered, "U+E000-U+F8FF,U+F0000-U+FFFFD=Symbols Nerd Font")
+        XCTAssertEqual(CodepointRangeSet.describe("U+1234"), "U+1234")
+    }
+    @MainActor func testInstalledFontsComeFromCoreText() {
+        XCTAssertTrue(FontLibrary.isMonospaced("Menlo"))
+        XCTAssertFalse(FontLibrary.styles(of: "Menlo").isEmpty)
+        XCTAssertFalse(FontLibrary.families.contains { $0.name.hasPrefix(".") })
+    }
+    func testEditorShowsRayonRuntimeDefaults() {
+        let document = ConfigDocument()
+        // Ghostty's built-in size differs per platform.
+        #if os(macOS)
+            XCTAssertEqual(document.text("font-size"), "14")
+        #else
+            XCTAssertEqual(document.text("font-size"), "10")
+        #endif
+        XCTAssertEqual(document.text("font-thicken"), "true")
+        XCTAssertEqual(document.text("cursor-style-blink"), "true")
+        XCTAssertEqual(document.text("minimum-contrast"), ConfigCatalog.shared.setting(key: "minimum-contrast")?.defaultValue.text)
+    }
+    func testImportMergePaletteRepeatableAndScalar() throws {
+        var draft = ConfigDocument()
+        try draft.merge("font-size = 17\nfont-family = Mono\nfont-family = 日本語\npalette = 2=#112233\nkeybind = ctrl+k=text:a=b:c")
+        try draft.merge("font-size = 19\npalette = 3=#334455\nfont-family = Other\nkeybind = ctrl+x=ignore")
+        XCTAssertEqual(draft.text("font-size"), "19")
+        XCTAssertEqual(draft.values("font-family"), ["Other"])
+        XCTAssertEqual(draft.paletteOverrides, [2: "#112233", 3: "#334455"])
+        XCTAssertEqual(Array(draft.values("keybind").suffix(2)), ["ctrl+k=text:a=b:c", "ctrl+x=ignore"])
+        let original = draft
+        XCTAssertThrowsError(try draft.merge("font-size = 22\npalette = broken"))
+        XCTAssertEqual(original, draft)
+    }
+    func testThemesDoNotContaminateDiffAndExplicitColorsWin() throws {
+        var draft = ConfigDocument()
+        draft.set("theme", ["light:3024 Day,dark:3024 Night"])
+        XCTAssertEqual(draft.effectiveColor("background", dark: false), "#f7f7f7")
+        XCTAssertEqual(draft.effectiveColor("background", dark: true), "#090300")
+        XCTAssertFalse(draft.serialized().contains("background ="))
+        draft.set("background", ["#123456"])
+        XCTAssertEqual(draft.effectiveColor("background", dark: true), "#123456")
+        draft.setPalette(255, color: "#010203")
+        XCTAssertTrue(draft.serialized().contains("palette = 255=#010203"))
+        draft.setPalette(255, color: nil)
+        XCTAssertFalse(draft.serialized().contains("palette ="))
+    }
+    func testUnicodeSharingAndLargeFallback() throws {
+        var draft = ConfigDocument()
+        try draft.merge("font-family = 日本語\nkeybind = ctrl++=text:a=b:c\nfuture-key = one\nfuture-key = two")
+        let url = try XCTUnwrap(draft.shareURL())
+        XCTAssertFalse(url.contains("=="))
+        var imported = ConfigDocument()
+        try imported.merge(url)
+        XCTAssertEqual(imported, draft)
+        draft.set("title", [String(repeating: "大", count: 1000)])
+        XCTAssertNil(draft.shareURL())
+        XCTAssertThrowsError(try ConfigDocument.decodeShareOrText("https://ghostty.zerebos.com/#share=%%%"))
     }
 }

@@ -1,20 +1,18 @@
 import Foundation
 
-/// The terminal's settings as the app's iCloud sync sees them: each key set in
-/// `config.ghostty` with its values, and a way to take those another device set.
+/// The terminal's settings as the app's iCloud sync sees them: each one that
+/// was set, by its Ghostty name, and a way to take those another device set.
 @MainActor
 public enum TerminalConfigurationSync {
+    /// What is set here, including an edit not saved yet: it is saved in a
+    /// moment, and a setting that cannot be saved is not taken for removed.
     public static var overrides: [String: [String]] {
-        let entries = (try? RayonTerminalConfiguration.config.entries()) ?? []
-        return entries.reduce(into: [:]) { $0[$1.key, default: []].append($1.value) }
+        ConfigEditorModel.shared.document.overrides
     }
 
-    /// Sets (or, for nil, removes) keys and applies them to every terminal.
-    /// Changes Ghostty rejects are left out.
+    /// Sets (or, for nil, resets) settings and applies them to every terminal.
     public static func adopt(_ changes: [String: [String]?]) {
         guard !changes.isEmpty else { return }
-        var next = RayonTerminalConfiguration.config
-        for (key, values) in changes { next.set(key, values ?? []) }
-        try? RayonTerminalConfiguration.commit(next)
+        ConfigEditorModel.shared.adopt(changes)
     }
 }

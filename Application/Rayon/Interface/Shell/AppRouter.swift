@@ -54,9 +54,14 @@ final class AppRouter: ObservableObject {
     @Published var columnVisibility: NavigationSplitViewVisibility = .all
     /// Presents the server editor for a new server from anywhere (menu, Dashboard, Servers).
     @Published var presentNewServer = false
-    /// The Settings category shown. Settings follows this itself, so a
-    /// change of category does not go through every view that watches the router.
-    let settingsNavigation = SettingsNavigation()
+    /// Settings category to show when Settings opens.
+    /// Settings follows this itself, so a change of category does not go
+    /// through every view that watches the router.
+    let settingsNavigation = ConfigNavigation(SettingsCategory.general)
+    var settingsSelection: String {
+        get { settingsNavigation.selection }
+        set { settingsNavigation.go(newValue) }
+    }
 
     private var cancellables = Set<AnyCancellable>()
 
@@ -372,8 +377,8 @@ final class AppRouter: ObservableObject {
         }
     }
 
-    func openSettings(_ category: SettingsCategory = .general) {
-        settingsNavigation.selection = category
+    func openSettings(_ category: String = SettingsCategory.general) {
+        settingsSelection = category
         route = .settings
     }
 }
@@ -395,34 +400,7 @@ extension Route {
     }
 }
 
-enum SettingsCategory: String, CaseIterable, Identifiable {
-    case general
-    case connection
-    case terminal
-    case about
-
-    var id: Self { self }
-
-    var title: String {
-        switch self {
-        case .general: return "General"
-        case .connection: return "Connection"
-        case .terminal: return "Terminal"
-        case .about: return "About"
-        }
-    }
-
-    var icon: String {
-        switch self {
-        case .general: return "gearshape"
-        case .connection: return "network"
-        case .terminal: return "terminal"
-        case .about: return "info.circle"
-        }
-    }
-}
-
-@MainActor
-final class SettingsNavigation: ObservableObject {
-    @Published var selection: SettingsCategory = .general
+enum SettingsCategory {
+    static let general = "general"
+    static let about = "about"
 }

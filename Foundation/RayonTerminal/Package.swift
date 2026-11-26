@@ -6,6 +6,7 @@ let package = Package(
     platforms: [.macOS(.v13), .iOS(.v16)],
     products: [
         .library(name: "RayonTerminal", targets: ["RayonTerminal"]),
+        .executable(name: "RayonConfigurationPreview", targets: ["RayonConfigurationPreview"]),
     ],
     dependencies: [
         .package(url: "https://github.com/Lakr233/libghostty-spm.git", exact: "2.2.2026100703"),
@@ -16,10 +17,11 @@ let package = Package(
             name: "RayonTerminal",
             dependencies: [
                 .product(name: "GhosttyTerminal", package: "libghostty-spm"),
-                .product(name: "GhosttyTheme", package: "libghostty-spm"),
                 .product(name: "RayonDesign", package: "RayonDesign"),
-            ]
+            ],
+            resources: [.process("Configuration/Resources")]
         ),
         .testTarget(name: "RayonTerminalTests", dependencies: ["RayonTerminal"]),
+        .executableTarget(name: "RayonConfigurationPreview", dependencies: ["RayonTerminal"]),
     ]
 )

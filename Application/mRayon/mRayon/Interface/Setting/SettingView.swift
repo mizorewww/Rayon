@@ -4,139 +4,58 @@
 //
 //  Created by Lakr Aream on 2022/3/2.
 //
-//  Settings: the categories as a list, each pushing its groups as cards. The
-//  terminal's settings are RayonTerminal's view.
+//  Settings is the shared RayonTerminal layout (the same categories and order as
+//  on macOS: General, Connection, then the terminal, then About); this file
+//  supplies the rows for Rayon's own preferences on iOS.
 //
 
-import RayonEditor
 import RayonModule
 import RayonTerminal
 import SwiftUI
 
 struct SettingView: View {
     @ObservedObject var store = RayonStore.shared
-    @State private var editingConfigFile = false
-
-    private enum Category: String, CaseIterable, Identifiable {
-        case general = "General"
-        case connection = "Connection"
-        case terminal = "Terminal"
-        case about = "About"
-
-        var id: Self { self }
-
-        var icon: String {
-            switch self {
-            case .general: return "gearshape"
-            case .connection: return "network"
-            case .terminal: return "terminal"
-            case .about: return "info.circle"
-            }
-        }
-    }
 
     var body: some View {
-        List(Category.allCases) { category in
-            NavigationLink {
-                ScrollView {
-                    VStack(alignment: .leading, spacing: RX.Space.s6) {
-                        page(category)
-                    }
-                    .padding(RX.Space.s4)
-                }
-                .background(RXBackdrop().ignoresSafeArea())
-                .navigationTitle(category.rawValue)
-            } label: {
-                Label(category.rawValue, systemImage: category.icon)
+        GhosttyConfigurationView(
+            hostSections: [
+                ConfigHostSettingsSection(id: "general.appearance", keywords: "appearance dark light mode theme system effects animation background home glow reduce motion") {
+                    AppearanceSettings()
+                },
+                ConfigHostSettingsSection(id: "general.sessions", keywords: "open sessions automatically ask before closing confirmation") {
+                    SessionSettings()
+                },
+                ConfigHostSettingsSection(id: "general.recent", keywords: "recent servers history quick connect commands record remember") {
+                    RecentSettings()
+                },
+                ConfigHostSettingsSection(id: "general.sync", keywords: "icloud sync cloud encrypted passphrase servers identities credentials devices") {
+                    CloudSyncSettings()
+                },
+                ConfigHostSettingsSection(id: "general.data", keywords: "data container files log diagnostics backup export import restore ssh config openssh archive") {
+                    DataSettings()
+                },
+                ConfigHostSettingsSection(id: "connection.ssh", keywords: "ssh timeout connect wait host key known hosts fingerprint") {
+                    SSHSettings()
+                },
+                ConfigHostSettingsSection(id: "connection.monitor", keywords: "monitor refresh interval status") {
+                    MonitorSettings()
+                },
+                ConfigHostSettingsSection(id: "terminal.copyOnSelect", keywords: "copy on select selection clipboard pasteboard automatically share remote osc52 programs") {
+                    CopyOnSelectSettings()
+                },
+                ConfigHostSettingsSection(id: "about.Rayon", keywords: "version build license source github issues") {
+                    AboutSettings()
+                },
+                ConfigHostSettingsSection(id: "about.acknowledgements", keywords: "acknowledgements credits libraries ghostty") {
+                    AcknowledgementSettings()
+                },
+            ],
+            onApplied: { size in
+                // One font size: the terminal's Size setting also sets the size
+                // new sessions start from.
+                if let size { store.terminalFontSize = Int(size.rounded()) }
             }
-        }
-        .navigationTitle("Settings")
-        .sheet(isPresented: $editingConfigFile) {
-            TerminalConfigFileSheet()
-        }
-    }
-
-    @ViewBuilder
-    private func page(_ category: Category) -> some View {
-        switch category {
-        case .general:
-            SettingsGroup("Appearance") { AppearanceSettings() }
-            SettingsGroup("Sessions") { SessionSettings() }
-            SettingsGroup("Recent") { RecentSettings() }
-            SettingsGroup("iCloud Sync") { CloudSyncSettings() }
-            SettingsGroup("Data") { DataSettings() }
-        case .connection:
-            SettingsGroup("SSH") { SSHSettings() }
-            SettingsGroup("Monitor") { MonitorSettings() }
-        case .terminal:
-            GhosttyConfigurationView(
-                copyOnSelect: $store.terminalCopyOnSelect,
-                clipboardSharing: $store.terminalClipboardSharing,
-                openConfigFile: { _ in editingConfigFile = true }
-            )
-        case .about:
-            SettingsGroup("Rayon") { AboutSettings() }
-            SettingsGroup("Acknowledgements") { AcknowledgementSettings() }
-        }
-    }
-}
-
-/// A group of Settings: its caption, then its rows on one card.
-private struct SettingsGroup<Content: View>: View {
-    let title: String
-    let content: Content
-
-    init(_ title: String, @ViewBuilder content: () -> Content) {
-        self.title = title
-        self.content = content()
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: RX.Space.s2) {
-            CapsLabel(title)
-                .padding(.leading, RX.Space.s4)
-            content
-                .padding(.horizontal, RX.Space.s4)
-                .background(Color.clear.rxCard(padding: 0))
-        }
-    }
-}
-
-/// `config.ghostty` in the built-in editor. Saving applies it to every
-/// terminal; a file Ghostty rejects is not saved, and the reason is shown.
-private struct TerminalConfigFileSheet: View {
-    @Environment(\.dismiss) private var dismiss
-    @State private var text = RayonTerminalConfiguration.contents
-    @State private var issue: String?
-
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                if let issue {
-                    HelpText(issue, isError: true)
-                        .padding(RX.Space.s3)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                CodeEditor(text: $text, language: .plain)
-            }
-            .navigationTitle("config.ghostty")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        do {
-                            try RayonTerminalConfiguration.save(text)
-                            dismiss()
-                        } catch {
-                            issue = error.localizedDescription
-                        }
-                    }
-                }
-            }
-        }
+        )
     }
 }
 
@@ -178,7 +97,7 @@ private struct AppearanceSettings: View {
 
     var body: some View {
         RXDividedStack {
-            RXFormRow("Light or dark", description: "Terminal colors are set under Terminal.") {
+            RXFormRow("Light or dark", description: "Terminal colors are set under Colors.") {
                 Picker("Appearance", selection: $appearance) {
                     Text("System").tag(AppearancePreference.system.rawValue)
                     Text("Light").tag(AppearancePreference.light.rawValue)
@@ -335,6 +254,32 @@ private struct MonitorSettings: View {
     }
 }
 
+/// Terminal, Mouse & Clipboard: the row above Ghostty's copy settings.
+private struct CopyOnSelectSettings: View {
+    @ObservedObject var store = RayonStore.shared
+
+    var body: some View {
+        RXDividedStack {
+            SwitchRow(
+                "Copy on select",
+                description: "Copy text to the clipboard as soon as you finish selecting it.",
+                isOn: $store.terminalCopyOnSelect
+            )
+            .onChange(of: store.terminalCopyOnSelect) { enabled in
+                RayonTerminalView.setCopyOnSelect(enabled)
+            }
+            SwitchRow(
+                "Share clipboard with remote programs",
+                description: "Programs running on the server may read and write this device's clipboard (OSC 52), so a copy in vim or tmux lands here.",
+                isOn: $store.terminalClipboardSharing
+            )
+            .onChange(of: store.terminalClipboardSharing) { enabled in
+                RayonTerminalView.setClipboardSharing(enabled)
+            }
+        }
+    }
+}
+
 private struct AboutSettings: View {
     var body: some View {
         RXDividedStack {
@@ -370,7 +315,7 @@ private struct AcknowledgementSettings: View {
             RXFormRow("Originally created by", description: "Lakr Aream (@Lakr233) with @__oquery, @zlind0, @unixzii, @82flex and @xnth97. This version is not affiliated with or endorsed by them.") {
                 EmptyView()
             }
-            RXFormRow("Terminal", description: "Ghostty and its theme collection (MIT, Ghostty contributors).") {
+            RXFormRow("Terminal", description: "Ghostty and its configuration catalog (MIT, Ghostty contributors).") {
                 EmptyView()
             }
         }

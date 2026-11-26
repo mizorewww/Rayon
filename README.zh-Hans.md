@@ -75,7 +75,7 @@ brew install --cask mizorewww/tap/rayon
 1. **添加服务器**：在 Dashboard 点 **New Server**（⇧⌘N）。
 2. **连接**：在 Dashboard 点服务器卡片。**Files** 打开 SFTP，**Monitor** 打开实时用量；工具栏切换器可在三者间切换。
 3. **快速连接**：在主页输入 `user@host`、`user@host:2222`、已保存服务器的名称或完整的 `ssh` 命令。
-4. **设置**（⌘,）包含应用和终端的全部选项。终端配置方式见
+4. **设置**（⌘,）包含应用和终端的全部选项。Ghostty 配置项的覆盖情况见
    [CONFIGURATION.md](Foundation/RayonTerminal/CONFIGURATION.md)。
 
 ## 从源码构建

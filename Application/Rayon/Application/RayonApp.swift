@@ -207,9 +207,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         AppearancePreference.applyStored()
         RayonTerminalView.setCopyOnSelect(RayonStore.shared.terminalCopyOnSelect)
         RayonTerminalView.setClipboardSharing(RayonStore.shared.terminalClipboardSharing)
-        // One font size: the terminal's Size setting also sets the size ⌘+
-        // and ⌘− start from.
-        RayonTerminalConfiguration.onFontSizeChange = { RayonStore.shared.terminalFontSize = Int($0.rounded()) }
         // The appearance and copy on select may come from another device,
         // through iCloud.
         windowObservers.append(
@@ -239,9 +236,16 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                         if category == "@terminal", let session = TerminalManager.shared.sessionContexts.last {
                             AppRouter.shared.route = .terminal(session.id)
                         } else {
-                            AppRouter.shared.openSettings(SettingsCategory(rawValue: category) ?? .general)
+                            AppRouter.shared.openSettings(category)
                         }
                     }
+                }
+            }
+            if let pair = ProcessInfo.processInfo.environment["RAYON_PREVIEW_EDIT"]?.split(separator: "=", maxSplits: 1).map(String.init), pair.count == 2 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 6) {
+                    let old = ConfigBenchmark.value(pair[0])
+                    ConfigBenchmark.edit(pair[0], pair[1])
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 10) { ConfigBenchmark.edit(pair[0], old) }
                 }
             }
             if ProcessInfo.processInfo.environment["RAYON_PREVIEW_MENUBAR"] != nil {

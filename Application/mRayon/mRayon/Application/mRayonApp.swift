@@ -48,9 +48,6 @@ struct mRayonApp: App {
                     AppearancePreference.applyStored()
                     RayonTerminalView.setCopyOnSelect(store.terminalCopyOnSelect)
                     RayonTerminalView.setClipboardSharing(store.terminalClipboardSharing)
-                    // One font size: the terminal's Size setting also sets the
-                    // size new sessions start from.
-                    RayonTerminalConfiguration.onFontSizeChange = { RayonStore.shared.terminalFontSize = Int($0.rounded()) }
                     checkAgreement()
                     #if DEBUG
                         seedPreviewServers()
