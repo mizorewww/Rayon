@@ -167,10 +167,22 @@ public final class TerminalSettings {
 
     /// Replaces the whole file (a restored backup, say), once Ghostty accepts it.
     public func load(_ text: String) throws {
-        let next = GhosttyConfigText(text)
+        try take(GhosttyConfigText(text))
+    }
+
+    /// Shows `next` and commits it, in place of any change not applied yet.
+    /// What Settings shows is `next` before the change is announced, so a
+    /// listener that changes the settings again builds on it.
+    private func take(_ next: GhosttyConfigText) throws {
         pendingApply?.cancel()
-        try commit(next)
+        let previous = config
         config = next
+        do {
+            try commit(next)
+        } catch {
+            config = previous
+            throw error
+        }
         revision += 1
     }
 
@@ -183,11 +195,8 @@ public final class TerminalSettings {
         var next = config
         for (key, values) in changes { next.set(key, values ?? []) }
         guard next != applied else { return }
-        pendingApply?.cancel()
         do {
-            try commit(next)
-            config = next
-            revision += 1
+            try take(next)
         } catch {
             issue = error.localizedDescription
         }

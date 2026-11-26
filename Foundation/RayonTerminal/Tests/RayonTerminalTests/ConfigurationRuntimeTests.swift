@@ -223,4 +223,24 @@ final class ConfigurationRuntimeTests: XCTestCase {
         TerminalConfigurationSync.adopt(["foreground": ["#eeeeee"]], into: binary)
         XCTAssertEqual(try Data(contentsOf: url), bytes)
     }
+
+    /// A listener to a change that changes the settings again (iCloud sync
+    /// applying another device's) builds on that change, not on what was
+    /// there before it.
+    @MainActor func testAListenerBuildsOnTheChangeItHears() throws {
+        let settings = try scratchSettings("font-size = 18\n")
+        var adopted = false
+        let observer = NotificationCenter.default.addObserver(forName: TerminalSettings.didChange, object: settings, queue: .main) { _ in
+            MainActor.assumeIsolated {
+                guard !adopted else { return }
+                adopted = true
+                settings.adopt(["background": ["#202020"]])
+            }
+        }
+        defer { NotificationCenter.default.removeObserver(observer) }
+        try settings.load("font-size = 20\n")
+        XCTAssertTrue(adopted)
+        XCTAssertEqual(settings.applied.text, "font-size = 20\nbackground = #202020\n")
+        XCTAssertEqual(settings.config, settings.applied)
+    }
 }
