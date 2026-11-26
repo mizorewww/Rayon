@@ -1,11 +1,15 @@
 name: PR merge
 
-# Retries the merge of a contributor's pull request the automated review approved
-# (see pr-review.yml and .github/scripts/merge_ready.py). This repository has no
-# CI, so the review merges right after approving.
+# Merges a contributor's pull request the automated review approved (see
+# pr-review.yml and .github/scripts/merge_ready.py) once CI (ci.yml) has passed
+# on its head: whenever a CI run on a pull request succeeds, or by hand.
+# merge_ready.py checks the CI runs itself, so a run by hand cannot skip them.
 # Nothing from the pull request is checked out or run here.
 
 on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
   workflow_dispatch:
     inputs:
       pr:
@@ -18,18 +22,27 @@ permissions:
 
 jobs:
   merge:
+    if: >-
+      github.event_name == 'workflow_dispatch' || (
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - run: |
+          if [ -z "$MAINTAINER_TOKEN" ]; then
+            echo "::notice::Merge skipped: set the MAINTAINER_TOKEN secret to turn it on."
+            exit 0
+          fi
           if [ -n "$PR" ]; then
             HEAD_SHA=$(gh pr view "$PR" --json headRefOid --jq .headRefOid)
           fi
           python3 .github/scripts/merge_ready.py "$HEAD_SHA"
         env:
           PR: ${{ inputs.pr }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
           MAINTAINER_TOKEN: ${{ secrets.MAINTAINER_TOKEN }}
-          CI_WORKFLOWS: ""
+          CI_WORKFLOWS: CI
