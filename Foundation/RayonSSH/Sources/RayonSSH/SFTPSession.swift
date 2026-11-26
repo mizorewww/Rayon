@@ -63,7 +63,12 @@ public struct SFTPProgress: Sendable {
 }
 
 public struct SFTPSession: Sendable {
-    private static let chunkSize = 32 * 1024
+    /// What one request carries: Citadel cuts writes into 32,000-byte
+    /// messages, so a chunk is one message.
+    private static let chunkSize = 32000
+    /// Requests sent before the first is answered, so a transfer waits
+    /// for the round trip once per window rather than once per chunk.
+    private static let requestsInFlight = 16
     /// How deep a download descends into folders, as libssh2's did.
     private static let maxDepth = 32
 
@@ -130,16 +135,29 @@ public struct SFTPSession: Sendable {
         let total = Int64((try? FileManager.default.attributesOfItem(atPath: local.path)[.size] as? NSNumber)??.int64Value ?? 0)
         let file = try await client.openFile(filePath: remote, flags: [.write, .create, .truncate], attributes: attributes)
         let meter = TransferMeter(file: local.lastPathComponent, total: total, report: progress)
+        // Each write with the offset it ends at, oldest first.
+        var writes: [(Task<Void, Error>, end: UInt64)] = []
         do {
             var offset: UInt64 = 0
             while let data = try handle.read(upToCount: Self.chunkSize), !data.isEmpty {
                 try Task.checkCancellation()
-                try await file.write(ByteBuffer(data: data), at: offset)
+                if writes.count >= Self.requestsInFlight {
+                    let (write, end) = writes.removeFirst()
+                    try await write.value
+                    meter.advance(to: Int64(end))
+                }
+                let at = offset
                 offset += UInt64(data.count)
-                meter.advance(to: Int64(offset))
+                writes.append((Task { try await file.write(ByteBuffer(data: data), at: at) }, offset))
+            }
+            while !writes.isEmpty {
+                let (write, end) = writes.removeFirst()
+                try await write.value
+                meter.advance(to: Int64(end))
             }
             try await file.close()
         } catch {
+            for (write, _) in writes { write.cancel(); _ = await write.result }
             try? await file.close()
             throw error
         }
@@ -177,21 +195,44 @@ public struct SFTPSession: Sendable {
         defer { try? handle.close() }
         let file = try await client.openFile(filePath: remote, flags: .read)
         let meter = TransferMeter(file: local.lastPathComponent, total: Int64(clamping: attributes.size ?? 0), report: progress)
+        // Reads ahead of the one being written, oldest first.
+        var reads: [Task<ByteBuffer, Error>] = []
         do {
+            var requested: UInt64 = 0
             var offset: UInt64 = 0
             while true {
+                while reads.count < Self.requestsInFlight {
+                    let from = requested
+                    reads.append(Task { try await Self.read(file, from: from) })
+                    requested += UInt64(Self.chunkSize)
+                }
                 try Task.checkCancellation()
-                let chunk = try await file.read(from: offset, length: UInt32(Self.chunkSize))
-                guard chunk.readableBytes > 0 else { break }
+                let chunk = try await reads.removeFirst().value
                 try handle.write(contentsOf: chunk.readableBytesView)
                 offset += UInt64(chunk.readableBytes)
                 meter.advance(to: Int64(offset))
+                // Only the end of the file answers short.
+                if chunk.readableBytes < Self.chunkSize { break }
             }
+            for read in reads { read.cancel(); _ = await read.result }
             try await file.close()
         } catch {
+            for read in reads { read.cancel(); _ = await read.result }
             try? await file.close()
             throw error
         }
+    }
+
+    /// The chunk at `offset`, whole unless the file ends in it: a server
+    /// may answer a read with fewer bytes than asked for.
+    private static func read(_ file: SFTPFile, from offset: UInt64) async throws -> ByteBuffer {
+        var chunk = try await file.read(from: offset, length: UInt32(chunkSize))
+        while chunk.readableBytes > 0, chunk.readableBytes < chunkSize {
+            var more = try await file.read(from: offset + UInt64(chunk.readableBytes), length: UInt32(chunkSize - chunk.readableBytes))
+            guard more.readableBytes > 0 else { break }
+            chunk.writeBuffer(&more)
+        }
+        return chunk
     }
 
     /// Deletes a remote file, link or folder with everything in it.

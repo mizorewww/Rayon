@@ -107,6 +107,10 @@ public actor SSHConnection {
             hostKeyValidator: .custom(HostKeyValidator(status: configuration.hostKeyStatus))
         )
         settings.algorithms = algorithms
+        // swift-nio-ssh opens each channel with a receive window of one
+        // maximum packet, 128 KB by default: a download then waits for a
+        // round trip every 128 KB. 2 MB is OpenSSH's window.
+        settings.protocolOptions = [.maximumPacketSize(1 << 21)]
         let client: SSHClient
         do {
             client = try await withTaskExecutorPreference(EventLoopTaskExecutor(channel.eventLoop)) {

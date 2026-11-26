@@ -301,6 +301,32 @@ final class SSHLiveTests: XCTestCase {
         await connection.close()
     }
 
+    /// With 25 ms each way, one 32 KB request per round trip would take
+    /// over six seconds for 4 MB.
+    func testSFTPKeepsRequestsInFlight() async throws {
+        let proxy = try await Self.slowProxy(to: port, delay: .milliseconds(25))
+        defer { proxy.close(promise: nil) }
+        let connection = try await connect([.password(password)], port: proxy.localAddress!.port!)
+        _ = try await connection.execute("head -c 4000000 /dev/urandom > /tmp/big")
+        let sftp = try await connection.openSFTP()
+        let local = FileManager.default.temporaryDirectory.appendingPathComponent("rayon-big-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: local, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: local) }
+
+        var started = ContinuousClock.now
+        try await sftp.download("/tmp/big", to: local.appendingPathComponent("big")) { _ in }
+        XCTAssertLessThan(ContinuousClock.now - started, .seconds(2.5), "download")
+        XCTAssertEqual(try FileManager.default.attributesOfItem(atPath: local.appendingPathComponent("big").path)[.size] as? Int, 4_000_000)
+
+        _ = try await connection.execute("mkdir -p /tmp/back")
+        started = ContinuousClock.now
+        try await sftp.upload(local.appendingPathComponent("big"), toDirectory: "/tmp/back") { _ in }
+        XCTAssertLessThan(ContinuousClock.now - started, .seconds(2.5), "upload")
+        let same = try await connection.execute("cmp /tmp/big /tmp/back/big")
+        XCTAssertEqual(same.status, 0, String(decoding: same.output, as: UTF8.self))
+        await connection.close()
+    }
+
     func testSFTPListUploadDownload() async throws {
         let connection = try await connect([.password(password)])
         let sftp = try await connection.openSFTP()
@@ -575,6 +601,41 @@ final class SSHLiveTests: XCTestCase {
                 try await Task.sleep(for: .milliseconds(50))
             }
         }
+    }
+
+    /// A TCP proxy to the server on a port of its own that holds what
+    /// passes, either way, for `delay`: a link with a round trip.
+    private static func slowProxy(to port: Int, delay: TimeAmount) async throws -> Channel {
+        final class Delay: ChannelInboundHandler {
+            typealias InboundIn = ByteBuffer
+            let peer: Channel
+            let delay: TimeAmount
+            init(peer: Channel, delay: TimeAmount) { self.peer = peer; self.delay = delay }
+            func channelRead(context: ChannelHandlerContext, data: NIOAny) {
+                let bytes = unwrapInboundIn(data)
+                let peer = peer
+                context.eventLoop.scheduleTask(in: delay) { peer.writeAndFlush(bytes, promise: nil) }
+            }
+            func channelInactive(context: ChannelHandlerContext) {
+                let peer = peer
+                context.eventLoop.scheduleTask(in: delay) { peer.close(promise: nil) }
+            }
+        }
+        return try await ServerBootstrap(group: MultiThreadedEventLoopGroup.singleton)
+            .childChannelInitializer { inbound in
+                ClientBootstrap(group: inbound.eventLoop)
+                    .channelInitializer { outbound in
+                        outbound.eventLoop.makeCompletedFuture {
+                            try outbound.pipeline.syncOperations.addHandler(Delay(peer: inbound, delay: delay))
+                        }
+                    }
+                    .connect(host: "127.0.0.1", port: port)
+                    .flatMapThrowing { outbound in
+                        try inbound.pipeline.syncOperations.addHandler(Delay(peer: outbound, delay: delay))
+                    }
+            }
+            .bind(host: "127.0.0.1", port: 0)
+            .get()
     }
 
     private static func freePort() throws -> Int {
