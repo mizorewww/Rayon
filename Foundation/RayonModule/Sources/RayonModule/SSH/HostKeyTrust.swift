@@ -69,10 +69,18 @@ public struct HostKeyQuestion: Sendable {
     }
 }
 
+public enum HostKeyAnswer: Sendable {
+    case trusted
+    /// The person turned the key down.
+    case declined
+    /// The question could not be shown, or went away without an answer.
+    case unanswered
+}
+
 public protocol HostKeyTrustHandler: AnyObject, Sendable {
     /// Shows the question and answers whether the key is to be trusted.
     /// Called on the main actor.
-    @MainActor func confirm(_ question: HostKeyQuestion) async -> Bool
+    @MainActor func confirm(_ question: HostKeyQuestion) async -> HostKeyAnswer
 }
 
 public enum HostKeyTrust {
@@ -86,10 +94,10 @@ public enum HostKeyTrust {
         var handler: HostKeyTrustHandler?
         /// Questions on screen: whoever asks the same meanwhile waits for
         /// that answer instead of raising a second prompt.
-        var pending: [Asked: Task<Bool, Never>] = [:]
-        /// Keys the person turned down, not asked about again while the
-        /// app runs: reconnecting features (the monitor, forwards) would
-        /// otherwise raise the prompt every few seconds.
+        var pending: [Asked: Task<HostKeyAnswer, Never>] = [:]
+        /// Keys the person turned down, not asked about again by what
+        /// reconnects on its own while the app runs: the monitor and
+        /// forwards would otherwise raise the prompt every few seconds.
         var declined: Set<Asked> = []
     }
 
@@ -101,24 +109,30 @@ public enum HostKeyTrust {
         set { state.withLock { $0.handler = newValue } }
     }
 
-    /// Asks the registered handler; false when there is none, or when the
-    /// person already turned this key down.
-    static func confirm(_ question: HostKeyQuestion) async -> Bool {
+    /// Asks the registered handler whether to trust the key; false when
+    /// there is none, or, for a `background` reconnect, when the person
+    /// already turned this key down. Asked by the person's own action, the
+    /// question is put again.
+    static func confirm(_ question: HostKeyQuestion, background: Bool) async -> Bool {
         let asked = Asked(host: question.host, port: question.port, key: question.offered)
-        let task = state.withLock { state -> Task<Bool, Never>? in
-            guard !state.declined.contains(asked), let handler = state.handler else { return nil }
+        let task = state.withLock { state -> Task<HostKeyAnswer, Never>? in
+            guard let handler = state.handler, !(background && state.declined.contains(asked)) else { return nil }
             if let pending = state.pending[asked] { return pending }
             let task = Task { await handler.confirm(question) }
             state.pending[asked] = task
             return task
         }
         guard let task else { return false }
-        let trusted = await task.value
+        let answer = await task.value
         state.withLock { state in
             state.pending[asked] = nil
-            if !trusted { state.declined.insert(asked) }
+            switch answer {
+            case .trusted: state.declined.remove(asked)
+            case .declined: state.declined.insert(asked)
+            case .unanswered: break
+            }
         }
-        return trusted
+        return answer == .trusted
     }
 
     /// The keys of the address turned down so far are asked about again.

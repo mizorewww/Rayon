@@ -58,7 +58,7 @@ final class MacFileTransferUIHandler: FileTransferUIHandler {
 /// Asks before a server's host key is trusted. A changed key is a warning
 /// whose default answer is Cancel.
 final class MacHostKeyTrustHandler: HostKeyTrustHandler {
-    @MainActor func confirm(_ question: HostKeyQuestion) async -> Bool {
+    @MainActor func confirm(_ question: HostKeyQuestion) async -> HostKeyAnswer {
         let changed = question.isWarning
         let buttons = changed ? ["Cancel", question.confirmTitle] : [question.confirmTitle, "Cancel"]
         return await withCheckedContinuation { continuation in
@@ -68,7 +68,7 @@ final class MacHostKeyTrustHandler: HostKeyTrustHandler {
                 buttons: buttons,
                 destructiveFirstButton: false
             ) { button, _ in
-                continuation.resume(returning: button == (changed ? 1 : 0))
+                continuation.resume(returning: button == (changed ? 1 : 0) ? .trusted : .declined)
             }
         }
     }

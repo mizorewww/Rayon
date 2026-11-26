@@ -194,6 +194,8 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
         var hasReading = false
         var lease: SSHLease?
         defer { lease?.release() }
+        /// Whether a lease was asked for already: the next is a reconnect.
+        var reconnecting = false
         while !Task.isCancelled {
             if lease.map({ !$0.connection.isActive }) ?? true {
                 lease?.release()
@@ -203,8 +205,10 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
                 // on a reimaged or different host.
                 sampler.resetConnection()
                 hasReading = false
+                let background = reconnecting
+                reconnecting = true
                 do {
-                    let leased = try await SSHConnectionPool.shared.lease(for: machine)
+                    let leased = try await SSHConnectionPool.shared.lease(for: machine, background: background)
                     lease = leased
                     if Task.isCancelled { break }
                     recordConnection(banner: leased.connection.serverVersion)

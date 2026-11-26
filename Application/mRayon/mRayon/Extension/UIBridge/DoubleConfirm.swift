@@ -5,6 +5,7 @@
 //  Created by Lakr Aream on 2022/2/9.
 //
 
+import os
 import RayonModule
 import SwiftUI
 
@@ -43,21 +44,45 @@ extension UIBridge {
 /// Asks before a server's host key is trusted. A changed key is a warning:
 /// replacing the saved key is the destructive choice, Cancel the safe one.
 final class IOSHostKeyTrustHandler: HostKeyTrustHandler {
-    @MainActor func confirm(_ question: HostKeyQuestion) async -> Bool {
+    @MainActor func confirm(_ question: HostKeyQuestion) async -> HostKeyAnswer {
         await withCheckedContinuation { continuation in
+            let answer = AnswerOnce(continuation)
             let alert = UIAlertController(title: question.title, message: question.message, preferredStyle: .alert)
             alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { _ in
-                continuation.resume(returning: false)
+                answer.resume(.declined)
             })
             let trust = UIAlertAction(title: question.confirmTitle, style: question.isWarning ? .destructive : .default) { _ in
-                continuation.resume(returning: true)
+                answer.resume(.trusted)
             }
             alert.addAction(trust)
             if !question.isWarning { alert.preferredAction = trust }
-            // An alert no window takes is a "no", not a question left open.
+            // An alert no window takes was never answered, not turned down.
             PresentationQueue.present(alert, timeout: 30) { presented in
-                if !presented { continuation.resume(returning: false) }
+                if !presented { answer.resume(.unanswered) }
             }
+        }
+    }
+
+    /// Answers once. UIKit dismisses an alert along with its presenter
+    /// without calling a handler; the alert's actions, which hold this,
+    /// are released then, and the question ends unanswered instead of
+    /// waiting forever.
+    private final class AnswerOnce: Sendable {
+        private let continuation: OSAllocatedUnfairLock<CheckedContinuation<HostKeyAnswer, Never>?>
+
+        init(_ continuation: CheckedContinuation<HostKeyAnswer, Never>) {
+            self.continuation = OSAllocatedUnfairLock(initialState: continuation)
+        }
+
+        func resume(_ answer: HostKeyAnswer) {
+            continuation.withLock { value in
+                defer { value = nil }
+                return value
+            }?.resume(returning: answer)
+        }
+
+        deinit {
+            resume(.unanswered)
         }
     }
 }

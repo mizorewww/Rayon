@@ -25,8 +25,14 @@ public actor SSHConnectionPool {
     private var entries: [String: Entry] = [:]
 
     /// A lease on the server's connection, connecting when there is none.
-    /// `hint` hears about each identity tried while connecting.
-    public func lease(for machine: RDMachine, hint: (@Sendable (String) -> Void)? = nil) async throws -> SSHLease {
+    /// `hint` hears about each identity tried while connecting. A
+    /// `background` lease (a reconnect nobody asked for) does not ask again
+    /// about a host key the person turned down.
+    public func lease(
+        for machine: RDMachine,
+        background: Bool = false,
+        hint: (@Sendable (String) -> Void)? = nil
+    ) async throws -> SSHLease {
         let key = Self.key(for: machine)
         if let entry = entries[key] {
             // A connection that has dropped since is replaced. One that is
@@ -43,7 +49,7 @@ public actor SSHConnectionPool {
         if let existing = entries[key] {
             entry = existing
         } else {
-            entry = Entry(connecting: Task { try await machine.connectSSH(hint: hint) })
+            entry = Entry(connecting: Task { try await machine.connectSSH(background: background, hint: hint) })
             entries[key] = entry
         }
         entries[key]?.leases += 1

@@ -24,18 +24,26 @@ public extension RDMachine {
     /// Connects and signs in with `identity`, or else with each identity
     /// that authenticates automatically, one connection per identity.
     /// Returns the connection and the identity that signed in.
+    ///
+    /// A `background` connect (a reconnect nobody asked for) does not ask
+    /// again about a host key the person turned down.
     func connectSSH(
         identity: RDIdentity?,
         autoIdentities: [RDIdentity],
         timeout: Duration,
+        background: Bool = false,
         hint: (@Sendable (String) -> Void)? = nil
     ) async throws -> (SSHConnection, RDIdentity) {
-        try await connectSSH(identity: identity, autoIdentities: autoIdentities, timeout: timeout, hint: hint, visited: [])
+        try await connectSSH(identity: identity, autoIdentities: autoIdentities, timeout: timeout, background: background, hint: hint, visited: [])
     }
 
     /// The machine's own identity when it has one, else the automatic ones;
     /// what the terminal, files, monitor, forwards and snippets all use.
-    func connectSSH(timeout: Duration? = nil, hint: (@Sendable (String) -> Void)? = nil) async throws -> (SSHConnection, RDIdentity) {
+    func connectSSH(
+        timeout: Duration? = nil,
+        background: Bool = false,
+        hint: (@Sendable (String) -> Void)? = nil
+    ) async throws -> (SSHConnection, RDIdentity) {
         let identity = RayonStore.workerAssociatedIdentity(for: self)
         if associatedIdentity != nil, identity == nil {
             throw SSHFailure(message: "The identity this server signs in with no longer exists.", unreachable: false)
@@ -44,6 +52,7 @@ public extension RDMachine {
             identity: identity,
             autoIdentities: RayonStore.workerIdentitiesForAutoAuth,
             timeout: timeout ?? .seconds(max(5, RayonStore.workerTimeoutNumber.intValue)),
+            background: background,
             hint: hint
         )
     }
@@ -52,6 +61,7 @@ public extension RDMachine {
         identity: RDIdentity?,
         autoIdentities: [RDIdentity],
         timeout: Duration,
+        background: Bool,
         hint: (@Sendable (String) -> Void)?,
         visited: Set<UUID>
     ) async throws -> (SSHConnection, RDIdentity) {
@@ -76,6 +86,7 @@ public extension RDMachine {
                     username: username,
                     credentials: credentials,
                     timeout: timeout,
+                    background: background,
                     visited: visited
                 )
                 candidate.recordUse()
@@ -97,11 +108,17 @@ public extension RDMachine {
 
     /// One connection attempt; asks about the host key and tries again
     /// when the person trusts it.
-    private func connect(username: String, credentials: [SSHCredential], timeout: Duration, visited: Set<UUID>) async throws -> SSHConnection {
+    private func connect(
+        username: String,
+        credentials: [SSHCredential],
+        timeout: Duration,
+        background: Bool,
+        visited: Set<UUID>
+    ) async throws -> SSHConnection {
         let host = remoteAddress
         let port = sshPort
         while true {
-            let transport = try await makeTransport(timeout: timeout, visited: visited)
+            let transport = try await makeTransport(timeout: timeout, background: background, visited: visited)
             let configuration = SSHConnection.Configuration(
                 host: host,
                 port: port,
@@ -116,12 +133,12 @@ public extension RDMachine {
             } catch let error as SSHError {
                 switch error {
                 case let .unknownHostKey(key):
-                    guard await HostKeyTrust.confirm(KnownHosts.shared.question(offering: key, host: host, port: port)) else {
+                    guard await HostKeyTrust.confirm(KnownHosts.shared.question(offering: key, host: host, port: port), background: background) else {
                         throw SSHFailure(message: "The host key of \(host) was not trusted.", unreachable: true)
                     }
                     KnownHosts.shared.trust(key, host: host, port: port)
                 case let .hostKeyChanged(offered, _):
-                    guard await HostKeyTrust.confirm(KnownHosts.shared.question(offering: offered, host: host, port: port)) else {
+                    guard await HostKeyTrust.confirm(KnownHosts.shared.question(offering: offered, host: host, port: port), background: background) else {
                         throw SSHFailure(message: error.localizedDescription, unreachable: true)
                     }
                     KnownHosts.shared.trust(offered, host: host, port: port)
@@ -138,7 +155,7 @@ public extension RDMachine {
         }
     }
 
-    private func makeTransport(timeout: Duration, visited: Set<UUID>) async throws -> SSHTransport {
+    private func makeTransport(timeout: Duration, background: Bool, visited: Set<UUID>) async throws -> SSHTransport {
         switch transport {
         case .direct:
             return .tcp
@@ -172,6 +189,7 @@ public extension RDMachine {
                     identity: RayonStore.workerAssociatedIdentity(for: bastion),
                     autoIdentities: RayonStore.workerIdentitiesForAutoAuth,
                     timeout: timeout,
+                    background: background,
                     hint: nil,
                     visited: visited
                 )

@@ -79,8 +79,10 @@ public class PortForwardContext: ObservableObject, Identifiable, @unchecked Send
     }
 
     private func runLifecycle() async {
+        var reconnecting = false
         while !Task.isCancelled {
-            await runRound()
+            await runRound(reconnecting: reconnecting)
+            reconnecting = true
             guard !Task.isCancelled else { break }
             try? await Task.sleep(for: .seconds(reconnectDelay))
         }
@@ -92,11 +94,11 @@ public class PortForwardContext: ObservableObject, Identifiable, @unchecked Send
     /// One connection running the forward until it drops or is cancelled.
     /// Signs in as the terminal and the files do: with the server's own
     /// identity, else with the automatic ones.
-    private func runRound() async {
+    private func runRound(reconnecting: Bool) async {
         putLifecycle(.awaitingConnect)
         let lease: SSHLease
         do {
-            lease = try await SSHConnectionPool.shared.lease(for: machine)
+            lease = try await SSHConnectionPool.shared.lease(for: machine, background: reconnecting)
         } catch let failure as RDMachine.SSHFailure {
             putLifecycle(failure.unreachable ? .failedConnect : .failedAuthenticate)
             return
