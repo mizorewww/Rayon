@@ -129,6 +129,43 @@ final class ProcParsersTests: XCTestCase {
         XCTAssertFalse(percent.sumSystem.isInfinite)
     }
 
+    func testLongRunningJiffiesKeepSecondResolution() {
+        // Regression: Float counters cannot resolve a one-second step past
+        // 2^24 jiffies, so a busy many-core server read 0% or jumped.
+        let before = ProcParsers.parseProcStat("cpu  4000000000 0 1000000000 90000000000 0 0 0 0 0 0").summary
+        let after = ProcParsers.parseProcStat("cpu  4000000300 0 1000000100 90000000600 0 0 0 0 0 0").summary
+        guard let before, let after else {
+            XCTFail("missing summary rows")
+            return
+        }
+        XCTAssertEqual(after.idle, 90_000_000_600)
+        let percent = ProcParsers.calculatePercent(priv: before, curr: after)
+        XCTAssertEqual(percent.sumUser, 30, accuracy: 0.001)
+        XCTAssertEqual(percent.sumSystem, 10, accuracy: 0.001)
+        XCTAssertEqual(percent.sumUsed, 40, accuracy: 0.001)
+    }
+
+    func testGuestTimeIsNotCountedTwice() {
+        // user already contains guest; adding the guest column again
+        // inflated the total and understated every share.
+        let before = ProcParsers.parseProcStat("cpu  100 0 0 100 0 0 0 0 0 0").summary!
+        let after = ProcParsers.parseProcStat("cpu  200 0 0 200 0 0 0 0 100 0").summary!
+        XCTAssertEqual(ProcParsers.calculatePercent(priv: before, curr: after).sumUser, 50, accuracy: 0.001)
+    }
+
+    func testOldKernelsWithFewerColumnsParse() {
+        let (summary, cores) = ProcParsers.parseProcStat("cpu  10 20 30 40 50 60 70\ncpu0 1 2 3 4\n")
+        XCTAssertEqual(summary?.softIrq, 70)
+        XCTAssertEqual(summary?.steal, 0)
+        XCTAssertEqual(cores["cpu0"]?.idle, 4)
+    }
+
+    func testCounterResetYieldsZeroInsteadOfWrapping() {
+        let before = ProcParsers.parseProcStat("cpu  500 0 500 500 0 0 0 0 0 0").summary!
+        let after = ProcParsers.parseProcStat("cpu  10 0 10 10 0 0 0 0 0 0").summary!
+        XCTAssertEqual(ProcParsers.calculatePercent(priv: before, curr: after).sumUsed, 0)
+    }
+
     // MARK: - /etc/os-release
 
     func testOsReleasePrefersPrettyNameAndStripsDoubleQuotes() {

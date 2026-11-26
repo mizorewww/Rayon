@@ -126,19 +126,22 @@ public extension ServerStatus {
         }
     }
 
-    /// 服务器 CPU 的立即信息
-    struct ProcessInfoElement: Codable, Equatable {
-        public let user: Float
-        public let nice: Float
-        public let system: Float
-        public let idle: Float
-        public let iowait: Float
-        public let irq: Float
-        public let softIrq: Float
-        public let steal: Float
-        public let guest: Float
+    /// One row of `/proc/stat`, in jiffies since boot. 64-bit because a
+    /// many-core server passes 2^24 idle jiffies within hours, where a
+    /// `Float` stops resolving a second's increment. `guest` and
+    /// `guest_nice` are left out on purpose: the kernel already counts
+    /// them inside `user` and `nice`.
+    struct ProcessInfoElement: Codable, Equatable, Sendable {
+        public let user: UInt64
+        public let nice: UInt64
+        public let system: UInt64
+        public let idle: UInt64
+        public let iowait: UInt64
+        public let irq: UInt64
+        public let softIrq: UInt64
+        public let steal: UInt64
 
-        public init(user: Float, nice: Float, system: Float, idle: Float, iowait: Float, irq: Float, softIrq: Float, steal: Float, guest: Float) {
+        public init(user: UInt64, nice: UInt64, system: UInt64, idle: UInt64, iowait: UInt64 = 0, irq: UInt64 = 0, softIrq: UInt64 = 0, steal: UInt64 = 0) {
             self.user = user
             self.nice = nice
             self.system = system
@@ -147,21 +150,10 @@ public extension ServerStatus {
             self.irq = irq
             self.softIrq = softIrq
             self.steal = steal
-            self.guest = guest
         }
 
-        public func description() -> String {
-            """
-            user: \(user)
-            nice: \(nice)
-            system: \(system)
-            idle: \(idle)
-            iowait: \(iowait)
-            irq: \(irq)
-            softIrq: \(softIrq)
-            steal: \(steal)
-            guest: \(guest)
-            """
+        var total: UInt64 {
+            user + nice + system + idle + iowait + irq + softIrq + steal
         }
     }
 }

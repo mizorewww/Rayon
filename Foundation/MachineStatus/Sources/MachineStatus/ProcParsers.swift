@@ -35,65 +35,68 @@ enum ProcParsers {
     // MARK: - /proc/stat
 
     /// Parses one `/proc/stat` sample into the aggregate "cpu" row and
-    /// per-core rows.
+    /// per-core rows. Kernels before 2.6.33 print fewer columns; missing
+    /// trailing columns read as zero.
     static func parseProcStat(_ raw: String)
         -> (summary: ServerStatus.ProcessInfoElement?, cores: [String: ServerStatus.ProcessInfoElement])
     {
         var result = [String: ServerStatus.ProcessInfoElement]()
         var summary: ServerStatus.ProcessInfoElement?
         for line in raw.components(separatedBy: "\n") {
-            let line = line.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard line.hasPrefix("cpu") else {
+            let fields = splitWhitespaceRuns(line)
+            guard let key = fields.first, key.hasPrefix("cpu"), fields.count >= 5 else {
                 continue
             }
-            let lineElement = splitWhitespaceRuns(line)
-            guard lineElement.count == 11 else {
-                continue
+            let counters = fields.dropFirst().compactMap { UInt64($0) }
+            guard counters.count == fields.count - 1 else { continue }
+            func value(_ index: Int) -> UInt64 {
+                index < counters.count ? counters[index] : 0
             }
-            let key = String(lineElement[0])
             let element = ServerStatus.ProcessInfoElement(
-                user: Float(lineElement[1]) ?? 0,
-                nice: Float(lineElement[2]) ?? 0,
-                system: Float(lineElement[3]) ?? 0,
-                idle: Float(lineElement[4]) ?? 0,
-                iowait: Float(lineElement[5]) ?? 0,
-                irq: Float(lineElement[6]) ?? 0,
-                softIrq: Float(lineElement[7]) ?? 0,
-                steal: Float(lineElement[8]) ?? 0,
-                guest: Float(lineElement[9]) ?? 0
+                user: value(0),
+                nice: value(1),
+                system: value(2),
+                idle: value(3),
+                iowait: value(4),
+                irq: value(5),
+                softIrq: value(6),
+                steal: value(7)
             )
             if key == "cpu" {
                 summary = element
             } else {
-                result[key] = element
+                result[String(key)] = element
             }
         }
         return (summary, result)
     }
 
     /// Computes usage percentages between two /proc/stat samples.
-    /// Returns zeros when counters did not advance (idle machine), rather
-    /// than dividing by zero and feeding NaN into the UI.
+    /// Returns zeros when counters did not advance (idle machine) or went
+    /// back (a counter reset), rather than dividing by zero or wrapping.
     static func calculatePercent(
         priv: ServerStatus.ProcessInfoElement,
         curr: ServerStatus.ProcessInfoElement
     ) -> ServerStatus.ProcessPercentInfo {
-        let preAll = priv.user + priv.nice + priv.system + priv.idle + priv.iowait + priv.irq + priv.softIrq + priv.steal + priv.guest
-        let nowAll = curr.user + curr.nice + curr.system + curr.idle + curr.iowait + curr.irq + curr.softIrq + curr.steal + curr.guest
-
-        let total = nowAll - preAll
-        guard total > 0 else {
+        guard curr.total > priv.total else {
             return ServerStatus.ProcessPercentInfo()
         }
-        let privUsedTotal = priv.user + priv.nice + priv.system + priv.iowait
-        let currUsedTotal = curr.user + curr.nice + curr.system + curr.iowait
-
+        let total = Double(curr.total - priv.total)
+        func share(_ counter: KeyPath<ServerStatus.ProcessInfoElement, UInt64>) -> Float {
+            let now = curr[keyPath: counter]
+            let before = priv[keyPath: counter]
+            return now > before ? Float(Double(now - before) / total * 100) : 0
+        }
+        let system = share(\.system)
+        let user = share(\.user)
+        let iowait = share(\.iowait)
+        let nice = share(\.nice)
         return ServerStatus.ProcessPercentInfo(
-            system: (curr.system - priv.system) / total * 100,
-            user: (curr.user - priv.user) / total * 100,
-            iowait: (curr.iowait - priv.iowait) / total * 100,
-            nice: (curr.nice - priv.nice) / total * 100,
-            sum: (currUsedTotal - privUsedTotal) / total * 100
+            system: system,
+            user: user,
+            iowait: iowait,
+            nice: nice,
+            sum: min(100, system + user + iowait + nice)
         )
     }
 
