@@ -333,7 +333,11 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
                 if !text.isEmpty { self?.surface.write(text) }
             }
         } catch {
-            if continueDecision { putInformation("[!] " + error.localizedDescription) }
+            // A dropped connection fails the shell with swift-nio-ssh's
+            // error, whose description is only "NIOSSHError error 1".
+            if continueDecision {
+                putInformation("[!] " + (connection.isActive ? error.localizedDescription : "The connection to \(machine.remoteAddress) was lost."))
+            }
         }
         ssh.withLock { $0.shell = nil; $0.input = nil }
         debugPrint("\(self) \(#function) ended \(machine.id)")
