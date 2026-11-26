@@ -16,8 +16,8 @@ packages:
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    MARKETING_VERSION: "2.6.2"
-    CURRENT_PROJECT_VERSION: 52
+    MARKETING_VERSION: "2.7"
+    CURRENT_PROJECT_VERSION: 53
     DEVELOPMENT_TEAM: ""
 targets:
   catussh:
