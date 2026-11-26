@@ -9,6 +9,7 @@
 //
 
 import Foundation
+import os
 import RayonSSH
 
 public extension RDMachine {
@@ -249,7 +250,7 @@ extension RDIdentity {
             #endif
         }
         if !privateKey.isEmpty {
-            return try [.privateKey(SSHPrivateKey(text: privateKey, passphrase: password))]
+            return try [.privateKey(decryptedKey())]
         }
         if !password.isEmpty {
             return [.password(password)]
@@ -275,3 +276,24 @@ extension RDIdentity {
 }
 
 private typealias SSHFailure = RDMachine.SSHFailure
+
+extension RDIdentity {
+    private struct DecryptedKey {
+        let text: String
+        let passphrase: String
+        let key: SSHPrivateKey
+    }
+
+    /// Keys read so far, by identity, while the app runs: decrypting a key
+    /// takes its bcrypt rounds on every connect otherwise.
+    private static let decryptedKeys = OSAllocatedUnfairLock<[RDIdentity.ID: DecryptedKey]>(initialState: [:])
+
+    /// The identity's private key, read once per key and passphrase.
+    func decryptedKey() throws -> SSHPrivateKey {
+        let cached = Self.decryptedKeys.withLock { $0[id] }
+        if let cached, cached.text == privateKey, cached.passphrase == password { return cached.key }
+        let key = try SSHPrivateKey(text: privateKey, passphrase: password)
+        Self.decryptedKeys.withLock { $0[id] = DecryptedKey(text: privateKey, passphrase: password, key: key) }
+        return key
+    }
+}
