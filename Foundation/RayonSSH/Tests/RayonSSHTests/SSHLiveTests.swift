@@ -342,6 +342,46 @@ final class SSHLiveTests: XCTestCase {
         await connection.close()
     }
 
+    /// A read-only folder still takes its contents, and a read-only file
+    /// can be uploaded again; both keep their modes.
+    func testReadOnlyUploads() async throws {
+        let connection = try await connect([.password(password)])
+        let sftp = try await connection.openSFTP()
+        let local = FileManager.default.temporaryDirectory.appendingPathComponent("rayon-readonly-\(UUID().uuidString)")
+        let file = local.appendingPathComponent("a.txt")
+        try FileManager.default.createDirectory(at: local, withIntermediateDirectories: true)
+        try Data("first".utf8).write(to: file)
+        try FileManager.default.setAttributes([.posixPermissions: 0o444], ofItemAtPath: file.path)
+        try FileManager.default.setAttributes([.posixPermissions: 0o555], ofItemAtPath: local.path)
+        let remote = "/tmp/" + local.lastPathComponent
+        defer {
+            try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: local.path)
+            try? FileManager.default.removeItem(at: local)
+        }
+
+        func mode(_ path: String) async throws -> UInt32? {
+            try await sftp.entry(at: path).permissions.map { $0 & 0o777 }
+        }
+        try await sftp.upload(local, toDirectory: "/tmp") { _ in }
+        var folderMode = try await mode(remote), fileMode = try await mode(remote + "/a.txt")
+        XCTAssertEqual(folderMode, 0o555)
+        XCTAssertEqual(fileMode, 0o444)
+
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: local.path)
+        try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: file.path)
+        try Data("second".utf8).write(to: file)
+        try FileManager.default.setAttributes([.posixPermissions: 0o444], ofItemAtPath: file.path)
+        try await sftp.upload(file, toDirectory: remote) { _ in }
+        let written = try await connection.execute("cat \(remote)/a.txt")
+        XCTAssertEqual(String(decoding: written.output, as: UTF8.self), "second")
+        fileMode = try await mode(remote + "/a.txt")
+        folderMode = try await mode(remote)
+        XCTAssertEqual(fileMode, 0o444)
+        XCTAssertEqual(folderMode, 0o555)
+        _ = try await connection.execute("chmod -R u+w \(remote) && rm -rf \(remote)")
+        await connection.close()
+    }
+
     func testDownloadsDoNotFollowLinksToFolders() async throws {
         let connection = try await connect([.password(password)])
         let made = try await connection.execute("""

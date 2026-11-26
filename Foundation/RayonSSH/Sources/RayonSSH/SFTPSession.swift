@@ -117,23 +117,28 @@ public struct SFTPSession: Sendable {
         }
         // New files and folders get the local permission bits (less the
         // server's umask), as scp and sftp -p do; existing ones keep theirs.
-        var attributes = SFTPFileAttributes()
-        attributes.permissions = (try? FileManager.default.attributesOfItem(atPath: local.path)[.posixPermissions] as? NSNumber)?
+        let mode = (try? FileManager.default.attributesOfItem(atPath: local.path)[.posixPermissions] as? NSNumber)?
             .map { $0.uint32Value & 0o777 }
         if isDirectory.boolValue {
-            if (try? await client.getAttributes(at: remote)) == nil {
-                try await client.createDirectory(atPath: remote, attributes: attributes)
+            let created = (try? await client.getAttributes(at: remote)) == nil
+            if created {
+                // Writable while its contents go in, as OpenSSH's sftp
+                // makes it: a read-only folder gets its mode after.
+                try await client.createDirectory(atPath: remote, attributes: Self.attributes(mode.map { $0 | 0o700 }))
             }
             for child in try FileManager.default.contentsOfDirectory(at: local, includingPropertiesForKeys: nil) {
                 try Task.checkCancellation()
                 try await upload(child, toDirectory: remote, progress: progress)
+            }
+            if created, let mode, mode & 0o700 != 0o700, let made = try await client.getAttributes(at: remote).permissions {
+                try await client.setAttributes(at: remote, to: Self.attributes(made & 0o7777 & ~(0o700 & ~mode)))
             }
             return
         }
         let handle = try FileHandle(forReadingFrom: local)
         defer { try? handle.close() }
         let total = Int64((try? FileManager.default.attributesOfItem(atPath: local.path)[.size] as? NSNumber)??.int64Value ?? 0)
-        let file = try await client.openFile(filePath: remote, flags: [.write, .create, .truncate], attributes: attributes)
+        let (file, readOnly) = try await openForUpload(remote, attributes: Self.attributes(mode))
         let meter = TransferMeter(file: local.lastPathComponent, total: total, report: progress)
         // Each write with the offset it ends at, oldest first.
         var writes: [(Task<Void, Error>, end: UInt64)] = []
@@ -159,8 +164,38 @@ public struct SFTPSession: Sendable {
         } catch {
             for (write, _) in writes { write.cancel(); _ = await write.result }
             try? await file.close()
+            if let readOnly { try? await client.setAttributes(at: remote, to: Self.attributes(readOnly)) }
             throw error
         }
+        // A read-only file written over is read-only again.
+        if let readOnly { try await client.setAttributes(at: remote, to: Self.attributes(readOnly)) }
+    }
+
+    /// Opens `remote` to be written over. An existing read-only file of
+    /// this user's is made writable for it; its mode is returned to be
+    /// put back once it is written.
+    private func openForUpload(_ remote: String, attributes: SFTPFileAttributes) async throws -> (SFTPFile, readOnly: UInt32?) {
+        let flags: SFTPOpenFileFlags = [.write, .create, .truncate]
+        do {
+            return try await (client.openFile(filePath: remote, flags: flags, attributes: attributes), nil)
+        } catch {
+            guard let existing = try? await client.getAttributes(at: remote).permissions.map({ $0 & 0o7777 }),
+                  existing & 0o200 == 0,
+                  (try? await client.setAttributes(at: remote, to: Self.attributes(existing | 0o200))) != nil
+            else { throw error }
+            do {
+                return try await (client.openFile(filePath: remote, flags: flags, attributes: attributes), existing)
+            } catch {
+                try? await client.setAttributes(at: remote, to: Self.attributes(existing))
+                throw error
+            }
+        }
+    }
+
+    private static func attributes(_ permissions: UInt32?) -> SFTPFileAttributes {
+        var attributes = SFTPFileAttributes()
+        attributes.permissions = permissions
+        return attributes
     }
 
     /// Copies a remote file or folder to `local`, which must not exist.
