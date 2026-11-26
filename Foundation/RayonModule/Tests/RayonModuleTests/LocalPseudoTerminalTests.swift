@@ -22,9 +22,11 @@
             // Holds fd 3 open in the parent; the child must not inherit it.
             let held = open("/dev/null", O_RDONLY)
             defer { close(held) }
+            // zsh, not sh: bash takes a terminal it opens as its own, which
+            // hid that posix_spawn never made the terminal the shell's.
             let terminal = try LocalPseudoTerminal.spawn(
-                executable: "/bin/sh",
-                arguments: ["sh", "-c", script],
+                executable: "/bin/zsh",
+                arguments: ["zsh", "-f", "-c", script],
                 environment: ["RAYON_TEST": "spawned", "PATH": "/usr/bin:/bin"],
                 directory: "/private/tmp",
                 columns: 91,

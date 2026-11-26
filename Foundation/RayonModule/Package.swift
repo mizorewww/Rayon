@@ -44,8 +44,10 @@ let package = Package(
                 "RayonEditor",
                 "RayonTerminal",
                 "UURemoteKit",
+                "RayonPTY",
             ]
         ),
+        .target(name: "RayonPTY"),
         .testTarget(
             name: "RayonModuleTests",
             dependencies: [
