@@ -8,6 +8,7 @@
 //  and a lease taken after it dropped connects again.
 //
 
+import CryptoKit
 import Foundation
 import os
 import RayonSSH
@@ -67,9 +68,14 @@ public actor SSHConnectionPool {
         }
     }
 
-    /// Everything that decides how the server is reached and signed in to.
+    /// Everything that decides how the server is reached and signed in to,
+    /// down to the identities' secrets: a connection signed in with a
+    /// password or key since changed is not handed out again.
     private static func key(for machine: RDMachine) -> String {
-        [
+        let identities = machine.associatedIdentity == nil
+            ? RayonStore.workerIdentitiesForAutoAuth
+            : RayonStore.workerAssociatedIdentity(for: machine).map { [$0] } ?? []
+        return [
             machine.id.uuidString,
             machine.remoteAddress,
             machine.remotePort,
@@ -78,8 +84,22 @@ public actor SSHConnectionPool {
             "\(machine.transport)",
             machine.proxyJumpMachineID?.uuidString ?? "",
             machine.uuDeviceID,
-            machine.cloudflareServiceTokenID,
+            secretsFingerprint([machine.cloudflareServiceTokenID, machine.cloudflareServiceTokenSecret], identities),
         ].joined(separator: "\u{1F}")
+    }
+
+    /// A SHA-256 digest of what the identities sign in with and of
+    /// `fields`, so the key never holds a secret itself.
+    static func secretsFingerprint(_ fields: [String], _ identities: [RDIdentity]) -> String {
+        var hash = SHA256()
+        let values = fields + identities.flatMap { identity in
+            [identity.id.uuidString, identity.username, identity.password, identity.privateKey, identity.useSSHAgent ? "agent" : ""]
+        }
+        for value in values {
+            hash.update(data: Data(value.utf8))
+            hash.update(data: Data([0]))
+        }
+        return hash.finalize().map { String(format: "%02x", $0) }.joined()
     }
 }
 
