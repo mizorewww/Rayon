@@ -382,6 +382,26 @@ final class SSHLiveTests: XCTestCase {
         await connection.close()
     }
 
+    /// A folder holding a link back to itself is uploaded once; a link to
+    /// a file is copied as the file.
+    func testUploadsDoNotFollowLinksToFolders() async throws {
+        let connection = try await connect([.password(password)])
+        let sftp = try await connection.openSFTP()
+        let local = FileManager.default.temporaryDirectory.appendingPathComponent("rayon-loop-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: local, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: local) }
+        try Data("x".utf8).write(to: local.appendingPathComponent("file"))
+        try FileManager.default.createSymbolicLink(atPath: local.appendingPathComponent("self").path, withDestinationPath: ".")
+        try FileManager.default.createSymbolicLink(atPath: local.appendingPathComponent("alias").path, withDestinationPath: "file")
+
+        try await sftp.upload(local, toDirectory: "/tmp") { _ in }
+        let remote = "/tmp/" + local.lastPathComponent
+        let names = try await Set(sftp.entries(at: remote).map(\.name))
+        XCTAssertEqual(names, ["file", "alias"])
+        _ = try await connection.execute("rm -rf \(remote)")
+        await connection.close()
+    }
+
     func testDownloadsDoNotFollowLinksToFolders() async throws {
         let connection = try await connect([.password(password)])
         let made = try await connection.execute("""

@@ -108,7 +108,9 @@ public struct SFTPSession: Sendable {
         try await SFTPEntry(name: (path as NSString).lastPathComponent, attributes: client.getAttributes(at: path))
     }
 
-    /// Copies a local file or folder into `directory`.
+    /// Copies a local file or folder into `directory`. Links to files
+    /// inside a folder are copied as the files; links to folders are left
+    /// out, since they can lead back up.
     public func upload(_ local: URL, toDirectory directory: String, progress: @escaping @Sendable (SFTPProgress) -> Void) async throws {
         let remote = (directory as NSString).appendingPathComponent(local.lastPathComponent)
         var isDirectory: ObjCBool = false
@@ -126,8 +128,11 @@ public struct SFTPSession: Sendable {
                 // makes it: a read-only folder gets its mode after.
                 try await client.createDirectory(atPath: remote, attributes: Self.attributes(mode.map { $0 | 0o700 }))
             }
-            for child in try FileManager.default.contentsOfDirectory(at: local, includingPropertiesForKeys: nil) {
+            for child in try FileManager.default.contentsOfDirectory(at: local, includingPropertiesForKeys: [.isSymbolicLinkKey]) {
                 try Task.checkCancellation()
+                if try child.resourceValues(forKeys: [.isSymbolicLinkKey]).isSymbolicLink == true,
+                   (try? child.resolvingSymlinksInPath().resourceValues(forKeys: [.isDirectoryKey]).isDirectory) != false
+                { continue }
                 try await upload(child, toDirectory: remote, progress: progress)
             }
             if created, let mode, mode & 0o700 != 0o700, let made = try await client.getAttributes(at: remote).permissions {
