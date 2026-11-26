@@ -29,7 +29,7 @@ cmd=${1:-}; (( $# )) && shift
 case $cmd in
   start)
     if [[ $(state) != running ]]; then
-      "$LUME" run "$VM" --display none --detach >/dev/null 2>&1 || die "lume run failed (see ~/Library/Logs/lume/$VM.log)"
+      "$LUME" run "$VM" --display none --no-audio-device --detach >/dev/null 2>&1 || die "lume run failed (see ~/Library/Logs/lume/$VM.log)"
     fi
     wait_ssh
     # Launch the cua-driver daemon in the guest's GUI session (via LaunchServices, so TCC
