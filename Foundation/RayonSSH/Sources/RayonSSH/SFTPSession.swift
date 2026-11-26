@@ -1,0 +1,222 @@
+//
+//  SFTPSession.swift
+//  RayonSSH
+//
+//  An SFTP session on a connection: listing, and recursive upload,
+//  download and delete, over Citadel's SFTP client. Transfers report each file's progress and stop between
+//  chunks when the caller's task is cancelled.
+//
+
+@preconcurrency import Citadel
+import Foundation
+import NIOCore
+
+/// One directory entry, as the server's `lstat` describes it.
+public struct SFTPEntry: Sendable, Hashable {
+    public let name: String
+    public let size: Int64?
+    public let permissions: UInt32?
+    public let modificationDate: Date?
+    public let ownerUID: UInt32
+    public let ownerGID: UInt32
+
+    public init(name: String, attributes: SFTPFileAttributes = .none) {
+        self.name = name
+        size = attributes.size.map { Int64(clamping: $0) }
+        permissions = attributes.permissions
+        modificationDate = attributes.accessModificationTime?.modificationTime
+        ownerUID = attributes.uidgid?.userId ?? 0
+        ownerGID = attributes.uidgid?.groupId ?? 0
+    }
+
+    public init(name: String, size: Int64?, permissions: UInt32?, modificationDate: Date?, ownerUID: UInt32 = 0, ownerGID: UInt32 = 0) {
+        self.name = name
+        self.size = size
+        self.permissions = permissions
+        self.modificationDate = modificationDate
+        self.ownerUID = ownerUID
+        self.ownerGID = ownerGID
+    }
+
+    private var fileType: UInt32? { permissions.map { $0 & 0o170000 } }
+    public var isDirectory: Bool { fileType == 0o040000 }
+    public var isLink: Bool { fileType == 0o120000 }
+    public var isRegularFile: Bool { fileType == 0o100000 }
+
+    /// "drwxr-xr-x", as `ls -l` prints the mode.
+    public var permissionDescription: String {
+        guard let permissions else { return "" }
+        let kind: Character = isDirectory ? "d" : isLink ? "l" : "-"
+        let bits = "rwxrwxrwx"
+        return String(kind) + String(bits.enumerated().map { index, flag in
+            permissions & (1 << (8 - index)) != 0 ? flag : "-"
+        })
+    }
+}
+
+/// A transfer's progress for the file it is on.
+public struct SFTPProgress: Sendable {
+    public var file: String
+    public var completed: Int64
+    public var total: Int64
+    public var bytesPerSecond: Int
+}
+
+public struct SFTPSession: Sendable {
+    private static let chunkSize = 32 * 1024
+
+    let client: SFTPClient
+
+    public var isActive: Bool { client.isActive }
+
+    public func close() async {
+        try? await client.close()
+    }
+
+    public func createDirectory(at path: String) async throws {
+        try await client.createDirectory(atPath: path)
+    }
+
+    public func rename(_ path: String, to newPath: String) async throws {
+        try await client.rename(at: path, to: newPath)
+    }
+
+    /// What went wrong, as the server put it when it said.
+    public static func describe(_ error: Error) -> String {
+        if let status = error as? SFTPMessage.Status { return status.message }
+        if case let SFTPError.errorStatus(status) = error { return status.message }
+        if let error = error as? SSHError { return error.localizedDescription }
+        return SSHTransport.describe(error)
+    }
+
+    /// The entries of a directory, without "." and "..".
+    public func entries(at path: String) async throws -> [SFTPEntry] {
+        try await client.listDirectory(atPath: path)
+            .flatMap(\.components)
+            .filter { $0.filename != "." && $0.filename != ".." }
+            .map { SFTPEntry(name: $0.filename, attributes: $0.attributes) }
+    }
+
+    public func entry(at path: String) async throws -> SFTPEntry {
+        try await SFTPEntry(name: (path as NSString).lastPathComponent, attributes: client.getAttributes(at: path))
+    }
+
+    /// Copies a local file or folder into `directory`.
+    public func upload(_ local: URL, toDirectory directory: String, progress: @escaping @Sendable (SFTPProgress) -> Void) async throws {
+        let remote = (directory as NSString).appendingPathComponent(local.lastPathComponent)
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: local.path, isDirectory: &isDirectory) else {
+            throw CocoaError(.fileNoSuchFile, userInfo: [NSFilePathErrorKey: local.path])
+        }
+        if isDirectory.boolValue {
+            if (try? await client.getAttributes(at: remote)) == nil {
+                try await client.createDirectory(atPath: remote)
+            }
+            for child in try FileManager.default.contentsOfDirectory(at: local, includingPropertiesForKeys: nil) {
+                try Task.checkCancellation()
+                try await upload(child, toDirectory: remote, progress: progress)
+            }
+            return
+        }
+        let handle = try FileHandle(forReadingFrom: local)
+        defer { try? handle.close() }
+        let total = Int64((try? FileManager.default.attributesOfItem(atPath: local.path)[.size] as? NSNumber)??.int64Value ?? 0)
+        let file = try await client.openFile(filePath: remote, flags: [.write, .create, .truncate])
+        let meter = TransferMeter(file: local.lastPathComponent, total: total, report: progress)
+        do {
+            var offset: UInt64 = 0
+            while let data = try handle.read(upToCount: Self.chunkSize), !data.isEmpty {
+                try Task.checkCancellation()
+                try await file.write(ByteBuffer(data: data), at: offset)
+                offset += UInt64(data.count)
+                meter.advance(to: Int64(offset))
+            }
+            try await file.close()
+        } catch {
+            try? await file.close()
+            throw error
+        }
+    }
+
+    /// Copies a remote file or folder to `local`, which must not exist.
+    public func download(_ remote: String, to local: URL, progress: @escaping @Sendable (SFTPProgress) -> Void) async throws {
+        let attributes = try await client.getAttributes(at: remote)
+        if SFTPEntry(name: "", attributes: attributes).isDirectory {
+            try FileManager.default.createDirectory(at: local, withIntermediateDirectories: true)
+            for entry in try await entries(at: remote) where !entry.isLink || !entry.isDirectory {
+                try Task.checkCancellation()
+                try await download(
+                    (remote as NSString).appendingPathComponent(entry.name),
+                    to: local.appendingPathComponent(entry.name),
+                    progress: progress
+                )
+            }
+            return
+        }
+        guard FileManager.default.createFile(atPath: local.path, contents: nil) else {
+            throw CocoaError(.fileWriteUnknown, userInfo: [NSFilePathErrorKey: local.path])
+        }
+        let handle = try FileHandle(forWritingTo: local)
+        defer { try? handle.close() }
+        let file = try await client.openFile(filePath: remote, flags: .read)
+        let meter = TransferMeter(file: local.lastPathComponent, total: Int64(clamping: attributes.size ?? 0), report: progress)
+        do {
+            var offset: UInt64 = 0
+            while true {
+                try Task.checkCancellation()
+                let chunk = try await file.read(from: offset, length: UInt32(Self.chunkSize))
+                guard chunk.readableBytes > 0 else { break }
+                try handle.write(contentsOf: chunk.readableBytesView)
+                offset += UInt64(chunk.readableBytes)
+                meter.advance(to: Int64(offset))
+            }
+            try await file.close()
+        } catch {
+            try? await file.close()
+            throw error
+        }
+    }
+
+    /// Deletes a remote file, link or folder with everything in it.
+    public func removeItem(at path: String, onItem: @escaping @Sendable (String) -> Void) async throws {
+        let parent = (path as NSString).deletingLastPathComponent
+        let name = (path as NSString).lastPathComponent
+        let entry = try await entries(at: parent.isEmpty ? "/" : parent).first { $0.name == name }
+        onItem(path)
+        guard let entry, entry.isDirectory else {
+            try await client.remove(at: path)
+            return
+        }
+        for child in try await entries(at: path) {
+            try Task.checkCancellation()
+            let childPath = (path as NSString).appendingPathComponent(child.name)
+            if child.isDirectory {
+                try await removeItem(at: childPath, onItem: onItem)
+            } else {
+                onItem(childPath)
+                try await client.remove(at: childPath)
+            }
+        }
+        try await client.rmdir(at: path)
+    }
+}
+
+/// Reports a file's progress with its average speed so far.
+private struct TransferMeter: Sendable {
+    let file: String
+    let total: Int64
+    let report: @Sendable (SFTPProgress) -> Void
+    let started = Date()
+
+    init(file: String, total: Int64, report: @escaping @Sendable (SFTPProgress) -> Void) {
+        self.file = file
+        self.total = total
+        self.report = report
+        report(SFTPProgress(file: file, completed: 0, total: total, bytesPerSecond: 0))
+    }
+
+    func advance(to completed: Int64) {
+        let elapsed = max(Date().timeIntervalSince(started), 0.001)
+        report(SFTPProgress(file: file, completed: completed, total: max(total, completed), bytesPerSecond: Int(Double(completed) / elapsed)))
+    }
+}

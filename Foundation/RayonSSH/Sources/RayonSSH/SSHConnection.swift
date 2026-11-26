@@ -150,6 +150,14 @@ public actor SSHConnection {
         try? await client.close()
     }
 
+    public func openSFTP() async throws -> SFTPSession {
+        do {
+            return try await SFTPSession(client: client.openSFTP())
+        } catch {
+            throw SSHError.channelRejected("The server did not start SFTP (\(SSHTransport.describe(error))).")
+        }
+    }
+
     // MARK: Channels
 
     /// Opens a child channel; `setup` runs on the event loop before any
