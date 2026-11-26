@@ -23,6 +23,9 @@ final class TerminalShutdownTests: XCTestCase {
         let reset = try XCTUnwrap(text.range(of: TerminalContext.modeReset), text)
         let closed = try XCTUnwrap(text.range(of: "Connection Closed"))
         XCTAssertLessThan(reset.lowerBound, closed.lowerBound)
+        // Leaving an alternate screen that is not up must not move the
+        // cursor back over the old output.
+        XCTAssertTrue(TerminalContext.modeReset.contains("\u{1B}7\u{1B}[?1049l"))
         context.insertBuffer("stale")
         XCTAssertEqual(context.getBuffer(), "")
     }

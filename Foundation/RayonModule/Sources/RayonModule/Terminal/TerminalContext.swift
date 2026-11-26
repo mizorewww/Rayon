@@ -365,7 +365,13 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
 
     static let modeReset = [
         "\u{1B}[=0;1u",
-        "\u{1B}[?1049l",
+        // Leaving the alternate screen restores the cursor saved on entering
+        // it, and on the main screen Ghostty restores whatever was saved last
+        // (the top left when nothing was): what follows then overprints the
+        // old output. Saving the cursor first makes that restore a no-op on
+        // the main screen; on the alternate one it saves the alternate
+        // screen's own slot, and the main screen's still comes back.
+        "\u{1B}7\u{1B}[?1049l",
         "\u{1B}[=0;1u",
         "\u{1B}[?1000l\u{1B}[?1002l\u{1B}[?1003l\u{1B}[?1005l\u{1B}[?1006l\u{1B}[?1015l\u{1B}[?1016l",
         "\u{1B}[?1004l\u{1B}[?2004l\u{1B}[?2026l",
