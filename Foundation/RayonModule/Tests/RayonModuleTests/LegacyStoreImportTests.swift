@@ -132,6 +132,53 @@ final class LegacyStoreImportTests: XCTestCase {
         XCTAssertEqual(storage.knownHost(named: "[bastion]:22")?.key, Data([1, 2, 3]))
     }
 
+    /// Two devices updating from the same old data make the same records:
+    /// the same folder ids, the same old times, nothing for sync to tell
+    /// apart or duplicate.
+    func testTwoDevicesImportTheSameRecords() throws {
+        try load("v2.8")
+        XCTAssertTrue(runImport())
+        let other = try TestStorage()
+        let otherDefaults = try XCTUnwrap(UserDefaults(suiteName: "\(suite).other"))
+        defer { otherDefaults.removePersistentDomain(forName: "\(suite).other") }
+        for (key, value) in try fixture("v2.8") {
+            otherDefaults.set(value, forKey: key)
+        }
+        XCTAssertEqual(LegacyStoreImport.runIfNeeded(into: other.storage, defaults: otherDefaults, masterKey: { self.master }, forgetMasterKey: {}), .imported)
+
+        let folders = storage.records(RDFolder.self).sorted { $0.name < $1.name }
+        XCTAssertEqual(folders, other.storage.records(RDFolder.self).sorted { $0.name < $1.name })
+        XCTAssertEqual(folders.first { $0.name == "Remote" }?.id, RDFolder.id(named: "Remote"))
+        XCTAssertEqual(folders.first { $0.name == "UU" }?.id, RDFolder.id(uuUserID: "42"))
+        for server in storage.records(RDMachine.self) {
+            XCTAssertEqual(try storage.mergeRemote(XCTUnwrap(other.storage.record(RDMachine.self, id: server.id))), .unchanged)
+            XCTAssertLessThan(server.modified, Date(timeIntervalSinceReferenceDate: 60 * 60 * 24 * 60))
+        }
+    }
+
+    /// A device that updates late, from data older than what another device
+    /// changed since, does not win over that change.
+    func testALateImportLosesToEditsMadeSince() throws {
+        try load("v2.8")
+        XCTAssertTrue(runImport())
+        var edited = try XCTUnwrap(storage.record(RDMachine.self, id: serverID))
+        edited.name = "Edited"
+        edited = try storage.save(edited)
+
+        let late = try TestStorage()
+        let lateDefaults = try XCTUnwrap(UserDefaults(suiteName: "\(suite).late"))
+        defer { lateDefaults.removePersistentDomain(forName: "\(suite).late") }
+        for (key, value) in try fixture("v2.8") {
+            lateDefaults.set(value, forKey: key)
+        }
+        XCTAssertEqual(LegacyStoreImport.runIfNeeded(into: late.storage, defaults: lateDefaults, masterKey: { self.master }, forgetMasterKey: {}), .imported)
+        let stale = try XCTUnwrap(late.storage.record(RDMachine.self, id: serverID))
+
+        XCTAssertEqual(try storage.mergeRemote(stale), .keptLocal)
+        XCTAssertEqual(try late.storage.mergeRemote(edited), .tookRemote)
+        XCTAssertEqual(late.storage.record(RDMachine.self, id: serverID)?.name, "Edited")
+    }
+
     /// A group that cannot be read stops everything: nothing is imported,
     /// nothing removed, the master key kept, and the next launch tries again.
     func testAnUnreadableGroupImportsNothingAndKeepsEverything() throws {

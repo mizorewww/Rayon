@@ -67,3 +67,18 @@ public struct RDFolder: StoredRecord {
     /// Whether its servers come from an account rather than from the user.
     public var isLinked: Bool { uuRemoteUserID != nil }
 }
+
+public extension RDFolder {
+    /// The id of a folder every device makes on its own (one brought over
+    /// from the previous version, which synced folders by name): the same
+    /// on every device, so sync keeps one of it.
+    static func id(named name: String) -> UUID {
+        UUID(derivedFrom: "me.mizorewww.rayon.folder.\(name)")
+    }
+
+    /// The id of a UU Remote account's folder, the same on every device
+    /// signed in to the account.
+    static func id(uuUserID: String) -> UUID {
+        UUID(derivedFrom: "me.mizorewww.rayon.uu-folder.\(uuUserID)")
+    }
+}

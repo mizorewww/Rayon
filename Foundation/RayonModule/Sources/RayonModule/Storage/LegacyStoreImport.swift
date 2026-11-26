@@ -132,8 +132,10 @@ enum LegacyStoreImport {
         let hosts = try (defaults.object(forKey: Key.knownHosts) as? [String: String]) ?? open(Key.knownHosts, as: [String: String].self)
 
         // A server named its folder; a name no folder records is a folder too.
+        // The old folders synced by name, each device under its own id:
+        // the id comes from the name now, the same on every device.
         for name in Set(machines.map(\.group)) where !name.isEmpty && !folders.contains(where: { $0.name == name }) {
-            folders.append(RDFolder(name: name))
+            folders.append(RDFolder(id: RDFolder.id(named: name), name: name))
         }
         let folderIDs = Dictionary(folders.map { ($0.name, $0.id) }, uniquingKeysWith: { first, _ in first })
 
@@ -142,21 +144,14 @@ enum LegacyStoreImport {
         // could not be read, or the flag was lost and they come again.
         let now = Date()
         try storage.insertMissing { inserter in
-            for folder in folders {
-                try inserter.insert(folder, modified: now)
+            func insert<T: StoredRecord>(_ record: T) throws {
+                try inserter.insert(record, modified: importedDate(of: record))
             }
-            for identity in identities {
-                try inserter.insert(identity.identity, modified: now)
-            }
-            for machine in machines {
-                try inserter.insert(machine.machine(folderId: folderIDs[machine.group]), modified: now)
-            }
-            for snippet in snippets {
-                try inserter.insert(snippet.snippet, modified: now)
-            }
-            for forward in forwards {
-                try inserter.insert(forward.forward, modified: now)
-            }
+            try folders.forEach(insert)
+            try identities.map(\.identity).forEach(insert)
+            try machines.map { $0.machine(folderId: folderIDs[$0.group]) }.forEach(insert)
+            try snippets.map(\.snippet).forEach(insert)
+            try forwards.map(\.forward).forEach(insert)
             let handle = inserter.handle
             if let recent, try handle.getValue(on: Column(named: "id").count(), fromTable: RecentConnectionRecord.tableName).intValue == 0 {
                 try handle.insert(recent.enumerated().map { $1.record(at: $0) }, intoTable: RecentConnectionRecord.tableName)
@@ -168,6 +163,22 @@ enum LegacyStoreImport {
                 try handle.insertOrIgnore([host], intoTable: KnownHostRecord.tableName)
             }
         }
+    }
+
+    /// When an imported record counts as changed: long before anything
+    /// changed since, so a device that updates late never wins over an edit
+    /// made on another one. The time is worked out from the record's
+    /// content: two devices importing the same record agree on it, and
+    /// when their copies differ, every device keeps the same one.
+    static func importedDate<T: StoredRecord>(of record: T) -> Date {
+        var content = record.syncedContent
+        content.modified = Date(timeIntervalSinceReferenceDate: 0)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
+        encoder.dateEncodingStrategy = .millisecondsSince1970
+        let data = (try? encoder.encode(RecordPayload(content))) ?? Data()
+        let milliseconds = SHA256.hash(data: data).prefix(4).reduce(UInt64(0)) { $0 << 8 | UInt64($1) }
+        return Date(timeIntervalSinceReferenceDate: TimeInterval(milliseconds) / 1000)
     }
 
     // MARK: - The previous releases' encryption
@@ -495,10 +506,11 @@ extension LegacyStoreImport {
         var name: String
         var source: Source
 
+        /// Under an id worked out from the name, or from the account.
         var folder: RDFolder {
             switch source {
-            case .local: RDFolder(id: id, name: name)
-            case let .uuRemote(userID): RDFolder(id: id, name: name, source: .uuRemote(userID: userID))
+            case .local: RDFolder(id: RDFolder.id(named: name), name: name)
+            case let .uuRemote(userID): RDFolder(id: RDFolder.id(uuUserID: userID), name: name, source: .uuRemote(userID: userID))
             }
         }
     }
