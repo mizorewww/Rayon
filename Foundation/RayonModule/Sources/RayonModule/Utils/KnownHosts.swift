@@ -66,5 +66,6 @@ public extension RDMachine {
     /// The next host key this server presents is asked about again.
     func forgetHostKey() {
         KnownHosts.shared.forget(host: remoteAddress, port: Int(remotePort) ?? 0)
+        HostKeyTrust.forgetDeclined(host: remoteAddress, port: Int(remotePort) ?? 0)
     }
 }

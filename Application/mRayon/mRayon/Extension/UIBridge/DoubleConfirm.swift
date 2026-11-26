@@ -54,11 +54,10 @@ final class IOSHostKeyTrustHandler: HostKeyTrustHandler {
             }
             alert.addAction(trust)
             if !question.isWarning { alert.preferredAction = trust }
-            guard let presenter = UIWindow.shutUpKeyWindow?.topMostViewController else {
-                continuation.resume(returning: false)
-                return
+            // An alert no window takes is a "no", not a question left open.
+            PresentationQueue.present(alert, timeout: 30) { presented in
+                if !presented { continuation.resume(returning: false) }
             }
-            presenter.present(alert, animated: true)
         }
     }
 }

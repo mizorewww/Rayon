@@ -29,9 +29,15 @@ public actor SSHConnectionPool {
     public func lease(for machine: RDMachine, hint: (@Sendable (String) -> Void)? = nil) async throws -> SSHLease {
         let key = Self.key(for: machine)
         if let entry = entries[key] {
-            // A connection that failed or has since dropped is replaced.
-            let alive = (try? await entry.connecting.value)?.0.isActive ?? false
-            if !alive, entries[key]?.id == entry.id { entries[key] = nil }
+            // A connection that has dropped since is replaced. One that is
+            // still connecting is shared even when it fails: those who
+            // waited for it share the failure rather than each connecting
+            // (and asking about the host key) again.
+            if case let .success((connection, _)) = await entry.connecting.result,
+               !connection.isActive, entries[key]?.id == entry.id
+            {
+                entries[key] = nil
+            }
         }
         let entry: Entry
         if let existing = entries[key] {
