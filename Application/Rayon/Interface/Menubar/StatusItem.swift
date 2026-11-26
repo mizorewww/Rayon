@@ -18,7 +18,6 @@ final class MenubarStatusItem: NSObject, Identifiable, NSPopoverDelegate {
     nonisolated var key: String { id.uuidString }
 
     let machine: RDMachine
-    let identity: RDIdentity
     let session: MonitorSession
 
     var cancellables = Set<AnyCancellable>()
@@ -36,10 +35,9 @@ final class MenubarStatusItem: NSObject, Identifiable, NSPopoverDelegate {
     static let frameNames = (0 ... 4).map { "cat_frame_\($0)" }
     static let crashFrameName = "cat_frame_crash"
 
-    init(machine: RDMachine, identity: RDIdentity, session: MonitorSession? = nil) {
+    init(machine: RDMachine, session: MonitorSession) {
         self.machine = machine
-        self.identity = identity
-        self.session = session ?? MonitorSession(machine: machine, identity: identity)
+        self.session = session
         frames = Self.frameNames.compactMap { name in
             guard let img = NSImage(named: name) else { return nil }
             img.isTemplate = true
@@ -204,7 +202,7 @@ final class MenubarStatusItem: NSObject, Identifiable, NSPopoverDelegate {
         animationTimer = nil
         closePopover()
         NSStatusBar.system.removeStatusItem(statusItem)
-        session.shutdown()
+        MonitorCenter.shared.release(session)
         cancellables.removeAll()
         MenubarTool.shared.remove(menubarItem: id)
     }

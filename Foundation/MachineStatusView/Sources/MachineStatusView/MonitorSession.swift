@@ -280,13 +280,21 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
     }
 }
 
-/// Owns the open monitors of the app. Main thread, like the views and
-/// menu bar items that show the sessions.
+/// Owns the running monitors of the app: one session per server, shared
+/// by its monitor page and anything else watching it (the macOS menu bar),
+/// so the server is never polled over two connections. Main thread, like
+/// the views and menu bar items that show the sessions.
 @MainActor
 public final class MonitorCenter: ObservableObject {
     public static let shared = MonitorCenter()
 
+    /// The sessions whose monitor page is open.
     @Published public private(set) var sessions: [MonitorSession] = []
+
+    /// Every running session, page or not.
+    private var running: [MonitorSession] = []
+    /// Users other than the page, per session.
+    private var holds: [MonitorSession.ID: Int] = [:]
 
     private init() {}
 
@@ -300,6 +308,7 @@ public final class MonitorCenter: ObservableObject {
         }
     }
 
+    /// The server's session while its monitor page is open.
     public func session(for machine: RDMachine.ID) -> MonitorSession? {
         sessions.first { $0.machine.id == machine }
     }
@@ -308,22 +317,59 @@ public final class MonitorCenter: ObservableObject {
         sessions.first { $0.id == id }
     }
 
-    /// Returns the running monitor for the server, or starts one.
+    /// Opens the server's monitor page, on its running session if it has one.
     @discardableResult
     public func begin(for machineID: RDMachine.ID) throws -> MonitorSession {
-        if let existing = session(for: machineID) { return existing }
-        let machine = RayonStore.shared.machineGroup[machineID]
-        guard machine.isNotPlaceholder() else { throw BeginError.malformedMachine }
-        let session = MonitorSession(machine: machine, identity: RayonStore.shared.associatedIdentity(for: machine))
-        sessions.append(session)
+        let session = try runningSession(for: machineID)
+        if !sessions.contains(session) { sessions.append(session) }
         RayonStore.shared.storeRecentIfNeeded(from: machineID)
         return session
     }
 
+    /// Closes the monitor page; the session keeps running while held.
     public func end(_ id: MonitorSession.ID) {
-        guard let index = sessions.firstIndex(where: { $0.id == id }) else { return }
-        let session = sessions.remove(at: index)
-        session.shutdown()
+        sessions.removeAll { $0.id == id }
+        stopIfUnused(id)
     }
 
+    /// Keeps the server's session running without opening its page. Pair
+    /// every hold with a `release`.
+    public func hold(_ machineID: RDMachine.ID) throws -> MonitorSession {
+        let session = try runningSession(for: machineID)
+        holds[session.id, default: 0] += 1
+        return session
+    }
+
+    public func release(_ session: MonitorSession) {
+        guard running.contains(session) else {
+            // Not ours (a debug preview): nobody else can be using it.
+            session.shutdown()
+            return
+        }
+        if let count = holds[session.id], count > 1 {
+            holds[session.id] = count - 1
+        } else {
+            holds[session.id] = nil
+        }
+        stopIfUnused(session.id)
+    }
+
+    private func runningSession(for machineID: RDMachine.ID) throws -> MonitorSession {
+        if let existing = running.first(where: { $0.machine.id == machineID }) { return existing }
+        let machine = RayonStore.shared.machineGroup[machineID]
+        guard machine.isNotPlaceholder() else { throw BeginError.malformedMachine }
+        let session = MonitorSession(machine: machine, identity: RayonStore.shared.associatedIdentity(for: machine))
+        running.append(session)
+        return session
+    }
+
+    private func stopIfUnused(_ id: MonitorSession.ID) {
+        guard holds[id] == nil,
+              !sessions.contains(where: { $0.id == id }),
+              let index = running.firstIndex(where: { $0.id == id })
+        else {
+            return
+        }
+        running.remove(at: index).shutdown()
+    }
 }
