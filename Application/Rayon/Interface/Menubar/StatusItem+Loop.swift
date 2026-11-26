@@ -20,12 +20,12 @@ extension MenubarStatusItem {
             }
             .store(in: &cancellables)
 
-        RayonStore.shared.$machineGroup
+        RayonStore.shared.$machines
             .dropFirst()
             .receive(on: RunLoop.main)
-            .sink { [weak self] group in
+            .sink { [weak self] machines in
                 MainActor.assumeIsolated {
-                    guard let self, !group[self.machine.id].isNotPlaceholder() else { return }
+                    guard let self, !machines.contains(where: { $0.id == self.machine.id }) else { return }
                     self.closeThisItem()
                 }
             }

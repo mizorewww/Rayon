@@ -24,15 +24,10 @@ public final class PortForwardBackend: ObservableObject {
         if sessionExists(withPortForwardID: pid) {
             return
         }
-        let portFwd = RayonStore.shared.portForwardGroup[pid]
-        guard portFwd.isValid(),
-              let mid = portFwd.usingMachine
+        guard let portFwd = RayonStore.shared.portForward(pid), portFwd.isComplete,
+              let mid = portFwd.usingMachine,
+              let machine = RayonStore.shared.machine(mid)
         else {
-            onError?("Invalid Info")
-            return
-        }
-        let machine = RayonStore.shared.machineGroup[mid]
-        guard machine.isNotPlaceholder() else {
             onError?("Invalid Info")
             return
         }

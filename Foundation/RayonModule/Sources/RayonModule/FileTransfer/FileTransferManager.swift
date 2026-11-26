@@ -35,19 +35,11 @@ public class FileTransferManager: ObservableObject {
                 return
             }
         }
-        let machine = RayonStore.shared.machineGroup[machineId]
-        guard machine.isNotPlaceholder() else {
+        guard let machine = RayonStore.shared.machine(machineId) else {
             FileTransferInterface.uiHandler.presentError("Unknown Bad Data")
             return
         }
-        var get: RDIdentity?
-        if let sid = machine.associatedIdentity,
-           let uid = UUID(uuidString: sid),
-           RayonStore.shared.identityGroup[uid].username.count > 0
-        {
-            get = RayonStore.shared.identityGroup[uid]
-        }
-        let object = FileTransferContext(machine: machine, identity: get)
+        let object = FileTransferContext(machine: machine, identity: RayonStore.shared.associatedIdentity(for: machine))
         transfers.append(object)
     }
 

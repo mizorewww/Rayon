@@ -21,8 +21,7 @@ extension TerminalManager {
                 return
             }
         }
-        let machine = RayonStore.shared.machineGroup[machineId]
-        guard machine.isNotPlaceholder() else {
+        guard let machine = RayonStore.shared.machine(machineId) else {
             UIBridge.presentError(with: "Unknown Bad Data")
             return
         }
@@ -74,8 +73,7 @@ extension TerminalManager {
     func openAnotherTab(like context: Context, completion: @escaping (Context) -> Void = { _ in }) {
         switch context.remoteType {
         case .machine:
-            let machine = RayonStore.shared.machineGroup[context.machine.id]
-            guard machine.isNotPlaceholder() else {
+            guard let machine = RayonStore.shared.machine(context.machine.id) else {
                 UIBridge.presentError(with: "This server's details could not be read.")
                 return
             }

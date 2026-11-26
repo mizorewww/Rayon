@@ -1,5 +1,5 @@
 //
-//  RayonStore.swift
+//  RayonStore+RecentConnection.swift
 //  Rayon
 //
 //  Created by Lakr Aream on 2022/3/1.
@@ -8,13 +8,14 @@
 import Foundation
 
 public extension RayonStore {
-    enum RecentConnection: Codable, Equatable, Identifiable {
+    enum RecentConnection: Codable, Equatable, Identifiable, Sendable {
+        case command(command: SSHCommandReader)
+        case machine(machine: RDMachine.ID)
+
         public var id: String {
             switch self {
-            case let .command(command):
-                return command.command
-            case let .machine(machine):
-                return machine.uuidString
+            case let .command(command): command.command
+            case let .machine(machine): machine.uuidString
             }
         }
 
@@ -22,21 +23,34 @@ public extension RayonStore {
             lhs.id == rhs.id
         }
 
-        case command(command: SSHCommandReader)
-        case machine(machine: RDMachine.ID)
+        init?(record: RecentConnectionRecord) {
+            if let machine = record.machine {
+                self = .machine(machine: machine)
+            } else if let command = record.command {
+                self = .command(command: command)
+            } else {
+                return nil
+            }
+        }
 
+        func record(at position: Int) -> RecentConnectionRecord {
+            switch self {
+            case let .command(command):
+                RecentConnectionRecord(id: id, command: command, position: position)
+            case let .machine(machine):
+                RecentConnectionRecord(id: id, machine: machine, position: position)
+            }
+        }
+
+        @MainActor
         public var equivalentSSHCommand: String {
             switch self {
             case let .command(command):
                 return command.command
             case let .machine(machineID):
-                let machine = RayonStore.shared.machineGroup[machineID]
-                guard let associatedIdentity = machine.associatedIdentity else {
-                    return ""
-                }
-                guard let identity = RayonStore.shared.identityGroup.identities.first(where: { identity in
-                    identity.id.uuidString == associatedIdentity
-                }) else {
+                guard let machine = RayonStore.shared.machine(machineID),
+                      let identity = RayonStore.shared.associatedIdentity(for: machine)
+                else {
                     return ""
                 }
                 let username = machine.sshLoginUsername(identity: identity)
@@ -46,32 +60,32 @@ public extension RayonStore {
         }
     }
 
-    func cleanRecentIfNeeded() {
-        let build = recentRecord
-            .filter { record in
-                switch record {
-                case .command: return true
-                case let .machine(machine): return machineGroup[machine].isNotPlaceholder()
-                }
-            }
-        onMainThread {
-            self.recentRecord = build
+    internal func persistRecent() {
+        do {
+            try storage.saveRecentConnections(recentRecord.enumerated().map { $1.record(at: $0) })
+        } catch {
+            Self.logger.error("saving the recent connections failed: \(error.localizedDescription)")
         }
     }
 
+    func cleanRecentIfNeeded() {
+        let build = recentRecord.filter { record in
+            switch record {
+            case .command: true
+            case let .machine(machine): self.machine(machine) != nil
+            }
+        }
+        if build != recentRecord { recentRecord = build }
+    }
+
     func storeRecentIfNeeded(from recent: RecentConnection) {
-        guard storeRecent else {
-            return
+        guard storeRecent, !recentRecord.contains(recent) else { return }
+        var records = recentRecord
+        records.insert(recent, at: 0)
+        if records.count > maxRecentRecordCount {
+            records.removeLast(records.count - maxRecentRecordCount)
         }
-        onMainThread {
-            for lookup in self.recentRecord where lookup == recent {
-                return
-            }
-            self.recentRecord.insert(recent, at: 0)
-            while self.recentRecord.count > self.maxRecentRecordCount {
-                self.recentRecord.removeLast()
-            }
-        }
+        recentRecord = records
     }
 
     func storeRecentIfNeeded(from machine: RDMachine.ID) {

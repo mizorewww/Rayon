@@ -121,10 +121,10 @@ struct SidebarView: View {
                 Label("Home", systemImage: "house").tag(Route.home)
                 Label("Dashboard", systemImage: "square.grid.2x2").tag(Route.dashboard)
                 Section("Manage") {
-                    row("Servers", "server.rack", .servers, badge: store.machineGroup.count)
-                    row("Identities", "person", .identities, badge: store.identityGroup.count)
-                    row("Snippets", "chevron.left.forwardslash.chevron.right", .snippets, badge: store.snippetGroup.count)
-                    row("Remote Desktop", "display", .desktops, badge: store.machineGroup.machines.filter(\.hasRemoteDesktop).count)
+                    row("Servers", "server.rack", .servers, badge: store.machines.count)
+                    row("Identities", "person", .identities, badge: store.identities.count)
+                    row("Snippets", "chevron.left.forwardslash.chevron.right", .snippets, badge: store.snippets.count)
+                    row("Remote Desktop", "display", .desktops, badge: store.machines.filter(\.hasRemoteDesktop).count)
                 }
                 let owners = SessionDirectory.owners
                 if !owners.isEmpty {
@@ -264,15 +264,15 @@ struct MoreView: View {
         List {
             Section {
                 NavigationLink { IdentityView() } label: {
-                    moreRow("Identities", "person", count: store.identityGroup.count)
+                    moreRow("Identities", "person", count: store.identities.count)
                 }
                 .rxListRow()
                 NavigationLink { SnippetView() } label: {
-                    moreRow("Snippets", "chevron.left.forwardslash.chevron.right", count: store.snippetGroup.count)
+                    moreRow("Snippets", "chevron.left.forwardslash.chevron.right", count: store.snippets.count)
                 }
                 .rxListRow()
                 NavigationLink { RemoteDesktopsView() } label: {
-                    moreRow("Remote Desktop", "display", count: store.machineGroup.machines.filter(\.hasRemoteDesktop).count)
+                    moreRow("Remote Desktop", "display", count: store.machines.filter(\.hasRemoteDesktop).count)
                 }
                 .rxListRow()
                 Button { openUUAccount = true } label: {

@@ -68,7 +68,7 @@ struct mRayonApp: App {
             // A folder of its own: syncing devices into a signed-in
             // account's folder would drop that account's real devices.
             let preview = RDFolder.Source.uuRemote(userID: "preview")
-            let folder = store.folderGroup.folders.first { $0.source == preview }
+            let folder = store.folders.first { $0.source == preview }
                 ?? store.createFolder(named: "UU Remote Preview", source: preview)
             let devices = (1 ... 16).map { index -> UUDeviceInfo in
                 var device = UUDeviceInfo()
@@ -77,9 +77,9 @@ struct mRayonApp: App {
                 device.platform = index.isMultiple(of: 2) ? 1 : 4
                 return device
             }
-            var group = store.machineGroup
-            UURemoteFolderSync.apply(devices: devices, folder: folder.name, to: &group)
-            store.machineGroup = group
+            let changes = UURemoteFolderSync.changes(devices: devices, folder: folder.id, machines: store.machines)
+            changes.save.forEach { store.save($0) }
+            store.deleteMachines(changes.delete)
         }
 
         /// `RAYON_PREVIEW_VNC=<port>` adds a "Preview VNC" server, a VNC
@@ -88,23 +88,17 @@ struct mRayonApp: App {
 
         func seedPreviewVNC() {
             guard let port = ProcessInfo.processInfo.environment["RAYON_PREVIEW_VNC"] else { return }
-            var group = store.machineGroup
-            group.insert(RDMachine(
-                id: Self.previewVNCID,
-                remoteAddress: "127.0.0.1",
-                remotePort: "22",
-                name: "Preview VNC",
-                remoteDesktopProtocol: .vnc,
-                vncPort: port
-            ))
-            store.machineGroup = group
+            var machine = RDMachine(id: Self.previewVNCID, remoteAddress: "127.0.0.1", remotePort: "22", name: "Preview VNC")
+            machine.remoteDesktopProtocol = .vnc
+            machine.vncPort = port
+            store.save(machine)
         }
 
         /// `RAYON_PREVIEW_TOOL=terminal|files|monitor|desktop` opens the
         /// first server's page on that tool (for a desktop, Preview VNC or
         /// the first server with one), for screenshots without input.
         func openPreviewTool() {
-            let machines = store.machineGroup.machines
+            let machines = store.machines
             guard let name = ProcessInfo.processInfo.environment["RAYON_PREVIEW_TOOL"],
                   let tool = ServerTool.allCases.first(where: { $0.title.lowercased() == name }),
                   let machine = tool == .desktop

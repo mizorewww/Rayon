@@ -13,7 +13,7 @@ extension TerminalContext {
     func prepareTerminalType() -> String {
         guard GhosttyTerminfo.installsAutomatically else { return GhosttyTerminfo.fallbackType }
         // A saved server that has it: no command at all.
-        if remoteType == .machine, GhosttyTerminfo.isCached(on: RayonStore.shared.workerMachine(for: machine.id)) {
+        if remoteType == .machine, RayonStore.workerMachine(for: machine.id).map(GhosttyTerminfo.isCached(on:)) == true {
             return GhosttyTerminfo.terminalType
         }
         var output = ""
@@ -42,13 +42,10 @@ extension TerminalContext {
     private func rememberTerminfo() {
         guard remoteType == .machine else { return }
         let id = machine.id
-        onMainThread {
-            MainActor.assumeIsolated {
-                var saved = RayonStore.shared.machineGroup[id]
-                guard saved.isNotPlaceholder(), !saved.hasGhosttyTerminfo else { return }
-                saved.ghosttyTerminfoVersion = GhosttyTerminfo.version
-                RayonStore.shared.machineGroup[id] = saved
-            }
+        Task { @MainActor in
+            guard var saved = RayonStore.shared.machine(id), !saved.hasGhosttyTerminfo else { return }
+            saved.ghosttyTerminfoVersion = GhosttyTerminfo.version
+            RayonStore.shared.save(saved)
         }
     }
 }

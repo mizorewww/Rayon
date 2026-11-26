@@ -56,11 +56,11 @@ struct SidebarView: View {
                 place(.dashboard, "Dashboard", systemImage: "square.grid.2x2")
 
                 SidebarHeader("Manage")
-                place(.servers, "Servers", systemImage: "server.rack", badge: store.machineGroup.count)
-                place(.identities, "Identities", systemImage: "person.badge.key", badge: store.identityGroup.count)
-                place(.snippets, "Snippets", systemImage: "chevron.left.forwardslash.chevron.right", badge: store.snippetGroup.count)
-                place(.portForward, "Port Forward", systemImage: "arrow.left.arrow.right", badge: store.portForwardGroup.count)
-                place(.desktops, "Remote Desktop", systemImage: "display", badge: store.machineGroup.machines.filter(\.hasRemoteDesktop).count)
+                place(.servers, "Servers", systemImage: "server.rack", badge: store.machines.count)
+                place(.identities, "Identities", systemImage: "person.badge.key", badge: store.identities.count)
+                place(.snippets, "Snippets", systemImage: "chevron.left.forwardslash.chevron.right", badge: store.snippets.count)
+                place(.portForward, "Port Forward", systemImage: "arrow.left.arrow.right", badge: store.portForwards.count)
+                place(.desktops, "Remote Desktop", systemImage: "display", badge: store.machines.filter(\.hasRemoteDesktop).count)
 
                 if !sessionIDs.isEmpty {
                     SidebarHeader("Sessions")
@@ -253,7 +253,7 @@ private struct OwnerSidebarRow: View {
     private var title: String {
         switch owner {
         case let .server(id):
-            return store.machineGroup[id].name
+            return (store.machine(id) ?? RDMachine()).name
         case let .command(id):
             return terminals.sessionContexts.first { $0.id == id }?.displayName ?? "Terminal"
         case .local:

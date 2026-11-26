@@ -120,8 +120,7 @@ final class AppRouter: ObservableObject {
     func openTerminal(machine: RDMachine.ID, another: Bool = false) {
         // A UU Remote device may have sessions to resume: asked first, for
         // another tab (⌘T, +) too.
-        let object = RayonStore.shared.machineGroup[machine]
-        guard object.isNotPlaceholder(), object.isUURemoteDevice else {
+        guard let object = RayonStore.shared.machine(machine), object.isUURemoteDevice else {
             openTerminal(machine: machine, resuming: nil, another: another)
             return
         }
@@ -184,7 +183,7 @@ final class AppRouter: ObservableObject {
     /// a server that has none, so callers do not have to check first.
     /// - Parameter viewOnly: watch the screen without sending input.
     func openDesktop(machine: RDMachine.ID, viewOnly: Bool = false) {
-        let session = RemoteDesktopManager.shared.begin(for: machine)
+        guard let session = RemoteDesktopManager.shared.begin(for: machine) else { return }
         if viewOnly { session.viewOnly = true }
         route = .desktop(session.id)
     }

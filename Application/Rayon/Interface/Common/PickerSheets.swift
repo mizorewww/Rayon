@@ -40,7 +40,7 @@ struct ServerPickerSheet: View {
     }
 
     var machines: [RDMachine] {
-        let all = store.machineGroup.machines.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        let all = store.machines.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
         guard !searchText.isEmpty else { return all }
         return all.filter { $0.isQualifiedForSearch(text: searchText) }
     }
@@ -65,7 +65,7 @@ struct ServerPickerSheet: View {
                 ScrollView {
                     if machines.isEmpty {
                         EmptyStateView(
-                            store.machineGroup.machines.isEmpty ? "No servers yet" : "No matches",
+                            store.machines.isEmpty ? "No servers yet" : "No matches",
                             systemImage: "server.rack",
                         )
                     } else {
@@ -98,7 +98,7 @@ struct ServerPickerSheet: View {
                 .buttonStyle(.rx)
                 .keyboardShortcut(.cancelAction)
             Button(confirmTitle) {
-                onComplete(store.machineGroup.machines.map(\.id).filter { selection.contains($0) })
+                onComplete(store.machines.map(\.id).filter { selection.contains($0) })
             }
             .buttonStyle(.rxPrimary)
             .keyboardShortcut(.defaultAction)
@@ -151,8 +151,8 @@ struct ServerPickerSheet: View {
                     }
                 }
                 Spacer()
-                if !machine.group.isEmpty {
-                    RXTag(machine.group)
+                if let folder = store.folder(machine.folderId) {
+                    RXTag(folder.name)
                 }
             }
             .padding(.horizontal, RX.Space.s2)
@@ -176,7 +176,7 @@ struct IdentityPickerSheet: View {
     var body: some View {
         SheetScaffold("Choose Identity") {
             ScrollView {
-                if store.identityGroup.identities.isEmpty {
+                if store.identities.isEmpty {
                     EmptyStateView(
                         "No identities yet",
                         systemImage: "person",
@@ -186,7 +186,7 @@ struct IdentityPickerSheet: View {
                     }
                 } else {
                     RXDividedStack {
-                        ForEach(store.identityGroup.identities) { identity in
+                        ForEach(store.identities) { identity in
                             Button {
                                 selection = identity.id
                             } label: {
@@ -457,7 +457,7 @@ struct SplitWithServerSheet: View {
     }
 
     private var machines: [RDMachine] {
-        let all = store.machineGroup.machines.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        let all = store.machines.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
         guard !searchText.isEmpty else { return all }
         return all.filter { $0.isQualifiedForSearch(text: searchText) }
     }

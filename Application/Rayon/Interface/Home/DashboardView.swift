@@ -18,7 +18,7 @@ struct DashboardView: View {
             serversSection
                 .padding(RX.Space.s6)
                 .frame(maxWidth: .infinity)
-                .animation(.easeInOut(duration: 0.25), value: store.machineGroup.machines.map(\.id))
+                .animation(.easeInOut(duration: 0.25), value: store.machines.map(\.id))
         }
         .pageChrome()
         // No toolbar "+": the grid ends in the New Server tile (and the empty
@@ -26,7 +26,7 @@ struct DashboardView: View {
     }
 
     @ViewBuilder var serversSection: some View {
-        if store.machineGroup.machines.isEmpty {
+        if store.machines.isEmpty {
             EmptyStateView(
                 "Save a server to reach it in one click",
                 systemImage: "server.rack",
@@ -46,7 +46,7 @@ struct DashboardView: View {
                     columns: [GridItem(.adaptive(minimum: 310), spacing: RX.Space.s4)],
                     spacing: RX.Space.s4
                 ) {
-                    ForEach(Array(store.machineGroup.machines.enumerated()), id: \.element.id) { index, machine in
+                    ForEach(Array(store.machines.enumerated()), id: \.element.id) { index, machine in
                         ServerTile(machine: machine.id)
                             .rxRise(index)
                             .transition(.scale(scale: 0.96).combined(with: .opacity))
@@ -77,7 +77,7 @@ struct ServerTile: View {
     @State private var hovered = false
 
     var body: some View {
-        let read = store.machineGroup[machine]
+        let read = (store.machine(machine) ?? RDMachine())
         ServerLiveReader(machine: machine) { state in
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .top, spacing: RX.Space.s2) {
@@ -156,11 +156,11 @@ struct ServerTile: View {
                 Label(ServerTool.terminal.title, systemImage: ServerTool.terminal.systemImage)
             }
             .buttonStyle(.rx(.primary, size: .small))
-            .help(offline ? "The device is offline in UU Remote" : ServerTool.terminal.help(for: store.machineGroup[machine]))
+            .help(offline ? "The device is offline in UU Remote" : ServerTool.terminal.help(for: (store.machine(machine) ?? RDMachine())))
             .disabled(offline)
             // What the server can show (a UU device: its desktop); past two,
             // as icons, so none is cut short.
-            let others = ServerTool.available(for: store.machineGroup[machine]).filter { $0 != .terminal && $0 != .editor }
+            let others = ServerTool.available(for: (store.machine(machine) ?? RDMachine())).filter { $0 != .terminal && $0 != .editor }
             ForEach(others) { tool in
                 toolButton(tool, iconOnly: others.count > 2)
             }
@@ -178,13 +178,13 @@ struct ServerTile: View {
             Label(tool.title, systemImage: tool.systemImage)
         }
         .buttonStyle(.rx(size: .small, iconOnly: iconOnly))
-        .help(offline ? "The device is offline in UU Remote" : tool.help(for: store.machineGroup[machine]))
+        .help(offline ? "The device is offline in UU Remote" : tool.help(for: (store.machine(machine) ?? RDMachine())))
         .disabled(offline)
     }
 
     /// A UU device the account lists as offline: nothing on it can open.
     var offline: Bool {
-        let read = store.machineGroup[machine]
+        let read = (store.machine(machine) ?? RDMachine())
         guard read.isUURemoteDevice else { return false }
         return account.devices.first { $0.deviceID == read.uuDeviceID }?.isOnline == false
     }
@@ -203,11 +203,11 @@ struct ServerTile: View {
     }
 
     func identityName(_ machine: RDMachine) -> String {
-        guard let aid = machine.associatedIdentity, let uid = UUID(uuidString: aid) else {
+        guard let uid = machine.associatedIdentity else {
             // The server's own user name, tried with each automatic identity.
             return machine.sshUsernameOverride.map { "\($0) · Automatic" } ?? "Automatic"
         }
-        let identity = store.identityGroup[uid]
+        let identity = (store.identity(uid) ?? RDIdentity())
         return identity.username.isEmpty ? "Missing" : machine.sshLoginUsername(identity: identity)
     }
 

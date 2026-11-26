@@ -16,51 +16,52 @@ final class UURemoteFolderSyncTests: XCTestCase {
         return device
     }
 
+    private let folder = UUID()
+
+    /// Applies the changes the way the store does.
+    private func apply(_ devices: [UUDeviceInfo], ownDeviceID: String = "", to machines: inout [RDMachine]) {
+        let changes = UURemoteFolderSync.changes(devices: devices, folder: folder, ownDeviceID: ownDeviceID, machines: machines)
+        for machine in changes.save {
+            if let index = machines.firstIndex(where: { $0.id == machine.id }) {
+                machines[index] = machine
+            } else {
+                machines.append(machine)
+            }
+        }
+        machines.removeAll { changes.delete.contains($0.id) }
+    }
+
     func testDesktopDevicesBecomeServersInTheFolder() {
-        var group = RDMachineGroup()
-        UURemoteFolderSync.apply(devices: [device("d1", "Mac"), device("p1", "Phone", platform: 2)], folder: "UU", to: &group)
-        XCTAssertEqual(group.machines.map(\.name), ["Mac"])
-        XCTAssertEqual(group.machines.first?.group, "UU")
-        XCTAssertEqual(group.machines.first?.remoteDesktopProtocol, .uuRemote)
+        var machines: [RDMachine] = []
+        apply([device("d1", "Mac"), device("p1", "Phone", platform: 2)], to: &machines)
+        XCTAssertEqual(machines.map(\.name), ["Mac"])
+        XCTAssertEqual(machines.first?.folderId, folder)
+        XCTAssertEqual(machines.first?.remoteDesktopProtocol, .uuRemote)
     }
 
     func testRenamedDevicesRenameUntouchedServersOnly() {
-        var group = RDMachineGroup()
-        UURemoteFolderSync.apply(devices: [device("d1", "Mac"), device("d2", "PC")], folder: "UU", to: &group)
-        var named = group.machines.first { $0.uuDeviceID == "d2" }!
-        named.name = "Gaming rig"
-        group[named.id] = named
-        UURemoteFolderSync.apply(devices: [device("d1", "Mac mini"), device("d2", "PC 2")], folder: "UU", to: &group)
-        XCTAssertEqual(Set(group.machines.map(\.name)), ["Mac mini", "Gaming rig"])
+        var machines: [RDMachine] = []
+        apply([device("d1", "Mac"), device("d2", "PC")], to: &machines)
+        let index = machines.firstIndex { $0.uuDeviceID == "d2" }!
+        machines[index].name = "Gaming rig"
+        apply([device("d1", "Mac mini"), device("d2", "PC 2")], to: &machines)
+        XCTAssertEqual(Set(machines.map(\.name)), ["Mac mini", "Gaming rig"])
     }
 
     func testDevicesLeavingTheAccountLeaveTheFolder() {
-        var group = RDMachineGroup()
-        UURemoteFolderSync.apply(devices: [device("d1", "Mac"), device("d2", "PC")], folder: "UU", to: &group)
+        var machines: [RDMachine] = []
+        apply([device("d1", "Mac"), device("d2", "PC")], to: &machines)
         // One moved out by the user stays wherever it is.
-        var moved = group.machines.first { $0.uuDeviceID == "d2" }!
-        moved.group = "Home"
-        group[moved.id] = moved
-        UURemoteFolderSync.apply(devices: [], folder: "UU", to: &group)
-        XCTAssertEqual(group.machines.map(\.uuDeviceID), ["d2"])
+        let index = machines.firstIndex { $0.uuDeviceID == "d2" }!
+        machines[index].folderId = UUID()
+        apply([], to: &machines)
+        XCTAssertEqual(machines.map(\.uuDeviceID), ["d2"])
     }
 
     func testRayonItselfIsNotAServer() {
-        var group = RDMachineGroup()
-        UURemoteFolderSync.apply(devices: [device("me", "Rayon", platform: 1), device("d1", "Mac")], folder: "UU", ownDeviceID: "me", to: &group)
-        XCTAssertEqual(group.machines.map(\.uuDeviceID), ["d1"])
-    }
-
-    /// Servers saved into "UU Remote" before folders were linked become the
-    /// folder's, so a device leaving the account takes its server along.
-    func testLegacyServersInTheFolderBecomeManaged() {
-        var legacy = UURemoteFolderSync.makeMachine(for: device("d1", "Mac"), folder: "UU Remote")
-        legacy.attachment[UURemoteFolderSync.managedKey] = nil
-        var group = RDMachineGroup()
-        group.insert(legacy)
-        UURemoteFolderSync.apply(devices: [device("d1", "Mac")], folder: "UU Remote", to: &group)
-        UURemoteFolderSync.apply(devices: [], folder: "UU Remote", to: &group)
-        XCTAssertTrue(group.machines.isEmpty)
+        var machines: [RDMachine] = []
+        apply([device("me", "Rayon", platform: 1), device("d1", "Mac")], ownDeviceID: "me", to: &machines)
+        XCTAssertEqual(machines.map(\.uuDeviceID), ["d1"])
     }
 
     func testOnlyUUServersAreUUDevices() {
@@ -68,7 +69,7 @@ final class UURemoteFolderSyncTests: XCTestCase {
         ssh.remoteDesktopProtocol = .uuRemote
         ssh.uuDeviceID = "d1"
         XCTAssertFalse(ssh.isUURemoteDevice)
-        XCTAssertTrue(UURemoteFolderSync.makeMachine(for: device("d1", "Mac"), folder: "UU").isUURemoteDevice)
+        XCTAssertTrue(UURemoteFolderSync.makeMachine(for: device("d1", "Mac"), folder: folder).isUURemoteDevice)
     }
 
     /// A sign-in of Rayon is no computer: it never becomes a server.
@@ -77,49 +78,16 @@ final class UURemoteFolderSyncTests: XCTestCase {
         signIn.versionName = UUConstants.versionName
         var pc = device("d1", "Rayon-lab-pc", platform: 1)
         pc.versionName = "4.44.0.3919"
-        var group = RDMachineGroup()
-        UURemoteFolderSync.apply(devices: [signIn, pc], folder: "UU", to: &group)
-        XCTAssertEqual(group.machines.map(\.uuDeviceID), ["d1"])
+        var machines: [RDMachine] = []
+        apply([signIn, pc], to: &machines)
+        XCTAssertEqual(machines.map(\.uuDeviceID), ["d1"])
     }
 
     func testEveryDeviceGivesADevicesServerTheSameID() {
-        var mac = RDMachineGroup(), pad = RDMachineGroup()
-        UURemoteFolderSync.apply(devices: [device("d1", "Mac")], folder: "UU", to: &mac)
-        UURemoteFolderSync.apply(devices: [device("d1", "Mac")], folder: "UU", to: &pad)
-        XCTAssertEqual(mac.machines.map(\.id), pad.machines.map(\.id))
-        XCTAssertEqual(mac.machines.first?.id, UURemoteFolderSync.machineID(for: "d1"))
-    }
-
-    func testDuplicatesFromOtherDevicesBecomeOneUnderTheSharedID() {
-        func old(_ id: String, name: String) -> RDMachine {
-            var machine = UURemoteFolderSync.makeMachine(for: device("d1", "Mac"), folder: "UU")
-            machine.id = UUID(uuidString: id)!
-            machine.name = name
-            return machine
-        }
-        var jump = RDMachine()
-        jump.name = "Behind"
-        jump.remoteAddress = "10.0.0.2"
-        jump.remotePort = "22"
-        jump.proxyJumpMachineID = "BBBBBBBB-0000-0000-0000-000000000000"
-        var one = RDMachineGroup(), two = RDMachineGroup()
-        one.insert(old("BBBBBBBB-0000-0000-0000-000000000000", name: "From iPad"))
-        one.insert(old("AAAAAAAA-0000-0000-0000-000000000000", name: "From Mac"))
-        one.insert(jump)
-        two.insert(old("AAAAAAAA-0000-0000-0000-000000000000", name: "From Mac"))
-        two.insert(old("BBBBBBBB-0000-0000-0000-000000000000", name: "From iPad"))
-
-        let replaced = UURemoteFolderSync.collapseDuplicates(in: &one)
-        UURemoteFolderSync.collapseDuplicates(in: &two)
-        let shared = UURemoteFolderSync.machineID(for: "d1")
-        let kept = one.machines.filter { $0.uuDeviceID == "d1" }
-        XCTAssertEqual(kept.map(\.id), [shared])
-        // Both devices keep the same one: the lowest id.
-        XCTAssertEqual(kept.first?.name, "From Mac")
-        XCTAssertEqual(two.machines.map(\.name), ["From Mac"])
-        XCTAssertEqual(replaced.count, 2)
-        XCTAssertEqual(one.machines.first { $0.name == "Behind" }?.proxyJumpMachineID, shared.uuidString)
-        // Nothing left to do the second time.
-        XCTAssertTrue(UURemoteFolderSync.collapseDuplicates(in: &one).isEmpty)
+        var mac: [RDMachine] = [], pad: [RDMachine] = []
+        apply([device("d1", "Mac")], to: &mac)
+        apply([device("d1", "Mac")], to: &pad)
+        XCTAssertEqual(mac.map(\.id), pad.map(\.id))
+        XCTAssertEqual(mac.first?.id, UURemoteFolderSync.machineID(for: "d1"))
     }
 }

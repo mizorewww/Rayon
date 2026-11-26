@@ -249,7 +249,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                 Task { @MainActor in
                     await UURemoteAccount.shared.adoptSessionForPreview(from: URL(fileURLWithPath: path))
                     guard let open, open.count == 2,
-                          let machine = RayonStore.shared.machineGroup.machines.first(where: { machine in
+                          let machine = RayonStore.shared.machines.first(where: { machine in
                               machine.isUURemoteDevice && machine.name == open[1]
                                   && UURemoteAccount.shared.devices.contains { $0.deviceID == machine.uuDeviceID }
                           })
@@ -264,7 +264,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             if ProcessInfo.processInfo.environment["RAYON_PREVIEW_FOLDERS"] != nil {
                 let store = RayonStore.shared
                 if store.folder(named: "Lab") == nil { store.createFolder(named: "Lab") }
-                let folder = store.folderGroup.folders.first { $0.isLinked }
+                let folder = store.folders.first { $0.isLinked }
                     ?? store.createFolder(named: "UU Remote", source: .uuRemote(userID: "preview"))
                 var devices: [UUDeviceInfo] = []
                 for (id, alias, platform) in [("preview-mac", "Macbook_Pro_M2", 4), ("preview-pc", "Studio PC", 1)] {
@@ -274,9 +274,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
                     device.platform = platform
                     devices.append(device)
                 }
-                var group = store.machineGroup
-                UURemoteFolderSync.apply(devices: devices, folder: folder.name, to: &group)
-                store.machineGroup = group
+                let changes = UURemoteFolderSync.changes(devices: devices, folder: folder.id, machines: store.machines)
+                changes.save.forEach { store.save($0) }
+                store.deleteMachines(changes.delete)
             }
             if ProcessInfo.processInfo.environment["RAYON_PREVIEW_EDITOR"] != nil {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 1) { AppRouter.shared.showEditorPreview() }

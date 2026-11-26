@@ -238,7 +238,7 @@ public extension TerminalManager.Context {
     }
 }
 
-public extension RDSnippetGroup {
+public extension RayonStore {
     /// The snippets whose name, code or group contain `filter`, any case.
     func snippets(matching filter: String) -> [RDSnippet] {
         guard !filter.isEmpty else { return snippets }

@@ -20,7 +20,7 @@ struct RemoteDesktopsView: View {
     @State private var searchText = ""
 
     private var servers: [RDMachine] {
-        let all = store.machineGroup.machines.filter(\.hasRemoteDesktop)
+        let all = store.machines.filter(\.hasRemoteDesktop)
         let sorted = all.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
         guard !searchText.isEmpty else { return sorted }
         let key = searchText.lowercased()
@@ -57,7 +57,7 @@ struct RemoteDesktopsView: View {
     // MARK: - Servers
 
     @ViewBuilder private var serversCard: some View {
-        if store.machineGroup.machines.allSatisfy({ !$0.hasRemoteDesktop }) {
+        if store.machines.allSatisfy({ !$0.hasRemoteDesktop }) {
             EmptyStateView(
                 "No remote desktops",
                 systemImage: "display",
@@ -169,7 +169,7 @@ private struct NearbyHostRow: View {
     @State private var hovered = false
 
     var body: some View {
-        let saved = store.machineGroup.machines.first(where: host.matches)
+        let saved = store.machines.first(where: host.matches)
         HStack(spacing: RX.Space.s3) {
             Image(systemName: "macbook.and.iphone")
                 .font(.system(size: 15))

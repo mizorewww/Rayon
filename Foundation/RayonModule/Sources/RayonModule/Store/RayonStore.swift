@@ -4,316 +4,359 @@
 //
 //  Created by Lakr Aream on 2022/2/8.
 //
+//  What the interface shows of the user's data, and the way it changes it.
+//  Every change is written to the database at once; there is nothing to
+//  flush. Code off the main actor reads the database (`worker…`).
+//
 
 import Combine
 import Foundation
-import NSRemoteShell
 import os
-#if canImport(UIKit)
-    import UIKit
-#elseif canImport(AppKit)
-    import AppKit
-#endif
 
-/// @unchecked Sendable: what the store keeps is written on the main
-/// thread only (enforced in `storeEncryptedDefault`), and what a worker
-/// queue may read is mirrored into `workerState` under its lock.
-public class RayonStore: ObservableObject, @unchecked Sendable {
-    public init() {
-        defer {
-            debugPrint("RayonStore init completed")
-        }
-
-        // Before anything is read: the settings may still be under their
-        // former names.
-        Self.adoptFormerDefaults()
-
-        // Before any connection: every one is checked against the saved host keys.
+@MainActor
+public final class RayonStore: ObservableObject {
+    public static let shared: RayonStore = {
+        // Before any connection: every one is checked against the saved
+        // host keys.
         KnownHosts.install()
+        RayonStorage.shared.purgeTombstones()
+        return RayonStore(storage: .shared)
+    }()
 
-        // bool(forKey:) also reads "YES"/"1" from the argument domain
-        // (`-licenseAgreed YES`), and is false when the key is missing.
-        let defaults = UserDefaults.standard
-        licenseAgreed = defaults.bool(forKey: UserDefaultKey.licenseAgreed.rawValue)
-        storeRecent = Self.readDefaultBool("me.mizorewww.rayon.storeRecent", defaultValue: true, in: defaults)
-        saveTemporarySession = Self.readDefaultBool("me.mizorewww.rayon.saveTemporarySession", defaultValue: true, in: defaults)
-        timeout = Self.readDefaultInt("me.mizorewww.rayon.timeout", defaultValue: 5, in: defaults)
-        reducedViewEffects = Self.readDefaultBool("me.mizorewww.rayon.reducedViewEffects", defaultValue: false, in: defaults)
-        disableConformation = Self.readDefaultBool("me.mizorewww.rayon.disableConformation", defaultValue: false, in: defaults)
-        monitorInterval = Self.readDefaultInt("me.mizorewww.rayon.monitorInterval", defaultValue: 3, in: defaults)
-        terminalFontSize = Self.readDefaultInt("me.mizorewww.rayon.terminalFontSize", defaultValue: 14, in: defaults)
-        terminalCopyOnSelect = Self.readDefaultBool("me.mizorewww.rayon.terminalCopyOnSelect", defaultValue: true, in: defaults)
-        terminalClipboardSharing = Self.readDefaultBool("me.mizorewww.rayon.terminalClipboardSharing", defaultValue: true, in: defaults)
-        maxRecentRecordCount = Self.readDefaultInt("me.mizorewww.rayon.maxRecentRecordCount", defaultValue: 8, in: defaults)
-        if timeout <= 0 { timeout = 5 }
+    public nonisolated let storage: RayonStorage
 
-        if let read = readEncryptedDefault(
-            from: .identityGroupEncrypted,
-            identityGroup.self
-        ) {
-            identityGroup = read
-        }
-        if let read = readEncryptedDefault(
-            from: .machineGroupEncrypted,
-            machineGroup.self
-        ) {
-            machineGroup = read
-        }
-        if let read = readEncryptedDefault(
-            from: .folderGroupEncrypted,
-            folderGroup.self
-        ) {
-            folderGroup = read
-        }
-        if let read = readEncryptedDefault(
-            from: .machineRedacted,
-            machineRedacted.self
-        ) {
-            machineRedacted = read
-        }
-        if let read = readEncryptedDefault(
-            from: .snippetGroupEncrypted,
-            snippetGroup.self
-        ) {
-            snippetGroup = read
-        }
-        if let read = readEncryptedDefault(
-            from: .recentRecordEncrypted,
-            recentRecord.self
-        ) {
-            recentRecord = read
-        }
-        if let read = readEncryptedDefault(
-            from: .openInterfaceAutomatically,
-            openInterfaceAutomatically.self
-        ) {
-            openInterfaceAutomatically = read
-        }
-        if let read = readEncryptedDefault(
-            from: .portForwardEncrypted,
-            portForwardGroup.self
-        ) {
-            portForwardGroup = read
-        }
-
-        // Property observers do not run during init; seed the worker
-        // snapshot with what was just loaded.
-        workerState.withLock {
-            $0.machines = machineGroup.machines
-            $0.identities = identityGroup.identities
-            $0.timeout = timeout
-            $0.monitorInterval = monitorInterval
-            $0.terminalFontSize = terminalFontSize
-        }
-
-        // Storing is debounced; leaving the foreground writes what is
-        // still waiting.
-        #if canImport(UIKit)
-            observers.append(NotificationCenter.default.addObserver(
-                forName: UIApplication.willResignActiveNotification, object: nil, queue: .main
-            ) { [weak self] _ in
-                self?.flushPendingWrites()
-            })
-        #elseif canImport(AppKit)
-            observers.append(NotificationCenter.default.addObserver(
-                forName: NSApplication.willResignActiveNotification, object: nil, queue: .main
-            ) { [weak self] _ in
-                self?.flushPendingWrites()
-            })
-        #endif
+    @Published public internal(set) var machines: [RDMachine]
+    @Published public internal(set) var identities: [RDIdentity]
+    /// Sorted by name.
+    @Published public internal(set) var folders: [RDFolder]
+    @Published public internal(set) var snippets: [RDSnippet]
+    @Published public internal(set) var portForwards: [RDPortForward]
+    @Published public var recentRecord: [RecentConnection] {
+        didSet { persistRecent() }
     }
 
-    private var observers: [NSObjectProtocol] = []
+    init(storage: RayonStorage, defaults: UserDefaults = .standard) {
+        self.storage = storage
+        // bool(forKey:) also reads "YES"/"1" from the argument domain
+        // (`-licenseAgreed YES`), and is false when the key is missing.
+        licenseAgreed = defaults.bool(forKey: Key.licenseAgreed)
+        storeRecent = Self.bool(Key.storeRecent, default: true, in: defaults)
+        saveTemporarySession = Self.bool(Key.saveTemporarySession, default: true, in: defaults)
+        let savedTimeout = Self.int(Key.timeout, default: 5, in: defaults)
+        timeout = savedTimeout > 0 ? savedTimeout : 5
+        reducedViewEffects = Self.bool(Key.reducedViewEffects, default: false, in: defaults)
+        disableConformation = Self.bool(Key.disableConformation, default: false, in: defaults)
+        monitorInterval = Self.int(Key.monitorInterval, default: 3, in: defaults)
+        terminalFontSize = Self.int(Key.terminalFontSize, default: 14, in: defaults)
+        terminalCopyOnSelect = Self.bool(Key.terminalCopyOnSelect, default: true, in: defaults)
+        terminalClipboardSharing = Self.bool(Key.terminalClipboardSharing, default: true, in: defaults)
+        maxRecentRecordCount = Self.int(Key.maxRecentRecordCount, default: 8, in: defaults)
+        openInterfaceAutomatically = Self.bool(Key.openInterfaceAutomatically, default: true, in: defaults)
+        machineRedacted = RDMachine.RedactedLevel(rawValue: defaults.integer(forKey: Key.machineRedacted)) ?? .none
 
-    /// What worker queues read instead of the main-thread properties, kept
-    /// in step by the property observers below. See RayonStore+Worker.
-    let workerState = OSAllocatedUnfairLock(initialState: WorkerState())
+        machines = storage.records(RDMachine.self)
+        identities = storage.records(RDIdentity.self)
+        folders = Self.sorted(storage.records(RDFolder.self))
+        snippets = storage.records(RDSnippet.self)
+        portForwards = storage.records(RDPortForward.self)
+        recentRecord = storage.recentConnections().compactMap(RecentConnection.init(record:))
+    }
 
-    /// First touched on the main thread at launch.
-    public static let shared = RayonStore()
+    /// Reads everything from the database again, after it was changed from
+    /// elsewhere (sync, a restored backup).
+    public func reload() {
+        machines = storage.records(RDMachine.self)
+        identities = storage.records(RDIdentity.self)
+        folders = Self.sorted(storage.records(RDFolder.self))
+        snippets = storage.records(RDSnippet.self)
+        portForwards = storage.records(RDPortForward.self)
+        recentRecord = storage.recentConnections().compactMap(RecentConnection.init(record:))
+    }
 
-    @Published public var licenseAgreed: Bool = false {
-        didSet {
-            storeDefault(to: .licenseAgreed, with: licenseAgreed)
-        }
+    // MARK: - Settings
+
+    enum Key {
+        static let licenseAgreed = "licenseAgreed"
+        static let storeRecent = "me.mizorewww.rayon.storeRecent"
+        static let saveTemporarySession = "me.mizorewww.rayon.saveTemporarySession"
+        static let timeout = "me.mizorewww.rayon.timeout"
+        static let reducedViewEffects = "me.mizorewww.rayon.reducedViewEffects"
+        static let disableConformation = "me.mizorewww.rayon.disableConformation"
+        static let monitorInterval = "me.mizorewww.rayon.monitorInterval"
+        static let terminalFontSize = "me.mizorewww.rayon.terminalFontSize"
+        static let terminalCopyOnSelect = "me.mizorewww.rayon.terminalCopyOnSelect"
+        static let terminalClipboardSharing = "me.mizorewww.rayon.terminalClipboardSharing"
+        static let maxRecentRecordCount = "me.mizorewww.rayon.maxRecentRecordCount"
+        static let openInterfaceAutomatically = "me.mizorewww.rayon.openInterfaceAutomatically"
+        static let machineRedacted = "me.mizorewww.rayon.machineRedacted"
+    }
+
+    private nonisolated static func int(_ key: String, default value: Int, in defaults: UserDefaults) -> Int {
+        defaults.object(forKey: key) == nil ? value : defaults.integer(forKey: key)
+    }
+
+    private nonisolated static func bool(_ key: String, default value: Bool, in defaults: UserDefaults) -> Bool {
+        defaults.object(forKey: key) == nil ? value : defaults.bool(forKey: key)
+    }
+
+    @Published public var licenseAgreed: Bool {
+        didSet { UserDefaults.standard.set(licenseAgreed, forKey: Key.licenseAgreed) }
     }
 
     @Published public var globalProgressInPresent: Bool = false
     public var globalProgressCount: Int = 0 {
-        didSet {
-            if globalProgressCount == 0 {
-                globalProgressInPresent = false
-            } else {
-                globalProgressInPresent = true
-            }
-        }
+        didSet { globalProgressInPresent = globalProgressCount != 0 }
     }
 
-    private static func readDefaultInt(_ key: String, defaultValue: Int, in defaults: UserDefaults) -> Int {
-        guard defaults.object(forKey: key) != nil else { return defaultValue }
-        return defaults.integer(forKey: key)
+    @Published public var timeout: Int {
+        didSet { UserDefaults.standard.set(timeout, forKey: Key.timeout) }
     }
 
-    private static func readDefaultBool(_ key: String, defaultValue: Bool, in defaults: UserDefaults) -> Bool {
-        guard defaults.object(forKey: key) != nil else { return defaultValue }
-        return defaults.bool(forKey: key)
+    @Published public var monitorInterval: Int {
+        didSet { UserDefaults.standard.set(monitorInterval, forKey: Key.monitorInterval) }
     }
 
-    @Published public var timeout: Int = 5 {
-        didSet {
-            UserDefaults.standard.set(timeout, forKey: "me.mizorewww.rayon.timeout")
-            workerState.withLock { $0.timeout = timeout }
-        }
-    }
-
-    @Published public var monitorInterval: Int = 3 {
-        didSet {
-            UserDefaults.standard.set(monitorInterval, forKey: "me.mizorewww.rayon.monitorInterval")
-            workerState.withLock { $0.monitorInterval = monitorInterval }
-        }
-    }
-
-    /// Main thread; worker queues read `workerTimeoutNumber`.
     public var timeoutNumber: NSNumber {
         NSNumber(value: timeout)
     }
 
-    @Published public var openInterfaceAutomatically: Bool = true {
+    @Published public var openInterfaceAutomatically: Bool {
+        didSet { UserDefaults.standard.set(openInterfaceAutomatically, forKey: Key.openInterfaceAutomatically) }
+    }
+
+    @Published public var machineRedacted: RDMachine.RedactedLevel {
+        didSet { UserDefaults.standard.set(machineRedacted.rawValue, forKey: Key.machineRedacted) }
+    }
+
+    @Published public var saveTemporarySession: Bool {
+        didSet { UserDefaults.standard.set(saveTemporarySession, forKey: Key.saveTemporarySession) }
+    }
+
+    @Published public var storeRecent: Bool {
         didSet {
-            storeEncryptedDefault(
-                to: .openInterfaceAutomatically,
-                with: openInterfaceAutomatically
-            )
+            UserDefaults.standard.set(storeRecent, forKey: Key.storeRecent)
+            if !storeRecent { recentRecord = [] }
         }
     }
 
-    @Published public var identityGroup: RDIdentityGroup = .init() {
-        didSet {
-            workerState.withLock { $0.identities = identityGroup.identities }
-            storeEncryptedDefault(
-                to: .identityGroupEncrypted,
-                with: identityGroup
-            )
-        }
+    @Published public var reducedViewEffects: Bool {
+        didSet { UserDefaults.standard.set(reducedViewEffects, forKey: Key.reducedViewEffects) }
     }
 
-    /// Main thread; worker queues read `workerIdentitiesForAutoAuth`.
-    public var identityGroupForAutoAuth: [RDIdentity] {
-        identityGroup
-            .identities
+    @Published public var disableConformation: Bool {
+        didSet { UserDefaults.standard.set(disableConformation, forKey: Key.disableConformation) }
+    }
+
+    public var maxRecentRecordCount: Int {
+        didSet { UserDefaults.standard.set(maxRecentRecordCount, forKey: Key.maxRecentRecordCount) }
+    }
+
+    @Published public var terminalFontSize: Int {
+        didSet { UserDefaults.standard.set(terminalFontSize, forKey: Key.terminalFontSize) }
+    }
+
+    /// A finished selection in a terminal is copied to the clipboard.
+    @Published public var terminalCopyOnSelect: Bool {
+        didSet { UserDefaults.standard.set(terminalCopyOnSelect, forKey: Key.terminalCopyOnSelect) }
+    }
+
+    /// Programs on the remote host may read and write the clipboard (OSC 52).
+    @Published public var terminalClipboardSharing: Bool {
+        didSet { UserDefaults.standard.set(terminalClipboardSharing, forKey: Key.terminalClipboardSharing) }
+    }
+}
+
+// MARK: - Lookups
+
+public extension RayonStore {
+    func machine(_ id: RDMachine.ID) -> RDMachine? {
+        machines.first { $0.id == id }
+    }
+
+    func identity(_ id: RDIdentity.ID) -> RDIdentity? {
+        identities.first { $0.id == id }
+    }
+
+    func snippet(_ id: RDSnippet.ID) -> RDSnippet? {
+        snippets.first { $0.id == id }
+    }
+
+    func portForward(_ id: RDPortForward.ID) -> RDPortForward? {
+        portForwards.first { $0.id == id }
+    }
+
+    func folder(_ id: RDFolder.ID?) -> RDFolder? {
+        guard let id else { return nil }
+        return folders.first { $0.id == id }
+    }
+
+    /// The identity the server signs in with; nil when it has none or the
+    /// identity is gone.
+    func associatedIdentity(for machine: RDMachine) -> RDIdentity? {
+        machine.associatedIdentity.flatMap(identity)
+    }
+
+    /// The identities tried on a server that names none.
+    var identitiesForAutoAuth: [RDIdentity] {
+        Self.autoAuth(identities)
+    }
+
+    nonisolated static func autoAuth(_ identities: [RDIdentity]) -> [RDIdentity] {
+        identities
             .filter(\.authenticAutomatically)
             // make sure not to reopen too many times
             .sorted { $0.username < $1.username }
     }
+}
 
-    @Published public var machineRedacted: RDMachine.RedactedLevel = .none {
-        didSet {
-            storeEncryptedDefault(
-                to: .machineRedacted,
-                with: machineRedacted
-            )
-        }
-    }
+// MARK: - Changes
 
-    @Published public var machineGroup: RDMachineGroup = .init() {
-        didSet {
-            workerState.withLock { $0.machines = machineGroup.machines }
-            storeEncryptedDefault(
-                to: .machineGroupEncrypted,
-                with: machineGroup
-            )
-        }
-    }
+public extension RayonStore {
+    enum SaveError: LocalizedError {
+        case proxyJump(RDMachine.ProxyJumpError)
 
-    @Published public var saveTemporarySession: Bool = true {
-        didSet {
-            UserDefaults.standard.set(saveTemporarySession, forKey: "me.mizorewww.rayon.saveTemporarySession")
-        }
-    }
-
-    @Published public var storeRecent: Bool = true {
-        didSet {
-            UserDefaults.standard.set(storeRecent, forKey: "me.mizorewww.rayon.storeRecent")
-            if !storeRecent {
-                recentRecord = []
+        public var errorDescription: String? {
+            switch self {
+            case let .proxyJump(error): error.errorDescription
             }
         }
     }
 
-    @Published public var reducedViewEffects: Bool = false {
-        didSet {
-            UserDefaults.standard.set(reducedViewEffects, forKey: "me.mizorewww.rayon.reducedViewEffects")
+    /// Why the server cannot be saved as it is; nil when it can.
+    func problem(saving machine: RDMachine) -> SaveError? {
+        do {
+            _ = try machine.proxyJumpChain { id in id == machine.id ? machine : self.machine(id) }
+            return nil
+        } catch let error as RDMachine.ProxyJumpError {
+            return .proxyJump(error)
+        } catch {
+            return nil
         }
     }
 
-    @Published public var disableConformation: Bool = false {
-        didSet {
-            UserDefaults.standard.set(disableConformation, forKey: "me.mizorewww.rayon.disableConformation")
+    /// Saves the server; a server whose proxy jumps would loop is refused.
+    @discardableResult
+    func save(_ machine: RDMachine) -> Bool {
+        if let problem = problem(saving: machine) {
+            Self.logger.error("refusing to save \(machine.id): \(problem.localizedDescription)")
+            return false
+        }
+        return persist(machine, into: \.machines)
+    }
+
+    @discardableResult
+    func save(_ identity: RDIdentity) -> Bool {
+        persist(identity, into: \.identities)
+    }
+
+    @discardableResult
+    func save(_ snippet: RDSnippet) -> Bool {
+        persist(snippet, into: \.snippets)
+    }
+
+    @discardableResult
+    func save(_ forward: RDPortForward) -> Bool {
+        guard forward.isComplete else {
+            Self.logger.error("refusing to save the incomplete forward \(forward.id)")
+            return false
+        }
+        return persist(forward, into: \.portForwards)
+    }
+
+    @discardableResult
+    func save(_ folder: RDFolder) -> Bool {
+        defer { folders = Self.sorted(folders) }
+        return persist(folder, into: \.folders)
+    }
+
+    func deleteMachines(_ ids: [RDMachine.ID]) {
+        remove(RDMachine.self, ids: ids, from: \.machines)
+        recentRecord.removeAll { if case let .machine(id) = $0 { ids.contains(id) } else { false } }
+    }
+
+    func deleteIdentities(_ ids: [RDIdentity.ID]) {
+        remove(RDIdentity.self, ids: ids, from: \.identities)
+    }
+
+    func deleteSnippets(_ ids: [RDSnippet.ID]) {
+        remove(RDSnippet.self, ids: ids, from: \.snippets)
+    }
+
+    func deletePortForwards(_ ids: [RDPortForward.ID]) {
+        remove(RDPortForward.self, ids: ids, from: \.portForwards)
+    }
+
+    /// Records that the identity signed a session in, at most once a minute.
+    func noteIdentityUsed(_ id: RDIdentity.ID, at date: Date = Date()) {
+        guard var identity = identity(id), abs(identity.lastRecentUsed.timeIntervalSince(date)) > 60 else { return }
+        identity.lastRecentUsed = date
+        save(identity)
+    }
+}
+
+extension RayonStore {
+    static let logger = Logger(subsystem: "me.mizorewww.rayon", category: "store")
+
+    func persist<T: StoredRecord>(_ record: T, into path: ReferenceWritableKeyPath<RayonStore, [T]>) -> Bool {
+        do {
+            let saved = try storage.save(record)
+            if let index = self[keyPath: path].firstIndex(where: { $0.id == saved.id }) {
+                self[keyPath: path][index] = saved
+            } else {
+                self[keyPath: path].append(saved)
+            }
+            return true
+        } catch {
+            Self.logger.error("saving \(T.tableName) \(record.id) failed: \(error.localizedDescription)")
+            return false
         }
     }
 
-    public var maxRecentRecordCount: Int = 8 {
-        didSet {
-            UserDefaults.standard.set(maxRecentRecordCount, forKey: "me.mizorewww.rayon.maxRecentRecordCount")
+    func remove<T: StoredRecord>(_: T.Type, ids: [UUID], from path: ReferenceWritableKeyPath<RayonStore, [T]>) {
+        guard !ids.isEmpty else { return }
+        do {
+            try storage.delete(T.self, ids: ids)
+            self[keyPath: path].removeAll { ids.contains($0.id) }
+        } catch {
+            Self.logger.error("deleting from \(T.tableName) failed: \(error.localizedDescription)")
         }
     }
 
-    @Published public var recentRecord: [RecentConnection] = [] {
-        didSet {
-            storeEncryptedDefault(
-                to: .recentRecordEncrypted,
-                with: recentRecord
-            )
-        }
+    nonisolated static func sorted(_ folders: [RDFolder]) -> [RDFolder] {
+        folders.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
+}
+
+// MARK: - Off the main actor
+
+/// Code off the main actor cannot reach `shared`; it reads the database
+/// and the defaults directly.
+public extension RayonStore {
+    /// The server, read from the database.
+    nonisolated static func workerMachine(for id: RDMachine.ID) -> RDMachine? {
+        RayonStorage.shared.record(RDMachine.self, id: id)
     }
 
-    @Published public var terminalFontSize: Int = 14 {
-        didSet {
-            UserDefaults.standard.set(terminalFontSize, forKey: "me.mizorewww.rayon.terminalFontSize")
-            workerState.withLock { $0.terminalFontSize = terminalFontSize }
-        }
+    /// The identity the server signs in with, read from the database.
+    nonisolated static func workerAssociatedIdentity(for machine: RDMachine) -> RDIdentity? {
+        machine.associatedIdentity.flatMap { RayonStorage.shared.record(RDIdentity.self, id: $0) }
     }
 
-    /// A finished selection in a terminal is copied to the clipboard.
-    @Published public var terminalCopyOnSelect: Bool = true {
-        didSet {
-            UserDefaults.standard.set(terminalCopyOnSelect, forKey: "me.mizorewww.rayon.terminalCopyOnSelect")
-        }
+    /// `identitiesForAutoAuth`, read from the database.
+    nonisolated static var workerIdentitiesForAutoAuth: [RDIdentity] {
+        Self.autoAuth(RayonStorage.shared.records(RDIdentity.self))
     }
 
-    /// Programs on the remote host may read and write the clipboard (OSC 52).
-    @Published public var terminalClipboardSharing: Bool = true {
-        didSet {
-            UserDefaults.standard.set(terminalClipboardSharing, forKey: "me.mizorewww.rayon.terminalClipboardSharing")
-        }
+    nonisolated static var workerTimeoutNumber: NSNumber {
+        let value = int(Key.timeout, default: 5, in: .standard)
+        return NSNumber(value: value > 0 ? value : 5)
     }
 
-    @Published public var snippetGroup: RDSnippetGroup = .init() {
-        didSet {
-            storeEncryptedDefault(
-                to: .snippetGroupEncrypted,
-                with: snippetGroup
-            )
-        }
+    nonisolated static var workerMonitorInterval: Int {
+        int(Key.monitorInterval, default: 3, in: .standard)
     }
 
-    /// Folders of servers. The servers carry their folder's name, and a
-    /// folder syncs by its name.
-    @Published public var folderGroup: RDFolderGroup = .init() {
-        didSet {
-            storeEncryptedDefault(
-                to: .folderGroupEncrypted,
-                with: folderGroup
-            )
-        }
-    }
-
-    @Published public var portForwardGroup: RDPortForwardGroup = .init() {
-        didSet {
-            storeEncryptedDefault(
-                to: .portForwardEncrypted,
-                with: portForwardGroup
-            )
-        }
+    nonisolated static var workerTerminalFontSize: Int {
+        int(Key.terminalFontSize, default: 14, in: .standard)
     }
 }

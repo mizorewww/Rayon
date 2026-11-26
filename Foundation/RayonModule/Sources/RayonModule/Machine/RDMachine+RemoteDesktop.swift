@@ -31,9 +31,10 @@ public extension RDMachine {
     }
 
     /// The effective VNC password: the stored one, else the associated
-    /// identity's password. Read on the main thread.
+    /// identity's password.
+    @MainActor
     func resolvedVNCPassword(in store: RayonStore) -> String {
-        resolvedVNCPassword(identity: associatedIdentity.flatMap { UUID(uuidString: $0) }.flatMap { store.identityGroup.find($0) })
+        resolvedVNCPassword(identity: store.associatedIdentity(for: self))
     }
 
     /// The effective VNC password for a pre-resolved identity, safe to call

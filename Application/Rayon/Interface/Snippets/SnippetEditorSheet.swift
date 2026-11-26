@@ -129,26 +129,25 @@ struct SnippetEditorSheet: View {
     }
 
     func load() {
-        if let snippet {
-            let read = store.snippetGroup[snippet]
+        if let snippet, let read = store.snippet(snippet) {
             name = read.name
             group = read.group
             code = read.code
             comment = read.comment
-            symbol = read.getSFAvatar()
+            symbol = read.displaySymbol
         } else {
             code = "#!/bin/bash\n"
         }
     }
 
     func save() {
-        var target = snippet.map { store.snippetGroup[$0] } ?? RDSnippet(name: "", group: "", code: "", comment: "")
+        var target = snippet.flatMap { store.snippet($0) } ?? RDSnippet(name: "", group: "", code: "", comment: "")
         target.name = name.trimmingCharacters(in: .whitespaces)
         target.group = group
         target.code = code
         target.comment = comment
-        target.setSFAvatar(sfSymbol: symbol)
-        store.snippetGroup.insert(target)
+        target.symbol = symbol
+        store.save(target)
         onClose()
     }
 }

@@ -11,7 +11,7 @@ import XCTest
 
 @MainActor
 final class MonitorCenterTests: XCTestCase {
-    private let machine = RDMachine(remoteAddress: "192.0.2.1", remotePort: "22", name: "web", associatedIdentity: UUID().uuidString)
+    private let machine = RDMachine(remoteAddress: "192.0.2.1", remotePort: "22", name: "web", associatedIdentity: UUID())
     private let identity = RDIdentity(username: "root", password: "secret")
 
     func testWhatIsWrittenBackOrOnlyShownKeepsTheSession() {
@@ -19,6 +19,8 @@ final class MonitorCenterTests: XCTestCase {
         edited.name = "web-01"
         edited.lastBanner = "SSH-2.0-OpenSSH_9.9"
         edited.lastConnection = Date()
+        edited.folderId = UUID()
+        edited.modified = Date().addingTimeInterval(60)
         var used = identity
         used.lastRecentUsed = Date()
         XCTAssertFalse(MonitorCenter.connectsDifferently(machine, identity, edited, used))
@@ -29,7 +31,7 @@ final class MonitorCenterTests: XCTestCase {
             { $0.remoteAddress = "192.0.2.2" },
             { $0.remotePort = "2222" },
             { $0.sshUsername = "admin" },
-            { $0.associatedIdentity = UUID().uuidString },
+            { $0.associatedIdentity = UUID() },
         ] {
             var edited = machine
             edit(&edited)

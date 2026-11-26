@@ -16,7 +16,7 @@ struct IdentitiesView: View {
     @State private var creating = false
 
     var filtered: [RDIdentity] {
-        let all = store.identityGroup.identities
+        let all = store.identities
         guard !searchText.isEmpty else { return all }
         let key = searchText.lowercased()
         return all.filter {
@@ -48,7 +48,7 @@ struct IdentitiesView: View {
         } header: {
             PageTitle("Identities")
         } content: {
-            if store.identityGroup.identities.isEmpty {
+            if store.identities.isEmpty {
                 EmptyStateView(
                     "No identities yet",
                     systemImage: "person",
@@ -62,7 +62,7 @@ struct IdentitiesView: View {
                 HStack(alignment: .top, spacing: RX.Space.s4) {
                     list
                         .frame(width: 240)
-                    if let selection, store.identityGroup.identities.contains(where: { $0.id == selection }) {
+                    if let selection, store.identities.contains(where: { $0.id == selection }) {
                         IdentityDetail(identity: selection)
                             .id(selection)
                     } else {
@@ -112,7 +112,7 @@ private struct IdentityRow: View {
     @State private var hovered = false
 
     var usage: Int {
-        store.machineGroup.machines.filter { $0.associatedIdentity == identity.id.uuidString }.count
+        store.machines.filter { $0.associatedIdentity == identity.id }.count
     }
 
     var body: some View {
@@ -152,19 +152,19 @@ private struct IdentityRow: View {
     }
 }
 
+@MainActor
 enum IdentityActions {
     static func duplicate(_ id: RDIdentity.ID) {
-        var copy = RayonStore.shared.identityGroup[id]
-        guard !copy.username.isEmpty else { return }
+        guard var copy = RayonStore.shared.identity(id) else { return }
         copy.id = UUID()
         copy.comment = copy.comment.isEmpty ? "Copy" : copy.comment + " (copy)"
-        RayonStore.shared.identityGroup.insert(copy)
+        RayonStore.shared.save(copy)
     }
 
     static func delete(_ id: RDIdentity.ID) {
         let store = RayonStore.shared
-        let identity = store.identityGroup[id]
-        let users = store.machineGroup.machines.filter { $0.associatedIdentity == id.uuidString }.count
+        guard let identity = store.identity(id) else { return }
+        let users = store.machines.filter { $0.associatedIdentity == id }.count
         UIBridge.requiresConfirmation(
             message: "Delete identity \(identity.username)?",
             informative: users > 0
@@ -174,7 +174,7 @@ enum IdentityActions {
             destructive: true
         ) { confirmed in
             guard confirmed else { return }
-            store.identityGroup.delete(id)
+            store.deleteIdentities([id])
         }
     }
 
@@ -213,11 +213,11 @@ private struct IdentityDetail: View {
     @State private var draft = IdentityDraft()
     @State private var loaded = false
 
-    var original: RDIdentity { store.identityGroup[identity] }
+    var original: RDIdentity { (store.identity(identity) ?? RDIdentity()) }
 
     var usedBy: [String] {
-        store.machineGroup.machines
-            .filter { $0.associatedIdentity == identity.uuidString }
+        store.machines
+            .filter { $0.associatedIdentity == identity }
             .map(\.name)
     }
 
@@ -230,7 +230,7 @@ private struct IdentityDetail: View {
                     .buttonStyle(.rx(size: .small))
                     .disabled(!draft.differs(from: original))
                 Button("Save") {
-                    store.identityGroup.insert(draft.apply(to: original))
+                    store.save(draft.apply(to: original))
                 }
                 .buttonStyle(.rx(.primary, size: .small))
                 .keyboardShortcut("s", modifiers: .command)
@@ -257,9 +257,9 @@ private struct IdentityDetail: View {
         }
         .onDisappear {
             // Keep edits when another identity is selected.
-            let stillExists = store.identityGroup.identities.contains { $0.id == identity }
+            let stillExists = store.identities.contains { $0.id == identity }
             if stillExists, draft.differs(from: original), draft.isValid {
-                store.identityGroup.insert(draft.apply(to: original))
+                store.save(draft.apply(to: original))
             }
         }
     }
@@ -455,11 +455,10 @@ struct IdentityEditorSheet: View {
                     lastRecentUsed: .init(timeIntervalSince1970: 0),
                     comment: "",
                     group: "",
-                    authenticAutomatically: true,
-                    attachment: [:]
+                    authenticAutomatically: true
                 )
                 base = draft.apply(to: base)
-                store.identityGroup.insert(base)
+                store.save(base)
                 onComplete(base.id)
             }
             .buttonStyle(.rxPrimary)

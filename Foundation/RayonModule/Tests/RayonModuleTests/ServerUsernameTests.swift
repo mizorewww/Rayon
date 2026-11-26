@@ -12,41 +12,9 @@ import XCTest
 @MainActor
 final class ServerUsernameTests: XCTestCase {
     func testSSHUsernameSurvivesARoundTrip() throws {
-        let machine = RDMachine(remoteAddress: "192.0.2.20", remotePort: "22", name: "web", sshUsername: "deploy")
-        let data = try PropertyListEncoder().encode(machine)
-        let decoded = try PropertyListDecoder().decode(RDMachine.self, from: data)
-        XCTAssertEqual(decoded.sshUsername, "deploy")
-        XCTAssertEqual(decoded, machine)
-
-        let json = try JSONDecoder().decode(RDMachine.self, from: JSONEncoder().encode(machine))
-        XCTAssertEqual(json.sshUsername, "deploy")
-    }
-
-    func testAnEmptySSHUsernameIsNotWritten() throws {
-        let machine = RDMachine(remoteAddress: "192.0.2.21", remotePort: "22", name: "plain")
-        let data = try JSONEncoder().encode(machine)
-        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
-        XCTAssertNil(object["sshUsername"])
-    }
-
-    func testServersSavedBeforeTheFieldDecode() throws {
-        let legacy: [String: Any] = [
-            "id": "AAAAAAAA-AAAA-AAAA-AAAA-AAAAAAAAAAAA",
-            "remoteAddress": "192.0.2.22",
-            "remotePort": "22",
-            "name": "old",
-            "group": "",
-            "lastConnection": Date(timeIntervalSince1970: 1_700_000_000),
-            "lastBanner": "",
-            "comment": "",
-            "associatedIdentity": "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB",
-            "attachment": [String: String](),
-        ]
-        let data = try PropertyListSerialization.data(fromPropertyList: legacy, format: .binary, options: 0)
-        let machine = try PropertyListDecoder().decode(RDMachine.self, from: data)
-        XCTAssertEqual(machine.sshUsername, "")
-        XCTAssertNil(machine.sshUsernameOverride)
-        XCTAssertEqual(machine.associatedIdentity, "BBBBBBBB-BBBB-BBBB-BBBB-BBBBBBBBBBBB")
+        let test = try TestStorage()
+        let machine = try test.storage.save(RDMachine(remoteAddress: "192.0.2.20", remotePort: "22", name: "web", sshUsername: "deploy"))
+        XCTAssertEqual(test.storage.record(RDMachine.self, id: machine.id)?.sshUsername, "deploy")
     }
 
     func testTheServersUsernameOverridesTheIdentitys() {
@@ -94,14 +62,11 @@ final class ServerUsernameTests: XCTestCase {
             IdentityFile \(directory.path)/other
         """
 
-        let store = RayonStore()
+        let test = try TestStorage()
+        let store = test.store()
         let result = store.importOpenSSHConfig(config)
-        let machines = store.machineGroup.machines.filter { $0.name.hasSuffix("-\(tag)") }
+        let machines = store.machines.filter { $0.name.hasSuffix("-\(tag)") }
         let identityIDs = Set(machines.compactMap(\.associatedIdentity))
-        defer {
-            for machine in machines { store.machineGroup.delete(machine.id) }
-            for raw in identityIDs { if let id = UUID(uuidString: raw) { store.identityGroup.delete(id) } }
-        }
 
         XCTAssertEqual(result.importedServers, 3)
         XCTAssertEqual(result.importedIdentities, 2)

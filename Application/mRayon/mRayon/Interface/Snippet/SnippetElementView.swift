@@ -14,7 +14,7 @@ struct SnippetElementView: View {
     let identity: RDSnippet.ID
     @State private var openEdit = false
 
-    var snippet: RDSnippet { store.snippetGroup[identity] }
+    var snippet: RDSnippet { (store.snippet(identity) ?? RDSnippet()) }
 
     var detail: String {
         [snippet.group, snippet.comment].filter { !$0.isEmpty }.joined(separator: " · ")
@@ -23,7 +23,7 @@ struct SnippetElementView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: RX.Space.s3) {
             HStack(alignment: .top, spacing: RX.Space.s3) {
-                SymbolTile(snippet.getSFAvatar())
+                SymbolTile(snippet.displaySymbol)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(snippet.name.isEmpty ? "Untitled" : snippet.name)
                         .font(.headline)
@@ -53,7 +53,7 @@ struct SnippetElementView: View {
                         var copy = snippet
                         copy.id = .init()
                         copy.name += " copy"
-                        store.snippetGroup.insert(copy)
+                        store.save(copy)
                     } label: {
                         Label("Duplicate", systemImage: "plus.square.on.square")
                     }
@@ -65,7 +65,7 @@ struct SnippetElementView: View {
                     Divider()
                     Button(role: .destructive) {
                         UIBridge.requiresConfirmation(message: "Delete \(snippet.name)?") { confirmed in
-                            if confirmed { store.snippetGroup.delete(identity) }
+                            if confirmed { store.deleteSnippets([identity]) }
                         }
                     } label: {
                         Label("Delete", systemImage: "trash")

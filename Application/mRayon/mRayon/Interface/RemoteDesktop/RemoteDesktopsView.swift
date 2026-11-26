@@ -22,7 +22,7 @@ struct RemoteDesktopsView: View {
     @State private var editing: RDMachine.ID?
 
     private var servers: [RDMachine] {
-        let all = store.machineGroup.machines.filter(\.hasRemoteDesktop)
+        let all = store.machines.filter(\.hasRemoteDesktop)
         let sorted = all.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
         guard !searchText.isEmpty else { return sorted }
         let key = searchText.lowercased()
@@ -78,7 +78,7 @@ struct RemoteDesktopsView: View {
 
     @ViewBuilder private var serversSection: some View {
         Section {
-            if store.machineGroup.machines.allSatisfy({ !$0.hasRemoteDesktop }) {
+            if store.machines.allSatisfy({ !$0.hasRemoteDesktop }) {
                 EmptyStateView(
                     "No remote desktops",
                     systemImage: "display",
@@ -188,7 +188,7 @@ private struct NearbyHostRow: View {
     @EnvironmentObject var store: RayonStore
 
     var body: some View {
-        let saved = store.machineGroup.machines.first(where: host.matches)
+        let saved = store.machines.first(where: host.matches)
         HStack(spacing: RX.Space.s3) {
             Image(systemName: "macbook.and.iphone")
                 .foregroundStyle(.rxAccent)
@@ -215,7 +215,7 @@ private struct NearbyHostRow: View {
                 // A Mac asks for an account: the editor is where it goes.
                 Button("Add…") {
                     let machine = host.makeMachine()
-                    store.machineGroup.insert(machine)
+                    store.save(machine)
                     edit(machine.id)
                 }
                 .buttonStyle(.rx(size: .small))

@@ -271,7 +271,7 @@ struct TerminalSnippetPanel: View {
     @State private var filter = ""
 
     private var snippets: [RDSnippet] {
-        store.snippetGroup.snippets(matching: filter)
+        store.snippets(matching: filter)
     }
 
     var body: some View {
@@ -318,7 +318,7 @@ struct TerminalSnippetPanel: View {
     @ViewBuilder private var list: some View {
         if snippets.isEmpty {
             VStack(spacing: RX.Space.s2) {
-                Text(store.snippetGroup.snippets.isEmpty ? "No snippets saved" : "No matches")
+                Text(store.snippets.isEmpty ? "No snippets saved" : "No matches")
                     .font(.footnote)
                     .foregroundStyle(.rxInkSecondary)
             }

@@ -43,11 +43,11 @@ public class SnippetExecSession {
         // A server without an associated identity falls back to the
         // store's auto identities instead of failing outright. Reads are
         // the store's worker snapshot: runs happen on background queues.
-        if let identity = RayonStore.shared.workerAssociatedIdentity(for: machine) {
+        if let identity = RayonStore.workerAssociatedIdentity(for: machine) {
             identity.callAuthenticationWith(remote: shell, username: machine.sshUsernameOverride)
         } else {
             shell.authenticateWithAutoIdentities(
-                RayonStore.shared.workerIdentitiesForAutoAuth,
+                RayonStore.workerIdentitiesForAutoAuth,
                 username: machine.sshUsernameOverride
             )
         }

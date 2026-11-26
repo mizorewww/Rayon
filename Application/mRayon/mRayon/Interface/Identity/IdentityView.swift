@@ -14,7 +14,7 @@ struct IdentityView: View {
     @State private var openCreate = false
 
     var filtered: [RDIdentity] {
-        let all = store.identityGroup.identities
+        let all = store.identities
         guard !searchKey.isEmpty else { return all }
         let key = searchKey.lowercased()
         return all.filter {
@@ -35,7 +35,7 @@ struct IdentityView: View {
 
     var body: some View {
         Group {
-            if store.identityGroup.identities.isEmpty {
+            if store.identities.isEmpty {
                 EmptyStateView(
                     "No identities yet",
                     systemImage: "person",
@@ -131,20 +131,20 @@ private struct IdentityMenuItems: View {
     }
 }
 
+@MainActor
 enum IdentityActions {
     static func duplicate(_ id: RDIdentity.ID) {
-        var copy = RayonStore.shared.identityGroup[id]
-        guard !copy.username.isEmpty else { return }
+        guard var copy = RayonStore.shared.identity(id) else { return }
         copy.id = UUID()
         copy.comment = copy.comment.isEmpty ? "Copy" : copy.comment + " (copy)"
-        RayonStore.shared.identityGroup.insert(copy)
+        RayonStore.shared.save(copy)
     }
 
     @MainActor
     static func delete(_ id: RDIdentity.ID, onDeleted: (() -> Void)? = nil) {
         let store = RayonStore.shared
-        let identity = store.identityGroup[id]
-        let users = store.machineGroup.machines.filter { $0.associatedIdentity == id.uuidString }.count
+        guard let identity = store.identity(id) else { return }
+        let users = store.machines.filter { $0.associatedIdentity == id }.count
         UIBridge.requiresConfirmation(
             message: "Delete identity \(identity.username)?",
             informative: users > 0
@@ -153,7 +153,7 @@ enum IdentityActions {
             confirmTitle: "Delete"
         ) { confirmed in
             guard confirmed else { return }
-            store.identityGroup.delete(id)
+            store.deleteIdentities([id])
             onDeleted?()
         }
     }
@@ -198,7 +198,7 @@ private struct IdentityRow: View {
     @EnvironmentObject var store: RayonStore
 
     var usage: Int {
-        store.machineGroup.machines.filter { $0.associatedIdentity == identity.id.uuidString }.count
+        store.machines.filter { $0.associatedIdentity == identity.id }.count
     }
 
     var body: some View {

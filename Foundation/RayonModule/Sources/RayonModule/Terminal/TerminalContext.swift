@@ -191,7 +191,7 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
     }
 
     public func setupShellData() {
-        shell.applyConnection(for: machine, timeout: RayonStore.shared.workerTimeoutNumber)
+        shell.applyConnection(for: machine, timeout: RayonStore.workerTimeoutNumber)
     }
 
     public static func == (lhs: TerminalContext, rhs: TerminalContext) -> Bool {
@@ -214,7 +214,7 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
         onMainThread {
             guard self.firstConnect else { return }
             self.firstConnect = false
-            guard RayonStore.shared.openInterfaceAutomatically else { return }
+            guard MainActor.assumeIsolated({ RayonStore.shared.openInterfaceAutomatically }) else { return }
             TerminalInterface.uiHandler.autoOpenInterface(self)
         }
 
@@ -256,7 +256,7 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
 
         let identity: RDIdentity?
         if machine.associatedIdentity != nil {
-            guard let resolved = RayonStore.shared.workerAssociatedIdentity(for: machine) else {
+            guard let resolved = RayonStore.workerAssociatedIdentity(for: machine) else {
                 putInformation("Malformed machine or identity data")
                 return
             }
@@ -267,7 +267,7 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
 
         let result = shell.connectAndAuthenticate(
             identity: identity,
-            autoIdentities: RayonStore.shared.workerIdentitiesForAutoAuth,
+            autoIdentities: RayonStore.workerIdentitiesForAutoAuth,
             username: machine.sshUsernameOverride
         ) { [self] hintText in
             putInformation(hintText)
@@ -288,17 +288,13 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
             return
         }
 
-        onMainThread {
-            guard self.remoteType == .machine else {
-                return
-            }
-            var read = RayonStore.shared.machineGroup[self.machine.id]
-            if read.isNotPlaceholder() {
-                let newBanner = self.shell.remoteBanner ?? "No Banner"
-                if read.lastBanner != newBanner {
-                    read.lastBanner = newBanner
-                    RayonStore.shared.machineGroup[self.machine.id] = read
-                }
+        if remoteType == .machine {
+            let id = machine.id
+            let newBanner = shell.remoteBanner ?? "No Banner"
+            Task { @MainActor in
+                guard var read = RayonStore.shared.machine(id), read.lastBanner != newBanner else { return }
+                read.lastBanner = newBanner
+                RayonStore.shared.save(read)
             }
         }
 

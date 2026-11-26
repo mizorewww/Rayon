@@ -175,7 +175,7 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
     }
 
     private var refreshInterval: Int {
-        max(1, RayonStore.shared.workerMonitorInterval)
+        max(1, RayonStore.workerMonitorInterval)
     }
 
     private func setPhase(_ next: Phase) {
@@ -199,7 +199,7 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
                     sampler.resetConnection()
                     shell.connectAndAuthenticate(
                         identity: identity,
-                        autoIdentities: RayonStore.shared.workerIdentitiesForAutoAuth,
+                        autoIdentities: RayonStore.workerIdentitiesForAutoAuth,
                         username: username
                     )
                     return shell.isConnected && shell.isAuthenticated
@@ -252,11 +252,10 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
     /// Stamps the server's banner and last connection once per connection,
     /// not every round: each write republishes the whole store.
     private func recordConnection() {
-        var read = RayonStore.shared.machineGroup[machine.id]
-        guard read.isNotPlaceholder() else { return }
+        guard var read = RayonStore.shared.machine(machine.id) else { return }
         read.lastBanner = shell.remoteBanner ?? read.lastBanner
         read.lastConnection = Date()
-        RayonStore.shared.machineGroup[machine.id] = read
+        RayonStore.shared.save(read)
     }
 
     /// The SSH API blocks; run it on the monitor queue so the loop's task
@@ -381,8 +380,7 @@ public final class MonitorCenter: ObservableObject {
     /// started before the server or its identity was edited reconnects
     /// with the new ones, so whoever holds it sees the change too.
     private func runningSession(for machineID: RDMachine.ID) throws -> MonitorSession {
-        let machine = RayonStore.shared.machineGroup[machineID]
-        guard machine.isNotPlaceholder() else { throw BeginError.malformedMachine }
+        guard let machine = RayonStore.shared.machine(machineID) else { throw BeginError.malformedMachine }
         let identity = RayonStore.shared.associatedIdentity(for: machine)
         if let existing = running.first(where: { $0.machine.id == machineID }) {
             if Self.connectsDifferently(existing.machine, existing.identity, machine, identity) {
@@ -402,8 +400,9 @@ public final class MonitorCenter: ObservableObject {
         func connection(_ machine: RDMachine) -> RDMachine {
             var machine = machine
             machine.name = ""
-            machine.group = ""
+            machine.folderId = nil
             machine.comment = ""
+            machine.modified = .distantPast
             machine.lastConnection = .distantPast
             machine.lastBanner = ""
             machine.ghosttyTerminfoVersion = nil
@@ -417,6 +416,7 @@ public final class MonitorCenter: ObservableObject {
             identity.lastRecentUsed = .distantPast
             identity.comment = ""
             identity.group = ""
+            identity.modified = .distantPast
             return identity
         }
         return connection(machine) != connection(newMachine) || credentials(identity) != credentials(newIdentity)

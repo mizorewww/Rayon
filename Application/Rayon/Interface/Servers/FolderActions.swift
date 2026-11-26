@@ -11,6 +11,7 @@ import RayonDesign
 import RayonModule
 import SwiftUI
 
+@MainActor
 enum FolderActions {
     @MainActor
     static func newFolder(moving servers: [RDMachine.ID] = []) {
@@ -25,7 +26,7 @@ enum FolderActions {
                 dismiss()
                 guard let name else { return }
                 let folder = store.createFolder(named: name)
-                store.moveServers(servers, toFolder: folder.name)
+                store.moveServers(servers, toFolder: folder.id)
             }
         }
     }
@@ -41,7 +42,7 @@ enum FolderActions {
             ) { newName in
                 dismiss()
                 guard let newName else { return }
-                if !RayonStore.shared.renameFolder(name, to: newName) {
+                if let folder = RayonStore.shared.folder(named: name), !RayonStore.shared.renameFolder(folder.id, to: newName) {
                     UIBridge.presentError(with: "There is already a folder named \"\(newName)\".")
                 }
             }
@@ -50,7 +51,8 @@ enum FolderActions {
 
     @MainActor
     static func delete(_ name: String) {
-        let plan = FolderDeletionPlan(folder: name)
+        guard let folder = RayonStore.shared.folder(named: name) else { return }
+        let plan = FolderDeletionPlan(folder: folder)
         UIBridge.requiresConfirmation(
             message: plan.message,
             informative: plan.informative,
@@ -87,16 +89,16 @@ struct MoveToFolderMenu: View {
     @ObservedObject private var store = RayonStore.shared
 
     var body: some View {
-        let current = store.machineGroup[machine].group
+        let current = store.machine(machine)?.folderId
         // A linked folder is filled from its account, not by hand.
         let targets = store.folders.filter { !$0.isLinked }
         Menu {
-            RXMenuItem("Default") { store.moveServers([machine], toFolder: "") }
-                .disabled(current.isEmpty)
+            RXMenuItem("Default") { store.moveServers([machine], toFolder: nil) }
+                .disabled(current == nil)
             if !targets.isEmpty { Divider() }
             ForEach(targets) { folder in
-                RXMenuItem(folder.name) { store.moveServers([machine], toFolder: folder.name) }
-                    .disabled(folder.name == current)
+                RXMenuItem(folder.name) { store.moveServers([machine], toFolder: folder.id) }
+                    .disabled(folder.id == current)
             }
             Divider()
             RXMenuItem("New Folder…") { FolderActions.newFolder(moving: [machine]) }

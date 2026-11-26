@@ -20,17 +20,22 @@ extension UIBridge {
         always: Bool = false,
         confirmation: @escaping (Bool) -> Void
     ) {
-        if RayonStore.shared.disableConformation, !always {
-            confirmation(true)
-            return
+        nonisolated(unsafe) let confirmation = confirmation
+        onMainThread {
+            MainActor.assumeIsolated {
+                if RayonStore.shared.disableConformation, !always {
+                    confirmation(true)
+                    return
+                }
+                let alert = UIAlertController(title: message, message: informative, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { _ in
+                    confirmation(false)
+                }))
+                alert.addAction(UIAlertAction(title: confirmTitle, style: destructive ? .destructive : .default, handler: { _ in
+                    confirmation(true)
+                }))
+                UIWindow.shutUpKeyWindow?.topMostViewController?.present(alert, animated: true, completion: nil)
+            }
         }
-        let alert = UIAlertController(title: message, message: informative, preferredStyle: .alert)
-        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: { _ in
-            confirmation(false)
-        }))
-        alert.addAction(UIAlertAction(title: confirmTitle, style: destructive ? .destructive : .default, handler: { _ in
-            confirmation(true)
-        }))
-        UIWindow.shutUpKeyWindow?.topMostViewController?.present(alert, animated: true, completion: nil)
     }
 }

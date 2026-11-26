@@ -20,7 +20,7 @@ struct ServersView: View {
     @State private var selection: RDMachine.ID?
 
     var filtered: [RDMachine] {
-        let machines = store.machineGroup.machines
+        let machines = store.machines
         guard !searchText.isEmpty else { return machines }
         return machines.filter { $0.isQualifiedForSearch(text: searchText) }
     }
@@ -30,9 +30,9 @@ struct ServersView: View {
     var groups: [(name: String, machines: [RDMachine])] {
         let machines = filtered
         var names = store.folders.map(\.name)
-        if machines.contains(where: { $0.group.isEmpty }) { names.append("") }
+        if machines.contains(where: { $0.folderId == nil }) { names.append("") }
         return names.compactMap { name in
-            let inside = machines.filter { $0.group == name }
+            let inside = machines.filter { store.folderName(of: $0) == name }
                 .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
             if inside.isEmpty, !searchText.isEmpty { return nil }
             return (name, inside)
@@ -63,7 +63,7 @@ struct ServersView: View {
                 Label("Open Terminals…", systemImage: "rectangle.stack.badge.plus")
             }
             .help("Pick several servers and open a terminal on each")
-            .disabled(store.machineGroup.machines.isEmpty)
+            .disabled(store.machines.isEmpty)
         } header: {
             VStack(alignment: .leading, spacing: RX.Space.s3) {
                 PageTitle("Servers")
@@ -72,7 +72,7 @@ struct ServersView: View {
                 }
             }
         } content: {
-            if store.machineGroup.machines.isEmpty, store.folders.isEmpty {
+            if store.machines.isEmpty, store.folders.isEmpty {
                 EmptyStateView(
                     "No servers yet",
                     systemImage: "server.rack",
@@ -247,7 +247,7 @@ private struct ServerRow: View {
     @State private var hovered = false
 
     var body: some View {
-        let read = store.machineGroup[machine]
+        let read = (store.machine(machine) ?? RDMachine())
         ServerLiveReader(machine: machine) { state in
             HStack(spacing: 0) {
                 VStack(alignment: .leading, spacing: 1) {
@@ -351,11 +351,11 @@ private struct ServerRow: View {
     }
 
     func identityName(_ machine: RDMachine) -> String {
-        guard let aid = machine.associatedIdentity, let uid = UUID(uuidString: aid) else {
+        guard let uid = machine.associatedIdentity else {
             // The server's own user name, tried with each automatic identity.
             return machine.sshUsernameOverride.map { "\($0) · Automatic" } ?? "Automatic"
         }
-        let identity = store.identityGroup[uid]
+        let identity = (store.identity(uid) ?? RDIdentity())
         return identity.username.isEmpty ? "Missing" : machine.sshLoginUsername(identity: identity)
     }
 }

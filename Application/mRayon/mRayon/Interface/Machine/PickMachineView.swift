@@ -36,7 +36,7 @@ struct PickMachineView: View {
     @Environment(\.dismiss) private var dismiss
 
     var machines: [RDMachine] {
-        let all = store.machineGroup.machines.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        let all = store.machines.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
         guard !searchKey.isEmpty else { return all }
         return all.filter { $0.isQualifiedForSearch(text: searchKey.lowercased()) }
     }
@@ -55,7 +55,7 @@ struct PickMachineView: View {
 
     var selectionFooter: String {
         rawSelection
-            .map { store.machineGroup[$0].name }
+            .map { (store.machine($0) ?? RDMachine()).name }
             .joined(separator: " ")
     }
 
@@ -79,7 +79,7 @@ struct PickMachineView: View {
 
             Section {
                 if machines.isEmpty {
-                    Label(store.machineGroup.machines.isEmpty ? "No servers yet" : "No matches", systemImage: "questionmark.square.dashed")
+                    Label(store.machines.isEmpty ? "No servers yet" : "No matches", systemImage: "questionmark.square.dashed")
                 } else {
                     ForEach(machines) { machine in
                         Button {
@@ -104,8 +104,8 @@ struct PickMachineView: View {
                                     Image(systemName: sysImage(for: machine))
                                 }
                                 Spacer()
-                                if !machine.group.isEmpty {
-                                    RXTag(machine.group)
+                                if let folder = store.folder(machine.folderId) {
+                                    RXTag(folder.name)
                                 }
                             }
                         }

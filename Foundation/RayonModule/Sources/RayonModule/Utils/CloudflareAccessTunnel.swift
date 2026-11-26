@@ -304,11 +304,11 @@ public extension NSRemoteShell {
         case .uuRemote:
             applyUUTransport(for: machine)
         case .proxyJump:
-            let jumpIDString = machine.proxyJumpMachineID ?? ""
+            let jumpID = machine.proxyJumpMachineID
             var visited = visitedJumpIDs
             visited.insert(machine.id)
             setupConnectionSocketProvider { [weak self] host, port, timeout in
-                guard let jumpUUID = UUID(uuidString: jumpIDString) else {
+                guard let jumpUUID = jumpID else {
                     self?.tunnelFailure = "ProxyJump server is not selected."
                     return -1
                 }
@@ -316,8 +316,7 @@ public extension NSRemoteShell {
                     self?.tunnelFailure = "ProxyJump chain contains a loop."
                     return -1
                 }
-                let bastion = RayonStore.shared.workerMachine(for: jumpUUID)
-                guard bastion.isNotPlaceholder() else {
+                guard let bastion = RayonStore.workerMachine(for: jumpUUID) else {
                     self?.tunnelFailure = "The configured ProxyJump server no longer exists."
                     return -1
                 }
@@ -328,8 +327,8 @@ public extension NSRemoteShell {
                     .setupConnectionPort(NSNumber(value: Int(bastion.remotePort) ?? 22))
                     .setupConnectionTimeout(timeout)
                 let authResult = bastionShell.connectAndAuthenticate(
-                    identity: RayonStore.shared.workerAssociatedIdentity(for: bastion),
-                    autoIdentities: RayonStore.shared.workerIdentitiesForAutoAuth,
+                    identity: RayonStore.workerAssociatedIdentity(for: bastion),
+                    autoIdentities: RayonStore.workerIdentitiesForAutoAuth,
                     username: bastion.sshUsernameOverride
                 )
                 guard authResult == .success else {

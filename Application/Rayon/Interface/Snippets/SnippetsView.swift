@@ -18,11 +18,11 @@ struct SnippetsView: View {
     @State private var editing: RDSnippet.ID?
 
     var groupNames: [String] {
-        Set(store.snippetGroup.snippets.map(\.group)).filter { !$0.isEmpty }.sorted()
+        Set(store.snippets.map(\.group)).filter { !$0.isEmpty }.sorted()
     }
 
     var filtered: [RDSnippet] {
-        var result = store.snippetGroup.snippets
+        var result = store.snippets
         if let groupFilter {
             result = result.filter { $0.group == groupFilter }
         }
@@ -50,7 +50,7 @@ struct SnippetsView: View {
         } header: {
             PageTitle("Snippets")
         } content: {
-            if store.snippetGroup.snippets.isEmpty {
+            if store.snippets.isEmpty {
                 EmptyStateView(
                     "No snippets yet",
                     systemImage: "chevron.left.forwardslash.chevron.right",
@@ -107,7 +107,7 @@ private struct SnippetTile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: RX.Space.s3) {
             HStack(alignment: .top, spacing: RX.Space.s3) {
-                SymbolTile(snippet.getSFAvatar())
+                SymbolTile(snippet.displaySymbol)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(snippet.name.isEmpty ? "Untitled" : snippet.name)
                         .font(.rxBodyStrong)
@@ -149,10 +149,11 @@ private struct SnippetTile: View {
     }
 }
 
+@MainActor
 enum SnippetActions {
     @MainActor
     static func run(_ id: RDSnippet.ID) {
-        let snippet = RayonStore.shared.snippetGroup[id]
+        guard let snippet = RayonStore.shared.snippet(id) else { return }
         guard !snippet.code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             UIBridge.presentError(with: "This snippet has no command to run.")
             return
@@ -172,20 +173,20 @@ enum SnippetActions {
     }
 
     static func duplicate(_ id: RDSnippet.ID) {
-        var copy = RayonStore.shared.snippetGroup[id]
+        guard var copy = RayonStore.shared.snippet(id) else { return }
         copy.id = UUID()
         copy.name += " copy"
-        RayonStore.shared.snippetGroup.insert(copy)
+        RayonStore.shared.save(copy)
     }
 
     static func delete(_ id: RDSnippet.ID) {
-        let snippet = RayonStore.shared.snippetGroup[id]
+        guard let snippet = RayonStore.shared.snippet(id) else { return }
         UIBridge.requiresConfirmation(
             message: "Delete \(snippet.name.isEmpty ? "this snippet" : snippet.name)?",
             confirmTitle: "Delete",
             destructive: true
         ) { confirmed in
-            if confirmed { RayonStore.shared.snippetGroup.delete(id) }
+            if confirmed { RayonStore.shared.deleteSnippets([id]) }
         }
     }
 }

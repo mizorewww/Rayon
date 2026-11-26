@@ -52,16 +52,16 @@ struct EditMachineView: View {
 
     init(requestMachine: UUID? = nil) {
         inEditWith = requestMachine
-        let read = requestMachine.map { RayonStore.shared.machineGroup[$0] } ?? RDMachine()
+        let read = requestMachine.flatMap { RayonStore.shared.machine($0) } ?? RDMachine()
         _remoteAddress = State(initialValue: read.remoteAddress)
         _remotePort = State(initialValue: read.remotePort.isEmpty ? "22" : read.remotePort)
         _name = State(initialValue: read.name)
-        _group = State(initialValue: read.group)
+        _group = State(initialValue: RayonStore.shared.folderName(of: read))
         _comment = State(initialValue: read.comment)
-        _associatedIdentity = State(initialValue: read.associatedIdentity.flatMap(UUID.init(uuidString:)))
+        _associatedIdentity = State(initialValue: read.associatedIdentity)
         _sshUsername = State(initialValue: read.sshUsername)
         _transport = State(initialValue: read.transport)
-        _proxyJumpMachineID = State(initialValue: read.proxyJumpMachineID.flatMap(UUID.init(uuidString:)))
+        _proxyJumpMachineID = State(initialValue: read.proxyJumpMachineID)
         _serviceTokenID = State(initialValue: read.cloudflareServiceTokenID)
         _serviceTokenSecret = State(initialValue: read.cloudflareServiceTokenSecret)
         _remoteDesktopProtocol = State(initialValue: read.remoteDesktopProtocol)
@@ -92,20 +92,20 @@ struct EditMachineView: View {
     }
 
     var jumpServerCandidates: [RDMachine] {
-        RayonStore.shared.machineGroup.machines
+        RayonStore.shared.machines
             .filter { $0.id != inEditWith && !$0.isUURemoteDevice }
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
     var existingFolders: [String] {
         let store = RayonStore.shared
-        return Set(store.machineGroup.machines.map(\.group) + store.folders.map(\.name))
+        return Set(store.folders.map(\.name))
             .filter { !$0.isEmpty }
             .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
     }
 
     var identities: [RDIdentity] {
-        RayonStore.shared.identityGroup.identities
+        RayonStore.shared.identities
             .sorted { $0.username.localizedStandardCompare($1.username) == .orderedAscending }
     }
 
@@ -249,7 +249,7 @@ struct EditMachineView: View {
                 RXSectionHeader("Identity")
             } footer: {
                 if let aid = associatedIdentity {
-                    Text(RayonStore.shared.identityGroup[aid].shortDescription() + "\nA user name here overrides the identity's for this server.")
+                    Text((RayonStore.shared.identity(aid) ?? RDIdentity()).shortDescription() + "\nA user name here overrides the identity's for this server.")
                 } else {
                     Text("Tries each identity that authenticates automatically. A user name here overrides the identity's for this server.")
                 }
@@ -327,7 +327,7 @@ struct EditMachineView: View {
                             message: "Delete this server?"
                         ) { confirmed in
                             if confirmed {
-                                RayonStore.shared.machineGroup.delete(identity)
+                                RayonStore.shared.deleteMachines([identity])
                                 dismiss()
                             }
                         }
@@ -372,26 +372,26 @@ struct EditMachineView: View {
     /// The identity's user name, which applies while the field is empty.
     var sshUsernamePlaceholder: String {
         guard let associatedIdentity else { return "User Name (empty = identity user)" }
-        let username = RayonStore.shared.identityGroup[associatedIdentity].username
+        let username = (RayonStore.shared.identity(associatedIdentity) ?? RDIdentity()).username
         return username.isEmpty ? "User Name (empty = identity user)" : "User Name (empty = \(username))"
     }
 
     /// The server as the form describes it, on top of what is saved, so
     /// fields this form does not show are kept.
     func makeMachine() -> RDMachine {
-        var target = inEditWith.map { RayonStore.shared.machineGroup[$0] }
+        var target = inEditWith.flatMap { RayonStore.shared.machine($0) }
             // A new server has never been connected to; RXFormat shows the epoch as "Never".
             ?? RDMachine(lastConnection: Date(timeIntervalSince1970: 0))
         target.remoteAddress = trimmedAddress
         target.remotePort = remotePort
         target.name = name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? trimmedAddress : name
-        target.group = group.trimmingCharacters(in: .whitespacesAndNewlines)
+        target.folderId = RayonStore.shared.folderId(forName: group)
         target.comment = comment
-        target.associatedIdentity = associatedIdentity?.uuidString
+        target.associatedIdentity = associatedIdentity
         target.sshUsername = sshUsername.trimmingCharacters(in: .whitespaces)
         target.fileTransferLoginPath = fileTransferLoginPath.isEmpty ? "/" : fileTransferLoginPath
         target.transport = transport
-        target.proxyJumpMachineID = transport == .proxyJump ? proxyJumpMachineID?.uuidString : nil
+        target.proxyJumpMachineID = transport == .proxyJump ? proxyJumpMachineID : nil
         let cloudflare = transport == .cloudflareAccess
         target.cloudflareServiceTokenID = cloudflare ? serviceTokenID.trimmingCharacters(in: .whitespaces) : ""
         target.cloudflareServiceTokenSecret = cloudflare ? serviceTokenSecret.trimmingCharacters(in: .whitespaces) : ""
@@ -425,7 +425,7 @@ struct EditMachineView: View {
 
     func completeSheet() {
         guard validate() else { return }
-        RayonStore.shared.machineGroup.insert(makeMachine())
+        RayonStore.shared.save(makeMachine())
         dismiss()
     }
 
@@ -437,8 +437,8 @@ struct EditMachineView: View {
         let draft = makeMachine()
         let host = trimmedAddress
         let port = remotePort
-        let chosen = associatedIdentity.map { RayonStore.shared.identityGroup[$0] }
-        let candidates = RayonStore.shared.identityGroupForAutoAuth
+        let chosen = associatedIdentity.flatMap { RayonStore.shared.identity($0) }
+        let candidates = RayonStore.shared.identitiesForAutoAuth
         DispatchQueue.global().async {
             let outcome = ServerConnectionCheck.run(
                 draft,
@@ -453,10 +453,10 @@ struct EditMachineView: View {
                     connectError = refusal ?? "Could not reach \(host) on port \(port)."
                 case let .authenticated(identity, banner):
                     var created = draft
-                    created.associatedIdentity = identity.uuidString
+                    created.associatedIdentity = identity
                     created.lastBanner = banner
                     created.lastConnection = Date()
-                    RayonStore.shared.machineGroup.insert(created)
+                    RayonStore.shared.save(created)
                     dismiss()
                     // The terminal waits for this sheet to go.
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {

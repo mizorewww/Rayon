@@ -187,7 +187,7 @@ enum SessionDirectory {
     static func title(of owner: SessionOwner) -> String {
         switch owner {
         case let .server(machine):
-            RayonStore.shared.machineGroup[machine].name
+            (RayonStore.shared.machine(machine) ?? RDMachine()).name
         case let .command(key):
             TerminalManager.shared.terminals.first { $0.tabGroupKey == key }?.displayName ?? "Terminal"
         }
@@ -253,7 +253,7 @@ struct ServerWorkspaceView: View {
     var body: some View {
         VStack(spacing: 0) {
             if case let .server(machine) = owner {
-                let tools = ServerTool.available(for: store.machineGroup[machine])
+                let tools = ServerTool.available(for: (store.machine(machine) ?? RDMachine()))
                 if tools.count > 1 { switcher(machine, tools) }
             }
             content

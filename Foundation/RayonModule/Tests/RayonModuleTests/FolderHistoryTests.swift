@@ -64,9 +64,8 @@ final class FolderHistoryTests: XCTestCase {
     }
 
     func testContextWithoutAConnectionKeepsItsHistory() {
-        _ = RayonStore.shared
         let context = FileTransferContext(
-            machine: RDMachine(remoteAddress: "10.0.0.1", remotePort: "22", name: "alpha", group: "", associatedIdentity: nil)
+            machine: RDMachine(remoteAddress: "10.0.0.1", remotePort: "22", name: "alpha")
         )
         context.navigate(path: "/var")
         XCTAssertFalse(context.canGoBack, "a folder that could not be shown is not a step")

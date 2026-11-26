@@ -172,7 +172,7 @@ struct TerminalPage: View {
             }
         }
         .serverToolSwitcher(
-            machine: context.remoteType == .machine && context.machine.isNotPlaceholder() ? context.machine.id : nil,
+            machine: context.remoteType == .machine && RayonStore.shared.machine(context.machine.id) != nil ? context.machine.id : nil,
             current: .terminal
         )
         .onAppear {
@@ -282,8 +282,7 @@ struct TerminalPage: View {
         anchorID: TerminalManager.Context.ID,
         orientation: TerminalManager.SplitOrientation?
     ) {
-        let machine = RayonStore.shared.machineGroup[machineID]
-        guard machine.isNotPlaceholder() else { return }
+        guard let machine = RayonStore.shared.machine(machineID) else { return }
         let open = { (resuming: UInt32?) in
             TerminalManager.shared.createSession(withMachineObject: machine, force: true, resuming: resuming) { created in
                 join(created.id, anchorID: anchorID, orientation: orientation)
@@ -789,7 +788,7 @@ private struct TerminalSnippetDrawer: View {
     @State private var filter = ""
 
     private var snippets: [RDSnippet] {
-        store.snippetGroup.snippets(matching: filter)
+        store.snippets(matching: filter)
     }
 
     var body: some View {
@@ -818,10 +817,10 @@ private struct TerminalSnippetDrawer: View {
 
             if snippets.isEmpty {
                 VStack(spacing: RX.Space.s2) {
-                    Text(store.snippetGroup.snippets.isEmpty ? "No snippets saved" : "No matches")
+                    Text(store.snippets.isEmpty ? "No snippets saved" : "No matches")
                         .font(.rxHelp)
                         .foregroundStyle(.rxInkSecondary)
-                    if store.snippetGroup.snippets.isEmpty {
+                    if store.snippets.isEmpty {
                         Button("Open Snippets") {
                             AppRouter.shared.route = .snippets
                         }
@@ -1044,8 +1043,7 @@ enum TerminalSessionActions {
         let manager = TerminalManager.shared
         switch context.remoteType {
         case .machine:
-            let machine = RayonStore.shared.machineGroup[context.machine.id]
-            guard machine.isNotPlaceholder() else { return nil }
+            guard let machine = RayonStore.shared.machine(context.machine.id) else { return nil }
             var created: TerminalManager.Context?
             manager.createSession(withMachineObject: machine, force: true) { created = $0 }
             return created

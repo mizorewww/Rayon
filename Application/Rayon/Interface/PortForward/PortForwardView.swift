@@ -30,7 +30,7 @@ struct PortForwardView: View {
     }
 
     var filtered: [RDPortForward] {
-        let all = store.portForwardGroup.forwards
+        let all = store.portForwards
         guard !searchText.isEmpty else { return all }
         let key = searchText.lowercased()
         return all.filter {
@@ -60,7 +60,7 @@ struct PortForwardView: View {
         } header: {
             PageTitle("Port Forward")
         } content: {
-            if store.portForwardGroup.forwards.isEmpty {
+            if store.portForwards.isEmpty {
                 EmptyStateView(
                     "No port forwards",
                     systemImage: "arrow.right",
@@ -199,16 +199,17 @@ private struct PortForwardRow: View {
     }
 }
 
+@MainActor
 enum PortForwardActions {
     static func duplicate(_ id: RDPortForward.ID) {
-        var copy = RayonStore.shared.portForwardGroup[id]
+        guard var copy = RayonStore.shared.portForward(id) else { return }
         copy.id = UUID()
-        RayonStore.shared.portForwardGroup.insert(copy)
+        RayonStore.shared.save(copy)
     }
 
     @MainActor
     static func delete(_ id: RDPortForward.ID) {
-        let forward = RayonStore.shared.portForwardGroup[id]
+        guard let forward = RayonStore.shared.portForward(id) else { return }
         UIBridge.requiresConfirmation(
             message: "Delete the forward on port \(forward.bindPort)?",
             confirmTitle: "Delete",
@@ -216,7 +217,7 @@ enum PortForwardActions {
         ) { confirmed in
             guard confirmed else { return }
             PortForwardBackend.shared.endSession(withPortForwardID: id)
-            RayonStore.shared.portForwardGroup.delete(id)
+            RayonStore.shared.deletePortForwards([id])
         }
     }
 }
@@ -234,7 +235,7 @@ struct PortForwardEditorSheet: View {
     @State private var targetPort = ""
 
     var draft: RDPortForward {
-        var result = forward.map { store.portForwardGroup[$0] } ?? RDPortForward()
+        var result = forward.flatMap { store.portForward($0) } ?? RDPortForward()
         result.forwardOrientation = orientation
         result.bindPort = Int(bindPort) ?? 0
         result.usingMachine = machine
@@ -265,7 +266,7 @@ struct PortForwardEditorSheet: View {
                     RXField("Forward through") {
                         RXPicker(
                             selection: $machine,
-                            options: store.machineGroup.machines.map { .init(RDMachine.ID?.some($0.id), $0.name) },
+                            options: store.machines.map { .init(RDMachine.ID?.some($0.id), $0.name) },
                             placeholder: "Choose a server"
                         )
                     }
@@ -297,14 +298,14 @@ struct PortForwardEditorSheet: View {
                 .keyboardShortcut(.cancelAction)
             Spacer()
             Button("Save") {
-                store.portForwardGroup.insert(draft)
+                store.save(draft)
                 onClose()
             }
             .buttonStyle(.rx)
             .disabled(!draft.isValid())
             Button("Save and Start") {
                 let saved = draft
-                store.portForwardGroup.insert(saved)
+                store.save(saved)
                 PortForwardBackend.shared.createSession(withPortForwardID: saved.id)
                 onClose()
             }
@@ -314,8 +315,7 @@ struct PortForwardEditorSheet: View {
         }
         .frame(width: 520)
         .onAppear {
-            guard let forward else { return }
-            let read = store.portForwardGroup[forward]
+            guard let forward, let read = store.portForward(forward) else { return }
             orientation = read.forwardOrientation
             bindPort = read.bindPort > 0 ? String(read.bindPort) : ""
             machine = read.usingMachine

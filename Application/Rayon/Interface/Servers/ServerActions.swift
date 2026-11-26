@@ -10,6 +10,7 @@ import RayonDesign
 import RayonModule
 import SwiftUI
 
+@MainActor
 enum ServerActions {
     @MainActor
     static func edit(_ machine: RDMachine.ID) {
@@ -28,8 +29,7 @@ enum ServerActions {
 
     static func duplicate(_ machine: RDMachine.ID) {
         let store = RayonStore.shared
-        let original = store.machineGroup[machine]
-        guard original.isNotPlaceholder() else { return }
+        guard let original = store.machine(machine) else { return }
         UIBridge.requiresConfirmation(
             message: "Duplicate \(original.name)?",
             confirmTitle: "Duplicate"
@@ -38,7 +38,7 @@ enum ServerActions {
             var copy = original
             copy.id = UUID()
             copy.name = original.name + " copy"
-            store.machineGroup.insert(copy)
+            store.save(copy)
         }
     }
 
@@ -47,7 +47,7 @@ enum ServerActions {
         let store = RayonStore.shared
         guard !machines.isEmpty else { return }
         let message = machines.count == 1
-            ? "Delete \(store.machineGroup[machines[0]].name)?"
+            ? "Delete \(store.machine(machines[0])?.name ?? "this server")?"
             : "Delete \(machines.count) servers?"
         UIBridge.requiresConfirmation(
             message: message,
@@ -60,7 +60,7 @@ enum ServerActions {
                 if let session = MonitorCenter.shared.session(for: machine) {
                     MonitorCenter.shared.end(session.id)
                 }
-                store.machineGroup.delete(machine)
+                store.deleteMachines([machine])
             }
             store.cleanRecentIfNeeded()
         }
@@ -71,15 +71,13 @@ enum ServerActions {
     /// installs it if it is missing (say, after ~/.terminfo was cleared).
     @MainActor
     static func reinstallTerminfo(_ machine: RDMachine.ID) {
-        var read = RayonStore.shared.machineGroup[machine]
-        guard read.isNotPlaceholder() else { return }
+        guard var read = RayonStore.shared.machine(machine) else { return }
         read.forgetGhosttyTerminfo()
-        RayonStore.shared.machineGroup[machine] = read
+        RayonStore.shared.save(read)
     }
 
     static func forgetHostKey(_ machine: RDMachine.ID) {
-        let read = RayonStore.shared.machineGroup[machine]
-        guard read.isNotPlaceholder() else { return }
+        guard let read = RayonStore.shared.machine(machine) else { return }
         UIBridge.requiresConfirmation(
             message: "Forget the host key of \(read.name)?",
             informative: "The key the server presents on the next connection is saved as its key. Do this only when you know its keys were replaced.",
@@ -91,12 +89,13 @@ enum ServerActions {
     }
 
     static func copyAddress(_ machine: RDMachine.ID) {
-        let read = RayonStore.shared.machineGroup[machine]
+        guard let read = RayonStore.shared.machine(machine) else { return }
         UIBridge.sendPasteboard(str: "\(read.remoteAddress):\(read.remotePort)")
     }
 
     static func copyCommand(_ machine: RDMachine.ID) {
-        UIBridge.sendPasteboard(str: RayonStore.shared.machineGroup[machine].getCommand())
+        guard let read = RayonStore.shared.machine(machine) else { return }
+        UIBridge.sendPasteboard(str: read.getCommand { RayonStore.shared.machine($0) })
     }
 }
 
@@ -188,7 +187,7 @@ struct ServerContextMenu: View {
 
     @ViewBuilder private var sshItems: some View {
         let router = AppRouter.shared
-        let read = RayonStore.shared.machineGroup[machine]
+        let read = (RayonStore.shared.machine(machine) ?? RDMachine())
         Group {
             if includesTools {
                 RXMenuItem("Open Terminal", systemImage: ServerTool.terminal.systemImage) {
@@ -242,7 +241,7 @@ struct ServerContextMenu: View {
             RXMenuItem("Forget Host Key…", systemImage: "key.slash") {
                 ServerActions.forgetHostKey(machine)
             }
-            if RayonStore.shared.machineGroup[machine].hasGhosttyTerminfo {
+            if read.hasGhosttyTerminfo {
                 RXMenuItem("Check Terminfo Again", systemImage: "arrow.triangle.2.circlepath") {
                     ServerActions.reinstallTerminfo(machine)
                 }
@@ -306,14 +305,14 @@ struct ServerToolSwitcher: View {
     let current: ServerTool
 
     private var tools: [ServerTool] {
-        ServerTool.available(for: RayonStore.shared.machineGroup[machine])
+        ServerTool.available(for: (RayonStore.shared.machine(machine) ?? RDMachine()))
     }
 
     var body: some View {
         Picker("View", selection: Binding(get: { current }, set: { $0.show(machine) })) {
             ForEach(tools) { tool in
                 Text(tool.title)
-                    .help(tool.help(for: RayonStore.shared.machineGroup[machine]))
+                    .help(tool.help(for: (RayonStore.shared.machine(machine) ?? RDMachine())))
                     .tag(tool)
             }
         }

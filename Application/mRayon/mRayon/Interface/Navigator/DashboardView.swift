@@ -18,8 +18,8 @@ struct DashboardView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: RX.Space.s3) {
-                SectionTitle("Servers", count: store.machineGroup.count) {
-                    if !store.machineGroup.machines.isEmpty {
+                SectionTitle("Servers", count: store.machines.count) {
+                    if !store.machines.isEmpty {
                         Button {
                             ServerActions.batchStartup()
                         } label: {
@@ -28,7 +28,7 @@ struct DashboardView: View {
                         .buttonStyle(.rx(size: .small))
                     }
                 }
-                if store.machineGroup.machines.isEmpty {
+                if store.machines.isEmpty {
                     EmptyStateView(
                         "No servers yet",
                         systemImage: "server.rack",
@@ -39,7 +39,7 @@ struct DashboardView: View {
                     .rxCard()
                 } else {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), spacing: RX.Space.s3)], spacing: RX.Space.s3) {
-                        ForEach(store.machineGroup.machines) { machine in
+                        ForEach(store.machines) { machine in
                             ServerTile(machine: machine.id)
                         }
                     }
@@ -71,7 +71,7 @@ struct ServerTile: View {
     @ObservedObject var monitors = MonitorCenter.shared
 
     var body: some View {
-        let read = store.machineGroup[machine]
+        let read = (store.machine(machine) ?? RDMachine())
         Menu {
             ServerMenuItems(machine: machine)
         } label: {

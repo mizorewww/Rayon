@@ -69,17 +69,17 @@ public final class TerminalManager: ObservableObject {
 
         public init(machine: RDMachine, resuming uuSession: UInt32? = nil) {
             super.init(machine: machine, surface: surfaceBridge, resuming: uuSession)
-            termInterface.setTerminalFontSize(with: RayonStore.shared.terminalFontSize)
+            termInterface.setTerminalFontSize(with: RayonStore.workerTerminalFontSize)
         }
 
         public init(command: SSHCommandReader) {
             super.init(command: command, surface: surfaceBridge)
-            termInterface.setTerminalFontSize(with: RayonStore.shared.terminalFontSize)
+            termInterface.setTerminalFontSize(with: RayonStore.workerTerminalFontSize)
         }
 
         public init(localShell: Bool) {
             super.init(localShell: surfaceBridge)
-            termInterface.setTerminalFontSize(with: RayonStore.shared.terminalFontSize)
+            termInterface.setTerminalFontSize(with: RayonStore.workerTerminalFontSize)
         }
     }
 

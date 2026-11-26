@@ -27,7 +27,7 @@ struct EditIdentityView: View {
 
     init(requestIdentity: UUID? = nil) {
         inEditWith = requestIdentity
-        let read = requestIdentity.map { RayonStore.shared.identityGroup[$0] }
+        let read = requestIdentity.flatMap { RayonStore.shared.identity($0) }
             ?? RDIdentity(lastRecentUsed: Date(timeIntervalSince1970: 0))
         original = read
         offersSSHAgent = read.useSSHAgent
@@ -322,7 +322,7 @@ struct EditIdentityView: View {
             UIBridge.presentError(with: draft.method == .keyPair ? "A key pair needs a private key" : "Empty Password")
             return
         }
-        RayonStore.shared.identityGroup.insert(draft.apply(to: original))
+        RayonStore.shared.save(draft.apply(to: original))
         dismiss()
     }
 }

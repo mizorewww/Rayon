@@ -34,13 +34,8 @@ struct PickIdentityView: View {
     var body: some View {
         List {
             Section {
-                if let sid = rawSelection {
-                    Label(
-                        store
-                            .identityGroup[sid]
-                            .shortDescription(),
-                        systemImage: "person"
-                    )
+                if let sid = rawSelection, let identity = store.identity(sid) {
+                    Label(identity.shortDescription(), systemImage: "person")
                 } else {
                     Label("Not Selected", systemImage: "questionmark.square.dashed")
                 }
@@ -61,11 +56,7 @@ struct PickIdentityView: View {
                         Group {}
                     }
                 )
-                ForEach(
-                    store
-                        .identityGroup
-                        .identities
-                ) { identity in
+                ForEach(store.identities) { identity in
                     Button {
                         rawSelection = identity.id
                     } label: {

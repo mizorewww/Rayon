@@ -33,8 +33,7 @@ final class UURemoteAdapterTests: XCTestCase {
         host.deviceID = "host"
         host.alias = "Desk"
         host.platform = 4
-        var group = RDMachineGroup()
-        UURemoteFolderSync.apply(devices: [own, host], folder: "UU Remote", to: &group)
-        XCTAssertEqual(group.machines.map(\.uuDeviceID), ["host"])
+        let changes = UURemoteFolderSync.changes(devices: [own, host], folder: UUID(), machines: [])
+        XCTAssertEqual(changes.save.map(\.uuDeviceID), ["host"])
     }
 }

@@ -23,14 +23,13 @@ public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendabl
         self.machines = machines
         var buildNames: [RDMachine.ID: String] = [:]
         for machine in machines {
-            let object = RayonStore.shared.machineGroup[machine]
-            guard object.isNotPlaceholder() else {
+            guard let object = RayonStore.workerMachine(for: machine) else {
                 debugPrint("garbage machine found")
                 receivedBuffer[machine] = Data("\r\n[*] Malformed Machine Info\r\n".utf8)
                 continue
             }
             shellObjects[object.id] = NSRemoteShell
-                .configured(for: object, timeout: RayonStore.shared.timeoutNumber)
+                .configured(for: object, timeout: RayonStore.workerTimeoutNumber)
             shellContinue[object.id] = true
             buildNames[machine] = object.name
         }
@@ -240,8 +239,7 @@ public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendabl
             return
         }
 
-        let remote = RayonStore.shared.workerMachine(for: machine)
-        guard remote.isNotPlaceholder() else {
+        guard let remote = RayonStore.workerMachine(for: machine) else {
             debugPrint("machine vanished mid-run: \(machine)")
             safeAccess { self.failedMachines.insert(machine) }
             return

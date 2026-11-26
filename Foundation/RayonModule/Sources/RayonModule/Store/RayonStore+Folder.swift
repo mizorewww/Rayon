@@ -2,31 +2,33 @@
 //  RayonStore+Folder.swift
 //  RayonModule
 //
-//  Folder operations. A folder is its name on the servers in it plus its
-//  record in `folderGroup`; every operation keeps the two in step.
+//  Folder operations. A server names its folder by id; nil is the default
+//  folder, which has no record.
 //
 
 import Foundation
 
 public extension RayonStore {
-    /// Every folder in order: the recorded ones, then names servers carry
-    /// that were never recorded (servers saved before folders existed, or
-    /// synced from another device), as local folders. The unnamed default
-    /// folder is not listed.
-    var folders: [RDFolder] {
-        var result = folderGroup.folders
-        for name in Set(machineGroup.machines.map(\.group)) where !name.isEmpty && folderGroup.folder(named: name) == nil {
-            result.append(RDFolder(name: name))
-        }
-        return result.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-    }
-
     func folder(named name: String) -> RDFolder? {
         folders.first { $0.name == name }
     }
 
-    func machines(inFolder name: String) -> [RDMachine] {
-        machineGroup.machines.filter { $0.group == name }
+    func machines(inFolder id: RDFolder.ID?) -> [RDMachine] {
+        machines.filter { $0.folderId == id }
+    }
+
+    /// The name of the server's folder; empty for the default one.
+    func folderName(of machine: RDMachine) -> String {
+        folder(machine.folderId)?.name ?? ""
+    }
+
+    /// The folder an editor's folder name stands for: none (the default
+    /// folder) for an empty name, else the folder of that name, made when
+    /// there is none.
+    func folderId(forName name: String) -> RDFolder.ID? {
+        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return nil }
+        return (folder(named: name) ?? createFolder(named: name)).id
     }
 
     /// A folder name not yet taken: `base`, else "base 2", "base 3"…
@@ -43,57 +45,38 @@ public extension RayonStore {
     func createFolder(named name: String, source: RDFolder.Source = .local) -> RDFolder {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let folder = RDFolder(name: availableFolderName(trimmed.isEmpty ? "New Folder" : trimmed), source: source)
-        folderGroup.folders.append(folder)
-        return folder
+        save(folder)
+        return self.folder(folder.id) ?? folder
     }
 
-    /// Renames a folder and moves its servers with it. False when the new name
-    /// is empty or taken by another folder.
+    /// Renames a folder. False when the new name is empty or taken by
+    /// another folder.
     @discardableResult
-    func renameFolder(_ oldName: String, to newName: String) -> Bool {
+    func renameFolder(_ id: RDFolder.ID, to newName: String) -> Bool {
         let name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty, !oldName.isEmpty else { return false }
-        if name == oldName { return true }
-        guard folder(named: name) == nil else { return false }
-        var group = folderGroup
-        if let index = group.folders.firstIndex(where: { $0.name == oldName }) {
-            group.folders[index].name = name
-        } else {
-            group.folders.append(RDFolder(name: name))
-        }
-        folderGroup = group
-        moveServers(machines(inFolder: oldName).map(\.id), toFolder: name)
-        return true
+        guard !name.isEmpty, var folder = folder(id) else { return false }
+        if name == folder.name { return true }
+        guard self.folder(named: name) == nil else { return false }
+        folder.name = name
+        return save(folder)
     }
 
     /// Removes a folder. Servers pulled from an account go with it; every
     /// other server in it moves to the default folder. Unlinking the account,
     /// so a refresh does not bring the folder back, is the caller's part.
-    func deleteFolder(_ name: String) {
-        guard !name.isEmpty else { return }
-        folderGroup.folders.removeAll { $0.name == name }
-        var group = machineGroup
-        for machine in machines(inFolder: name) {
-            if machine.uuManaged {
-                group.delete(machine.id)
-            } else {
-                var moved = machine
-                moved.group = ""
-                group[machine.id] = moved
-            }
-        }
-        if group != machineGroup { machineGroup = group }
+    func deleteFolder(_ id: RDFolder.ID) {
+        let inside = machines(inFolder: id)
+        deleteMachines(inside.filter(\.uuManaged).map(\.id))
+        moveServers(inside.filter { !$0.uuManaged }.map(\.id), toFolder: nil)
+        remove(RDFolder.self, ids: [id], from: \.folders)
     }
 
-    /// Puts servers in a folder ("" is the default one).
-    func moveServers(_ ids: [RDMachine.ID], toFolder name: String) {
-        var group = machineGroup
+    /// Puts servers in a folder (nil is the default one).
+    func moveServers(_ ids: [RDMachine.ID], toFolder folderId: RDFolder.ID?) {
         for id in ids {
-            var machine = group[id]
-            guard machine.isNotPlaceholder(), machine.group != name else { continue }
-            machine.group = name
-            group[id] = machine
+            guard var machine = machine(id), machine.folderId != folderId else { continue }
+            machine.folderId = folderId
+            save(machine)
         }
-        if group != machineGroup { machineGroup = group }
     }
 }

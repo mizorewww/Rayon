@@ -8,18 +8,7 @@ import XCTest
 
 final class FileTransferPhaseTests: XCTestCase {
     private func makeContext() -> FileTransferContext {
-        // The store must be born on the main thread; the context's
-        // background bootstrap would otherwise race to create it.
-        _ = RayonStore.shared
-        return FileTransferContext(
-            machine: RDMachine(
-                remoteAddress: "10.0.0.1",
-                remotePort: "22",
-                name: "alpha",
-                group: "",
-                associatedIdentity: nil
-            )
-        )
+        FileTransferContext(machine: RDMachine(remoteAddress: "10.0.0.1", remotePort: "22", name: "alpha"))
     }
 
     func testNewContextIsIdle() {

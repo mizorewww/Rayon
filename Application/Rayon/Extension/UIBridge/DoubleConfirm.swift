@@ -16,12 +16,12 @@ extension UIBridge {
         confirmation: @escaping (Bool) -> Void
     ) {
         nonisolated(unsafe) let confirmation = confirmation
-        if RayonStore.shared.disableConformation, !always {
-            confirmation(true)
-            return
-        }
         onMainThread {
             MainActor.assumeIsolated {
+                if RayonStore.shared.disableConformation, !always {
+                    confirmation(true)
+                    return
+                }
                 alert(
                     message: message,
                     informative: informative,

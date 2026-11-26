@@ -7,7 +7,7 @@
 
 import Foundation
 
-public struct SSHCommandReader: Codable, Equatable {
+public struct SSHCommandReader: Codable, Equatable, Sendable {
     public let remoteAddress: String
     public let remotePort: String
     public let username: String
@@ -31,9 +31,7 @@ public struct SSHCommandReader: Codable, Equatable {
         var machine = RDMachine(
             remoteAddress: remoteAddress,
             remotePort: remotePort,
-            name: remoteAddress,
-            group: "SSHCommandReader",
-            associatedIdentity: nil
+            name: remoteAddress
         )
         machine.transport = usesCloudflareAccess ? .cloudflareAccess : .direct
         return machine

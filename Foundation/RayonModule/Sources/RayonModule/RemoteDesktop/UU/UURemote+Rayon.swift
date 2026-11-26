@@ -37,7 +37,7 @@ public extension UURemoteAccount {
     /// The folder this account's devices are in, if it was made.
     @MainActor func folder(store: RayonStore = .shared) -> RDFolder? {
         guard !userID.isEmpty else { return nil }
-        return store.folderGroup.folders.first { $0.source == .uuRemote(userID: userID) }
+        return store.folders.first { $0.source == .uuRemote(userID: userID) }
     }
 
     /// Puts the devices in the account's folder, making the folder the
@@ -45,44 +45,45 @@ public extension UURemoteAccount {
     @MainActor func syncFolder(store: RayonStore = .shared) {
         guard isLoggedIn, !userID.isEmpty else { return }
         let folder = folder(store: store) ?? adoptOrCreateFolder(store: store)
-        var group = store.machineGroup
-        UURemoteFolderSync.apply(devices: devices, folder: folder.name, ownDeviceID: credentials.deviceID, to: &group)
-        if group != store.machineGroup { store.machineGroup = group }
-        store.collapseUURemoteDuplicates()
+        let changes = UURemoteFolderSync.changes(
+            devices: devices,
+            folder: folder.id,
+            ownDeviceID: credentials.deviceID,
+            machines: store.machines
+        )
+        changes.save.forEach { store.save($0) }
+        store.deleteMachines(changes.delete)
     }
 
-    /// The account's folder the first time: the "UU Remote" folder earlier
-    /// versions put devices in (by name only) becomes it, so its servers
-    /// are not left beside an empty one.
+    /// The account's folder the first time: a "UU Remote" folder not linked
+    /// to an account becomes it, so its servers are not left beside an
+    /// empty one.
     @MainActor private func adoptOrCreateFolder(store: RayonStore) -> RDFolder {
         let source = RDFolder.Source.uuRemote(userID: userID)
-        let legacy = "UU Remote"
-        if let existing = store.folder(named: legacy), !existing.isLinked {
-            var folders = store.folderGroup
-            folders.folders.removeAll { $0.name == legacy }
-            let adopted = RDFolder(id: existing.id, name: legacy, source: source)
-            folders.folders.append(adopted)
-            store.folderGroup = folders
-            return adopted
+        let name = "UU Remote"
+        if var existing = store.folder(named: name), !existing.isLinked {
+            existing.source = source
+            store.save(existing)
+            return existing
         }
-        return store.createFolder(named: legacy, source: source)
+        return store.createFolder(named: name, source: source)
     }
 
     /// A server for a device, in the account's folder.
     @MainActor func makeMachine(for device: UUDeviceInfo, store: RayonStore = .shared) -> RDMachine {
-        UURemoteFolderSync.makeMachine(for: device, folder: folder(store: store)?.name ?? "UU Remote")
+        UURemoteFolderSync.makeMachine(for: device, folder: folder(store: store)?.id)
     }
 
     /// The saved server bound to a device, if one is.
     @MainActor func savedMachine(for device: UUDeviceInfo, store: RayonStore = .shared) -> RDMachine? {
-        store.machineGroup.machines.first { $0.uuDeviceID == device.deviceID }
+        store.machines.first { $0.uuDeviceID == device.deviceID }
     }
 
     /// The saved server bound to a device, adding one when there is none.
     @MainActor func upsertMachine(for device: UUDeviceInfo, store: RayonStore = .shared) -> RDMachine {
         if let existing = savedMachine(for: device, store: store) { return existing }
         let machine = makeMachine(for: device, store: store)
-        store.machineGroup.insert(machine)
+        store.save(machine)
         return machine
     }
 

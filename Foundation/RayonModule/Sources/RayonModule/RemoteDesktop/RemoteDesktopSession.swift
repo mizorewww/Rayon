@@ -136,7 +136,7 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
         guard phase == .idle || phase.isTerminal else { return }
         // A choice saved since (another window, another device): the
         // connection asks for it.
-        if let saved = Self.savedMachine(machine.id) {
+        if let saved = RayonStore.shared.machine(machine.id) {
             streamSettings = RemoteDesktopStreamSettings(machine: saved)
         }
         if let existing = driver {
@@ -294,15 +294,11 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
 
     private func save(_ settings: RemoteDesktopStreamSettings) {
         let store = RayonStore.shared
-        guard var record = Self.savedMachine(machine.id) else { return }
+        guard var record = store.machine(machine.id) else { return }
         record.uuFPS = settings.fps
         record.uuQuality = settings.quality
         record.uuTrueColor = settings.trueColor
-        store.machineGroup[machine.id] = record
-    }
-
-    private static func savedMachine(_ id: RDMachine.ID) -> RDMachine? {
-        RayonStore.shared.machineGroup.machines.first { $0.id == id }
+        store.save(record)
     }
 
     /// The fastest the screen this runs on refreshes.

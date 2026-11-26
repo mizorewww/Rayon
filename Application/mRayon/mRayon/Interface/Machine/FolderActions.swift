@@ -10,6 +10,7 @@
 import RayonModule
 import SwiftUI
 
+@MainActor
 enum FolderActions {
     @MainActor
     static func newFolder(moving servers: [RDMachine.ID] = []) {
@@ -24,7 +25,7 @@ enum FolderActions {
             let name = text.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !name.isEmpty else { return }
             let folder = store.createFolder(named: name)
-            store.moveServers(servers, toFolder: folder.name)
+            store.moveServers(servers, toFolder: folder.id)
         }
     }
 
@@ -39,7 +40,7 @@ enum FolderActions {
         ) { text in
             let newName = text.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !newName.isEmpty else { return }
-            if !RayonStore.shared.renameFolder(name, to: newName) {
+            if let folder = RayonStore.shared.folder(named: name), !RayonStore.shared.renameFolder(folder.id, to: newName) {
                 UIBridge.presentError(with: "There is already a folder named \"\(newName)\".")
             }
         }
@@ -47,7 +48,8 @@ enum FolderActions {
 
     @MainActor
     static func delete(_ name: String) {
-        let plan = FolderDeletionPlan(folder: name)
+        guard let folder = RayonStore.shared.folder(named: name) else { return }
+        let plan = FolderDeletionPlan(folder: folder)
         UIBridge.requiresConfirmation(
             message: plan.message,
             informative: plan.informative,
@@ -78,25 +80,25 @@ struct MoveToFolderMenu: View {
     @ObservedObject private var store = RayonStore.shared
 
     var body: some View {
-        let current = store.machineGroup[machine].group
+        let current = store.machine(machine)?.folderId
         // A linked folder is filled from its account, not by hand.
         let targets = store.folders.filter { !$0.isLinked }
         Menu {
             Button {
-                store.moveServers([machine], toFolder: "")
+                store.moveServers([machine], toFolder: nil)
             } label: {
-                Label("Default", systemImage: current.isEmpty ? "checkmark" : "tray")
+                Label("Default", systemImage: current == nil ? "checkmark" : "tray")
             }
-            .disabled(current.isEmpty)
+            .disabled(current == nil)
             if !targets.isEmpty {
                 Section {
                     ForEach(targets) { folder in
                         Button {
-                            store.moveServers([machine], toFolder: folder.name)
+                            store.moveServers([machine], toFolder: folder.id)
                         } label: {
-                            Label(folder.name, systemImage: folder.name == current ? "checkmark" : "folder")
+                            Label(folder.name, systemImage: folder.id == current ? "checkmark" : "folder")
                         }
-                        .disabled(folder.name == current)
+                        .disabled(folder.id == current)
                     }
                 }
             }

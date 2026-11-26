@@ -22,14 +22,15 @@ public final class RemoteDesktopManager: ObservableObject {
     /// Starts a remote desktop on the machine, or returns the session that
     /// is already showing it. `overrideProtocol` lets a caller open VNC on a
     /// machine whose configured protocol is something else (the machine's
-    /// stored settings for that protocol still apply).
+    /// stored settings for that protocol still apply). Nil when the machine
+    /// is not saved.
     @discardableResult
     public func begin(
         for machineID: RDMachine.ID,
         overrideProtocol: RDMachine.RemoteDesktopProtocolType? = nil
-    ) -> RemoteDesktopSession {
+    ) -> RemoteDesktopSession? {
         let store = RayonStore.shared
-        let machine = store.machineGroup[machineID]
+        guard var machine = store.machine(machineID) else { return nil }
         let type = overrideProtocol ?? machine.remoteDesktopProtocol
         if let existing = sessions.first(where: { $0.machine.id == machineID && $0.protocolType == type }) {
             return existing
@@ -37,7 +38,8 @@ public final class RemoteDesktopManager: ObservableObject {
         let session = RemoteDesktopSession(machine: machine, protocolType: type)
         sessions.append(session)
         session.connect()
-        store.machineGroup[machineID].lastConnection = Date()
+        machine.lastConnection = Date()
+        store.save(machine)
         return session
     }
 

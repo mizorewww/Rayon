@@ -2,21 +2,20 @@
 import XCTest
 
 final class KnownHostsTests: XCTestCase {
-    private var suite = ""
-    private var defaults: UserDefaults!
+    private var test: TestStorage!
     private var hosts: KnownHosts!
 
     private let first = KnownHosts.HostKey(type: "ssh-ed25519", key: Data([1, 2, 3, 4]))
     private let other = KnownHosts.HostKey(type: "ssh-ed25519", key: Data([9, 9, 9, 9]))
 
-    override func setUp() {
-        suite = "me.mizorewww.rayon.tests.\(UUID().uuidString)"
-        defaults = UserDefaults(suiteName: suite)
-        hosts = KnownHosts(defaults: defaults, storageKey: "knownHosts")
+    override func setUpWithError() throws {
+        test = try TestStorage()
+        hosts = KnownHosts(storage: test.storage)
     }
 
     override func tearDown() {
-        defaults.removePersistentDomain(forName: suite)
+        hosts = nil
+        test = nil
     }
 
     func testTheFirstKeyIsSavedAndAcceptedAgain() {
@@ -61,7 +60,7 @@ final class KnownHostsTests: XCTestCase {
 
     func testSavedKeysOutliveTheObject() {
         XCTAssertTrue(hosts.accepts(first, host: "example.com", port: 22))
-        let reopened = KnownHosts(defaults: defaults, storageKey: "knownHosts")
+        let reopened = KnownHosts(storage: test.storage)
         XCTAssertFalse(reopened.accepts(other, host: "example.com", port: 22))
         reopened.forgetAll()
         XCTAssertEqual(reopened.count, 0)

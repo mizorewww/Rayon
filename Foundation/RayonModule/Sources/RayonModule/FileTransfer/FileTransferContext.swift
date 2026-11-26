@@ -112,7 +112,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
     }
 
     func setupShellData() {
-        shell.applyConnection(for: machine, timeout: RayonStore.shared.workerTimeoutNumber)
+        shell.applyConnection(for: machine, timeout: RayonStore.workerTimeoutNumber)
     }
 
     public func putInformation(_ str: String) {
@@ -125,7 +125,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
         onMainThread {
             guard self.firstConnect else { return }
             self.firstConnect = false
-            guard RayonStore.shared.openInterfaceAutomatically else { return }
+            guard MainActor.assumeIsolated({ RayonStore.shared.openInterfaceAutomatically }) else { return }
             FileTransferInterface.uiHandler.autoOpenInterface(self)
         }
         workerQueue.async {
@@ -145,7 +145,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
         debugPrint("\(self) \(#function) \(machine.id)")
         let result = shell.connectAndAuthenticate(
             identity: identity,
-            autoIdentities: RayonStore.shared.workerIdentitiesForAutoAuth,
+            autoIdentities: RayonStore.workerIdentitiesForAutoAuth,
             username: machine.sshUsernameOverride
         ) { [self] hintText in
             putInformation(hintText)

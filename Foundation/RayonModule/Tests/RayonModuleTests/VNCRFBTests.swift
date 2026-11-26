@@ -3,7 +3,7 @@
 //  RayonModuleTests
 //
 //  Covers the RFB wire codec and the VNC-specific machine settings:
-//  attachment persistence, DES challenge, message encoding, rectangle
+//  machine settings, DES challenge, message encoding, rectangle
 //  decoders (Raw / CopyRect / RRE / Hextile / ZRLE), and key mapping.
 //
 
@@ -73,7 +73,7 @@ final class VNCRFBTests: XCTestCase {
         XCTAssertEqual(machine.uuQuality, 5)
     }
 
-    func testRemoteDesktopAttachmentRoundTrip() {
+    func testRemoteDesktopSettings() {
         var machine = RDMachine()
         machine.remoteDesktopProtocol = .vnc
         machine.vncPort = "5901"
@@ -97,30 +97,6 @@ final class VNCRFBTests: XCTestCase {
         XCTAssertEqual(machine.uuDisplayID, 2)
         XCTAssertEqual(machine.uuFPS, 144)
         XCTAssertEqual(machine.uuQuality, 3)
-    }
-
-    func testRemoteDesktopDefaultsAreNotWritten() throws {
-        var machine = RDMachine()
-        machine.remoteDesktopProtocol = .vnc
-        let firstPlist = try PropertyListSerialization.propertyList(
-            from: PropertyListEncoder().encode(machine),
-            format: nil
-        ) as? [String: Any]
-        XCTAssertNil(firstPlist?["vncPort"])
-
-        machine.vncPort = "6000"
-        let secondPlist = try PropertyListSerialization.propertyList(
-            from: PropertyListEncoder().encode(machine),
-            format: nil
-        ) as? [String: Any]
-        XCTAssertEqual(secondPlist?["vncPort"] as? String, "6000")
-
-        machine.vncPort = "5900"
-        let thirdPlist = try PropertyListSerialization.propertyList(
-            from: PropertyListEncoder().encode(machine),
-            format: nil
-        ) as? [String: Any]
-        XCTAssertNil(thirdPlist?["vncPort"])
     }
 
     func testVNCPasswordFallsBackToIdentity() {

@@ -168,7 +168,7 @@ struct QuickConnectHero: View {
                     ? "Keep the commands typed here under Recent"
                     : "Turn on “Remember recent servers” in Settings to keep commands")
 
-            if store.identityGroupForAutoAuth.isEmpty {
+            if store.identitiesForAutoAuth.isEmpty {
                 HStack(spacing: RX.Space.s2) {
                     Image(systemName: "exclamationmark.triangle")
                     Text("Quick Connect signs in with identities set to “Authenticate automatically”. You have none yet.")
@@ -319,8 +319,7 @@ struct RecentChip: View {
             if title.hasPrefix("ssh ") { title.removeFirst("ssh ".count) }
             return title
         case let .machine(id):
-            let machine = store.machineGroup[id]
-            return machine.isNotPlaceholder() ? machine.name : "Deleted server"
+            return store.machine(id)?.name ?? "Deleted server"
         }
     }
 

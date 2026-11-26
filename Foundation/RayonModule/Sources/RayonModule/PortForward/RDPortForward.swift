@@ -6,17 +6,36 @@
 //
 
 import Foundation
-import NSRemoteShell
+@preconcurrency import WCDBSwift
 
-public struct RDPortForward: Codable, Identifiable, Equatable, Sendable {
+public struct RDPortForward: StoredRecord {
+    public static let tableName = "PortForward"
+
+    public enum ForwardOrientation: String, Codable, CaseIterable, Sendable, StringColumn {
+        case listenLocal = "Local"
+        case listenRemote = "Remote"
+        case dynamicSOCKS = "Dynamic"
+    }
+
+    public var id = UUID()
+    public var forwardOrientation: ForwardOrientation = .listenLocal
+    public var bindPort = 0
+    /// Where the forward leads; unused by a dynamic (SOCKS) forward.
+    public var targetHost = ""
+    public var targetPort = 0
+    public var usingMachine: RDMachine.ID?
+
+    public var modified = Date()
+    public var removed = false
+    public var secrets = NoSecrets()
+
     public init(
         id: UUID = .init(),
         forwardOrientation: ForwardOrientation = .listenLocal,
         bindPort: Int = 0,
         targetHost: String = "",
         targetPort: Int = 0,
-        usingMachine: RDMachine.ID? = nil,
-        attachment: [String: String] = [:]
+        usingMachine: RDMachine.ID? = nil
     ) {
         self.id = id
         self.forwardOrientation = forwardOrientation
@@ -24,62 +43,52 @@ public struct RDPortForward: Codable, Identifiable, Equatable, Sendable {
         self.targetHost = targetHost
         self.targetPort = targetPort
         self.usingMachine = usingMachine
-        self.attachment = attachment
     }
 
-    public var id: UUID
+    public enum CodingKeys: String, CodingTableKey {
+        public typealias Root = RDPortForward
+        public static let objectRelationalMapping = TableBinding(CodingKeys.self) {
+            BindColumnConstraint(id, isPrimary: true)
+            BindColumnConstraint(modified, isNotNull: true)
+            BindColumnConstraint(removed, isNotNull: true, defaultTo: false)
+        }
 
-    public enum ForwardOrientation: String, Codable, CaseIterable, Sendable {
-        case listenLocal = "Local"
-        case listenRemote = "Remote"
-        case dynamicSOCKS = "Dynamic"
+        case id
+        case forwardOrientation
+        case bindPort
+        case targetHost
+        case targetPort
+        case usingMachine
+        case modified
+        case removed
     }
-
-    public var forwardOrientation: ForwardOrientation = .listenLocal
 
     public var forwardReversed: Bool {
-        get {
-            forwardOrientation == .listenRemote
-        }
-        set {
-            switch newValue {
-            case true: forwardOrientation = .listenRemote
-            case false: forwardOrientation = .listenLocal
-            }
+        get { forwardOrientation == .listenRemote }
+        set { forwardOrientation = newValue ? .listenRemote : .listenLocal }
+    }
+
+    /// Whether everything its kind of forward needs is filled in: a port to
+    /// listen on and a server, and for a local or remote forward where it
+    /// leads. A dynamic (SOCKS) forward has no target.
+    public var isComplete: Bool {
+        guard (1 ... 65535).contains(bindPort), usingMachine != nil else { return false }
+        switch forwardOrientation {
+        case .dynamicSOCKS:
+            return true
+        case .listenLocal, .listenRemote:
+            return !targetHost.isEmpty && (1 ... 65535).contains(targetPort)
         }
     }
 
-    public var bindPort: Int // UInt32 maybe?
-
-    public var targetHost: String
-    public var targetPort: Int // UInt32 maybe?
-
-    public var usingMachine: RDMachine.ID?
-
-    public var attachment: [String: String]
-
+    /// Complete, and its server still exists.
     public func isValid() -> Bool {
-        guard bindPort > 0, bindPort <= 65535,
-              let machine = usingMachine,
-              RayonStore.shared.workerMachine(for: machine).isNotPlaceholder()
-        else {
-            return false
-        }
-        if forwardOrientation == .dynamicSOCKS {
-            return true
-        }
-        return !targetHost.isEmpty && targetPort > 0 && targetPort <= 65535
+        guard isComplete, let machine = usingMachine else { return false }
+        return RayonStore.workerMachine(for: machine) != nil
     }
 
     public func getMachineName() -> String? {
-        guard let mid = usingMachine else {
-            return nil
-        }
-        let machine = RayonStore.shared.workerMachine(for: mid)
-        if machine.isNotPlaceholder() {
-            return machine.name
-        }
-        return nil
+        usingMachine.flatMap { RayonStore.workerMachine(for: $0) }?.name
     }
 
     public func shortDescription() -> String {
@@ -97,21 +106,19 @@ public struct RDPortForward: Codable, Identifiable, Equatable, Sendable {
     }
 
     public func getCommand() -> String? {
-        guard isValid(), let using = usingMachine else {
+        guard isComplete, let using = usingMachine,
+              let machine = RayonStore.workerMachine(for: using)
+        else {
             return nil
         }
-        let machineCommand = RayonStore.shared.workerMachine(for: using)
+        let target = machine.getCommand(insertLeadingSSH: false)
         switch forwardOrientation {
         case .listenLocal:
-            return "ssh -L \(bindPort):\(targetHost):\(targetPort) \(machineCommand.getCommand(insertLeadingSSH: false))"
+            return "ssh -L \(bindPort):\(targetHost):\(targetPort) \(target)"
         case .listenRemote:
-            return "ssh -R \(bindPort):\(targetHost):\(targetPort) \(machineCommand.getCommand(insertLeadingSSH: false))"
+            return "ssh -R \(bindPort):\(targetHost):\(targetPort) \(target)"
         case .dynamicSOCKS:
-            return "ssh -D \(bindPort) \(machineCommand.getCommand(insertLeadingSSH: false))"
+            return "ssh -D \(bindPort) \(target)"
         }
     }
-}
-
-extension RDPortForward: RDGroupItem {
-    public init() { self.init(id: UUID()) }
 }

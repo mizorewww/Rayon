@@ -35,12 +35,11 @@ public enum PublicKeyDeployment {
         let installCmd = installCommand(for: publicKey)
         var outcome = Outcome()
         for machineID in machines {
-            let machine = RayonStore.shared.workerMachine(for: machineID)
-            guard machine.isNotPlaceholder() else { continue }
-            let shell = NSRemoteShell.configured(for: machine, timeout: RayonStore.shared.workerTimeoutNumber)
+            guard let machine = RayonStore.workerMachine(for: machineID) else { continue }
+            let shell = NSRemoteShell.configured(for: machine, timeout: RayonStore.workerTimeoutNumber)
             let auth = shell.connectAndAuthenticate(
-                identity: RayonStore.shared.workerAssociatedIdentity(for: machine),
-                autoIdentities: RayonStore.shared.workerIdentitiesForAutoAuth,
+                identity: RayonStore.workerAssociatedIdentity(for: machine),
+                autoIdentities: RayonStore.workerIdentitiesForAutoAuth,
                 username: machine.sshUsernameOverride
             )
             guard auth == .success else {
@@ -68,13 +67,13 @@ public enum PublicKeyDeployment {
     }
 
     /// After a deployment every server took: the servers that sign in
-    /// automatically now use the identity whose key they hold. Main thread.
+    /// automatically now use the identity whose key they hold.
+    @MainActor
     public static func adopt(identity: RDIdentity.ID, on machines: [RDMachine.ID]) {
         for machineID in machines {
-            var machine = RayonStore.shared.machineGroup[machineID]
-            if machine.isNotPlaceholder(), machine.associatedIdentity == nil {
-                machine.associatedIdentity = identity.uuidString
-                RayonStore.shared.machineGroup[machineID] = machine
+            if var machine = RayonStore.shared.machine(machineID), machine.associatedIdentity == nil {
+                machine.associatedIdentity = identity
+                RayonStore.shared.save(machine)
             }
         }
     }

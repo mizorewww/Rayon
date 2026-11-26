@@ -24,13 +24,12 @@ struct EditSnippetView: View {
 
     init(requestSnippet: UUID? = nil) {
         inEditWith = requestSnippet
-        if let edit = requestSnippet {
-            let read = RayonStore.shared.snippetGroup[edit]
+        if let edit = requestSnippet, let read = RayonStore.shared.snippet(edit) {
             _name = State(initialValue: read.name)
             _group = State(initialValue: read.group)
             _code = State(initialValue: read.code.isEmpty ? "#!/bin/bash\n\n" : read.code)
             _comment = State(initialValue: read.comment)
-            _avatar = State(initialValue: read.getSFAvatar())
+            _avatar = State(initialValue: read.displaySymbol)
         } else {
             _name = State(initialValue: "")
             _group = State(initialValue: "")
@@ -78,7 +77,7 @@ struct EditSnippetView: View {
                             message: "Delete this snippet?"
                         ) { confirmed in
                             if confirmed {
-                                RayonStore.shared.snippetGroup.delete(identity)
+                                RayonStore.shared.deleteSnippets([identity])
                                 dismiss()
                             }
                         }
@@ -111,20 +110,15 @@ struct EditSnippetView: View {
             return
         }
 
-        // Edit the saved snippet, so its attachment is kept.
-        var newSnippet = inEditWith.map { RayonStore.shared.snippetGroup[$0] }
+        var newSnippet = inEditWith.flatMap { RayonStore.shared.snippet($0) }
             ?? RDSnippet(name: "", group: "", code: "", comment: "")
         newSnippet.name = name.trimmingCharacters(in: .whitespaces)
         newSnippet.group = group
         newSnippet.code = code
         newSnippet.comment = comment
-        if avatar.isEmpty {
-            newSnippet.clearSFAvatar()
-        } else {
-            newSnippet.setSFAvatar(sfSymbol: avatar)
-        }
+        newSnippet.symbol = avatar
 
-        RayonStore.shared.snippetGroup.insert(newSnippet)
+        RayonStore.shared.save(newSnippet)
 
         dismiss()
     }

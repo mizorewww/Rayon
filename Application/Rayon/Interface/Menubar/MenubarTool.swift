@@ -41,8 +41,7 @@ class MenubarTool {
             return
         }
 
-        let machine = RayonStore.shared.machineGroup[machineId]
-        guard machine.isNotPlaceholder() else {
+        guard let machine = RayonStore.shared.machine(machineId) else {
             fail("Could not add the server to the menu bar: its details are missing")
             return
         }

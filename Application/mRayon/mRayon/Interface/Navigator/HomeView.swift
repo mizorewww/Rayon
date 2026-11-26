@@ -61,7 +61,6 @@ struct QuickConnectCard: View {
     @EnvironmentObject var store: RayonStore
     @State private var command = ""
     @State private var suggestion: String?
-    @State private var importData: Data?
 
     var parsed: SSHCommandReader? {
         SSHCommandReader(quickConnect: command)
@@ -106,7 +105,6 @@ struct QuickConnectCard: View {
                     }
                     .disabled(!canConnect)
                     .opacity(canConnect ? 1 : 0.35)
-                    .simultaneousGesture(LongPressGesture().onEnded { _ in importFromPasteboard() })
                     .accessibilityLabel("Connect")
                 }
                 .padding(.leading, RX.Space.s4)
@@ -156,7 +154,7 @@ struct QuickConnectCard: View {
             .accessibilityValue(store.saveTemporarySession ? "On" : "Off")
             // Said once a command is typed: before, it read as an error
             // on a page with nothing wrong yet.
-            if store.identityGroupForAutoAuth.isEmpty, !command.isEmpty {
+            if store.identitiesForAutoAuth.isEmpty, !command.isEmpty {
                 Text("Quick Connect needs an identity that authenticates automatically.")
                     .font(.footnote)
                     .foregroundStyle(.rxWarning)
@@ -191,18 +189,6 @@ struct QuickConnectCard: View {
             in: store.recentRecord.lazy.map(\.equivalentSSHCommand)
         )
     }
-
-    /// Hidden importer kept from the original app: long-press Connect with the
-    /// exported data, then again with its key, on the pasteboard.
-    func importFromPasteboard() {
-        guard let paste = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
-        if let data = importData {
-            importData = nil
-            RayonStore.overrideImport(from: data, key: paste)
-        } else if let data = Data(base64Encoded: paste) {
-            importData = data
-        }
-    }
 }
 
 /// A recent server or command as a chip; a tap connects.
@@ -219,9 +205,8 @@ struct RecentRow: View {
                     Text(command.command.replacingOccurrences(of: "ssh ", with: ""))
                         .font(.system(size: 13, design: .monospaced))
                 case let .machine(id):
-                    let machine = store.machineGroup[id]
                     Image(systemName: "server.rack")
-                    RedactableText(machine.isNotPlaceholder() ? machine.name : "Deleted server", redacted: store.machineRedacted == .all)
+                    RedactableText(store.machine(id)?.name ?? "Deleted server", redacted: store.machineRedacted == .all)
                         .font(.system(size: 13))
                 }
             }

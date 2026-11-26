@@ -352,7 +352,6 @@ public struct UURemoteAccountView: View {
             remotePort: "22",
             name: "Assist \(id)",
             // Not the account's folder: a refresh would treat it as a device.
-            group: "",
             comment: "UU Remote assistance session"
         )
         machine.remoteDesktopProtocol = .uuRemote
@@ -368,16 +367,16 @@ public struct UURemoteAccountView: View {
     private func upsertMachine(_ machine: RDMachine) -> RDMachine {
         let store = RayonStore.shared
         if !machine.uuDeviceID.isEmpty,
-           let existing = store.machineGroup.machines.first(where: { $0.uuDeviceID == machine.uuDeviceID })
+           let existing = store.machines.first(where: { $0.uuDeviceID == machine.uuDeviceID })
         {
             return existing
         }
         if !machine.uuAssistID.isEmpty,
-           let existing = store.machineGroup.machines.first(where: { $0.uuAssistID == machine.uuAssistID })
+           let existing = store.machines.first(where: { $0.uuAssistID == machine.uuAssistID })
         {
             return existing
         }
-        store.machineGroup.insert(machine)
+        store.save(machine)
         return machine
     }
 

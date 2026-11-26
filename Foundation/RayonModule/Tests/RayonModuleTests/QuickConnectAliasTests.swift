@@ -24,15 +24,15 @@ final class QuickConnectAliasTests: XCTestCase {
         XCTAssertNil(SSHCommandReader.quickConnectAlias("my server"))
     }
 
-    func testAnAliasMatchesANameBeforeAnAddress() {
-        let store = RayonStore()
+    func testAnAliasMatchesANameBeforeAnAddress() throws {
+        let test = try TestStorage()
+        let store = test.store()
         let tag = UUID().uuidString.prefix(8).lowercased()
         let byName = RDMachine(remoteAddress: "192.0.2.40", remotePort: "22", name: "Web-\(tag)")
         let byAddress = RDMachine(remoteAddress: "host-\(tag).example", remotePort: "2222", name: "Other-\(tag)")
         // Its address spells the first server's name: the name wins.
         let shadow = RDMachine(remoteAddress: "web-\(tag)", remotePort: "22", name: "Shadow-\(tag)")
-        for machine in [byName, byAddress, shadow] { store.machineGroup.insert(machine) }
-        defer { for machine in [byName, byAddress, shadow] { store.machineGroup.delete(machine.id) } }
+        for machine in [byName, byAddress, shadow] { store.save(machine) }
 
         XCTAssertEqual(store.machine(matchingAlias: "web-\(tag)")?.id, byName.id)
         XCTAssertEqual(store.machine(matchingAlias: "WEB-\(tag.uppercased())")?.id, byName.id)

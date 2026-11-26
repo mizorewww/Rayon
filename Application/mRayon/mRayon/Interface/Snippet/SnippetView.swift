@@ -15,11 +15,11 @@ struct SnippetView: View {
     @State private var groupFilter: String?
 
     var groupNames: [String] {
-        Set(store.snippetGroup.snippets.map(\.group)).filter { !$0.isEmpty }.sorted()
+        Set(store.snippets.map(\.group)).filter { !$0.isEmpty }.sorted()
     }
 
     var filtered: [RDSnippet] {
-        var all = store.snippetGroup.snippets.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        var all = store.snippets.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
         if let groupFilter {
             all = all.filter { $0.group == groupFilter }
         }
@@ -29,7 +29,7 @@ struct SnippetView: View {
 
     var body: some View {
         Group {
-            if store.snippetGroup.snippets.isEmpty {
+            if store.snippets.isEmpty {
                 EmptyStateView(
                     "No snippets yet",
                     systemImage: "chevron.left.forwardslash.chevron.right",

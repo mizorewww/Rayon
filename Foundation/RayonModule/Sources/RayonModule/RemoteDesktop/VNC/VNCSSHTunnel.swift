@@ -46,10 +46,10 @@ final class VNCSSHTunnel: @unchecked Sendable {
             shell.destroyPermanently()
             throw CancellationError()
         }
-        shell.applyConnection(for: machine, timeout: RayonStore.shared.workerTimeoutNumber)
+        shell.applyConnection(for: machine, timeout: RayonStore.workerTimeoutNumber)
         let result = shell.connectAndAuthenticate(
-            identity: RayonStore.shared.workerAssociatedIdentity(for: machine),
-            autoIdentities: RayonStore.shared.workerIdentitiesForAutoAuth,
+            identity: RayonStore.workerAssociatedIdentity(for: machine),
+            autoIdentities: RayonStore.workerIdentitiesForAutoAuth,
             username: machine.sshUsernameOverride
         )
         guard result == .success else {

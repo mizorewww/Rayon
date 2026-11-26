@@ -58,11 +58,11 @@ struct ServerEditorSheet: View {
     }
 
     var jumpServerCandidates: [RDMachine] {
-        store.machineGroup.machines.filter { $0.id != machine && !$0.isUURemoteDevice }
+        store.machines.filter { $0.id != machine && !$0.isUURemoteDevice }
     }
 
     var existingGroups: [String] {
-        Set(store.machineGroup.machines.map(\.group) + store.folders.map(\.name))
+        Set(store.folders.map(\.name))
             .filter { !$0.isEmpty }
             .sorted()
     }
@@ -177,7 +177,7 @@ struct ServerEditorSheet: View {
                 RXField("Identity") {
                     RXPicker(
                         selection: $identity,
-                        options: [.init(nil, "Automatic")] + store.identityGroup.identities.map { item in
+                        options: [.init(nil, "Automatic")] + store.identities.map { item in
                             .init(item.id, item.group.isEmpty ? item.username : "\(item.username) · \(item.group)")
                         }
                     )
@@ -322,7 +322,7 @@ struct ServerEditorSheet: View {
     /// The identity's user name, which applies while the field is empty.
     var sshUsernamePlaceholder: String {
         guard let identity else { return "Use identity user name" }
-        let username = store.identityGroup[identity].username
+        let username = (store.identity(identity) ?? RDIdentity()).username
         return username.isEmpty ? "Use identity user name" : "\(username) (from identity)"
     }
 
@@ -336,7 +336,7 @@ struct ServerEditorSheet: View {
     func apply(to target: inout RDMachine) {
         target.sshUsername = sshUsername.trimmingCharacters(in: .whitespaces)
         target.transport = transport
-        target.proxyJumpMachineID = transport == .proxyJump ? proxyJumpMachineID?.uuidString : nil
+        target.proxyJumpMachineID = transport == .proxyJump ? proxyJumpMachineID : nil
         let cloudflare = transport == .cloudflareAccess
         target.cloudflareServiceTokenID = cloudflare ? serviceTokenID.trimmingCharacters(in: .whitespaces) : ""
         target.cloudflareServiceTokenSecret = cloudflare ? serviceTokenSecret.trimmingCharacters(in: .whitespaces) : ""
@@ -352,16 +352,16 @@ struct ServerEditorSheet: View {
     }
 
     func load() {
-        guard let read = machine.map({ store.machineGroup[$0] }) ?? template else { return }
+        guard let read = machine.flatMap({ store.machine($0) }) ?? template else { return }
         name = read.name
         address = read.remoteAddress
         port = read.remotePort
-        group = read.group
+        group = store.folderName(of: read)
         comment = read.comment
         startFolder = read.fileTransferLoginPath
         banner = read.lastBanner
         transport = read.transport
-        proxyJumpMachineID = read.proxyJumpMachineID.flatMap(UUID.init(uuidString:))
+        proxyJumpMachineID = read.proxyJumpMachineID
         serviceTokenID = read.cloudflareServiceTokenID
         serviceTokenSecret = read.cloudflareServiceTokenSecret
         remoteDesktopProtocol = read.remoteDesktopProtocol
@@ -374,7 +374,7 @@ struct ServerEditorSheet: View {
         uuDeviceID = read.uuDeviceID
         uuAssistID = read.uuAssistID
         uuAssistCode = read.uuAssistCode
-        if let aid = read.associatedIdentity, let uid = UUID(uuidString: aid) {
+        if let uid = read.associatedIdentity {
             identity = uid
         }
     }
@@ -386,21 +386,21 @@ struct ServerEditorSheet: View {
     @discardableResult
     func save(banner capturedBanner: String? = nil, identity resolvedIdentity: RDIdentity.ID? = nil) -> RDMachine {
         // A new server has never been connected to; RXFormat shows the epoch as "Never".
-        var target = machine.map { store.machineGroup[$0] } ?? RDMachine(lastConnection: Date(timeIntervalSince1970: 0))
+        var target = machine.flatMap { store.machine($0) } ?? RDMachine(lastConnection: Date(timeIntervalSince1970: 0))
         let trimmedAddress = address.trimmingCharacters(in: .whitespaces)
         target.remoteAddress = trimmedAddress
         target.remotePort = port
         target.name = name.isEmpty ? trimmedAddress : name
-        target.group = group
+        target.folderId = store.folderId(forName: group)
         target.comment = comment
         target.fileTransferLoginPath = startFolder.isEmpty ? "/" : startFolder
-        target.associatedIdentity = (resolvedIdentity ?? identity)?.uuidString
+        target.associatedIdentity = (resolvedIdentity ?? identity)
         apply(to: &target)
         if let capturedBanner {
             target.lastBanner = capturedBanner
             target.lastConnection = Date()
         }
-        store.machineGroup.insert(target)
+        store.save(target)
         return target
     }
 
@@ -416,8 +416,8 @@ struct ServerEditorSheet: View {
         let host = address.trimmingCharacters(in: .whitespaces)
         let port = port
         let draft = draft
-        let chosen = identity.map { store.identityGroup[$0] }
-        let candidates = store.identityGroupForAutoAuth
+        let chosen = identity.flatMap { store.identity($0) }
+        let candidates = store.identitiesForAutoAuth
         DispatchQueue.global().async {
             let outcome = ServerConnectionCheck.run(
                 draft,

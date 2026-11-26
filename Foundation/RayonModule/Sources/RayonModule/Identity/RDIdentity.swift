@@ -7,8 +7,45 @@
 
 import Foundation
 import NSRemoteShell
+@preconcurrency import WCDBSwift
 
-public struct RDIdentity: Codable, Identifiable, Equatable, Sendable {
+public struct RDIdentity: StoredRecord {
+    public static let tableName = "Identity"
+
+    public struct Secrets: RecordSecrets {
+        public var password = ""
+        public var privateKey = ""
+
+        public init() {}
+    }
+
+    public var id = UUID()
+
+    public var username = ""
+    public var publicKey = ""
+
+    /// When it last signed a session in, on this device.
+    public var lastRecentUsed = Date()
+    public var comment = ""
+    public var group = ""
+    public var authenticAutomatically = true
+    /// Signs in with the keys of the SSH agent instead of its own.
+    public var useSSHAgent = false
+
+    public var modified = Date()
+    public var removed = false
+    public var secrets = Secrets()
+
+    public var password: String {
+        get { secrets.password }
+        set { secrets.password = newValue }
+    }
+
+    public var privateKey: String {
+        get { secrets.privateKey }
+        set { secrets.privateKey = newValue }
+    }
+
     public init(
         id: UUID = .init(),
         username: String = "",
@@ -19,40 +56,51 @@ public struct RDIdentity: Codable, Identifiable, Equatable, Sendable {
         comment: String = "",
         group: String = "",
         authenticAutomatically: Bool = true,
-        attachment: [String: String] = [:]
+        useSSHAgent: Bool = false
     ) {
         self.id = id
         self.username = username
-        self.password = password
-        self.privateKey = privateKey
         self.publicKey = publicKey
         self.lastRecentUsed = lastRecentUsed
         self.comment = comment
         self.group = group
         self.authenticAutomatically = authenticAutomatically
-        self.attachment = attachment
+        self.useSSHAgent = useSSHAgent
+        secrets.password = password
+        secrets.privateKey = privateKey
     }
 
-    public var id = UUID()
+    public enum CodingKeys: String, CodingTableKey {
+        public typealias Root = RDIdentity
+        public static let objectRelationalMapping = TableBinding(CodingKeys.self) {
+            BindColumnConstraint(id, isPrimary: true)
+            BindColumnConstraint(modified, isNotNull: true)
+            BindColumnConstraint(removed, isNotNull: true, defaultTo: false)
+        }
 
-    // generic authenticate filed required for ssh
-    public var username: String
-    public var password: String
-    public var privateKey: String
-    public var publicKey: String
+        case id
+        case username
+        case publicKey
+        case lastRecentUsed
+        case comment
+        // "group" is an SQL keyword.
+        case group = "groupName"
+        case authenticAutomatically
+        case useSSHAgent
+        case modified
+        case removed
+    }
 
-    // application required
-    public var lastRecentUsed: Date
-    public var comment: String
-    public var group: String
-    public var authenticAutomatically: Bool
+    public var syncedContent: RDIdentity {
+        var content = self
+        content.lastRecentUsed = .distantPast
+        return content
+    }
 
-    // reserved for future use
-    public var attachment: [String: String]
-
-    public var useSSHAgent: Bool {
-        get { attachment["auth.sshAgent"] == "1" }
-        set { attachment["auth.sshAgent"] = newValue ? "1" : nil }
+    public func keepingLocalState(of local: RDIdentity) -> RDIdentity {
+        var merged = self
+        merged.lastRecentUsed = local.lastRecentUsed
+        return merged
     }
 
     public func shortDescription() -> String {
@@ -116,14 +164,8 @@ public struct RDIdentity: Codable, Identifiable, Equatable, Sendable {
             return
         }
         let date = Date()
-        debugPrint("Identity \(id) was used to authenticate session at \(date.ISO8601Format())")
-        onMainThread {
-            if var existing = RayonStore.shared.identityGroup.find(id),
-               abs(existing.lastRecentUsed.timeIntervalSince(date)) > 60
-            {
-                existing.lastRecentUsed = date
-                RayonStore.shared.identityGroup[id] = existing
-            }
+        Task { @MainActor in
+            RayonStore.shared.noteIdentityUsed(id, at: date)
         }
     }
 }
@@ -147,8 +189,4 @@ public extension RDIdentity {
         }
         return nil
     }
-}
-
-extension RDIdentity: RDGroupItem {
-    public init() { self.init(id: UUID()) }
 }

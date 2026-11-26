@@ -19,7 +19,7 @@ struct ServersView: View {
     @State private var sshConfigSource: SSHConfigSource?
 
     var filtered: [RDMachine] {
-        let all = store.machineGroup.machines
+        let all = store.machines
         guard !searchKey.isEmpty else { return all }
         return all.filter { $0.isQualifiedForSearch(text: searchKey.lowercased()) }
     }
@@ -29,9 +29,9 @@ struct ServersView: View {
     var groups: [(name: String, machines: [RDMachine])] {
         let machines = filtered
         var names = store.folders.map(\.name)
-        if machines.contains(where: { $0.group.isEmpty }) { names.append("") }
+        if machines.contains(where: { $0.folderId == nil }) { names.append("") }
         return names.compactMap { name in
-            let inside = machines.filter { $0.group == name }
+            let inside = machines.filter { store.folderName(of: $0) == name }
                 .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
             if inside.isEmpty, !searchKey.isEmpty { return nil }
             return (name, inside)
@@ -40,7 +40,7 @@ struct ServersView: View {
 
     var body: some View {
         Group {
-            if store.machineGroup.machines.isEmpty, store.folders.isEmpty {
+            if store.machines.isEmpty, store.folders.isEmpty {
                 EmptyStateView(
                     "No servers yet",
                     systemImage: "server.rack",
@@ -109,7 +109,7 @@ struct ServersView: View {
                     } label: {
                         Label("Batch Startup", systemImage: "wind")
                     }
-                    .disabled(store.machineGroup.machines.isEmpty)
+                    .disabled(store.machines.isEmpty)
                 } label: {
                     Label("More", systemImage: store.machineRedacted == .none ? "ellipsis.circle" : "eye.slash")
                 }
@@ -141,7 +141,7 @@ struct ServerListRow: View {
     @ObservedObject var monitors = MonitorCenter.shared
 
     var body: some View {
-        let read = store.machineGroup[machine]
+        let read = (store.machine(machine) ?? RDMachine())
         Button {
             ServerActions.openTerminal(machine)
         } label: {
@@ -229,7 +229,7 @@ struct ServerMenuItems: View {
             Button { FileTransferManager.shared.begin(for: machine) } label: {
                 Label("Open File Transfer", systemImage: "arrow.up.arrow.down")
             }
-            let read = RayonStore.shared.machineGroup[machine]
+            let read = (RayonStore.shared.machine(machine) ?? RDMachine())
             if read.hasRemoteDesktop {
                 Button { ServerActions.openDesktop(machine) } label: {
                     Label("Open Remote Desktop", systemImage: "display")
@@ -251,7 +251,7 @@ struct ServerMenuItems: View {
             }
         }
         Section {
-            let read = RayonStore.shared.machineGroup[machine]
+            let read = (RayonStore.shared.machine(machine) ?? RDMachine())
             if read.isUURemoteDevice {
                 // Its address is the device id; no ssh command reaches it.
                 Button { UIBridge.sendPasteboard(str: read.uuDeviceID) } label: {
@@ -282,6 +282,7 @@ struct ServerMenuItems: View {
     }
 }
 
+@MainActor
 enum ServerActions {
     /// The server's terminal on its page: the one open, else a new one.
     @MainActor
@@ -311,24 +312,22 @@ enum ServerActions {
     @MainActor
     static func openDesktop(_ machine: RDMachine.ID) {
         let existing = RemoteDesktopManager.shared.session(for: machine)
-        let session = RemoteDesktopManager.shared.begin(for: machine)
+        guard let session = RemoteDesktopManager.shared.begin(for: machine) else { return }
         guard existing != nil || RayonStore.shared.openInterfaceAutomatically else { return }
         SessionNavigation.shared.reveal(.server(session.machine.id), tool: .desktop)
     }
 
     static func duplicate(_ machine: RDMachine.ID) {
-        var copy = RayonStore.shared.machineGroup[machine]
-        guard copy.isNotPlaceholder() else { return }
+        guard var copy = RayonStore.shared.machine(machine) else { return }
         copy.id = UUID()
         copy.name += " copy"
-        RayonStore.shared.machineGroup.insert(copy)
+        RayonStore.shared.save(copy)
     }
 
     /// For a server whose keys were replaced: its next host key is saved.
     @MainActor
     static func forgetHostKey(_ machine: RDMachine.ID) {
-        let read = RayonStore.shared.machineGroup[machine]
-        guard read.isNotPlaceholder() else { return }
+        guard let read = RayonStore.shared.machine(machine) else { return }
         UIBridge.requiresConfirmation(message: "Forget the host key of \(read.name)? The key it presents next is saved as its key.") { confirmed in
             guard confirmed else { return }
             read.forgetHostKey()
@@ -339,15 +338,14 @@ enum ServerActions {
     /// installs it if it is missing (say, after ~/.terminfo was cleared).
     @MainActor
     static func reinstallTerminfo(_ machine: RDMachine.ID) {
-        var read = RayonStore.shared.machineGroup[machine]
-        guard read.isNotPlaceholder() else { return }
+        guard var read = RayonStore.shared.machine(machine) else { return }
         read.forgetGhosttyTerminfo()
-        RayonStore.shared.machineGroup[machine] = read
+        RayonStore.shared.save(read)
     }
 
     @MainActor
     static func delete(_ machine: RDMachine.ID) {
-        let name = RayonStore.shared.machineGroup[machine].name
+        let name = (RayonStore.shared.machine(machine) ?? RDMachine()).name
         UIBridge.requiresConfirmation(
             message: "Delete \(name)?",
             informative: "This cannot be undone.",
@@ -357,7 +355,7 @@ enum ServerActions {
             if let session = MonitorCenter.shared.session(for: machine) {
                 MonitorCenter.shared.end(session.id)
             }
-            RayonStore.shared.machineGroup.delete(machine)
+            RayonStore.shared.deleteMachines([machine])
             RayonStore.shared.cleanRecentIfNeeded()
         }
     }

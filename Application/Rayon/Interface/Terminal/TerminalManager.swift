@@ -36,8 +36,7 @@ extension TerminalManager {
         resuming uuSession: UInt32? = nil,
         completion: @escaping (Context) -> Void = { _ in }
     ) {
-        let machine = RayonStore.shared.machineGroup[machineId]
-        guard machine.isNotPlaceholder() else {
+        guard let machine = RayonStore.shared.machine(machineId) else {
             UIBridge.presentError(with: "This server's details could not be read.")
             return
         }

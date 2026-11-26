@@ -87,7 +87,7 @@ final class VNCRFBDriver: RemoteDesktopDriver, @unchecked Sendable {
             }
         }
 
-        let identity = RayonStore.shared.workerAssociatedIdentity(for: machine)
+        let identity = RayonStore.workerAssociatedIdentity(for: machine)
         let client = VNCRFBClient(
             configuration: .init(
                 host: machine.remoteAddress,
@@ -95,7 +95,7 @@ final class VNCRFBDriver: RemoteDesktopDriver, @unchecked Sendable {
                 password: machine.resolvedVNCPassword(identity: identity),
                 username: machine.resolvedVNCUsername(identity: identity),
                 shared: machine.vncShared,
-                timeout: max(TimeInterval(RayonStore.shared.workerTimeoutNumber.intValue), 10),
+                timeout: max(TimeInterval(RayonStore.workerTimeoutNumber.intValue), 10),
                 transport: transport
             ),
             delegate: self

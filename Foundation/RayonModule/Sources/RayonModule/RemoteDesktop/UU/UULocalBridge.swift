@@ -131,10 +131,9 @@ public enum UULocalBridge {
                   let anonymous = value("anonymous_device_id"), !anonymous.isEmpty,
                   let nonce = value("nonce"), let machineID = UUID(uuidString: nonce)
             else { return true }
-            var machine = RayonStore.shared.machineGroup[machineID]
-            guard machine.isNotPlaceholder() else { return true }
+            guard var machine = RayonStore.shared.machine(machineID) else { return true }
             machine.uuAnonymousDeviceID = anonymous
-            RayonStore.shared.machineGroup[machineID] = machine
+            RayonStore.shared.save(machine)
             openControlInOfficialApp(for: machine)
             return true
         case "uuremote-control":
