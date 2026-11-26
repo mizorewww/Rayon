@@ -243,4 +243,23 @@ final class ConfigurationRuntimeTests: XCTestCase {
         XCTAssertEqual(settings.applied.text, "font-size = 20\nbackground = #202020\n")
         XCTAssertEqual(settings.config, settings.applied)
     }
+
+    /// Undo does not reach past settings that came from elsewhere (another
+    /// device, a restored backup): it would put back what they replaced.
+    @MainActor func testUndoStopsAtAdoptedAndLoadedSettings() throws {
+        let settings = try scratchSettings("background = #111111\n")
+        settings.set("background", "#222222")
+        XCTAssertTrue(settings.applyNow())
+        XCTAssertTrue(settings.undoManager.canUndo)
+        settings.adopt(["background": ["#333333"]])
+        XCTAssertFalse(settings.undoManager.canUndo)
+        settings.undo()
+        XCTAssertEqual(settings.applied.text, "background = #333333\n")
+
+        settings.set("background", "#444444")
+        XCTAssertTrue(settings.applyNow())
+        XCTAssertTrue(settings.undoManager.canUndo)
+        try settings.load("background = #555555\n")
+        XCTAssertFalse(settings.undoManager.canUndo)
+    }
 }

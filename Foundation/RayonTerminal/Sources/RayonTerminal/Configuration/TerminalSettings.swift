@@ -172,7 +172,9 @@ public final class TerminalSettings {
 
     /// Shows `next` and commits it, in place of any change not applied yet.
     /// What Settings shows is `next` before the change is announced, so a
-    /// listener that changes the settings again builds on it.
+    /// listener that changes the settings again builds on it. Undo forgets
+    /// the changes before: undoing one would put back what `next` replaced,
+    /// and sync would send that on.
     private func take(_ next: GhosttyConfigText) throws {
         pendingApply?.cancel()
         let previous = config
@@ -183,6 +185,7 @@ public final class TerminalSettings {
             config = previous
             throw error
         }
+        undoManager.removeAllActions()
         revision += 1
     }
 
