@@ -49,10 +49,19 @@ final class SSHBannerGate: ChannelDuplexHandler, RemovableChannelHandler {
     private func record(_ bytes: ByteBuffer) {
         guard head.utf8.count < 8192 else { return }
         head += String(buffer: bytes)
-        for line in head.split(separator: "\n", omittingEmptySubsequences: false).dropLast() where line.hasPrefix("SSH-") {
-            serverVersion = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let line = Self.identification(in: head) {
+            serverVersion = line
             head = ""
-            return
         }
+    }
+
+    /// The first complete line of `head` that starts with "SSH-". Lines
+    /// end in CRLF, which a Swift string holds as one `Character`, not a
+    /// "\n": split on it, the line would run on into the key exchange.
+    static func identification(in head: String) -> String? {
+        head.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+            .dropLast()
+            .first { $0.hasPrefix("SSH-") }
+            .map { $0.trimmingCharacters(in: .whitespaces) }
     }
 }
