@@ -178,8 +178,11 @@ struct TerminalPage: View {
         .onAppear {
             syncActivePanes()
         }
-        .onChange(of: context.id) { _ in
+        // The capture is the tab before the change: SwiftUI runs the
+        // previous body's action.
+        .onChange(of: context.id) { [context] _ in
             syncActivePanes()
+            moveSearch(from: context)
         }
         .onChange(of: terminals.splitGroups) { _ in
             syncActivePanes()
@@ -528,6 +531,15 @@ struct TerminalPage: View {
             context.termInterface.endSearch()
             searchQuery = ""
         }
+    }
+
+    /// The find bar searches the pane in focus: the pane left drops its
+    /// highlights and the pane focused takes the query.
+    private func moveSearch(from previous: TerminalManager.Context) {
+        let current = routedContext
+        guard showSearch, previous.id != current.id else { return }
+        previous.termInterface.endSearch()
+        current.termInterface.search(searchQuery)
     }
 
     private func disconnectedBanner(for target: TerminalManager.Context) -> some View {

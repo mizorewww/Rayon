@@ -119,7 +119,12 @@ struct TerminalView: View {
         .onDisappear {
             TerminalFocus.shared.remove(screen: interfaceToken)
         }
-        .onChange(of: focusedID) { _ in claimPanes() }
+        // The capture is the focus before the change: SwiftUI runs the
+        // previous body's action.
+        .onChange(of: focusedID) { [focusedID] _ in
+            claimPanes()
+            moveSearch(from: focusedID)
+        }
         .onChange(of: terminals.splitGroups) { _ in claimPanes() }
         .onChange(of: canSplit) { _ in claimPanes() }
         .onChange(of: terminals.sessionContexts.map(\.id)) { ids in
@@ -298,6 +303,14 @@ struct TerminalView: View {
             focused.termInterface.endSearch()
             searchQuery = ""
         }
+    }
+
+    /// The find bar searches the pane in focus: the pane left drops its
+    /// highlights and the pane focused takes the query.
+    private func moveSearch(from previousID: TerminalContext.ID?) {
+        guard showSearch, previousID != focused.id else { return }
+        terminals.sessionContexts.first { $0.id == previousID }?.termInterface.endSearch()
+        focused.termInterface.search(searchQuery)
     }
 
     private func disconnectedBanner(for target: TerminalContext) -> some View {
