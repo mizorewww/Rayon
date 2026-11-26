@@ -128,7 +128,6 @@ enum RayonTerminalConfiguration {
         }
         for entry in try config.entries() where supportedKeys.contains(entry.key) {
             if entry.key == "keybind", !applies(keybind: entry.value) { continue }
-            if entry.key == "font-feature" { try FontFeatureValue.validate(entry.value) }
             lines.append(entry)
         }
         lines += [("copy-on-select", copyOnSelectValue), ("clipboard-read", clipboardAccessValue), ("clipboard-write", clipboardAccessValue)]

@@ -59,8 +59,21 @@ final class ConfigurationRuntimeTests: XCTestCase {
         XCTAssertThrowsError(try RayonTerminalConfiguration.apply(broken, to: controller))
         XCTAssertEqual(controller.theme, before)
         XCTAssertThrowsError(try RayonTerminalConfiguration.apply(GhosttyConfigText("not a line"), to: controller))
-        // Ghostty takes any font feature and drops the ones it cannot read.
-        XCTAssertThrowsError(try RayonTerminalConfiguration.apply(GhosttyConfigText("font-feature = !!=bad value"), to: controller))
+    }
+
+    /// A font feature Ghostty cannot read is refused when typed in Settings;
+    /// one already in the file is left for Ghostty to skip and keeps
+    /// neither the file nor later changes from applying.
+    @MainActor func testAnUnreadableFontFeatureIsRefusedOnlyInSettings() throws {
+        let settings = try scratchSettings("font-feature = !!=bad value\nbackground = #111111\n")
+        try RayonTerminalConfiguration.apply(settings.applied)
+        settings.set("background", "#222222")
+        XCTAssertTrue(settings.applyNow(), settings.issue ?? "")
+        settings.set("font-feature", ["!!=bad value", "ligatures"])
+        XCTAssertFalse(settings.applyNow())
+        XCTAssertTrue(settings.issue?.contains("ligatures") == true, settings.issue ?? "")
+        settings.set("font-feature", ["!!=bad value", "-liga"])
+        XCTAssertTrue(settings.applyNow(), settings.issue ?? "")
     }
 
     /// The shortcut list as written replaces Ghostty's: a default deleted in

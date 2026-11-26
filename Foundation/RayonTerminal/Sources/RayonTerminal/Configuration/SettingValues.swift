@@ -30,8 +30,9 @@ enum PairValue {
 /// `font-feature` as Ghostty reads it (HarfBuzz's syntax, roughly): a
 /// four-letter tag, `+tag` or `-tag`, `tag=2` or `tag 2`, `tag on` or
 /// `tag off`; one value may list several, separated by commas. Ghostty
-/// passes over a feature it cannot read without saying so, so the value is
-/// checked here, as Ghostty's own parser (`font/shaper/feature.zig`) does.
+/// passes over a feature it cannot read without saying so, so a value
+/// typed in Settings is checked here, as Ghostty's own parser
+/// (`font/shaper/feature.zig`) does.
 enum FontFeatureValue {
     static func validate(_ value: String) throws {
         for item in value.split(separator: ",") where !item.allSatisfy({ $0 == " " || $0 == "\t" }) {

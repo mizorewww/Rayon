@@ -180,11 +180,24 @@ public final class TerminalSettings {
         pendingApply?.cancel()
         pendingApply = nil
         do {
+            try checkNewFontFeatures(config)
             try commit(config)
             return true
         } catch {
             issue = error.localizedDescription
             return false
+        }
+    }
+
+    /// Ghostty takes any font feature and passes over one it cannot read
+    /// without a word, so a feature typed in Settings is checked first. One
+    /// already applied (from the file, a text editor or another device) is
+    /// left for Ghostty to skip: it must not keep the rest of the file from
+    /// applying, or every later change in Settings from saving.
+    private func checkNewFontFeatures(_ next: GhosttyConfigText) throws {
+        let applied = Set(applied.values("font-feature"))
+        for value in next.values("font-feature") where !applied.contains(value) {
+            try FontFeatureValue.validate(value)
         }
     }
 
