@@ -10,6 +10,7 @@
 import Crypto
 import Foundation
 import NIOCore
+import NIOPosix
 @preconcurrency import NIOSSH
 
 public actor SSHConnection {
@@ -91,7 +92,12 @@ public actor SSHConnection {
 
     private static func signIn(_ configuration: Configuration) async throws -> SSHConnection {
         let agentWait = AgentWait()
-        let offers = try configuration.credentials.flatMap { try $0.offers(agentWait: agentWait) }
+        // Asking the agent for its keys is a blocking round trip on its
+        // socket: off the threads Swift concurrency runs everything on.
+        let credentials = configuration.credentials
+        let offers = try await NIOThreadPool.singleton.runIfActive {
+            try credentials.flatMap { try $0.offers(agentWait: agentWait) }
+        }
         guard !offers.isEmpty else { throw SSHError.authenticationFailed }
         var lastError: Error = SSHError.authenticationFailed
         var serverVersion: String?

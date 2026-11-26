@@ -206,6 +206,23 @@ final class SSHLiveTests: XCTestCase {
         for other in others { await other.close() }
     }
 
+    /// Asking a slow agent for its keys blocks no thread Swift concurrency
+    /// runs everything else on.
+    func testListingTheAgentsKeysBlocksNoTask() async throws {
+        let (slow, server) = try await Self.slowAgent(in: agent(holding: ["ecdsa"]), signDelay: .seconds(2), type: 11)
+        defer { server.close(promise: nil) }
+        let configuration = SSHConnection.Configuration(
+            host: "127.0.0.1", port: port, username: user, credentials: [.agent(slow)], hostKeyStatus: { _ in .trusted }
+        )
+        let signingIn = (0 ..< System.coreCount + 1).map { _ in Task { try await SSHConnection.connect(configuration) } }
+        try await Task.sleep(for: .milliseconds(500))
+        let started = ContinuousClock.now
+        await Task.detached {}.value
+        XCTAssertLessThan(ContinuousClock.now - started, .milliseconds(500), "a task waited for the agent")
+        // That many sign-ins at once go past sshd's MaxStartups: some are dropped.
+        for task in signingIn { if let connection = try? await task.value { await connection.close() } }
+    }
+
     func testAnEmptyOrMissingAgent() async throws {
         do {
             _ = try await connect([.agent(agent(holding: []))])
@@ -840,19 +857,21 @@ final class SSHLiveTests: XCTestCase {
             .get()
     }
 
-    /// An agent in front of `agent` that passes sign requests on only after
-    /// `signDelay`, as one asking for a confirmation does.
-    private static func slowAgent(in agent: SSHAgent, signDelay: TimeAmount) async throws -> (SSHAgent, Channel) {
+    /// An agent in front of `agent` that passes sign requests (or the
+    /// requests of `type`: 11 lists the keys) on only after `signDelay`,
+    /// as one asking for a confirmation does.
+    private static func slowAgent(in agent: SSHAgent, signDelay: TimeAmount, type: UInt8 = 13) async throws -> (SSHAgent, Channel) {
         final class Relay: ChannelInboundHandler {
             typealias InboundIn = ByteBuffer
             let peer: Channel
             let signDelay: TimeAmount
-            init(peer: Channel, signDelay: TimeAmount) { self.peer = peer; self.signDelay = signDelay }
+            let type: UInt8
+            init(peer: Channel, signDelay: TimeAmount, type: UInt8 = 0) { self.peer = peer; self.signDelay = signDelay; self.type = type }
             func channelRead(context: ChannelHandlerContext, data: NIOAny) {
                 let bytes = unwrapInboundIn(data)
                 let peer = peer
-                // A request's type follows its four-byte length; 13 signs.
-                let delay = bytes.getInteger(at: bytes.readerIndex + 4, as: UInt8.self) == 13 ? signDelay : .zero
+                // A request's type follows its four-byte length.
+                let delay = bytes.getInteger(at: bytes.readerIndex + 4, as: UInt8.self) == type ? signDelay : .zero
                 context.eventLoop.scheduleTask(in: delay) { peer.writeAndFlush(bytes, promise: nil) }
             }
             func channelInactive(context: ChannelHandlerContext) {
@@ -871,7 +890,7 @@ final class SSHLiveTests: XCTestCase {
                     }
                     .connect(unixDomainSocketPath: upstream)
                     .flatMapThrowing { outbound in
-                        try inbound.pipeline.syncOperations.addHandler(Relay(peer: outbound, signDelay: signDelay))
+                        try inbound.pipeline.syncOperations.addHandler(Relay(peer: outbound, signDelay: signDelay, type: type))
                     }
             }
             .bind(unixDomainSocketPath: path, cleanupExistingSocketFile: true)
