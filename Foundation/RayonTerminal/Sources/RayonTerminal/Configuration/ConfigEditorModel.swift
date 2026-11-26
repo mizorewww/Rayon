@@ -233,6 +233,9 @@ enum RayonTerminalConfiguration {
             lines += theme.entries.map { "\($0.0) = \($0.1)" }
         }
         for key in document.overrides.keys.sorted() where supportedKeys.contains(key) && key != "theme" {
+            // The edited list is the whole set of shortcuts: without a clear,
+            // Ghostty keeps its own defaults and a deleted one stays bound.
+            if key == "keybind" { lines.append("keybind = clear") }
             for value in document.overrides[key] ?? [] {
                 if key == "keybind" {
                     let parsed = ConfigKeybinding(value)

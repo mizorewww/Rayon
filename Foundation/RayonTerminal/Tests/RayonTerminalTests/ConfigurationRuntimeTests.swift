@@ -62,6 +62,16 @@ final class ConfigurationRuntimeTests: XCTestCase {
         XCTAssertThrowsError(try RayonTerminalConfiguration.apply(doc, to: controller))
         XCTAssertEqual(controller.renderedConfig, before)
     }
+    @MainActor func testDeletedDefaultShortcutIsUnbound() throws {
+        var doc = ConfigDocument()
+        doc.set("keybind", ["ctrl+k=text:hello"])
+        let text = RayonTerminalConfiguration.runtimeContents(doc, dark: true)
+        let keybinds = text.components(separatedBy: "\n").filter { $0.hasPrefix("keybind =") }
+        XCTAssertEqual(keybinds, ["keybind = clear", "keybind = ctrl+k=text:hello"])
+        XCTAssertFalse(RayonTerminalConfiguration.runtimeContents(ConfigDocument(), dark: true).contains("keybind = clear"))
+        try RayonTerminalConfiguration.apply(doc, to: TerminalController(configuration: .default))
+    }
+
     func testCompoundDurationValidation() throws {
         XCTAssertEqual(ConfigDuration.humanize(try ConfigDuration.parse("1h30m", allowEmpty: false)), "1 hour, 30 minutes")
         XCTAssertEqual(try ConfigDuration.parse("4ms", allowEmpty: false).first?.1, "ms")
