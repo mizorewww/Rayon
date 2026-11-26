@@ -1,0 +1,31 @@
+//
+//  UURemoteAccountSheet.swift
+//  Rayon (macOS)
+//
+//  The UU Remote account panel as a sheet: SheetScaffold chrome around the
+//  shared RayonModule view.
+//
+
+import RayonDesign
+import RayonModule
+import SwiftUI
+
+struct UURemoteAccountSheet: View {
+    /// Route "Connect" into the app's session navigation; nil just opens the
+    /// session inside `RemoteDesktopManager`.
+    var onConnectDesktop: ((RDMachine.ID) -> Void)?
+    var onOpenTerminal: ((RDMachine.ID) -> Void)?
+    var close: (() -> Void)?
+
+    var body: some View {
+        SheetScaffold("UU Remote") {
+            UURemoteAccountView(onConnectDesktop: onConnectDesktop, onOpenTerminal: onOpenTerminal)
+        } footer: {
+            Spacer()
+            Button("Done") { close?() }
+                .buttonStyle(.rx)
+                .keyboardShortcut(.defaultAction)
+        }
+        .frame(width: 560)
+    }
+}

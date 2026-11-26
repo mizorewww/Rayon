@@ -1,6 +1,6 @@
 //
 //  ServerInfo.swift
-//  catussh
+//  Rayon
 //
 //  Created by Lakr Aream on 2022/2/12.
 //
@@ -9,8 +9,8 @@ import Combine
 import Foundation
 import NSRemoteShell
 
-/// Mirror of CatusshModule's `onMainThread`; MachineStatus sits below
-/// CatusshModule in the package graph and cannot import it.
+/// Mirror of RayonModule's `onMainThread`; MachineStatus sits below
+/// RayonModule in the package graph and cannot import it.
 /// - Parameter run: the job to be fired on the main thread
 func onMainThread(delay: Double = 0, run: @escaping () -> Void) {
     // Preserve the legacy model callbacks without claiming the models are Sendable.
@@ -55,7 +55,7 @@ public class ServerStatus: ObservableObject, Equatable {
     /// section on a full-line match, which kernel /proc payloads, df rows
     /// and os-release assignments can never produce. That is what the old
     /// "[*******]" token could not promise inside two samples of one file.
-    static let sectionMarkerPrefix = "<<<CATUSSH-SECTION:"
+    static let sectionMarkerPrefix = "<<<RAYON-SECTION:"
     static let sectionMarkerSuffix = ">>>"
 
     /// `nvidia-smi` stays a command of its own: it is slow and missing on
@@ -70,30 +70,30 @@ public class ServerStatus: ObservableObject, Equatable {
     /// while a connection stays up.
     static func monitorScript(includeStatic: Bool) -> String {
         var sections = [
-            ("platform", "echo \"$CATUSSH_KERNEL\""),
-            ("ts-a", "if [ \"$CATUSSH_KERNEL\" = Darwin ]; then /bin/date +%s; else /bin/cat /proc/uptime; fi"),
-            ("cpu-a", "if [ \"$CATUSSH_KERNEL\" != Darwin ]; then /bin/cat /proc/stat; fi"),
-            ("net-a", "if [ \"$CATUSSH_KERNEL\" = Darwin ]; then /usr/sbin/netstat -ibn; else /bin/cat /proc/net/dev; fi"),
-            ("darwin-top", "if [ \"$CATUSSH_KERNEL\" = Darwin ]; then /usr/bin/top -l 2 -n 0 -s 1; fi"),
-            ("wait", "if [ \"$CATUSSH_KERNEL\" != Darwin ]; then /bin/sleep 1; fi"),
-            ("ts-b", "if [ \"$CATUSSH_KERNEL\" = Darwin ]; then /bin/date +%s; else /bin/cat /proc/uptime; fi"),
-            ("cpu-b", "if [ \"$CATUSSH_KERNEL\" != Darwin ]; then /bin/cat /proc/stat; fi"),
-            ("net-b", "if [ \"$CATUSSH_KERNEL\" = Darwin ]; then /usr/sbin/netstat -ibn; else /bin/cat /proc/net/dev; fi"),
-            ("mem", "if [ \"$CATUSSH_KERNEL\" = Darwin ]; then /usr/sbin/sysctl hw.memsize hw.pagesize vm.swapusage; /usr/bin/vm_stat; else /bin/cat /proc/meminfo; fi"),
+            ("platform", "echo \"$RAYON_KERNEL\""),
+            ("ts-a", "if [ \"$RAYON_KERNEL\" = Darwin ]; then /bin/date +%s; else /bin/cat /proc/uptime; fi"),
+            ("cpu-a", "if [ \"$RAYON_KERNEL\" != Darwin ]; then /bin/cat /proc/stat; fi"),
+            ("net-a", "if [ \"$RAYON_KERNEL\" = Darwin ]; then /usr/sbin/netstat -ibn; else /bin/cat /proc/net/dev; fi"),
+            ("darwin-top", "if [ \"$RAYON_KERNEL\" = Darwin ]; then /usr/bin/top -l 2 -n 0 -s 1; fi"),
+            ("wait", "if [ \"$RAYON_KERNEL\" != Darwin ]; then /bin/sleep 1; fi"),
+            ("ts-b", "if [ \"$RAYON_KERNEL\" = Darwin ]; then /bin/date +%s; else /bin/cat /proc/uptime; fi"),
+            ("cpu-b", "if [ \"$RAYON_KERNEL\" != Darwin ]; then /bin/cat /proc/stat; fi"),
+            ("net-b", "if [ \"$RAYON_KERNEL\" = Darwin ]; then /usr/sbin/netstat -ibn; else /bin/cat /proc/net/dev; fi"),
+            ("mem", "if [ \"$RAYON_KERNEL\" = Darwin ]; then /usr/sbin/sysctl hw.memsize hw.pagesize vm.swapusage; /usr/bin/vm_stat; else /bin/cat /proc/meminfo; fi"),
             ("df", "/bin/df -Pk"),
-            ("uptime", "if [ \"$CATUSSH_KERNEL\" = Darwin ]; then /bin/date +%s; /usr/sbin/sysctl -n kern.boottime; else /bin/cat /proc/uptime; fi"),
-            ("loadavg", "if [ \"$CATUSSH_KERNEL\" != Darwin ]; then /bin/cat /proc/loadavg; fi"),
+            ("uptime", "if [ \"$RAYON_KERNEL\" = Darwin ]; then /bin/date +%s; /usr/sbin/sysctl -n kern.boottime; else /bin/cat /proc/uptime; fi"),
+            ("loadavg", "if [ \"$RAYON_KERNEL\" != Darwin ]; then /bin/cat /proc/loadavg; fi"),
         ]
         if includeStatic {
             sections += [
                 ("hostname", "/bin/hostname 2>/dev/null || hostname 2>/dev/null || echo \"localhost\""),
-                ("os-release", "if [ \"$CATUSSH_KERNEL\" = Darwin ]; then /usr/bin/sw_vers; else /bin/cat /etc/os-release; fi"),
+                ("os-release", "if [ \"$RAYON_KERNEL\" = Darwin ]; then /usr/bin/sw_vers; else /bin/cat /etc/os-release; fi"),
             ]
         }
         let commands = sections.map { name, command in
             "echo '\(sectionMarkerPrefix)\(name)\(sectionMarkerSuffix)'\n\(command)"
         }
-        return (["CATUSSH_KERNEL=\"$(/usr/bin/uname -s 2>/dev/null || uname -s)\""] + commands)
+        return (["RAYON_KERNEL=\"$(/usr/bin/uname -s 2>/dev/null || uname -s)\""] + commands)
             .joined(separator: "\n")
     }
 

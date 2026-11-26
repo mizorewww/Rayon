@@ -4,7 +4,7 @@
 # with. Run it yourself: it asks for passwords and uploads a private key.
 #
 # Usage:
-#   bash Workflow/Scripts/release-secrets.sh <DeveloperID.p12> [AuthKey_<id>.p8] [catussh.provisionprofile]
+#   bash Workflow/Scripts/release-secrets.sh <DeveloperID.p12> [AuthKey_<id>.p8] [Rayon.provisionprofile]
 #
 # The .p12: in Keychain Access, under My Certificates, select "Developer ID
 # Application: …", File → Export Items…, and give it a password.

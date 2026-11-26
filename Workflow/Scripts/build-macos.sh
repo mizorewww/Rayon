@@ -39,7 +39,7 @@ DEVELOPMENT_TEAM="${DEVELOPMENT_TEAM:-}"
 
 xcodebuild \
     -workspace "$ROOT_DIR/App.xcworkspace" \
-    -scheme catussh \
+    -scheme Rayon \
     -configuration "$CONFIGURATION" \
     -destination 'generic/platform=macOS' \
     -derivedDataPath "$DERIVED_DATA_PATH" \
@@ -54,7 +54,7 @@ xcodebuild \
     PROVISIONING_PROFILE_SPECIFIER= \
     build
 
-APP_PATH="$DERIVED_DATA_PATH/Build/Products/$CONFIGURATION/catussh.app"
+APP_PATH="$DERIVED_DATA_PATH/Build/Products/$CONFIGURATION/Rayon.app"
 
 # The profile goes into the app, and what it grants into the signature: the
 # app asks its own signature whether it may sync.

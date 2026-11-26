@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Build catussh and install it on this Mac and on every iPhone and iPad that is
+# Build Rayon and install it on this Mac and on every iPhone and iPad that is
 # paired with it and reachable (over USB or the local network).
 #
 # Usage:
@@ -69,7 +69,7 @@ report_former_mac_data() {
     done
     if [[ -e "$seed" ]]; then
         printf 'The data saved as %s was NOT carried over: the system left it at %s.\n' "$FORMER_BUNDLE_ID" "$seed" >&2
-        printf 'Quit catussh, run `defaults delete %s; defaults import %s "%s"`, delete that file and open catussh again.\n' "$BUNDLE_ID" "$BUNDLE_ID" "$seed" >&2
+        printf 'Quit Rayon, run `defaults delete %s; defaults import %s "%s"`, delete that file and open Rayon again.\n' "$BUNDLE_ID" "$BUNDLE_ID" "$seed" >&2
         failed+=("Mac (former data not carried over)")
     else
         printf 'Carried over the data saved as %s.\n' "$FORMER_BUNDLE_ID"
@@ -80,7 +80,7 @@ install_mac() {
     step "Mac: building and installing to /Applications"
     if bash "$ROOT_DIR/Workflow/Scripts/install-macos.sh"; then
         adopt_former_mac_data
-        open "/Applications/catussh.app"
+        open "/Applications/Rayon.app"
         report_former_mac_data
     else
         failed+=("Mac (build or install failed)")
@@ -152,7 +152,7 @@ install_ios() {
     local ios_data="$DERIVED_DATA_PATH/iOS"
     if ! xcodebuild \
         -workspace "$ROOT_DIR/App.xcworkspace" \
-        -scheme mCatussh \
+        -scheme mRayon \
         -configuration Release \
         -destination 'generic/platform=iOS' \
         -derivedDataPath "$ios_data" \
@@ -165,10 +165,10 @@ install_ios() {
     fi
 
     step "iOS: signing ($identity, team $team)"
-    local app="$ios_data/Signed/catussh.app"
+    local app="$ios_data/Signed/Rayon.app"
     rm -rf "$ios_data/Signed"
     mkdir -p "$ios_data/Signed"
-    ditto "$ios_data/Build/Products/Release-iphoneos/mCatussh.app" "$app"
+    ditto "$ios_data/Build/Products/Release-iphoneos/mRayon.app" "$app"
     cp "$profile" "$app/embedded.mobileprovision"
     local entitlements="$ios_data/Signed/entitlements.plist"
     # The keychain access group is the one the Mac app is signed with too

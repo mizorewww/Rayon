@@ -7,7 +7,7 @@
 ### 1.1 ⌘Q 无法退出
 
 - Debug 构建复现：开着菜单栏猫和弹出框，用 Apple Event 退出 → 正常退出；再开一个终端，
-  退出 → 出现「Quit catussh?」确认框（sheet），终止路径本身工作。
+  退出 → 出现「Quit Rayon?」确认框（sheet），终止路径本身工作。
 - 正在运行的正式版：主窗口不在屏幕上（onscreen=0），另有一个 500×500 的隐藏窗口。
   `windowStatusWatcher` 每秒执行一次：没有 `isVisible` 的普通窗口、又有菜单栏猫时，
   把 App 切成 accessory（无 Dock 图标、无菜单栏）。**最小化的窗口 `isVisible == false`**，
@@ -56,7 +56,7 @@
 现在的分组只是 `RDMachine.group` 字符串，没有空文件夹、不能改名、不能有来源。
 
 - 新增 `RDFolder`：`id`、`name`、`source`（`.local` / `.uuRemote`）、`sortIndex`。
-  存在 `CatusshStore.folderGroup`，跟服务器一起同步。
+  存在 `RayonStore.folderGroup`，跟服务器一起同步。
 - 服务器仍然用 `group` 指向文件夹名（保持旧数据和同步格式不变）；文件夹改名时一起改。
   旧数据里出现过的组名在加载时自动补成本地文件夹。
 - 服务器页按文件夹分节：新建 / 改名 / 删除文件夹，服务器右键「移到文件夹」。
@@ -106,10 +106,10 @@
 
 | # | 目标 | 通过标准 |
 |---|------|----------|
-| G1 | ⌘Q / 退出 | 无会话时菜单「Quit catussh」直接退出；开着 UU 桌面时也能退出（不再卡住）；有终端时先弹确认框 |
+| G1 | ⌘Q / 退出 | 无会话时菜单「Quit Rayon」直接退出；开着 UU 桌面时也能退出（不再卡住）；有终端时先弹确认框 |
 | G2 | ⌘W | 在终端页关闭当前终端标签；最后一个标签关闭后换成同一服务器的新终端；不关窗口 |
 | G3 | UU 登录 | 「Link UU Remote Account…」打开登录页，二维码自动生成；登录状态重启后仍在 |
-| G4 | UU 文件夹 | 服务器页有「UU Remote」文件夹，列出账号的桌面设备（不含 catussh 自己），显示在线/离线 |
+| G4 | UU 文件夹 | 服务器页有「UU Remote」文件夹，列出账号的桌面设备（不含 Rayon 自己），显示在线/离线 |
 | G5 | UU 桌面 | 对在线设备点 Desktop：连上，画面铺满页面，显示 fps；工具栏只有 Terminal / Desktop |
 | G6 | UU 终端 | 对在线设备点 Terminal：出现设备自己的 shell 提示符，输入命令有输出 |
 | G7 | 文件夹 | 新建 / 改名 / 删除文件夹，服务器「Move to Folder」 |

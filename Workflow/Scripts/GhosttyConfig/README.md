@@ -7,5 +7,5 @@ In a disposable checkout of that revision, copy `export-native.ts` to the root a
 set `tsconfig.json` paths `$lib/*` to `./src/lib/*` and `$app/environment` to
 `./environment.ts`. Create `environment.ts` containing `export const dev = false;`.
 Run `bun export-native.ts` and redirect stdout to
-`Foundation/CatusshTerminal/Sources/CatusshTerminal/Configuration/Resources/catalog.json`.
-Review the schema and licenses before updating; run the CatusshTerminal package tests.
+`Foundation/RayonTerminal/Sources/RayonTerminal/Configuration/Resources/catalog.json`.
+Review the schema and licenses before updating; run the RayonTerminal package tests.

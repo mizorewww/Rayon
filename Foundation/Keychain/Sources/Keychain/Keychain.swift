@@ -1,6 +1,6 @@
 // MIT LICENSE
 // Trimmed-down derivative of https://github.com/kishikawakatsumi/KeychainAccess
-// keeping only the generic-password surface catussh uses (service-scoped string
+// keeping only the generic-password surface Rayon uses (service-scoped string
 // get/set/remove with label/comment). The original MIT license applies.
 //
 //  Keychain.swift

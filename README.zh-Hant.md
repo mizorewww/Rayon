@@ -1,4 +1,4 @@
-# catussh
+# Rayon
 
 [English](./README.md) · [简体中文](./README.zh-Hans.md) · **繁體中文**
 
@@ -11,17 +11,17 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./Resources/Screenshots/home-dark.jpg">
-  <img alt="catussh 首頁：上方是快速連線，下方是已儲存伺服器的卡片，每張卡片都有連線、檔案和監控按鈕。" src="./Resources/Screenshots/home-light.jpg">
+  <img alt="Rayon 首頁：上方是快速連線，下方是已儲存伺服器的卡片，每張卡片都有連線、檔案和監控按鈕。" src="./Resources/Screenshots/home-light.jpg">
 </picture>
 
 ## 安裝
 
 ```sh
-brew install --cask mizorewww/tap/catussh
+brew install --cask mizorewww/tap/rayon
 ```
 
 需要 macOS 13 或以上版本。App 為通用二進位檔，已簽署並通過公證。也可以到
-[Releases](https://github.com/mizorewww/catussh/releases) 下載磁碟映像檔。
+[Releases](https://github.com/mizorewww/Rayon/releases) 下載磁碟映像檔。
 
 ## 功能
 
@@ -66,33 +66,33 @@ brew install --cask mizorewww/tap/catussh
   <img alt="設定中的鍵盤頁：快速鍵以鍵帽顯示，搭配淺白的動作說明，依用途分組。" src="./Resources/Screenshots/keyboard-light.jpg">
 </picture>
 
-## 使用 catussh
+## 使用 Rayon
 
 1. **新增伺服器**：在首頁按 **New Server**（⇧⌘N）。
 2. **連線**：按伺服器卡片。**Files** 開啟 SFTP，**Monitor** 開啟即時用量；工具列切換器可在三者間切換。
 3. **快速連線**：在首頁輸入 `user@host`、`user@host:2222` 或完整的 `ssh` 指令。
 4. **設定**（⌘,）涵蓋 App 與終端機的所有選項。Ghostty 設定項目的支援範圍請見
-   [CONFIGURATION.md](Foundation/CatusshTerminal/CONFIGURATION.md)。
+   [CONFIGURATION.md](Foundation/RayonTerminal/CONFIGURATION.md)。
 
 ## 從原始碼建置
 
 需要 Xcode 26 或以上版本（Swift 6.2）。
 
 ```sh
-git clone https://github.com/mizorewww/catussh.git
-cd catussh
+git clone https://github.com/mizorewww/Rayon.git
+cd Rayon
 bash Workflow/Scripts/install-macos.sh   # Release 建置，並安裝到 /Applications
 ```
 
-也可以開啟 `App.xcworkspace`，執行 **catussh** scheme（macOS）或 **mCatussh**（iOS 16+）。
+也可以開啟 `App.xcworkspace`，執行 **Rayon** scheme（macOS）或 **mRayon**（iOS 16+）。
 
 ## 參與貢獻
 
-Bug 與建議請提到 [issues](https://github.com/mizorewww/catussh/issues)。歡迎 Pull
+Bug 與建議請提到 [issues](https://github.com/mizorewww/Rayon/issues)。歡迎 Pull
 Request，送出前請先執行終端機測試：
 
 ```sh
-swift test --package-path Foundation/CatusshTerminal
+swift test --package-path Foundation/RayonTerminal
 ```
 
 ## 授權

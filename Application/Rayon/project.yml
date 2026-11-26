@@ -1,0 +1,82 @@
+# Native macOS app (AppKit + SwiftUI).
+# Regenerate the project with: xcodegen generate
+name: Rayon
+options:
+  deploymentTarget:
+    macOS: "13.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+packages:
+  RayonModule: { path: ../../Foundation/RayonModule }
+  RayonTerminal: { path: ../../Foundation/RayonTerminal }
+  RayonEditor: { path: ../../Foundation/RayonEditor }
+  MachineStatus: { path: ../../Foundation/MachineStatus }
+  MachineStatusView: { path: ../../Foundation/MachineStatusView }
+  SymbolPicker: { path: ../../Foundation/SymbolPicker }
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "2.7"
+    CURRENT_PROJECT_VERSION: 53
+    DEVELOPMENT_TEAM: ""
+targets:
+  Rayon:
+    type: application
+    platform: macOS
+    sources:
+      - Application
+      - Extension
+      - Interface
+      - path: ../../Resources/EULA
+        buildPhase: resources
+      - path: ../../Resources/LICENSE
+        buildPhase: resources
+      - path: ../../Resources/Rayon.icon
+        buildPhase: resources
+        type: folder.iconcomposer
+    settings:
+      base:
+        PRODUCT_NAME: Rayon
+        CODE_SIGN_IDENTITY: "-"
+        ASSETCATALOG_COMPILER_APPICON_NAME: Rayon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CODE_SIGN_ENTITLEMENTS: macOS/macOS.entitlements
+        ENABLE_HARDENED_RUNTIME: YES
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: macOS/Info.plist
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
+        INFOPLIST_KEY_CFBundleDisplayName: Rayon
+        INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2022 Lakr Aream. Copyright © 2026 mizorewww and Rayon contributors."
+        SWIFT_EMIT_LOC_STRINGS: YES
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: me.mizorewww.rayon.debug
+        Release:
+          PRODUCT_BUNDLE_IDENTIFIER: me.mizorewww.rayon
+    postCompileScripts:
+      - name: Record Git Commit
+        basedOnDependencyAnalysis: false
+        script: |
+          commit="$(git -C "$SRCROOT" rev-parse --short=10 HEAD 2>/dev/null || echo unknown)"
+          if [ "$commit" != unknown ] && ! git -C "$SRCROOT" diff --quiet HEAD -- 2>/dev/null; then
+            commit="$commit-dirty"
+          fi
+          out="$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/BuildInfo.plist"
+          rm -f "$out"
+          /usr/libexec/PlistBuddy -c "Add :GitCommit string $commit" "$out" >/dev/null
+    dependencies:
+      - package: RayonModule
+      - package: RayonTerminal
+      - package: RayonEditor
+      - package: MachineStatus
+      - package: MachineStatusView
+      - package: SymbolPicker
+schemes:
+  Rayon:
+    build:
+      targets:
+        Rayon: all
+    run:
+      config: Debug
+    archive:
+      config: Release

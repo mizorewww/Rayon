@@ -10,8 +10,8 @@
     final class DarwinSSHIntegrationTests: XCTestCase {
         func testGeneratedMonitorScriptOnDarwinHost() throws {
             let environment = ProcessInfo.processInfo.environment
-            guard let host = environment["CATUSSH_SSH_TEST_HOST"], !host.isEmpty else {
-                throw XCTSkip("Set CATUSSH_SSH_TEST_HOST to run the SSH integration test")
+            guard let host = environment["RAYON_SSH_TEST_HOST"], !host.isEmpty else {
+                throw XCTSkip("Set RAYON_SSH_TEST_HOST to run the SSH integration test")
             }
 
             let process = Process()

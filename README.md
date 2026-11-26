@@ -1,4 +1,4 @@
-# catussh
+# Rayon
 
 **English** · [简体中文](./README.zh-Hans.md) · [繁體中文](./README.zh-Hant.md)
 
@@ -12,17 +12,17 @@ monitor, side by side for every server.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./Resources/Screenshots/home-dark.jpg">
-  <img alt="catussh's Home page: Quick Connect at the top and a grid of saved servers, each with Connect, Files and Monitor buttons." src="./Resources/Screenshots/home-light.jpg">
+  <img alt="Rayon's Home page: Quick Connect at the top and a grid of saved servers, each with Connect, Files and Monitor buttons." src="./Resources/Screenshots/home-light.jpg">
 </picture>
 
 ## Install
 
 ```sh
-brew install --cask mizorewww/tap/catussh
+brew install --cask mizorewww/tap/rayon
 ```
 
 Requires macOS 13 or later. The app is universal, signed and notarized. You can also
-download the disk image from [Releases](https://github.com/mizorewww/catussh/releases).
+download the disk image from [Releases](https://github.com/mizorewww/Rayon/releases).
 
 ## Features
 
@@ -71,34 +71,34 @@ download the disk image from [Releases](https://github.com/mizorewww/catussh/rel
   <img alt="Settings, Keyboard: shortcuts as key caps with plain-language actions, grouped by purpose." src="./Resources/Screenshots/keyboard-light.jpg">
 </picture>
 
-## Using catussh
+## Using Rayon
 
 1. **Add a server**: **New Server** on Home (⇧⌘N).
 2. **Connect**: click a server's tile. **Files** opens SFTP and **Monitor** opens live
    usage; the toolbar switcher moves between the three.
 3. **Quick Connect**: type `user@host`, `user@host:2222` or a full `ssh` command on Home.
 4. **Settings** (⌘,) cover the app and the terminal. Ghostty coverage is described in
-   [CONFIGURATION.md](Foundation/CatusshTerminal/CONFIGURATION.md).
+   [CONFIGURATION.md](Foundation/RayonTerminal/CONFIGURATION.md).
 
 ## Build from source
 
 Needs Xcode 26 or later (Swift 6.2).
 
 ```sh
-git clone https://github.com/mizorewww/catussh.git
-cd catussh
+git clone https://github.com/mizorewww/Rayon.git
+cd Rayon
 bash Workflow/Scripts/install-macos.sh   # Release build, installed to /Applications
 ```
 
-Or open `App.xcworkspace` and run the **catussh** scheme (macOS) or **mCatussh** (iOS 16+).
+Or open `App.xcworkspace` and run the **Rayon** scheme (macOS) or **mRayon** (iOS 16+).
 
 ## Contributing
 
-Bugs and ideas go to [issues](https://github.com/mizorewww/catussh/issues). Pull
+Bugs and ideas go to [issues](https://github.com/mizorewww/Rayon/issues). Pull
 requests are welcome; run the terminal tests first:
 
 ```sh
-swift test --package-path Foundation/CatusshTerminal
+swift test --package-path Foundation/RayonTerminal
 ```
 
 ## License

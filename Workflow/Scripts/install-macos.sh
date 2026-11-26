@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Build catussh in Release configuration and install it to /Applications.
+# Build Rayon in Release configuration and install it to /Applications.
 #
 # Usage:
 #   bash Workflow/Scripts/install-macos.sh
@@ -12,7 +12,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-APP_NAME="catussh.app"
+APP_NAME="Rayon.app"
 INSTALL_DIR="${INSTALL_DIR:-/Applications}"
 DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-$ROOT_DIR/DerivedData}"
 
@@ -27,16 +27,16 @@ if [[ ! -d "$APP_PATH" ]]; then
     exit 1
 fi
 
-# 2. A catussh still running from the old copy (or DerivedData) would keep running
+# 2. A Rayon still running from the old copy (or DerivedData) would keep running
 #    from the Trash or shadow the new install. Ask it to quit and wait for it.
-running() { pgrep -f "/catussh\.app/Contents/MacOS/catussh$" >/dev/null 2>&1; }
+running() { pgrep -f "/Rayon\.app/Contents/MacOS/Rayon$" >/dev/null 2>&1; }
 if running; then
-    printf 'Quitting the running catussh…\n'
+    printf 'Quitting the running Rayon…\n'
     osascript -e 'tell application id "me.mizorewww.rayon" to quit' >/dev/null 2>&1 || true
     osascript -e 'tell application id "me.mizorewww.rayon.debug" to quit' >/dev/null 2>&1 || true
     for _ in $(seq 1 10); do running || break; sleep 1; done
     if running; then
-        pkill -f "/catussh\.app/Contents/MacOS/catussh$" 2>/dev/null || true
+        pkill -f "/Rayon\.app/Contents/MacOS/Rayon$" 2>/dev/null || true
         sleep 1
     fi
 fi
@@ -58,7 +58,7 @@ ditto "$APP_PATH" "$DEST"
 # the derived-data path ever does (e.g. after transferring an archive).
 xattr -dr com.apple.quarantine "$DEST" 2>/dev/null || true
 
-# 5. Ensure LaunchServices points me.mizorewww.rayon to /Applications/catussh.app
+# 5. Ensure LaunchServices points me.mizorewww.rayon to /Applications/Rayon.app
 #    rather than any DerivedData build product.
 LSREGISTER="/System/Library/Frameworks/CoreServices.framework/Versions/Current/Frameworks/LaunchServices.framework/Versions/Current/Support/lsregister"
 if [[ -x "$LSREGISTER" ]]; then

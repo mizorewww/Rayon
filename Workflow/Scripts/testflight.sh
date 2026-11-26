@@ -40,7 +40,7 @@ esac
 step() { printf '\n==> %s\n' "$*"; }
 
 OUTPUT_DIR="$DERIVED_DATA_PATH/TestFlight"
-ARCHIVE="$OUTPUT_DIR/catussh.xcarchive"
+ARCHIVE="$OUTPUT_DIR/Rayon.xcarchive"
 mkdir -p "$OUTPUT_DIR"
 
 auth=()
@@ -52,7 +52,7 @@ step "Archiving build $BUILD_NUMBER"
 rm -rf "$ARCHIVE"
 if ! xcodebuild \
     -workspace "$ROOT_DIR/App.xcworkspace" \
-    -scheme mCatussh \
+    -scheme mRayon \
     -configuration Release \
     -destination 'generic/platform=iOS' \
     -derivedDataPath "$OUTPUT_DIR/DerivedData" \

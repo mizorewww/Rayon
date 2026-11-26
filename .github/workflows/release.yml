@@ -38,7 +38,7 @@ jobs:
       - name: Check the tag against the app's version
         if: env.IS_TAG == 'true'
         run: |
-          version="$(sed -n 's/^[[:space:]]*MARKETING_VERSION = \(.*\);/\1/p' Application/catussh/catussh.xcodeproj/project.pbxproj | head -1)"
+          version="$(sed -n 's/^[[:space:]]*MARKETING_VERSION = \(.*\);/\1/p' Application/Rayon/Rayon.xcodeproj/project.pbxproj | head -1)"
           if [[ "$GITHUB_REF_NAME" != "v$version" ]]; then
             echo "::error::The tag is $GITHUB_REF_NAME but the app's version is $version. Set MARKETING_VERSION, or tag v$version."
             exit 1
@@ -89,8 +89,8 @@ jobs:
           # group for the key in iCloud Keychain); without it the app is
           # built as before.
           if [[ -n "$MAC_PROFILE" ]]; then
-            printf '%s' "$MAC_PROFILE" | base64 --decode > "$RUNNER_TEMP/catussh.provisionprofile"
-            echo "MAC_PROVISIONING_PROFILE=$RUNNER_TEMP/catussh.provisionprofile" >> "$GITHUB_ENV"
+            printf '%s' "$MAC_PROFILE" | base64 --decode > "$RUNNER_TEMP/Rayon.provisionprofile"
+            echo "MAC_PROVISIONING_PROFILE=$RUNNER_TEMP/Rayon.provisionprofile" >> "$GITHUB_ENV"
           else
             echo "::warning::No provisioning profile in the repository's secrets: the Mac app cannot sync with iCloud."
           fi
@@ -128,10 +128,10 @@ jobs:
       - name: Keep the products
         uses: actions/upload-artifact@v4
         with:
-          name: catussh
+          name: Rayon
           path: |
-            DerivedData/Release/catussh-*.dmg
-            DerivedData/Release/catussh-*.ipa
+            DerivedData/Release/Rayon-*.dmg
+            DerivedData/Release/Rayon-*.ipa
           if-no-files-found: error
 
       - name: Publish the release
@@ -140,11 +140,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" \
-            DerivedData/Release/catussh-*.dmg DerivedData/Release/catussh-*.ipa \
-            --title "catussh ${GITHUB_REF_NAME#v}" --generate-notes --verify-tag
+            DerivedData/Release/Rayon-*.dmg DerivedData/Release/Rayon-*.ipa \
+            --title "Rayon ${GITHUB_REF_NAME#v}" --generate-notes --verify-tag
 
       - name: Remove the signing keychain
         if: always()
         run: |
           security delete-keychain "$RUNNER_TEMP/release.keychain-db" 2>/dev/null || true
-          rm -f "$RUNNER_TEMP/notary.p8" "$RUNNER_TEMP/catussh.provisionprofile"
+          rm -f "$RUNNER_TEMP/notary.p8" "$RUNNER_TEMP/Rayon.provisionprofile"

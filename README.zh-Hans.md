@@ -1,4 +1,4 @@
-# catussh
+# Rayon
 
 [English](./README.md) · **简体中文** · [繁體中文](./README.zh-Hant.md)
 
@@ -11,17 +11,17 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./Resources/Screenshots/home-dark.jpg">
-  <img alt="catussh 主页：顶部是快速连接，下方是已保存服务器的卡片，每张卡片都有连接、文件和监控按钮。" src="./Resources/Screenshots/home-light.jpg">
+  <img alt="Rayon 主页：顶部是快速连接，下方是已保存服务器的卡片，每张卡片都有连接、文件和监控按钮。" src="./Resources/Screenshots/home-light.jpg">
 </picture>
 
 ## 安装
 
 ```sh
-brew install --cask mizorewww/tap/catussh
+brew install --cask mizorewww/tap/rayon
 ```
 
 需要 macOS 13 或更高版本。应用是通用二进制，已签名并经过公证。也可以在
-[Releases](https://github.com/mizorewww/catussh/releases) 下载磁盘映像。
+[Releases](https://github.com/mizorewww/Rayon/releases) 下载磁盘映像。
 
 ## 功能
 
@@ -66,33 +66,33 @@ brew install --cask mizorewww/tap/catussh
   <img alt="设置中的键盘页：快捷键以键帽显示，配有直白的动作说明，按用途分组。" src="./Resources/Screenshots/keyboard-light.jpg">
 </picture>
 
-## 使用 catussh
+## 使用 Rayon
 
 1. **添加服务器**：在主页点 **New Server**（⇧⌘N）。
 2. **连接**：点服务器卡片。**Files** 打开 SFTP，**Monitor** 打开实时用量；工具栏切换器可在三者间切换。
 3. **快速连接**：在主页输入 `user@host`、`user@host:2222` 或完整的 `ssh` 命令。
 4. **设置**（⌘,）包含应用和终端的全部选项。Ghostty 配置项的覆盖情况见
-   [CONFIGURATION.md](Foundation/CatusshTerminal/CONFIGURATION.md)。
+   [CONFIGURATION.md](Foundation/RayonTerminal/CONFIGURATION.md)。
 
 ## 从源码构建
 
 需要 Xcode 26 或更高版本（Swift 6.2）。
 
 ```sh
-git clone https://github.com/mizorewww/catussh.git
-cd catussh
+git clone https://github.com/mizorewww/Rayon.git
+cd Rayon
 bash Workflow/Scripts/install-macos.sh   # Release 构建，并安装到 /Applications
 ```
 
-也可以打开 `App.xcworkspace`，运行 **catussh** scheme（macOS）或 **mCatussh**（iOS 16+）。
+也可以打开 `App.xcworkspace`，运行 **Rayon** scheme（macOS）或 **mRayon**（iOS 16+）。
 
 ## 参与贡献
 
-Bug 和建议请提到 [issues](https://github.com/mizorewww/catussh/issues)。欢迎 Pull
+Bug 和建议请提到 [issues](https://github.com/mizorewww/Rayon/issues)。欢迎 Pull
 Request，提交前请先跑终端测试：
 
 ```sh
-swift test --package-path Foundation/CatusshTerminal
+swift test --package-path Foundation/RayonTerminal
 ```
 
 ## 许可证

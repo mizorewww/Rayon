@@ -3,11 +3,11 @@
 //  MachineStatusView
 //
 //  The cards of a server's monitor. Each card answers one question with one large
-//  number and shows only what catussh reads from the server's system tools.
+//  number and shows only what Rayon reads from the server's system tools.
 //
 
 import MachineStatus
-import CatusshModule
+import RayonModule
 import SwiftUI
 
 // MARK: - System

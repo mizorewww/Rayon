@@ -1,0 +1,282 @@
+import GhosttyTerminal
+import SwiftUI
+
+#if os(macOS)
+    import AppKit
+
+    /// Ghostty's native terminal view on this platform.
+    public typealias PlatformTerminalView = AppTerminalView
+#else
+    import UIKit
+
+    public typealias PlatformTerminalView = UITerminalView
+#endif
+
+    /// One native terminal per SSH context. Copies of this SwiftUI value share the
+/// same view/session, preserving scrollback when a terminal moves between windows.
+public struct RayonTerminalView: Sendable {
+    nonisolated let session: RayonTerminalSession
+
+    nonisolated public init() { session = RayonTerminalSession() }
+
+    nonisolated public func write(_ string: String) { session.output.write(Data(string.utf8)) }
+
+    nonisolated public func searchTranscript(_ query: String) -> [(lineNumber: Int, line: String)] {
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return [] }
+        let needle = trimmed.lowercased()
+        let lines = session.output.transcriptLines()
+        var matches: [(lineNumber: Int, line: String)] = []
+        for (idx, line) in lines.enumerated() where line.lowercased().contains(needle) {
+            matches.append((idx + 1, line))
+        }
+        return matches
+    }
+
+    nonisolated public func setTerminalFontSize(with size: Int, preferConfigured: Bool = false) {
+        session.callbacks.setFontSize(size)
+        let session = session
+        DispatchQueue.main.async { session.applyFontSize(preferConfigured: preferConfigured) }
+    }
+
+    nonisolated public func requestTerminalSize() -> CGSize { session.callbacks.terminalSize }
+
+    /// Copy on Select, for every terminal: a finished selection is copied to
+    /// the system clipboard. The app stores the preference and sets it here.
+    @MainActor public static func setCopyOnSelect(_ enabled: Bool) {
+        RayonTerminalConfiguration.setCopyOnSelect(enabled)
+    }
+
+    /// Clipboard sharing, for every terminal: programs running on the remote
+    /// host may read and write the system clipboard (OSC 52). The app stores
+    /// the preference and sets it here.
+    @MainActor public static func setClipboardSharing(_ enabled: Bool) {
+        RayonTerminalConfiguration.setClipboardSharing(enabled)
+    }
+
+    /// For a terminal kept mounted while another page is shown: a hidden
+    /// terminal stops rendering and gives up keyboard focus (so typing never
+    /// lands in a session you can't see); shown again, it takes focus back.
+    @MainActor public func setActive(_ active: Bool, focus: Bool = true) {
+        session.setActive(active, focus: focus)
+    }
+
+    @discardableResult
+    nonisolated public func setupBufferChain(callback: ((String) -> Void)?) -> Self {
+        session.callbacks.setInput(callback)
+        return self
+    }
+
+    @discardableResult
+    nonisolated public func setupTitleChain(callback: ((String) -> Void)?) -> Self {
+        session.callbacks.setTitle(callback)
+        return self
+    }
+
+    @discardableResult
+    nonisolated public func setupBellChain(callback: (() -> Void)?) -> Self {
+        session.callbacks.setBell(callback)
+        return self
+    }
+
+    @discardableResult
+    nonisolated public func setupSizeChain(callback: ((CGSize) -> Void)?) -> Self {
+        session.callbacks.setResize(callback)
+        return self
+    }
+}
+
+#if os(macOS)
+    extension RayonTerminalView: NSViewRepresentable {
+        public func makeNSView(context _: Context) -> AppTerminalView { session.platformView() }
+        public func updateNSView(_: AppTerminalView, context _: Context) {}
+    }
+#else
+    extension RayonTerminalView: UIViewRepresentable {
+        public func makeUIView(context _: Context) -> UITerminalView { session.platformView() }
+        public func updateUIView(_: UITerminalView, context _: Context) {}
+    }
+#endif
+
+/// Bridges the shared terminal session core to `RayonTerminalView`.
+public final class TerminalSurfaceBridge: @unchecked Sendable {
+    public let termInterface = RayonTerminalView()
+
+    public init() {}
+
+    public func write(_ string: String) {
+        termInterface.write(string)
+    }
+
+    public func setupBellChain(_ callback: @escaping () -> Void) {
+        termInterface.setupBellChain(callback: callback)
+    }
+
+    public func setupBufferChain(_ callback: @escaping (String) -> Void) {
+        termInterface.setupBufferChain(callback: callback)
+    }
+
+    public func setupTitleChain(_ callback: @escaping (String) -> Void) {
+        termInterface.setupTitleChain(callback: callback)
+    }
+
+    public func setupSizeChain(_ callback: @escaping (CGSize) -> Void) {
+        termInterface.setupSizeChain(callback: callback)
+    }
+}
+
+/// Only the immutable/thread-safe transport objects cross queues. AppKit storage
+/// and all Ghostty view operations are explicitly main-actor isolated.
+final class RayonTerminalSession: @unchecked Sendable {
+    let callbacks: TerminalCallbacks
+    let backend: InMemoryTerminalSession
+    let output: TerminalOutputBuffer
+    @MainActor private var presentation: TerminalPresentation?
+
+    init() {
+        let callbacks = TerminalCallbacks()
+        self.callbacks = callbacks
+        let backend = InMemoryTerminalSession(
+            write: { callbacks.receiveInput($0) },
+            resize: { callbacks.receiveSize(columns: Int($0.columns), rows: Int($0.rows)) }
+        )
+        self.backend = backend
+        output = TerminalOutputBuffer { backend.receive($0) }
+    }
+
+    @MainActor func platformView() -> PlatformTerminalView {
+        if let presentation { return presentation.view }
+        let presentation = TerminalPresentation(session: self)
+        self.presentation = presentation
+        return presentation.view
+    }
+
+    @MainActor func applyFontSize(preferConfigured: Bool) { presentation?.applyFontSize(preferConfigured: preferConfigured) }
+
+    @MainActor func setActive(_ active: Bool, focus: Bool = true) {
+        let view = platformView()
+        view.setSurfaceVisible(active)
+        #if os(macOS)
+            if active, focus {
+                // After SwiftUI has shown the page, so the view is in its window.
+                DispatchQueue.main.async { view.window?.makeFirstResponder(view) }
+            } else if !active, view.window?.firstResponder === view {
+                view.window?.makeFirstResponder(nil)
+            }
+        #elseif targetEnvironment(macCatalyst)
+            if active, focus {
+                DispatchQueue.main.async { view.becomeFirstResponder() }
+            } else if !active, view.isFirstResponder {
+                view.resignFirstResponder()
+            }
+        #else
+            // Taking focus would raise the software keyboard; only let it go.
+            if !active, view.isFirstResponder { view.resignFirstResponder() }
+        #endif
+    }
+}
+
+@MainActor
+private final class TerminalPresentation: NSObject, TerminalSurfaceTitleDelegate,
+    TerminalSurfaceBellDelegate, TerminalSurfaceLifecycleDelegate,
+    TerminalSurfaceClipboardConfirmationDelegate
+{
+    let view: PlatformTerminalView
+    private let callbacks: TerminalCallbacks
+    private let output: TerminalOutputBuffer
+    private var initialFontPreferenceApplied = false
+    private var didAttach = false
+
+    // SSH workers may release the last session reference. Ghostty's coordinator
+    // requires main-actor teardown, including destruction of this view's fields.
+    isolated deinit { NotificationCenter.default.removeObserver(self) }
+
+    init(session: RayonTerminalSession) {
+        callbacks = session.callbacks
+        output = session.output
+        #if os(macOS)
+            view = PlatformTerminalView(frame: .zero)
+        #else
+            view = TouchSelectionTerminalView(frame: .zero)
+        #endif
+        super.init()
+        NotificationCenter.default.addObserver(self, selector: #selector(configurationDidApply), name: RayonTerminalConfiguration.didApply, object: nil)
+        view.delegate = self
+        view.controller = RayonTerminalConfiguration.controller
+        // Never use the default .exec backend: SSH remains owned by Rayon.
+        view.configuration = TerminalSurfaceOptions(
+            backend: .inMemory(session.backend), fontSize: Float(Self.surfaceFontSize(RayonTerminalConfiguration.appliedFontSize ?? Double(callbacks.fontSize)))
+        )
+    }
+
+    func applyFontSize(preferConfigured: Bool) {
+        if preferConfigured && initialFontPreferenceApplied { return }
+        initialFontPreferenceApplied = true
+        if preferConfigured { applyConfiguredFontSize(); return }
+        // Changing configuration.fontSize would recreate the surface and erase
+        // scrollback. A binding action updates the existing surface in place.
+        _ = view.performBindingAction("set_font_size:\(Self.surfaceFontSize(Double(callbacks.fontSize)))")
+    }
+
+    /// The size to give the surface for a font size in points. Ghostty's UIKit
+    /// surface converts points at 96 dpi, as on iOS; on the Mac, Catalyst
+    /// included, a point is 1/72 inch, as the AppKit surface takes it.
+    static func surfaceFontSize(_ points: Double) -> Double {
+        #if targetEnvironment(macCatalyst)
+            points * 72 / 96
+        #else
+            points
+        #endif
+    }
+
+    @objc private func configurationDidApply() {
+        initialFontPreferenceApplied = true
+        applyConfiguredFontSize()
+    }
+
+    private func applyConfiguredFontSize() {
+        let size = RayonTerminalConfiguration.appliedFontSize ?? Double(callbacks.fontSize)
+        _ = view.performBindingAction("set_font_size:\(Self.surfaceFontSize(size))")
+    }
+
+    func terminalDidAttachSurface(_ surface: TerminalSurface) {
+        if !didAttach { applyConfiguredFontSize(); didAttach = true }
+        output.setAttached(true)
+    }
+
+    func terminalDidDetachSurface() { output.setAttached(false) }
+    func terminalDidChangeTitle(_ title: String) { callbacks.receiveTitle(title) }
+    func terminalDidRingBell() { callbacks.receiveBell() }
+
+    func terminalDidRequestClipboardConfirmation(_ request: TerminalClipboardConfirmationRequest) {
+        // Preserve user-initiated paste, without granting a remote program
+        // implicit permission to read or replace the system clipboard.
+        request.respond(allow: request.kind == .paste)
+    }
+}
+
+#if !os(macOS)
+    /// A touch selection is drawn and read by the view itself, never through
+    /// Ghostty's selection, so neither Ghostty's copy binding nor its
+    /// `copy-on-select` sees it. Its menu is where both are settled: the menu
+    /// opens when a selection is made and again when a handle is let go.
+    private final class TouchSelectionTerminalView: UITerminalView {
+        override func touchSelectionMenuItems(for context: TerminalTouchSelectionMenuContext) -> [UIMenuElement] {
+            let text = context.selectedText
+            if RayonTerminalConfiguration.copyOnSelect, !text.isEmpty {
+                UIPasteboard.general.string = text
+            }
+            return super.touchSelectionMenuItems(for: context).map { element in
+                guard let copy = element as? UIAction, copy.identifier.rawValue == "terminal.copy" else { return element }
+                // The stock Copy reads the cells again and copies nothing when
+                // they no longer read back exactly as selected (output arrived,
+                // the viewport moved). Fall back to the text the menu was built for.
+                return UIAction(title: copy.title, image: copy.image, identifier: copy.identifier) { [weak self] _ in
+                    if self?.copySelectedTextToPasteboard() != true, !text.isEmpty {
+                        UIPasteboard.general.string = text
+                    }
+                }
+            }
+        }
+    }
+#endif
