@@ -28,7 +28,7 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
     /// The latest decoded frame, already scaled to the remote framebuffer.
     /// Not published: a frame redraws the canvas (`onFrame`), not the
     /// controls around it, which are drawn again on every publish.
-    public private(set) var frameImage: CGImage?
+    public private(set) var framePicture: RemoteDesktopPicture?
     @Published public private(set) var framebufferSize: CGSize = .zero
     @Published public private(set) var desktopName: String = ""
     /// Every display the host reports; empty until a multi-monitor host answers.
@@ -43,13 +43,13 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
 
     private struct FrameObserver {
         weak var owner: AnyObject?
-        let frame: (CGImage?, CGSize) -> Void
+        let frame: (RemoteDesktopPicture?, CGSize) -> Void
         let cursor: (RemoteCursorInfo?) -> Void
     }
 
     /// `owner`'s calls for every frame and cursor change, until it goes
     /// away or stops; a second call for the same owner replaces the first.
-    public func observeFrames(by owner: AnyObject, frame: @escaping (CGImage?, CGSize) -> Void, cursor: @escaping (RemoteCursorInfo?) -> Void) {
+    public func observeFrames(by owner: AnyObject, frame: @escaping (RemoteDesktopPicture?, CGSize) -> Void, cursor: @escaping (RemoteCursorInfo?) -> Void) {
         frameObservers.removeAll { $0.owner == nil || $0.owner === owner }
         frameObservers.append(FrameObserver(owner: owner, frame: frame, cursor: cursor))
     }
@@ -344,7 +344,7 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
 
     /// Reports a new or updated frame. `frame` may be nil for a metadata-only
     /// update (resize, cursor move).
-    nonisolated public func reportFrame(_ frame: CGImage?, size: CGSize, desktopName: String? = nil) {
+    nonisolated public func reportFrame(_ frame: RemoteDesktopPicture?, size: CGSize, desktopName: String? = nil) {
         if mailbox.post(frame: frame, size: size, desktopName: desktopName) { scheduleDelivery() }
     }
 
@@ -374,10 +374,10 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
             for observer in frameObservers where observer.owner != nil { observer.cursor(cursor) }
         }
         guard let frame = mail.frame else { return }
-        if let image = frame.image { frameImage = image }
+        if let picture = frame.picture { framePicture = picture }
         if framebufferSize != frame.size { framebufferSize = frame.size }
         if let name = frame.desktopName, name != desktopName { desktopName = name }
-        for observer in frameObservers where observer.owner != nil { observer.frame(frameImage, frame.size) }
+        for observer in frameObservers where observer.owner != nil { observer.frame(framePicture, frame.size) }
         let now = Date()
         if now.timeIntervalSince(fpsWindowStart) >= 1 {
             let counted = mailbox.takeFrameCount()
@@ -459,7 +459,7 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
 /// takes them; `post` says when a trip there is to be made.
 final class RemoteDesktopMailbox: @unchecked Sendable {
     struct Frame {
-        var image: CGImage?
+        var picture: RemoteDesktopPicture?
         var size: CGSize
         var desktopName: String?
     }
@@ -472,11 +472,11 @@ final class RemoteDesktopMailbox: @unchecked Sendable {
 
     /// A frame replacing any not yet taken; one without a picture keeps the
     /// waiting one's picture. True when the main actor is to be asked over.
-    func post(frame image: CGImage?, size: CGSize, desktopName: String?) -> Bool {
+    func post(frame picture: RemoteDesktopPicture?, size: CGSize, desktopName: String?) -> Bool {
         lock.withLock {
-            frameCount += image == nil ? 0 : 1
+            frameCount += picture == nil ? 0 : 1
             frame = Frame(
-                image: image ?? frame?.image,
+                picture: picture ?? frame?.picture,
                 size: size,
                 desktopName: desktopName ?? frame?.desktopName
             )

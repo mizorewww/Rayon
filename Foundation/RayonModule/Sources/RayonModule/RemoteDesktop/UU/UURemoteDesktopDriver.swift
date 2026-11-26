@@ -3,8 +3,8 @@
 //  RayonModule
 //
 //  A UU Remote desktop as a RemoteDesktopDriver: a UURemoteKit connection
-//  whose events go to the session, and whose frames become the canvas's
-//  images.
+//  whose events go to the session, and whose decoded frames go to the
+//  canvas as they are.
 //
 
 import CoreGraphics
@@ -31,9 +31,16 @@ final class UURemoteDesktopDriver: RemoteDesktopDriver {
         )
         let session = self.session
         connection.onFrame = { frame in
-            var image: CGImage?
-            VTCreateCGImageFromCVPixelBuffer(frame.pixelBuffer, options: nil, imageOut: &image)
-            session.reportFrame(image, size: CGSize(width: frame.width, height: frame.height))
+            let size = CGSize(width: frame.width, height: frame.height)
+            if CVPixelBufferGetIOSurface(frame.pixelBuffer) != nil {
+                session.reportFrame(.pixelBuffer(frame.pixelBuffer), size: size)
+            } else {
+                // Not on an IOSurface (a software decoder's buffer): a
+                // layer cannot show it as it is.
+                var image: CGImage?
+                VTCreateCGImageFromCVPixelBuffer(frame.pixelBuffer, options: nil, imageOut: &image)
+                session.reportFrame(image.map(RemoteDesktopPicture.image), size: size)
+            }
         }
         connection.onEvent = { event in Self.report(event, to: session) }
         self.connection = connection

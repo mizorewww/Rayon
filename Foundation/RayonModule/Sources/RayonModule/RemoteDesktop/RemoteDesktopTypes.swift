@@ -7,7 +7,27 @@
 //
 
 import CoreGraphics
+import CoreVideo
 import Foundation
+
+/// A picture of the remote screen, as the canvas's layer shows it.
+///
+/// Unchecked: a decoded pixel buffer is not written again once handed out.
+public enum RemoteDesktopPicture: @unchecked Sendable {
+    /// A picture the driver drew itself (VNC's framebuffer).
+    case image(CGImage)
+    /// A decoded video frame backed by an IOSurface, shown as it is: no
+    /// conversion and no copy.
+    case pixelBuffer(CVPixelBuffer)
+
+    /// What a CALayer's `contents` takes for it.
+    var layerContents: Any? {
+        switch self {
+        case let .image(image): image
+        case let .pixelBuffer(buffer): CVPixelBufferGetIOSurface(buffer)?.takeUnretainedValue()
+        }
+    }
+}
 
 /// A failure a remote desktop session can explain to a person.
 public struct RemoteDesktopFailure: Error, Sendable, Equatable {

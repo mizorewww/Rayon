@@ -193,7 +193,7 @@ extension VNCRFBDriver: VNCRFBClientDelegate {
 
     func client(_: VNCRFBClient, didUpdateFrame image: CGImage?, size: CGSize, desktopName: String?) {
         cursorLock.withLock { framebufferSize = size }
-        session?.reportFrame(image, size: size, desktopName: desktopName)
+        session?.reportFrame(image.map(RemoteDesktopPicture.image), size: size, desktopName: desktopName)
     }
 
     func client(_: VNCRFBClient, didUpdateCursor cursor: RemoteCursorInfo?) {
