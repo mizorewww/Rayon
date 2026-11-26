@@ -13,6 +13,7 @@ import Foundation
 enum DBVersion: Int, CaseIterable {
     case empty = 0
     case v1 = 1
+    case v2 = 2
 }
 
 struct DBMigration: Sendable {
@@ -31,6 +32,9 @@ struct DBMigration: Sendable {
             try db.create(table: RecentConnectionRecord.tableName, of: RecentConnectionRecord.self)
             try db.create(table: UploadQueueEntry.tableName, of: UploadQueueEntry.self)
             try db.create(table: SyncMetadata.tableName, of: SyncMetadata.self)
+        },
+        DBMigration(from: .v1, to: .v2) { db in
+            try db.create(table: RDTerminalSettings.tableName, of: RDTerminalSettings.self)
         },
     ]
 

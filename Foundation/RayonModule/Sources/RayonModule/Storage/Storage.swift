@@ -95,11 +95,11 @@ public extension RayonStorage {
         return withSecrets(row)
     }
 
-    /// Writes the record. A change to what syncs marks it changed now and
-    /// queues it for iCloud; a change to this device's own fields alone does
-    /// neither. Returns the record as written.
+    /// Writes the record. A change to what syncs marks it changed (now,
+    /// unless `changed` says when) and queues it for iCloud; a change to this
+    /// device's own fields alone does neither. Returns the record as written.
     @discardableResult
-    func save<T: StoredRecord>(_ record: T) throws -> T {
+    func save<T: StoredRecord>(_ record: T, changed: Date? = nil) throws -> T {
         var record = record
         let existing = row(T.self, id: record.id).map(withSecrets)
         if let existing, !existing.removed, !record.differsInSyncedContent(from: existing) {
@@ -108,7 +108,7 @@ public extension RayonStorage {
             try db.insertOrReplace([record], intoTable: T.tableName)
             return record
         }
-        record.modified = Date().wholeMilliseconds
+        record.modified = (changed ?? Date()).wholeMilliseconds
         record.removed = false
         try writeSecrets(of: record)
         try db.run(transaction: { handle in
@@ -180,7 +180,7 @@ extension RayonStorage {
     /// Every kind of record, in the order a backup or a full upload writes
     /// them (folders before the servers in them).
     static let recordTypes: [any StoredRecord.Type] = [
-        RDFolder.self, RDIdentity.self, RDMachine.self, RDSnippet.self, RDPortForward.self,
+        RDFolder.self, RDIdentity.self, RDMachine.self, RDSnippet.self, RDPortForward.self, RDTerminalSettings.self,
     ]
 
     /// The row, deleted or not, without its secrets.

@@ -4,7 +4,7 @@
 //
 //  Whether iCloud sync is on, and what it carries. Folders go with the
 //  servers. Known host keys, recent connections and the display settings
-//  stay on the device.
+//  stay on the device, as do the terminal's font size and padding.
 //
 
 import Foundation
@@ -16,6 +16,7 @@ public struct CloudSyncPreferences: Equatable, Sendable {
         static let identities = "me.mizorewww.rayon.sync.identities"
         static let snippets = "me.mizorewww.rayon.sync.snippets"
         static let portForwards = "me.mizorewww.rayon.sync.portForwards"
+        static let terminalSettings = "me.mizorewww.rayon.sync.terminalSettings"
     }
 
     public var isOn: Bool
@@ -23,13 +24,22 @@ public struct CloudSyncPreferences: Equatable, Sendable {
     public var identities: Bool
     public var snippets: Bool
     public var portForwards: Bool
+    public var terminalSettings: Bool
 
-    public init(isOn: Bool = false, servers: Bool = true, identities: Bool = true, snippets: Bool = true, portForwards: Bool = true) {
+    public init(
+        isOn: Bool = false,
+        servers: Bool = true,
+        identities: Bool = true,
+        snippets: Bool = true,
+        portForwards: Bool = true,
+        terminalSettings: Bool = true
+    ) {
         self.isOn = isOn
         self.servers = servers
         self.identities = identities
         self.snippets = snippets
         self.portForwards = portForwards
+        self.terminalSettings = terminalSettings
     }
 
     public init(defaults: UserDefaults) {
@@ -41,7 +51,8 @@ public struct CloudSyncPreferences: Equatable, Sendable {
             servers: flag(Key.servers, true),
             identities: flag(Key.identities, true),
             snippets: flag(Key.snippets, true),
-            portForwards: flag(Key.portForwards, true)
+            portForwards: flag(Key.portForwards, true),
+            terminalSettings: flag(Key.terminalSettings, true)
         )
     }
 
@@ -51,6 +62,7 @@ public struct CloudSyncPreferences: Equatable, Sendable {
         defaults.set(identities, forKey: Key.identities)
         defaults.set(snippets, forKey: Key.snippets)
         defaults.set(portForwards, forKey: Key.portForwards)
+        defaults.set(terminalSettings, forKey: Key.terminalSettings)
     }
 
     /// Whether records of `table` go to iCloud and come from it.
@@ -61,6 +73,7 @@ public struct CloudSyncPreferences: Equatable, Sendable {
         case RDIdentity.tableName: return identities
         case RDSnippet.tableName: return snippets
         case RDPortForward.tableName: return portForwards
+        case RDTerminalSettings.tableName: return terminalSettings
         default: return false
         }
     }

@@ -185,4 +185,22 @@ final class ConfigurationRuntimeTests: XCTestCase {
         XCTAssertNotNil(settings.issue)
         XCTAssertEqual(settings.applied.values("font-size"), [])
     }
+
+    /// What syncs leaves the device's own keys, comments and unknown keys
+    /// alone, both ways.
+    @MainActor func testSyncCarriesAllButDeviceBoundKeys() throws {
+        let settings = try scratchSettings("# mine\nfont-size = 16\nwindow-padding-x = 4\nbackground = #111111\nfuture-key = 1\nkeybind = clear\nkeybind = ctrl+k=ignore\n")
+        XCTAssertEqual(TerminalConfigurationSync.entries(of: settings), [
+            "background": ["#111111"], "keybind": ["clear", "ctrl+k=ignore"],
+        ])
+        let remote = ["foreground": ["#eeeeee"], "keybind": ["clear", "ctrl+j=ignore"], "font-size": ["30"], "window-padding-y": ["9"]]
+        let expected: [String: [String]?] = [
+            "background": nil as [String]?, "foreground": ["#eeeeee"], "keybind": ["clear", "ctrl+j=ignore"],
+        ]
+        XCTAssertEqual(TerminalConfigurationSync.changes(from: TerminalConfigurationSync.entries(of: settings), to: remote), expected)
+        TerminalConfigurationSync.adopt(remote, into: settings)
+        XCTAssertEqual(settings.applied.text, "# mine\nfont-size = 16\nwindow-padding-x = 4\nfuture-key = 1\nkeybind = clear\nkeybind = ctrl+j=ignore\nforeground = #eeeeee\n")
+        XCTAssertEqual(TerminalConfigurationSync.entries(of: settings), ["foreground": ["#eeeeee"], "keybind": ["clear", "ctrl+j=ignore"]])
+        XCTAssertTrue(TerminalConfigurationSync.changes(from: TerminalConfigurationSync.entries(of: settings), to: remote).isEmpty)
+    }
 }
