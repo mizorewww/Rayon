@@ -34,12 +34,12 @@ enum ProcParsers {
 
     // MARK: - /proc/stat
 
+    typealias ProcStat = (summary: ServerStatus.ProcessInfoElement?, cores: [String: ServerStatus.ProcessInfoElement])
+
     /// Parses one `/proc/stat` sample into the aggregate "cpu" row and
     /// per-core rows. Kernels before 2.6.33 print fewer columns; missing
     /// trailing columns read as zero.
-    static func parseProcStat(_ raw: String)
-        -> (summary: ServerStatus.ProcessInfoElement?, cores: [String: ServerStatus.ProcessInfoElement])
-    {
+    static func parseProcStat(_ raw: String) -> ProcStat {
         var result = [String: ServerStatus.ProcessInfoElement]()
         var summary: ServerStatus.ProcessInfoElement?
         for line in raw.components(separatedBy: "\n") {
@@ -98,6 +98,37 @@ enum ProcParsers {
             nice: nice,
             sum: min(100, system + user + iowait + nice)
         )
+    }
+
+    // MARK: - /proc/net/dev
+
+    typealias NetworkCounters = (rx: Int, tx: Int)
+
+    /// Parses `/proc/net/dev` into byte counters per interface. A name
+    /// listed twice is ambiguous and dropped.
+    static func parseNetDev(_ raw: String) -> [String: NetworkCounters] {
+        var result = [String: NetworkCounters]()
+        var duplicates = Set<String>()
+        for line in raw.components(separatedBy: "\n") {
+            let parts = line.split(separator: ":", maxSplits: 1)
+            guard parts.count == 2 else { continue }
+            let name = parts[0].trimmingCharacters(in: .whitespaces)
+            let fields = splitWhitespaceRuns(String(parts[1]))
+            // 0 bytes 1 packets … 7 multicast | 8 bytes 9 packets … (transmit)
+            guard fields.count >= 10,
+                  let rx = Int(fields[0]),
+                  let tx = Int(fields[8])
+            else {
+                continue
+            }
+            if result[name] != nil || duplicates.contains(name) {
+                result[name] = nil
+                duplicates.insert(name)
+                continue
+            }
+            result[name] = (rx, tx)
+        }
+        return result
     }
 
     // MARK: - merged monitor script

@@ -21,6 +21,9 @@ public struct MonitorHistory: Equatable, Sendable {
     public init() {}
 
     mutating func record(_ status: ServerStatus) {
+        // No interface at all means the network section did not come
+        // back; that is a gap, not zero traffic.
+        guard !status.network.elements.isEmpty else { return }
         Self.push(Double(status.totalReceivePerSecond), to: &receive)
         Self.push(Double(status.totalTransmitPerSecond), to: &transmit)
     }
@@ -191,9 +194,9 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
                 let identity = identity
                 let username = machine.sshUsernameOverride
                 let connected = await Self.blocking {
-                    // Statics belong to the connection; a reconnect may land
+                    // Statics and counters belong to the connection; a reconnect may land
                     // on a reimaged or different host.
-                    sampler.resetSessionStatics()
+                    sampler.resetConnection()
                     shell.connectAndAuthenticate(
                         identity: identity,
                         autoIdentities: RayonStore.shared.workerIdentitiesForAutoAuth,
@@ -208,11 +211,21 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
                 failures = 0
                 setPhase(.connected)
                 let timeout = max(10, Double(refreshInterval * 2))
-                let status = await Self.blocking { sampler.sample(with: shell, timeout: timeout) }
+                let round = await Self.blocking { sampler.sample(with: shell, timeout: timeout) }
                 // A loop replaced by reconnect() or ended by shutdown()
                 // must not publish over its successor.
                 if Task.isCancelled { break }
-                if let status { snapshot = snapshot.recording(status) }
+                switch round {
+                case let .status(status):
+                    snapshot = snapshot.recording(status)
+                case .baseline:
+                    // Rates need a second reading; take it after a second
+                    // instead of a whole interval.
+                    try? await Task.sleep(nanoseconds: NSEC_PER_SEC)
+                    continue
+                case .empty:
+                    break
+                }
             } else {
                 failures += 1
                 let message = await Self.blocking {

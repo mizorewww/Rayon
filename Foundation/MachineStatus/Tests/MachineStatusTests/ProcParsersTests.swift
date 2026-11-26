@@ -260,12 +260,13 @@ final class ProcParsersTests: XCTestCase {
         XCTAssertEqual(ProcParsers.parseUptime(sections["uptime"] ?? ""), 42)
     }
 
-    func testMonitorScriptSamplesCountersTwiceAroundOneSleep() {
+    func testMonitorScriptReadsEachCounterOnceAndNeverWaits() {
         let script = ServerStatus.monitorScript(includeStatic: true)
-        XCTAssertEqual(script.components(separatedBy: "/bin/cat /proc/stat").count - 1, 2)
-        XCTAssertEqual(script.components(separatedBy: "/bin/cat /proc/net/dev").count - 1, 2)
-        XCTAssertEqual(script.components(separatedBy: "/bin/sleep 1").count - 1, 1)
-        for section in ["cpu-a", "net-a", "cpu-b", "net-b", "mem", "df", "uptime", "loadavg", "hostname", "os-release"] {
+        XCTAssertEqual(script.components(separatedBy: "/bin/cat /proc/stat").count - 1, 1)
+        XCTAssertEqual(script.components(separatedBy: "/bin/cat /proc/net/dev").count - 1, 1)
+        XCTAssertFalse(script.contains("sleep"))
+        XCTAssertFalse(script.contains("top -l"))
+        for section in ["cpu", "net", "mem", "df", "uptime", "loadavg", "hostname", "os-release"] {
             XCTAssertTrue(
                 script.contains("echo '\(ServerStatus.sectionMarkerPrefix)\(section)\(ServerStatus.sectionMarkerSuffix)'"),
                 "missing marker for \(section)"
@@ -282,7 +283,76 @@ final class ProcParsersTests: XCTestCase {
         let script = ServerStatus.monitorScript(includeStatic: false)
         XCTAssertFalse(script.contains("os-release"))
         XCTAssertFalse(script.contains("hostname"))
-        XCTAssertEqual(script.components(separatedBy: "/bin/sleep 1").count - 1, 1)
+    }
+
+    // MARK: - /proc/net/dev
+
+    func testNetDevRatesComeFromTheDifferenceOverTheInterval() {
+        let before = ProcParsers.parseNetDev("""
+        Inter-|   Receive                                                |  Transmit
+         face |bytes    packets errs drop fifo frame compressed multicast|bytes    packets errs drop fifo colls carrier compressed
+            lo: 1000      10    0    0    0     0          0         0     1000      10    0    0    0     0       0          0
+          eth0: 5000      50    0    0    0     0          0         0     2000      20    0    0    0     0       0          0
+          eth1: 9000      50    0    0    0     0          0         0     9000      20    0    0    0     0       0          0
+        """)
+        let after = ProcParsers.parseNetDev("""
+            lo: 1000      10    0    0    0     0          0         0     1000      10    0    0    0     0       0          0
+          eth0: 11000     50    0    0    0     0          0         0     2600      20    0    0    0     0       0          0
+          eth1: 10        50    0    0    0     0          0         0     10        20    0    0    0     0       0          0
+        """)
+        XCTAssertEqual(before["eth0"]?.rx, 5000)
+        let network = ServerStatus.NetworkInfo(before: before, after: after, interval: 3)
+        XCTAssertEqual(network.elements.map(\.device), ["eth0", "lo"])
+        XCTAssertEqual(network.elements.first?.rxBytesPerSec, 2000)
+        XCTAssertEqual(network.elements.first?.txBytesPerSec, 200)
+    }
+
+    // MARK: - sampler rounds
+
+    private func linuxRound(user: Int, idle: Int, uptime: String, rx: Int) -> String {
+        """
+        <<<RAYON-SECTION:platform>>>
+        Linux
+        <<<RAYON-SECTION:uptime>>>
+        \(uptime) 100.00
+        <<<RAYON-SECTION:cpu>>>
+        cpu  \(user) 0 0 \(idle) 0 0 0 0 0 0
+        cpu0 \(user) 0 0 \(idle) 0 0 0 0 0 0
+        <<<RAYON-SECTION:net>>>
+          eth0: \(rx) 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+        <<<RAYON-SECTION:mem>>>
+        \(meminfoFixture)
+        <<<RAYON-SECTION:hostname>>>
+        web-01
+        <<<RAYON-SECTION:os-release>>>
+        PRETTY_NAME="Ubuntu 24.04 LTS"
+        """
+    }
+
+    func testSamplerDiffsCountersAcrossRounds() {
+        let sampler = ServerStatusSampler()
+        XCTAssertEqual(sampler.read(linuxRound(user: 100, idle: 100, uptime: "10.00", rx: 0), graphics: nil, clientClock: 0), .baseline)
+        // The client clock is ignored while the server's uptime advances.
+        guard case let .status(status) = sampler.read(linuxRound(user: 175, idle: 125, uptime: "12.00", rx: 4000), graphics: nil, clientClock: 99) else {
+            return XCTFail("the second round must read")
+        }
+        XCTAssertEqual(status.processor.summary.sumUsed, 75, accuracy: 0.001)
+        XCTAssertEqual(status.processor.cores.first?.sumUser ?? 0, 75, accuracy: 0.001)
+        XCTAssertEqual(status.network.elements.first?.rxBytesPerSec, 2000)
+        XCTAssertEqual(status.system.hostname, "web-01")
+        XCTAssertEqual(status.system.releaseName, "Ubuntu 24.04 LTS")
+        XCTAssertGreaterThan(status.memory.memTotal, 0)
+    }
+
+    func testAnEmptyRoundKeepsTheBaseline() {
+        let sampler = ServerStatusSampler()
+        _ = sampler.read(linuxRound(user: 100, idle: 100, uptime: "10.00", rx: 0), graphics: nil, clientClock: 0)
+        XCTAssertEqual(sampler.read("", graphics: nil, clientClock: 1), .empty)
+        guard case .status = sampler.read(linuxRound(user: 150, idle: 150, uptime: "11.00", rx: 0), graphics: nil, clientClock: 2) else {
+            return XCTFail("an empty round must not cost the baseline")
+        }
+        sampler.resetConnection()
+        XCTAssertEqual(sampler.read(linuxRound(user: 200, idle: 200, uptime: "12.00", rx: 0), graphics: nil, clientClock: 3), .baseline)
     }
 
     // MARK: - /proc/uptime

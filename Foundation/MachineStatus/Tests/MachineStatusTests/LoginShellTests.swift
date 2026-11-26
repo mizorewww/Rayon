@@ -72,6 +72,25 @@
             }
         }
 
+        func testTwoRoundsOnThisMacReadRates() throws {
+            let sampler = ServerStatusSampler()
+            let command = ServerStatus.monitorCommand(includeStatic: true)
+            let first = try run(command, shell: "/bin/sh")
+            XCTAssertEqual(sampler.read(first.output, graphics: nil, clientClock: ProcessInfo.processInfo.systemUptime), .baseline)
+            Thread.sleep(forTimeInterval: 1)
+            let second = try run(command, shell: "/bin/sh")
+            guard case let .status(status) = sampler.read(second.output, graphics: nil, clientClock: ProcessInfo.processInfo.systemUptime) else {
+                return XCTFail("the second round must read")
+            }
+            XCTAssertGreaterThan(status.processor.summary.sumUsed, 0)
+            XCTAssertLessThanOrEqual(status.processor.summary.sumUsed, 100)
+            XCTAssertFalse(status.network.elements.isEmpty)
+            XCTAssertGreaterThan(status.system.totalProcs, 0)
+            XCTAssertGreaterThan(status.system.load1, 0)
+            XCTAssertGreaterThan(status.system.uptimeSec, 0)
+            XCTAssertTrue(status.system.releaseName.contains("macOS"))
+        }
+
         func testTheMonitorCommandIgnoresTheLoginLocale() throws {
             // A decimal-comma locale must not reach the tools the parsers read.
             let command = ServerStatus.posixShellCommand(ServerStatus.monitorScript(includeStatic: false) + "; locale")

@@ -6,59 +6,85 @@
 import Foundation
 
 extension ProcParsers {
-    private static func lastLine(in raw: String, prefix: String) -> String? {
-        raw.components(separatedBy: "\n")
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .last { $0.hasPrefix(prefix) }
+    /// A process's accumulated CPU time in seconds.
+    struct DarwinCPUTime: Equatable, Sendable {
+        let user: Double
+        let total: Double
     }
 
-    static func parseDarwinCPU(_ raw: String) -> ServerStatus.ProcessPercentInfo? {
-        guard let line = lastLine(in: raw, prefix: "CPU usage:") else { return nil }
-        var percentages = [String: Float]()
-        for component in String(line.dropFirst("CPU usage:".count)).split(separator: ",") {
-            let fields = splitWhitespaceRuns(String(component))
-            guard fields.count == 2,
-                  fields[0].hasSuffix("%"),
-                  let value = Float(fields[0].dropLast())
+    /// Reads `ps -A -o pid=,state=,utime=,time=`: per pid the accumulated
+    /// user and user+system time, plus the running and total process
+    /// counts top used to report.
+    static func parseDarwinProcessTimes(_ raw: String) -> (times: [Int: DarwinCPUTime], running: Int) {
+        var times = [Int: DarwinCPUTime]()
+        var running = 0
+        for line in raw.components(separatedBy: "\n") {
+            let fields = splitWhitespaceRuns(line)
+            guard fields.count == 4,
+                  let pid = Int(fields[0]),
+                  let user = parseCPUTime(fields[2]),
+                  let total = parseCPUTime(fields[3])
             else {
                 continue
             }
-            percentages[String(fields[1])] = value
+            times[pid] = DarwinCPUTime(user: user, total: total)
+            if fields[1].hasPrefix("R") { running += 1 }
         }
-        guard let user = percentages["user"],
-              let system = percentages["sys"],
-              let idle = percentages["idle"]
-        else {
-            return nil
-        }
-        return .init(system: system, user: user, iowait: 0, nice: 0, sum: max(0, 100 - idle))
+        return (times, running)
     }
 
-    static func parseDarwinTopLoad(_ raw: String) -> ServerStatus.SystemLoadInternal {
-        var result = ServerStatus.SystemLoadInternal()
-        guard let loadLine = lastLine(in: raw, prefix: "Load Avg:"),
-              let processesLine = lastLine(in: raw, prefix: "Processes:")
-        else {
-            return result
+    /// Parses ps's `[[dd-]hh:]mm:ss.cc` CPU time into seconds.
+    static func parseCPUTime(_ token: Substring) -> Double? {
+        var rest = token
+        var days = 0.0
+        if let dash = rest.firstIndex(of: "-") {
+            guard let value = Double(rest[..<dash]) else { return nil }
+            days = value
+            rest = rest[rest.index(after: dash)...]
         }
-        let loads = splitWhitespaceRuns(String(loadLine.dropFirst("Load Avg:".count)))
-        let processes = splitWhitespaceRuns(processesLine)
-        guard loads.count == 3,
-              let load1 = Float(loads[0].trimmingCharacters(in: CharacterSet(charactersIn: ","))),
-              let load5 = Float(loads[1].trimmingCharacters(in: CharacterSet(charactersIn: ","))),
-              let load15 = Float(loads[2].trimmingCharacters(in: CharacterSet(charactersIn: ","))),
-              processes.count >= 5,
-              let total = Int(processes[1]),
-              let running = Int(processes[3])
-        else {
-            return result
+        let parts = rest.split(separator: ":")
+        guard (2 ... 3).contains(parts.count) else { return nil }
+        var seconds = 0.0
+        for part in parts {
+            guard let value = Double(part) else { return nil }
+            seconds = seconds * 60 + value
         }
-        result.load1avg = load1
-        result.load5avg = load5
-        result.load15avg = load15
-        result.runningProcess = running
-        result.totalProcess = total
-        return result
+        return days * 86400 + seconds
+    }
+
+    /// CPU usage between two process-time readings `interval` seconds
+    /// apart, over `cpuCount` logical CPUs. A pid new since the last
+    /// reading counts whole (it started inside the interval); a pid whose
+    /// time went back was reused and counts the same way.
+    static func darwinCPUPercent(
+        before: [Int: DarwinCPUTime],
+        after: [Int: DarwinCPUTime],
+        interval: Double,
+        cpuCount: Int
+    ) -> ServerStatus.ProcessPercentInfo {
+        let capacity = interval * Double(cpuCount)
+        guard capacity > 0 else { return .init() }
+        var user = 0.0
+        var total = 0.0
+        for (pid, now) in after {
+            if let then = before[pid], now.total >= then.total {
+                user += max(0, now.user - then.user)
+                total += now.total - then.total
+            } else {
+                user += now.user
+                total += now.total
+            }
+        }
+        let used = min(100, total / capacity * 100)
+        let userShare = min(used, user / capacity * 100)
+        return .init(system: Float(used - userShare), user: Float(userShare), iowait: 0, nice: 0, sum: Float(used))
+    }
+
+    /// Reads `sysctl -n vm.loadavg` ("{ 1.23 2.34 3.45 }").
+    static func parseDarwinLoadavg(_ raw: String) -> (load1: Float, load5: Float, load15: Float)? {
+        let values = splitWhitespaceRuns(raw).compactMap { Float($0) }
+        guard values.count == 3 else { return nil }
+        return (values[0], values[1], values[2])
     }
 
     static func parseDarwinUptime(_ raw: String) -> Double {

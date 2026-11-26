@@ -46,44 +46,18 @@ public extension ServerStatus {
             self.cores = build
         }
 
-        /// Builds from two `/proc/stat` payloads sampled about a second
-        /// apart; nil when either side is missing the aggregate cpu row.
-        public init?(statBefore: String?, statAfter: String?) {
-            guard let statBefore, let statAfter else { return nil }
-            let resultPriv = ProcParsers.parseProcStat(statBefore)
-            let resultCurr = ProcParsers.parseProcStat(statAfter)
-
-            guard let privSum = resultPriv.summary,
-                  let currSum = resultCurr.summary
-            else {
+        /// Builds from two `/proc/stat` readings; nil when either is
+        /// missing the aggregate cpu row.
+        init?(before: ProcParsers.ProcStat, after: ProcParsers.ProcStat) {
+            guard let beforeSummary = before.summary, let afterSummary = after.summary else {
                 return nil
             }
-            let privAll = resultPriv.cores
-            let currAll = resultCurr.cores
-
-            let sum = ProcParsers.calculatePercent(priv: privSum, curr: currSum)
-            var resultPerCore = [String: ProcessPercentInfo]()
-
-            for (key, priv) in privAll {
-                guard let curr = currAll[key] else {
-                    continue
-                }
-                resultPerCore[key] = ProcParsers.calculatePercent(priv: priv, curr: curr)
+            var cores = [String: ProcessPercentInfo]()
+            for (key, then) in before.cores {
+                guard let now = after.cores[key] else { continue }
+                cores[key] = ProcParsers.calculatePercent(priv: then, curr: now)
             }
-
-            self.init(summary: sum, cores: resultPerCore)
-        }
-
-        /// Builds from macOS `top -l 2`; the last sample contains the
-        /// interval CPU percentages. Darwin does not expose per-core samples
-        /// through top, so the core list stays empty.
-        public init?(darwinTop: String?) {
-            guard let darwinTop,
-                  let summary = ProcParsers.parseDarwinCPU(darwinTop)
-            else {
-                return nil
-            }
-            self.init(summary: summary, cores: [:])
+            self.init(summary: ProcParsers.calculatePercent(priv: beforeSummary, curr: afterSummary), cores: cores)
         }
     }
 

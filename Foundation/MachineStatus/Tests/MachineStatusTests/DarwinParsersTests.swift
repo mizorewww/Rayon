@@ -7,35 +7,46 @@
 import XCTest
 
 final class DarwinParsersTests: XCTestCase {
-    private let topFixture = """
-    Processes: 700 total, 10 running, 690 sleeping, 3000 threads
-    Load Avg: 1.11, 2.22, 3.33
-    CPU usage: 10.0% user, 20.0% sys, 70.0% idle
-    PhysMem: 10G used, 6G unused.
-    Processes: 743 total, 14 running, 729 sleeping, 3558 threads
-    Load Avg: 98.70, 115.18, 55.43
-    CPU usage: 50.31% user, 32.91% sys, 16.77% idle
-    PhysMem: 15G used, 90M unused.
-    """
-
-    func testTopUsesLastSampleForCPUAndLoad() {
-        let processor = ServerStatus.ProcessorInfo(darwinTop: topFixture)
-        XCTAssertEqual(processor?.summary.sumUser ?? 0, 50.31, accuracy: 0.001)
-        XCTAssertEqual(processor?.summary.sumSystem ?? 0, 32.91, accuracy: 0.001)
-        XCTAssertEqual(processor?.summary.sumUsed ?? 0, 83.23, accuracy: 0.001)
-        XCTAssertEqual(processor?.cores.count, 0)
-
-        let load = ProcParsers.parseDarwinTopLoad(topFixture)
-        XCTAssertEqual(load.load1avg, 98.70, accuracy: 0.001)
-        XCTAssertEqual(load.load5avg, 115.18, accuracy: 0.001)
-        XCTAssertEqual(load.load15avg, 55.43, accuracy: 0.001)
-        XCTAssertEqual(load.runningProcess, 14)
-        XCTAssertEqual(load.totalProcess, 743)
+    func testProcessTimesParseEveryPsTimeFormat() {
+        let listing = """
+            1 Ss    20:20.13  79:18.20
+          345 R    1:03:47.84 2-01:55:54.50
+          348 S       0:54.69   1:57.69
+          bad line
+        """
+        let parsed = ProcParsers.parseDarwinProcessTimes(listing)
+        XCTAssertEqual(parsed.times.count, 3)
+        XCTAssertEqual(parsed.running, 1)
+        XCTAssertEqual(parsed.times[1]?.total ?? 0, 4758.2, accuracy: 0.001)
+        XCTAssertEqual(parsed.times[345]?.user ?? 0, 3827.84, accuracy: 0.001)
+        // 2 days, 1 hour, 55 minutes, 54.5 seconds.
+        XCTAssertEqual(parsed.times[345]?.total ?? 0, 179_754.5, accuracy: 0.001)
     }
 
-    func testMalformedTopReturnsNoReading() {
-        XCTAssertNil(ServerStatus.ProcessorInfo(darwinTop: "not top output"))
-        XCTAssertEqual(ProcParsers.parseDarwinTopLoad("not top output"), .init())
+    func testDarwinCPUIsTheProcessTimeDifferenceOverCapacity() {
+        let before: [Int: ProcParsers.DarwinCPUTime] = [
+            1: .init(user: 10, total: 20),
+            2: .init(user: 5, total: 5),
+            3: .init(user: 100, total: 100), // exits before the next round
+        ]
+        let after: [Int: ProcParsers.DarwinCPUTime] = [
+            1: .init(user: 12, total: 23), // 2s user, 1s system
+            2: .init(user: 6, total: 6), // 1s user
+            4: .init(user: 1, total: 2), // new: counts whole
+        ]
+        // 2 CPUs over 3 seconds: 6 CPU-seconds of capacity, 6 used.
+        let percent = ProcParsers.darwinCPUPercent(before: before, after: after, interval: 3, cpuCount: 2)
+        XCTAssertEqual(percent.sumUsed, 100, accuracy: 0.001)
+        XCTAssertEqual(percent.sumUser, 66.667, accuracy: 0.001)
+        XCTAssertEqual(percent.sumSystem, 33.333, accuracy: 0.001)
+        XCTAssertEqual(ProcParsers.darwinCPUPercent(before: after, after: after, interval: 3, cpuCount: 2).sumUsed, 0)
+    }
+
+    func testDarwinLoadavg() {
+        let load = ProcParsers.parseDarwinLoadavg("{ 10.83 6.62 6.06 }\n")
+        XCTAssertEqual(load?.load1 ?? 0, 10.83, accuracy: 0.001)
+        XCTAssertEqual(load?.load15 ?? 0, 6.06, accuracy: 0.001)
+        XCTAssertNil(ProcParsers.parseDarwinLoadavg("garbage"))
     }
 
     func testDarwinMemoryUsesPageSizeAndSwapUnits() {
@@ -88,12 +99,16 @@ final class DarwinParsersTests: XCTestCase {
         en0        1500  <Link#11>   be:c4:9b:88:a5:08    25     0      3000       40     0      6000     0
         gif0       1280  <Link#2>                             1     0        64        2     0       128     0
         """
-        let network = ServerStatus.NetworkInfo(netstatBefore: before, netstatAfter: after)
-        XCTAssertEqual(network?.elements.count, 3)
-        XCTAssertEqual(network?.elements.first { $0.device == "en0" }?.rxBytesPerSec, 2000)
-        XCTAssertEqual(network?.elements.first { $0.device == "en0" }?.txBytesPerSec, 4000)
-        XCTAssertEqual(network?.elements.first { $0.device == "lo0" }?.rxBytesPerSec, 50)
-        XCTAssertEqual(network?.elements.first { $0.device == "gif0" }?.txBytesPerSec, 128)
+        let network = ServerStatus.NetworkInfo(
+            before: ProcParsers.parseDarwinNetstat(before),
+            after: ProcParsers.parseDarwinNetstat(after),
+            interval: 1
+        )
+        XCTAssertEqual(network.elements.count, 3)
+        XCTAssertEqual(network.elements.first { $0.device == "en0" }?.rxBytesPerSec, 2000)
+        XCTAssertEqual(network.elements.first { $0.device == "en0" }?.txBytesPerSec, 4000)
+        XCTAssertEqual(network.elements.first { $0.device == "lo0" }?.rxBytesPerSec, 50)
+        XCTAssertEqual(network.elements.first { $0.device == "gif0" }?.txBytesPerSec, 128)
     }
 
     func testDarwinUptimeAndReleaseName() {
@@ -111,7 +126,9 @@ final class DarwinParsersTests: XCTestCase {
 
     func testMonitorScriptContainsDarwinProbesAndLinuxFallbacks() {
         let script = ServerStatus.monitorScript(includeStatic: true)
-        XCTAssertTrue(script.contains("/usr/bin/top -l 2 -n 0 -s 1"))
+        XCTAssertTrue(script.contains("/bin/ps -A -o pid=,state=,utime=,time="))
+        XCTAssertTrue(script.contains("vm.loadavg"))
+        XCTAssertTrue(script.contains("hw.logicalcpu"))
         XCTAssertTrue(script.contains("/usr/sbin/netstat -ibn"))
         XCTAssertTrue(script.contains("/usr/bin/vm_stat"))
         XCTAssertTrue(script.contains("vm.swapusage"))

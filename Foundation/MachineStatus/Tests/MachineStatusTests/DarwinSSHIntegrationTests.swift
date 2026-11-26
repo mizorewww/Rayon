@@ -46,14 +46,10 @@
             XCTAssertEqual(sections["hostname"]?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, false)
             XCTAssertTrue(ProcParsers.parseDarwinReleaseName(sections["os-release"] ?? "").contains("macOS"))
 
-            let processor = ServerStatus.ProcessorInfo(darwinTop: sections["darwin-top"])
-            XCTAssertNotNil(processor)
-            XCTAssertGreaterThanOrEqual(processor?.summary.sumUsed ?? -1, 0)
-            XCTAssertLessThanOrEqual(processor?.summary.sumUsed ?? 101, 100)
-
-            let load = ProcParsers.parseDarwinTopLoad(sections["darwin-top"] ?? "")
-            XCTAssertGreaterThan(load.totalProcess, 0)
-            XCTAssertGreaterThanOrEqual(load.load1avg, 0)
+            let processes = ProcParsers.parseDarwinProcessTimes(sections["cpu"] ?? "")
+            XCTAssertGreaterThan(processes.times.count, 0)
+            XCTAssertGreaterThan(Int((sections["ncpu"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0, 0)
+            XCTAssertNotNil(ProcParsers.parseDarwinLoadavg(sections["loadavg"] ?? ""))
             XCTAssertGreaterThan(ProcParsers.parseDarwinUptime(sections["uptime"] ?? ""), 0)
 
             let memory = ServerStatus.MemoryInfo(darwinMemory: sections["mem"] ?? "")
@@ -65,8 +61,7 @@
             let fileSystem = ServerStatus.FileSystemInfo(dfPk: sections["df"] ?? "")
             XCTAssertTrue(fileSystem.elements.contains { $0.mountPoint == "/" })
 
-            let network = ServerStatus.NetworkInfo(netstatBefore: sections["net-a"], netstatAfter: sections["net-b"])
-            XCTAssertEqual(network?.elements.isEmpty, false)
+            XCTAssertFalse(ProcParsers.parseDarwinNetstat(sections["net"] ?? "").isEmpty)
         }
     }
 #endif
