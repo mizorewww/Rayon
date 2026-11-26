@@ -76,6 +76,12 @@ public actor CloudSync {
         preferences = new
         guard new.isOn else {
             stop()
+            // Saves keep queueing while off; without this the queue would
+            // pin every deletion's tombstone for good. With no engine
+            // state, turning sync on starts as a sign-in, which queues
+            // everything again.
+            storage.forgetSyncState()
+            saveState(nil)
             publish(.off)
             return
         }

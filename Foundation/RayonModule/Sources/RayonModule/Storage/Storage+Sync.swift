@@ -103,6 +103,15 @@ extension RayonStorage {
         try? db.delete(fromTable: SyncMetadata.tableName)
     }
 
+    /// Forgets what iCloud has and what is still to send it, for sync
+    /// turned off: queued deletions no longer pin their tombstones, and
+    /// turning sync on again sends everything.
+    func forgetSyncState() {
+        try? db.delete(fromTable: UploadQueueEntry.tableName)
+        removeAllSystemFields()
+        purgeTombstones()
+    }
+
     // MARK: Changes from other devices
 
     enum MergeOutcome: Equatable {

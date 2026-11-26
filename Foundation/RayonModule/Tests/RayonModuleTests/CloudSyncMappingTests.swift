@@ -118,6 +118,25 @@ final class CloudSyncMappingTests: XCTestCase {
         XCTAssertEqual(storage.pendingUploads().count, 1)
     }
 
+    /// Saves keep queueing while sync is off; turning it off (or starting
+    /// with it off) drops the queue, so deletions do not pin their
+    /// tombstones forever.
+    func testSyncOffForgetsTheQueueAndLetsTombstonesGo() async throws {
+        let machine = try storage.save(RDMachine(remoteAddress: "a", remotePort: "22", name: "a"))
+        try storage.delete(RDMachine.self, ids: [machine.id])
+        storage.setSystemFields(Data([1]), for: RayonStorage.recordName(table: RDMachine.tableName, id: machine.id))
+        let stateURL = test.directory.appendingPathComponent("sync-state.json")
+        try Data("{}".utf8).write(to: stateURL)
+
+        await CloudSync(storage: storage).apply(CloudSyncPreferences(isOn: false))
+
+        XCTAssertTrue(storage.pendingUploads().isEmpty)
+        XCTAssertNil(storage.systemFields(for: RayonStorage.recordName(table: RDMachine.tableName, id: machine.id)))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: stateURL.path), "turning sync on again starts as a sign-in")
+        storage.purgeTombstones(now: Date().addingTimeInterval(RayonStorage.tombstoneLifetime + 1))
+        XCTAssertNil(storage.row(RDMachine.self, id: machine.id))
+    }
+
     func testTheScopeDecidesWhatSyncs() {
         var preferences = CloudSyncPreferences(isOn: true, identities: false)
         XCTAssertTrue(preferences.syncs(table: RDMachine.tableName))
