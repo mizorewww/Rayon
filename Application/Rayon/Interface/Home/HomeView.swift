@@ -74,10 +74,14 @@ struct QuickConnectHero: View {
                 .foregroundStyle(.rxInk)
 
             VStack(alignment: .leading, spacing: RX.Space.s2) {
-                HStack(spacing: RX.Space.s2) {
-                    TextField("ssh root@www.example.com -p 22 ↵", text: $command)
+                HStack(spacing: RX.Space.s3) {
+                    Image(systemName: "terminal")
+                        .font(.system(size: 22, weight: .regular))
+                        .foregroundStyle(.rxInkSecondary)
+                        .accessibilityHidden(true)
+                    TextField("user@host:22", text: $command)
                         .textFieldStyle(.plain)
-                        .font(.system(.headline, design: .rounded))
+                        .font(.system(size: 22, weight: .regular, design: .monospaced))
                         .disableAutocorrection(true)
                         .focused($focused)
                         .onSubmit(connect)
@@ -86,22 +90,11 @@ struct QuickConnectHero: View {
                             refreshSuggestion()
                         }
                         .accessibilityLabel("Quick Connect")
-                        .padding(.horizontal, 10)
-                        .frame(height: 34)
-                        .background(
-                            RoundedRectangle(cornerRadius: RX.Radius.lg, style: .continuous)
-                                .fill(Color.primary.opacity(0.06))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: RX.Radius.lg, style: .continuous)
-                                        .strokeBorder(focused ? Color.rxAccent.opacity(0.6) : Color.rxHairline, lineWidth: focused ? 1.5 : 0.5)
-                                )
-                        )
-                        .animation(.easeOut(duration: 0.2), value: focused)
                     Button(action: connect) {
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(canConnect ? Color.white : Color.rxInkTertiary)
-                            .frame(width: 32, height: 32)
+                            .frame(width: 40, height: 40)
                             .background(Circle().fill(canConnect ? Color.rxAccent : Color.primary.opacity(0.08)))
                     }
                     .buttonStyle(.plain)
@@ -111,6 +104,17 @@ struct QuickConnectHero: View {
                     .help("Connect (↩)")
                     .accessibilityLabel("Connect")
                 }
+                .padding(.leading, RX.Space.s5)
+                .padding(.trailing, RX.Space.s2)
+                .frame(height: 64)
+                .background(
+                    Capsule()
+                        .fill(Color.rxSurface)
+                        .overlay(Capsule().strokeBorder(focused ? Color.clear : Color.rxHairline, lineWidth: 0.5))
+                        .overlay(Capsule().strokeBorder(Color.rxAccent.opacity(focused ? 0.5 : 0), lineWidth: 1.5))
+                        .shadow(color: .black.opacity(focused ? 0.12 : 0.06), radius: focused ? 14 : 10, y: 4)
+                )
+                .animation(.easeOut(duration: 0.2), value: focused)
 
                 if let suggestion {
                     Button {
@@ -137,7 +141,7 @@ struct QuickConnectHero: View {
                     .transition(.offset(y: -6).combined(with: .opacity))
                 }
             }
-            .frame(maxWidth: 440)
+            .frame(maxWidth: 640)
 
             Group {
                 if let parsed {

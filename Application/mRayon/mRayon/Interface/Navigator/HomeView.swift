@@ -83,8 +83,11 @@ struct QuickConnectCard: View {
                 .foregroundStyle(.rxInk)
             VStack(alignment: .leading, spacing: RX.Space.s2) {
                 HStack(spacing: RX.Space.s2) {
-                    TextField("ssh root@www.example.com -p 22 ↵", text: $command)
-                        .font(.system(.headline, design: .rounded))
+                    Image(systemName: "terminal")
+                        .font(.system(size: 18))
+                        .foregroundStyle(.rxInkSecondary)
+                    TextField("ssh user@host -p 22", text: $command)
+                        .font(.system(size: 19, design: .monospaced))
                         .textInputAutocapitalization(.never)
                         .disableAutocorrection(true)
                         .keyboardType(.URL)
@@ -94,18 +97,11 @@ struct QuickConnectCard: View {
                             if newValue.hasPrefix("ssh ssh ") { command.removeFirst("ssh ".count) }
                             refreshSuggestion()
                         }
-                        .padding(.horizontal, 12)
-                        .frame(height: 44)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(.thickMaterial)
-                                .shadow(color: .black.opacity(0.08), radius: 10, y: 4)
-                        )
                     Button(action: connect) {
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 17, weight: .semibold, design: .rounded))
+                            .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(.rxOnAccent)
-                            .frame(width: 44, height: 44)
+                            .frame(width: 40, height: 40)
                             .background(Circle().fill(Color.rxAccent))
                     }
                     .disabled(!canConnect)
@@ -113,6 +109,14 @@ struct QuickConnectCard: View {
                     .simultaneousGesture(LongPressGesture().onEnded { _ in importFromPasteboard() })
                     .accessibilityLabel("Connect")
                 }
+                .padding(.leading, RX.Space.s4)
+                .padding(.trailing, 6)
+                .frame(height: 56)
+                .background(
+                    Capsule()
+                        .fill(.thickMaterial)
+                        .shadow(color: .black.opacity(0.12), radius: 14, y: 6)
+                )
                 if let suggestion {
                     Button {
                         command = suggestion

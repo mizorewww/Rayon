@@ -94,7 +94,7 @@ final class MRayonUITests: XCTestCase {
     /// Opens a Quick Connect session to a closed local port: the Ghostty terminal
     /// appears, reports the failed connection, and offers Reconnect and Close.
     func testQuickConnectOpensTheGhosttyTerminal() {
-        let field = app.textFields["ssh root@www.example.com -p 22 ↵"]
+        let field = app.textFields["ssh user@host -p 22"]
         XCTAssertTrue(field.waitForExistence(timeout: 10))
         field.tap()
         field.typeText("ssh test@127.0.0.1 -p 1\n")
