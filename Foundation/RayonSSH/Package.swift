@@ -15,9 +15,10 @@ let package = Package(
         // 0.12.0 still pins the Citadel author's own.
         .package(url: "https://github.com/orlandos-nl/Citadel.git", exact: "0.12.0"),
         // Citadel's swift-nio-ssh fork (0.3.5) with apple/swift-nio-ssh#144
-        // applied: without it, data arriving on a channel this side has
-        // closed adjusts the closed channel's window and traps.
-        .package(url: "https://github.com/mizorewww/swift-nio-ssh.git", revision: "71fb9f87bd1be78745c28058a504ac8d1bfe4dda"),
+        // applied (data arriving on a channel this side has closed adjusted
+        // the closed channel's window and trapped), and a child channel's
+        // closeFuture never failing, as NIOAsyncChannel requires.
+        .package(url: "https://github.com/mizorewww/swift-nio-ssh.git", revision: "c6282c05103042b5f904dd5cd40a7953829aa4a0"),
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.81.0"),
         .package(url: "https://github.com/apple/swift-nio-transport-services.git", from: "1.21.0"),
         .package(url: "https://github.com/apple/swift-crypto.git", "3.12.3" ..< "4.0.0"),

@@ -402,6 +402,21 @@ final class SSHLiveTests: XCTestCase {
         }
     }
 
+    /// A finished channel waits for the server to confirm its close; a
+    /// connection that ends first closes it with an error, which must not
+    /// fail its closeFuture (NIOAsyncChannel asserts it never fails).
+    func testClosingAConnectionWhileAChannelWaitsForItsClose() async throws {
+        for _ in 0 ..< 10 {
+            let connection = try await connect([.password(password)])
+            let channel = try await connection.openDirectTCPIP(host: "127.0.0.1", port: 9001)
+            try await channel.executeThenClose { inbound, outbound in
+                for try await _ in inbound {}
+                outbound.finish()
+                connection.channel.close(promise: nil)
+            }
+        }
+    }
+
     // MARK: SFTP
 
     func testUploadsKeepTheirPermissions() async throws {

@@ -418,9 +418,9 @@ extension Channel {
 }
 
 /// swift-nio-ssh refuses an EOF sent after the peer's ("Sent EOF out of
-/// sequence"), fails the channel's closeFuture with it, and NIOAsyncChannel
-/// asserts that never happens. Once the peer has sent EOF both directions
-/// are done, so sending ours is a full close instead.
+/// sequence") and closes the channel with that error. Once the peer has
+/// sent EOF both directions are done, so sending ours is a full close
+/// instead.
 final class SSHHalfClosureGuard: ChannelDuplexHandler, RemovableChannelHandler {
     typealias InboundIn = Any
     typealias OutboundIn = Any
