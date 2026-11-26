@@ -299,31 +299,43 @@ final class StorageTests: XCTestCase {
         XCTAssertNil(RayonStore.workerMachine(for: machine.id))
     }
 
-    /// Saves here and merges of other devices' older versions running at
-    /// once: every save wins over the stale version and stays queued.
-    func testSavesAndMergesDoNotOverwriteEachOther() async throws {
+    /// A save here and a merge of another device's version never
+    /// interleave: while one holds the write lock the other waits, so
+    /// neither decides on a row the other is about to replace. The lock is
+    /// held here, and both are shown to wait for it.
+    func testSavesAndMergesDoNotOverwriteEachOther() throws {
         let original = try storage.save(RDMachine(remoteAddress: "a", remotePort: "22", name: "v0"))
-        var stale = original
-        stale.name = "stale"
-        stale.modified = original.modified.addingTimeInterval(-60)
+        var theirs = original
+        theirs.name = "there"
+        theirs.modified = original.modified.addingTimeInterval(60)
+        var mine = original
+        mine.name = "here"
         let storage = storage
-        let older = stale
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask {
-                for index in 1 ... 100 {
-                    var edit = storage.record(RDMachine.self, id: original.id)!
-                    edit.name = "v\(index)"
-                    _ = try? storage.save(edit)
-                }
+        let (merged, saved) = (DispatchGroup(), DispatchGroup())
+        merged.enter()
+        saved.enter()
+        storage.writes.withLock { _ in
+            DispatchQueue.global().async { [theirs] in
+                _ = try? storage.mergeRemote(theirs)
+                merged.leave()
             }
-            group.addTask {
-                for _ in 1 ... 100 {
-                    _ = try? storage.mergeRemote(older)
-                }
+            DispatchQueue.global().async { [mine] in
+                _ = try? storage.save(mine)
+                saved.leave()
             }
+            XCTAssertEqual(merged.wait(timeout: .now() + 0.3), .timedOut, "the merge waits for the lock")
+            XCTAssertEqual(saved.wait(timeout: .now() + 0.3), .timedOut, "the save waits for the lock")
+            XCTAssertEqual(storage.record(RDMachine.self, id: original.id)?.name, "v0")
         }
-        XCTAssertEqual(storage.record(RDMachine.self, id: original.id)?.name, "v100")
-        XCTAssertEqual(storage.pendingUploads().map(\.objectId), [original.id])
+        merged.wait()
+        saved.wait()
+        // Either order is a whole one: the save after the merge wins and is
+        // queued; the merge after the save wins and nothing is left to send.
+        switch storage.record(RDMachine.self, id: original.id)?.name {
+        case "here": XCTAssertEqual(storage.pendingUploads().map(\.objectId), [original.id])
+        case "there": XCTAssertEqual(storage.pendingUploads().map(\.objectId), [])
+        case let name: XCTFail("unexpected \(String(describing: name))")
+        }
     }
 
     /// A database a newer Rayon wrote is left where it is, untouched, and
