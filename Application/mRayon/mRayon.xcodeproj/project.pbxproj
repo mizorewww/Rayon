@@ -581,7 +581,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = "mRayon/mRayon-iOS.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 53;
+				CURRENT_PROJECT_VERSION = 54;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = LT98S43NKA;
 				ENABLE_PREVIEWS = YES;
@@ -608,7 +608,7 @@
 					"$(SRCROOT)/mRayon/Interface/Machine",
 					"$(SRCROOT)/mRayon/Interface/Navigator",
 				);
-				MARKETING_VERSION = 2.7;
+				MARKETING_VERSION = 2.8;
 				PRODUCT_BUNDLE_IDENTIFIER = me.mizorewww.rayon;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTS_MACCATALYST = YES;
@@ -627,7 +627,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = "mRayon/mRayon-iOS.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 53;
+				CURRENT_PROJECT_VERSION = 54;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = LT98S43NKA;
 				ENABLE_PREVIEWS = YES;
@@ -654,7 +654,7 @@
 					"$(SRCROOT)/mRayon/Interface/Machine",
 					"$(SRCROOT)/mRayon/Interface/Navigator",
 				);
-				MARKETING_VERSION = 2.7;
+				MARKETING_VERSION = 2.8;
 				PRODUCT_BUNDLE_IDENTIFIER = me.mizorewww.rayon;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTS_MACCATALYST = YES;

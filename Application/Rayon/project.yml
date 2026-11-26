@@ -16,8 +16,8 @@ packages:
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    MARKETING_VERSION: "2.7"
-    CURRENT_PROJECT_VERSION: 53
+    MARKETING_VERSION: "2.8"
+    CURRENT_PROJECT_VERSION: 54
     DEVELOPMENT_TEAM: ""
 targets:
   Rayon:
