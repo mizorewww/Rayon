@@ -81,12 +81,18 @@ public actor SSHConnectionPool {
     }
 
     /// Everything that decides how the server is reached and signed in to,
-    /// down to the identities' secrets: a connection signed in with a
-    /// password or key since changed is not handed out again.
-    private static func key(for machine: RDMachine) -> String {
+    /// down to the identities' secrets and those of its jump hosts: a
+    /// connection signed in with a password or key since changed is not
+    /// handed out again.
+    static func key(for machine: RDMachine, visited: Set<RDMachine.ID> = []) -> String {
         let identities = machine.associatedIdentity == nil
             ? RayonStore.workerIdentitiesForAutoAuth
             : RayonStore.workerAssociatedIdentity(for: machine).map { [$0] } ?? []
+        var visited = visited
+        visited.insert(machine.id)
+        let jump = machine.proxyJumpMachineID
+            .flatMap { visited.contains($0) ? nil : RayonStore.workerMachine(for: $0) }
+            .map { key(for: $0, visited: visited) } ?? ""
         return [
             machine.id.uuidString,
             machine.remoteAddress,
@@ -97,13 +103,18 @@ public actor SSHConnectionPool {
             machine.proxyJumpMachineID?.uuidString ?? "",
             machine.uuDeviceID,
             secretsFingerprint([machine.cloudflareServiceTokenID, machine.cloudflareServiceTokenSecret], identities),
+            jump,
         ].joined(separator: "\u{1F}")
     }
 
-    /// A SHA-256 digest of what the identities sign in with and of
-    /// `fields`, so the key never holds a secret itself.
+    /// Keys the fingerprints; made anew at each launch and never stored.
+    private static let fingerprintKey = SymmetricKey(size: .bits256)
+
+    /// An HMAC of what the identities sign in with and of `fields`, so the
+    /// key never holds a secret itself, nor a digest that a guess could be
+    /// checked against.
     static func secretsFingerprint(_ fields: [String], _ identities: [RDIdentity]) -> String {
-        var hash = SHA256()
+        var hash = HMAC<SHA256>(key: fingerprintKey)
         let values = fields + identities.flatMap { identity in
             [identity.id.uuidString, identity.username, identity.password, identity.privateKey, identity.useSSHAgent ? "agent" : ""]
         }
