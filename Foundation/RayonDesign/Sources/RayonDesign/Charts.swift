@@ -2,9 +2,11 @@
 //  Charts.swift
 //  RayonDesign
 //
-//  Usage bars, split bars, legends, sparklines and core tiles.
+//  Usage bars, split bars, legends, sparklines and core tiles. The bars
+//  and sparklines are Swift Charts marks.
 //
 
+import Charts
 import SwiftUI
 
 /// Usage color for disks and VRAM: `warning` at 75%, `danger` at 90%.
@@ -16,10 +18,7 @@ public func rxUsageColor(_ percent: Double, base: Color = .rxAccent) -> Color {
 
 /// A 6pt rounded track on `surface-sunken` with one or more segments.
 public struct UsageBar: View {
-    public struct Segment: Identifiable {
-        /// Stable across rebuilds as long as a bar's segments keep their
-        /// labels; one bar must not repeat a label.
-        public var id: String { label }
+    public struct Segment {
         let label: String
         let fraction: Double
         let color: Color
@@ -48,21 +47,11 @@ public struct UsageBar: View {
     }
 
     public var body: some View {
-        GeometryReader { proxy in
-            HStack(spacing: 2) {
-                ForEach(segments) { segment in
-                    let fraction = max(0, min(1, segment.fraction.isFinite ? segment.fraction : 0))
-                    let width = proxy.size.width * fraction - 2
-                    // Segments thinner than the bar is tall read as dots; leave them out.
-                    if width >= height {
-                        Capsule()
-                            .fill(segment.color)
-                            .frame(width: width)
-                    }
-                }
-                Spacer(minLength: 0)
-            }
-        }
+        StackedBar(
+            parts: segments.map { (min(1, max(0, $0.fraction.isFinite ? $0.fraction : 0)), $0.color) },
+            domain: 1,
+            cornerRadius: height / 2
+        )
         .frame(height: height)
         .background(Capsule().fill(Color.rxSurfaceSunken))
         .clipShape(Capsule())
@@ -79,22 +68,62 @@ public struct SplitBar: View {
     }
 
     public var body: some View {
-        GeometryReader { proxy in
-            let total = max(parts.map { max(0, $0.value) }.reduce(0, +), 0.0001)
-            let gaps = CGFloat(max(0, parts.count - 1)) * 4
-            HStack(spacing: 4) {
-                ForEach(parts.indices, id: \.self) { index in
-                    let width = (proxy.size.width - gaps) * CGFloat(max(0, parts[index].value) / total)
-                    if width >= 2 {
-                        RoundedRectangle(cornerRadius: width < 8 ? 1 : RX.Radius.sm, style: .continuous)
-                            .fill(parts[index].color)
-                            .frame(width: width)
-                    }
-                }
-            }
-        }
+        let values = parts.map { max(0, $0.value.isFinite ? $0.value : 0) }
+        StackedBar(
+            parts: zip(values, parts).map { ($0, $1.color) },
+            domain: max(values.reduce(0, +), 0.0001),
+            cornerRadius: RX.Radius.sm
+        )
         .frame(height: 20)
-        .animation(.easeOut(duration: 0.3), value: parts.map(\.value))
+        .animation(.easeOut(duration: 0.3), value: values)
+    }
+}
+
+/// One horizontal bar of adjacent parts, laid end to end from zero over
+/// `0...domain`, with a hairline gap between parts.
+private struct StackedBar: View {
+    struct Part: Identifiable {
+        let id: Int
+        let start: Double
+        let end: Double
+        let color: Color
+    }
+
+    let parts: [Part]
+    let domain: Double
+    let cornerRadius: CGFloat
+
+    init(parts: [(value: Double, color: Color)], domain: Double, cornerRadius: CGFloat) {
+        var start = 0.0
+        var laid: [Part] = []
+        // Part of the domain left as a gap between parts; tiny parts drop.
+        let gap = domain * 0.006
+        for (index, part) in parts.enumerated() {
+            let end = start + part.value
+            if end - start > gap * 2 {
+                laid.append(Part(id: index, start: start, end: end - gap, color: part.color))
+            }
+            start = end
+        }
+        self.parts = laid
+        self.domain = domain
+        self.cornerRadius = cornerRadius
+    }
+
+    var body: some View {
+        Chart(parts) { part in
+            BarMark(
+                xStart: .value("Start", part.start),
+                xEnd: .value("End", part.end)
+            )
+            .foregroundStyle(part.color)
+            .cornerRadius(cornerRadius)
+        }
+        .chartXScale(domain: 0 ... domain)
+        .chartXAxis(.hidden)
+        .chartYAxis(.hidden)
+        .chartLegend(.hidden)
+        .accessibilityHidden(true)
     }
 }
 
@@ -148,37 +177,26 @@ public struct Sparkline: View {
     }
 
     public var body: some View {
-        GeometryReader { proxy in
-            let points = makePoints(in: proxy.size)
-            ZStack {
-                if points.count > 1 {
-                    Path { path in
-                        path.move(to: CGPoint(x: points[0].x, y: proxy.size.height))
-                        points.forEach { path.addLine(to: $0) }
-                        path.addLine(to: CGPoint(x: points[points.count - 1].x, y: proxy.size.height))
-                        path.closeSubpath()
-                    }
-                    .fill(fill)
-                    Path { path in
-                        path.move(to: points[0])
-                        points.dropFirst().forEach { path.addLine(to: $0) }
-                    }
-                    .stroke(color, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
+        // Headroom above the peak unless the caller fixed the scale.
+        let top = max(maxValue ?? (values.max() ?? 1) * 1.15, 0.0001)
+        Chart {
+            if values.count > 1 {
+                ForEach(Array(values.enumerated()), id: \.offset) { index, value in
+                    AreaMark(x: .value("Sample", index), y: .value("Value", min(value, top)))
+                        .foregroundStyle(fill)
+                    LineMark(x: .value("Sample", index), y: .value("Value", min(value, top)))
+                        .foregroundStyle(color)
+                        .lineStyle(StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round))
                 }
             }
         }
+        .chartXScale(domain: 0 ... max(1, values.count - 1))
+        .chartYScale(domain: 0 ... top)
+        .chartXAxis(.hidden)
+        .chartYAxis(.hidden)
+        .chartLegend(.hidden)
         .animation(.easeOut(duration: 0.3), value: values)
         .accessibilityHidden(true)
-    }
-
-    private func makePoints(in size: CGSize) -> [CGPoint] {
-        guard values.count > 1 else { return [] }
-        let top = max(maxValue ?? (values.max() ?? 1), 0.0001) * (maxValue == nil ? 1.15 : 1)
-        let step = size.width / CGFloat(values.count - 1)
-        return values.enumerated().map { index, value in
-            let ratio = max(0, min(1, value / top))
-            return CGPoint(x: CGFloat(index) * step, y: size.height - 2 - (size.height - 4) * CGFloat(ratio))
-        }
     }
 }
 
@@ -227,6 +245,8 @@ public struct RXProgressBar: View {
     let fraction: Double
     public init(_ fraction: Double) { self.fraction = fraction }
     public var body: some View {
-        UsageBar(fraction: fraction, height: 4)
+        ProgressView(value: min(1, max(0, fraction.isFinite ? fraction : 0)))
+            .progressViewStyle(.linear)
+            .tint(.rxAccent)
     }
 }
