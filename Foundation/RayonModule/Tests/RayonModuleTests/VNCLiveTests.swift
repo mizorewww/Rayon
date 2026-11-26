@@ -7,11 +7,14 @@
 //  A throwaway server: an Alpine container running Xvfb + x11vnc, e.g.
 //  `docker run --rm -d -p 5900:5900 -e VNC_PASSWORD=secret <image>`.
 //  VNC_LIVE_SNAPSHOT=<path.png> saves the latest decoded frame.
+//  The SSH test also wants VNC_LIVE_SSH_PORT / _USER / _PASSWORD: an sshd
+//  in the same container, forwarding to the VNC server's loopback port.
 //
 
 @testable import RayonModule
 import CoreGraphics
 import ImageIO
+import NSRemoteShell
 import XCTest
 
 final class VNCLiveTests: XCTestCase {
@@ -111,6 +114,49 @@ final class VNCLiveTests: XCTestCase {
         client.start()
         await fulfillment(of: [recorder.ended], timeout: 15)
         XCTAssertTrue(recorder.failure?.contains("without authentication") == true, recorder.failure ?? "no failure")
+        client.stop()
+    }
+
+    /// `vncOverSSH`: the client runs over a direct-tcpip channel bridged to
+    /// a socketpair — no local listening port involved.
+    func testConnectsOverSSHDirectTCPIP() async throws {
+        let server = try server()
+        let environment = ProcessInfo.processInfo.environment
+        guard let sshPort = environment["VNC_LIVE_SSH_PORT"],
+              let user = environment["VNC_LIVE_SSH_USER"],
+              let password = environment["VNC_LIVE_SSH_PASSWORD"]
+        else {
+            throw XCTSkip("Set VNC_LIVE_SSH_PORT, _USER and _PASSWORD to run the VNC-over-SSH test")
+        }
+        let shell = NSRemoteShell()
+            .setupConnectionHost(server.host)
+            .setupConnectionPort(NSNumber(value: Int(sshPort) ?? 22))
+            .setupConnectionTimeout(10)
+        shell.requestConnectAndWait()
+        shell.authenticate(with: user, andPassword: password)
+        XCTAssertTrue(shell.isAuthenticated)
+        defer {
+            shell.requestDisconnectAndWait()
+            shell.destroyPermanently()
+        }
+        let fd = shell.openDirectTCPIPSocketPair(toHost: "127.0.0.1", port: 5900)
+        XCTAssertGreaterThan(fd, 0)
+
+        let recorder = Recorder()
+        let client = VNCRFBClient(
+            configuration: .init(host: server.host, port: 0, password: server.password, shared: true,
+                                 transport: VNCSocketPairTransport(fd: fd)),
+            delegate: recorder
+        )
+        client.start()
+        await fulfillment(of: [recorder.connected, recorder.framed], timeout: 15)
+        XCTAssertNil(recorder.failure)
+        // Full refreshes keep flowing through the channel.
+        for _ in 0 ..< 5 {
+            client.requestUpdate(incremental: false)
+        }
+        try await Task.sleep(for: .seconds(2))
+        XCTAssertNil(recorder.failure)
         client.stop()
     }
 

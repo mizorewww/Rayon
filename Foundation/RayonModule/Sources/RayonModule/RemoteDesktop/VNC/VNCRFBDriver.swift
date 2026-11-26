@@ -71,24 +71,20 @@ final class VNCRFBDriver: RemoteDesktopDriver, @unchecked Sendable {
                 machine: machine,
                 targetPort: UInt16(machine.vncPort) ?? 5900
             )
-            stateLock.withLock { self.tunnel = tunnel }
-            // Opening the SSH session blocks; keep it off the cooperative pool.
-            let opened = await withCheckedContinuation { continuation in
-                DispatchQueue.global().async { continuation.resume(returning: tunnel.start()) }
+            let proceed = stateLock.withLock { () -> Bool in
+                guard !stopped else { return false }
+                self.tunnel = tunnel
+                return true
             }
-            switch opened {
-            case let .failure(error):
+            guard proceed else { return }
+            do {
+                transport = try await tunnel.open()
+            } catch let error as RemoteDesktopFailure {
                 reportPhase(.failed(error.message))
                 return
-            case let .success(localPort):
-                do {
-                    transport = try await VNCConnection.connect(host: "127.0.0.1", port: localPort, timeout: 10)
-                } catch {
-                    reportPhase(.failed("The SSH tunnel opened but the VNC port could not be dialed."))
-                    return
-                }
+            } catch {
+                return // stopped while opening
             }
-            guard !isStopped() else { return }
         }
 
         let identity = RayonStore.shared.workerAssociatedIdentity(for: machine)
