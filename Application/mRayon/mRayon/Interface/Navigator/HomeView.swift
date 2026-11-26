@@ -80,6 +80,7 @@ struct HomeView: View {
 }
 
 /// Type `user@host:port` or a full ssh command and connect. Uses identities that authenticate automatically.
+/// A saved server's name, alone or after "ssh ", connects to that server.
 struct QuickConnectCard: View {
     @EnvironmentObject var store: RayonStore
     @State private var command = ""
@@ -90,7 +91,14 @@ struct QuickConnectCard: View {
         SSHCommandReader(quickConnect: command)
     }
 
+    /// The saved server the input names, when it is not a `user@host`.
+    var savedServer: RDMachine? {
+        parsed == nil ? store.machine(matchingQuickConnect: command) : nil
+    }
+
     var body: some View {
+        let savedServer = savedServer
+        let canConnect = parsed != nil || savedServer != nil
         VStack(spacing: RX.Space.s3) {
             HStack(spacing: RX.Space.s2) {
                 Image(systemName: "terminal")
@@ -114,8 +122,8 @@ struct QuickConnectCard: View {
                         .frame(width: 40, height: 40)
                         .background(Circle().fill(Color.rxAccent))
                 }
-                .disabled(parsed == nil)
-                .opacity(parsed == nil ? 0.35 : 1)
+                .disabled(!canConnect)
+                .opacity(canConnect ? 1 : 0.35)
                 .simultaneousGesture(LongPressGesture().onEnded { _ in importFromPasteboard() })
                 .accessibilityLabel("Connect")
             }
@@ -127,6 +135,13 @@ struct QuickConnectCard: View {
                     .fill(.thickMaterial)
                     .shadow(color: .black.opacity(0.12), radius: 14, y: 6)
             )
+            if let savedServer {
+                Label("\(savedServer.name) · \(savedServerTarget(savedServer))", systemImage: "server.rack")
+                    .font(.system(size: 13, design: .monospaced))
+                    .foregroundStyle(.rxInkSecondary)
+                    .lineLimit(1)
+                    .accessibilityLabel("Connects to the saved server \(savedServer.name)")
+            }
             if let suggestion {
                 Button {
                     command = suggestion
@@ -149,9 +164,22 @@ struct QuickConnectCard: View {
         .padding(.vertical, RX.Space.s5)
     }
 
+    /// Where a saved server connects: `user@host` and the port when not 22.
+    func savedServerTarget(_ machine: RDMachine) -> String {
+        let username = machine.sshLoginUsername(identity: store.associatedIdentity(for: machine))
+        var target = username.isEmpty ? machine.remoteAddress : "\(username)@\(machine.remoteAddress)"
+        if machine.remotePort != "22" { target += ":\(machine.remotePort)" }
+        return target
+    }
+
     func connect() {
-        guard let parsed else { return }
-        TerminalManager.shared.begin(for: parsed)
+        if let parsed {
+            TerminalManager.shared.begin(for: parsed)
+        } else if let savedServer {
+            ServerActions.openTerminal(savedServer.id)
+        } else {
+            return
+        }
         command = ""
     }
 

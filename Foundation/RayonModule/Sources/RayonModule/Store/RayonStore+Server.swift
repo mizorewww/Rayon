@@ -20,6 +20,26 @@ public extension RayonStore {
         return identity.username.isEmpty ? nil : identity
     }
 
+    /// The saved server an alias names, as `ssh myserver` names a Host in
+    /// ~/.ssh/config: the first whose name matches, ignoring case, else the
+    /// first whose address does. Nil when none does.
+    func machine(matchingAlias alias: String) -> RDMachine? {
+        let alias = alias.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !alias.isEmpty else { return nil }
+        let saved = machineGroup.machines.filter { $0.isNotPlaceholder() }
+        func matches(_ value: String) -> Bool {
+            value.caseInsensitiveCompare(alias) == .orderedSame
+        }
+        return saved.first { matches($0.name) } ?? saved.first { matches($0.remoteAddress) }
+    }
+
+    /// The saved server Quick Connect input names: `myserver` or
+    /// `ssh myserver`. Nil when the input is not a lone alias or no saved
+    /// server matches it.
+    func machine(matchingQuickConnect input: String) -> RDMachine? {
+        SSHCommandReader.quickConnectAlias(input).flatMap { machine(matchingAlias: $0) }
+    }
+
     @discardableResult
     func registerServer(
         withAddress: String,

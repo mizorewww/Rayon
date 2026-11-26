@@ -196,6 +196,25 @@ public extension SSHCommandReader {
         self.init(command: trimmed)
     }
 
+    /// The saved-server alias typed into Quick Connect: one word, with or
+    /// without the "ssh " prefix, the way `ssh myserver` names a Host in
+    /// ~/.ssh/config. Nil for anything else, such as `user@host` or a
+    /// command with options.
+    static func quickConnectAlias(_ input: String) -> String? {
+        var trimmed = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.lowercased().hasPrefix("ssh ") {
+            trimmed = String(trimmed.dropFirst(4)).trimmingCharacters(in: .whitespaces)
+        }
+        // "ssh" alone is the command still being typed, not an alias.
+        guard !trimmed.isEmpty,
+              trimmed.lowercased() != "ssh",
+              !trimmed.contains(where: \.isWhitespace),
+              !trimmed.contains("@"),
+              !trimmed.hasPrefix("-")
+        else { return nil }
+        return trimmed
+    }
+
     /// The first candidate worth offering as a completion of what was
     /// typed into Quick Connect: it shares the typed prefix, is not the
     /// typed string itself, and the input is long enough to mean something.

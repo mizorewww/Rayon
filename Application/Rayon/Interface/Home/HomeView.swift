@@ -69,7 +69,9 @@ struct HomeView: View {
 
 /// The big, fast way in: type `user@host` and press Return. Focused on open.
 /// What was typed is read back as separate User, Host and Port tokens, so it is
-/// clear what Return will connect to before pressing it.
+/// clear what Return will connect to before pressing it. A saved server's
+/// name, alone or after "ssh ", connects to that server, the way
+/// `ssh myserver` reads a Host from ~/.ssh/config.
 struct QuickConnectHero: View {
     @EnvironmentObject var store: RayonStore
     @State private var command = ""
@@ -80,8 +82,15 @@ struct QuickConnectHero: View {
         SSHCommandReader(quickConnect: command)
     }
 
+    /// The saved server the input names, when it is not a `user@host`.
+    var savedServer: RDMachine? {
+        parsed == nil ? store.machine(matchingQuickConnect: command) : nil
+    }
+
     var body: some View {
         let parsed = parsed
+        let savedServer = savedServer
+        let canConnect = parsed != nil || savedServer != nil
         VStack(spacing: RX.Space.s4) {
             HStack(spacing: RX.Space.s3) {
                 Image(systemName: "terminal")
@@ -102,14 +111,14 @@ struct QuickConnectHero: View {
                 Button(action: connect) {
                     Image(systemName: "arrow.right")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(parsed == nil ? Color.rxInkTertiary : Color.white)
+                        .foregroundStyle(canConnect ? Color.white : Color.rxInkTertiary)
                         .frame(width: 40, height: 40)
-                        .background(Circle().fill(parsed == nil ? Color.primary.opacity(0.08) : Color.rxAccent))
+                        .background(Circle().fill(canConnect ? Color.rxAccent : Color.primary.opacity(0.08)))
                 }
                 .buttonStyle(.plain)
-                .disabled(parsed == nil)
-                .scaleEffect(parsed == nil ? 0.94 : 1)
-                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: parsed == nil)
+                .disabled(!canConnect)
+                .scaleEffect(canConnect ? 1 : 0.94)
+                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: canConnect)
                 .help("Connect (↩)")
                 .accessibilityLabel("Connect")
             }
@@ -130,14 +139,18 @@ struct QuickConnectHero: View {
                 if let parsed {
                     ParsedCommand(command: parsed)
                         .transition(.opacity.combined(with: .offset(y: -6)))
+                } else if let savedServer {
+                    SavedServerTarget(machine: savedServer)
+                        .transition(.opacity.combined(with: .offset(y: -6)))
                 } else if !"ssh ".hasPrefix(command.lowercased()) {
-                    Text("Type user@host, user@host:port or a full ssh command.")
+                    Text("Type user@host, user@host:port, a saved server's name or a full ssh command.")
                         .font(.rxHelp)
                         .foregroundStyle(.rxInkSecondary)
                         .transition(.opacity)
                 }
             }
             .animation(.easeOut(duration: 0.2), value: parsed)
+            .animation(.easeOut(duration: 0.2), value: savedServer?.id)
 
             Button {
                 AppRouter.shared.openLocalTerminal()
@@ -209,8 +222,13 @@ struct QuickConnectHero: View {
     }
 
     func connect() {
-        guard let parsed else { return }
-        AppRouter.shared.openTerminal(command: parsed)
+        if let parsed {
+            AppRouter.shared.openTerminal(command: parsed)
+        } else if let savedServer {
+            ServerTool.terminal.show(savedServer.id)
+        } else {
+            return
+        }
         command = ""
     }
 
@@ -228,14 +246,41 @@ private struct ParsedCommand: View {
 
     var body: some View {
         HStack(spacing: RX.Space.s2) {
-            token("User", command.username, systemImage: "person", tint: .rxAccent)
-            token("Host", command.remoteAddress, systemImage: "network", tint: .rxSeries2)
-            token("Port", command.remotePort, systemImage: "number", tint: .rxInkSecondary)
+            QuickConnectToken(title: "User", value: command.username, systemImage: "person", tint: .rxAccent)
+            QuickConnectToken(title: "Host", value: command.remoteAddress, systemImage: "network", tint: .rxSeries2)
+            QuickConnectToken(title: "Port", value: command.remotePort, systemImage: "number", tint: .rxInkSecondary)
         }
         .accessibilityElement(children: .combine)
     }
+}
 
-    func token(_ title: String, _ value: String, systemImage: String, tint: Color) -> some View {
+/// The saved server a typed alias names, read back like a parsed command.
+private struct SavedServerTarget: View {
+    @EnvironmentObject var store: RayonStore
+    let machine: RDMachine
+
+    var body: some View {
+        HStack(spacing: RX.Space.s2) {
+            QuickConnectToken(title: "Server", value: machine.name, systemImage: "server.rack", tint: .rxAccent)
+            let username = machine.sshLoginUsername(identity: store.associatedIdentity(for: machine))
+            if !username.isEmpty {
+                QuickConnectToken(title: "User", value: username, systemImage: "person", tint: .rxAccent)
+            }
+            QuickConnectToken(title: "Host", value: machine.remoteAddress, systemImage: "network", tint: .rxSeries2)
+            QuickConnectToken(title: "Port", value: machine.remotePort, systemImage: "number", tint: .rxInkSecondary)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+/// One part of what Return connects to: a caps title and its value.
+private struct QuickConnectToken: View {
+    let title: String
+    let value: String
+    let systemImage: String
+    let tint: Color
+
+    var body: some View {
         HStack(spacing: 5) {
             Image(systemName: systemImage)
                 .font(.system(size: 10, weight: .semibold))
