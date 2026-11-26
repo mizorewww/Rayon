@@ -95,7 +95,8 @@ public enum EditorIndentation: Equatable, Sendable {
     public static func detect(in text: String) -> EditorIndentation {
         var tabs = 0
         var spaceWidths: [Int: Int] = [:]
-        for line in text.split(separator: "\n", omittingEmptySubsequences: true).prefix(2000) {
+        // Bounded split: only the first lines are looked at, however long the file.
+        for line in text.split(separator: "\n", maxSplits: 2000, omittingEmptySubsequences: true).prefix(2000) {
             if line.hasPrefix("\t") {
                 tabs += 1
             } else if line.hasPrefix(" ") {
