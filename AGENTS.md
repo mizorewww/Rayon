@@ -8,6 +8,7 @@ Rayon is an SSH / server workflow client for macOS and iOS: terminals, files, po
 - **Don't reinvent the wheel.** Before writing a parser, lock/queue, protocol codec, layout container, alert system, chart or bridge, use Apple frameworks, a dependency the project or FlowDown (`../FlowDown`) already uses, or a mature community package. When you meet an existing hand-rolled wheel in code you touch, replace it rather than extend it.
 - **Native over custom.** Use system navigation, `Table`, `Picker`, `Menu`, `Form`, menu-bar commands and Dynamic Type. No private SPI, no `.opacity(0)` hidden buttons, no polling timers standing in for events.
 - **Strong types and structured concurrency.** `Optional` instead of sentinel objects, `UUID` instead of string keys, `@MainActor` / `actor` / `async` instead of threads, `usleep`, `@unchecked Sendable` and `nonisolated(unsafe)`.
+- **Keep every feature and setting.** Refactors change how things work, never what the user can do: no user-facing feature or setting is removed unless the user asks. The terminal is Ghostty through `Lakr233/libghostty-spm`; use its APIs rather than reimplementing them.
 - **Breaking changes are allowed** when they remove legacy weight (old data formats, migrations, compatibility decoders). Delete dead code instead of keeping it "just in case".
 - All code text (identifiers, comments, logs, UI strings in source) is English.
 
@@ -32,7 +33,7 @@ Rayon is an SSH / server workflow client for macOS and iOS: terminals, files, po
 - Both apps take their version from `Configuration/Version.xcconfig`. `make scan-license` fails when a pinned dependency is missing from `Resources/LICENSE`; add its notice when you add a dependency.
 - CI (`.github/workflows/ci.yml`) runs `make build-macos`, `make build-ios`, `make test` and `make scan-license` on every pull request; auto-merge waits for it.
 - A change is done when it builds for every platform it touches, its tests pass, and the affected feature works in the running app.
-- UI verification uses `cua-driver` (AX-driven clicks/typing on Rayon's pid). Never inject global keyboard/mouse input (System Events keystrokes, CGEvent), and never loop relaunching the app — launch once, then drive it in place.
+- UI verification uses `cua-driver` in the background: launch with its `launch_app` (never `open` or `bring_to_front`) and drive Rayon by pid with AX actions, so the user's foreground is never touched. Never inject global keyboard/mouse input (System Events keystrokes, CGEvent), and never loop relaunching the app — launch once, then drive it in place.
 - Do not connect to the user's real servers or accounts for testing; use local hosts (e.g. a local `sshd` / container) or the debug preview hooks in `RayonApp.swift`.
 
 ## Style
