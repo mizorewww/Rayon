@@ -351,9 +351,12 @@ private struct ServerRow: View {
     }
 
     func identityName(_ machine: RDMachine) -> String {
-        guard let aid = machine.associatedIdentity, let uid = UUID(uuidString: aid) else { return "Automatic" }
+        guard let aid = machine.associatedIdentity, let uid = UUID(uuidString: aid) else {
+            // The server's own user name, tried with each automatic identity.
+            return machine.sshUsernameOverride.map { "\($0) · Automatic" } ?? "Automatic"
+        }
         let identity = store.identityGroup[uid]
-        return identity.username.isEmpty ? "Missing" : identity.username
+        return identity.username.isEmpty ? "Missing" : machine.sshLoginUsername(identity: identity)
     }
 }
 

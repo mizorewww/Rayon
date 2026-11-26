@@ -113,7 +113,8 @@ final class VNCSSHTunnel: @unchecked Sendable {
         shell.applyConnection(for: machine, timeout: RayonStore.shared.workerTimeoutNumber)
         let result = shell.connectAndAuthenticate(
             identity: RayonStore.shared.workerAssociatedIdentity(for: machine),
-            autoIdentities: RayonStore.shared.workerIdentitiesForAutoAuth
+            autoIdentities: RayonStore.shared.workerIdentitiesForAutoAuth,
+            username: machine.sshUsernameOverride
         )
         guard result == .success else {
             let reason = result == .connectFailed

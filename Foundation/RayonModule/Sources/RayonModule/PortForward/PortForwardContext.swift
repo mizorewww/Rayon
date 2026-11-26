@@ -126,7 +126,7 @@ public class PortForwardContext: ObservableObject, Identifiable, @unchecked Send
             putLifecycle(.failedAuthenticate)
             return
         }
-        identity.callAuthenticationWith(remote: shell)
+        identity.callAuthenticationWith(remote: shell, username: machine.sshUsernameOverride)
         guard shell.isAuthenticated else {
             putLifecycle(.failedAuthenticate)
             return

@@ -18,6 +18,7 @@ public struct RDMachine: Codable, Identifiable, Equatable, Sendable {
         lastBanner: String = "",
         comment: String = "",
         associatedIdentity: String? = nil,
+        sshUsername: String = "",
         attachment: [String: String] = [:],
         fileTransferLoginPath: String = "/",
         transport: Transport = .direct,
@@ -50,6 +51,7 @@ public struct RDMachine: Codable, Identifiable, Equatable, Sendable {
         self.lastBanner = lastBanner
         self.comment = comment
         self.associatedIdentity = associatedIdentity
+        self.sshUsername = sshUsername
         self.attachment = attachment
         self.fileTransferLoginPath = fileTransferLoginPath
         self.transport = transport
@@ -87,6 +89,10 @@ public struct RDMachine: Codable, Identifiable, Equatable, Sendable {
     public var lastBanner: String
     public var comment: String
     public var associatedIdentity: String?
+    /// The user name to sign in as on this server. Empty means the
+    /// identity's own; when set, it overrides the identity's user name, so
+    /// one key can sign in as different users on different servers.
+    public var sshUsername: String = ""
 
     // reserved for custom metadata
     public var attachment: [String: String]
@@ -126,6 +132,7 @@ public struct RDMachine: Codable, Identifiable, Equatable, Sendable {
         case lastBanner
         case comment
         case associatedIdentity
+        case sshUsername
         case attachment
         case fileTransferLoginPath
         case transport
@@ -162,6 +169,8 @@ public struct RDMachine: Codable, Identifiable, Equatable, Sendable {
         lastBanner = try container.decode(String.self, forKey: .lastBanner)
         comment = try container.decode(String.self, forKey: .comment)
         associatedIdentity = try container.decodeIfPresent(String.self, forKey: .associatedIdentity)
+        // Saved before servers had their own user name: the identity's.
+        sshUsername = try container.decodeIfPresent(String.self, forKey: .sshUsername) ?? ""
         var legacyAttachment = try container.decodeIfPresent([String: String].self, forKey: .attachment) ?? [:]
 
         fileTransferLoginPath = try container.decodeIfPresent(String.self, forKey: .fileTransferLoginPath)
@@ -264,6 +273,9 @@ public struct RDMachine: Codable, Identifiable, Equatable, Sendable {
         try container.encode(comment, forKey: .comment)
         try container.encodeIfPresent(associatedIdentity, forKey: .associatedIdentity)
         try container.encode(attachment, forKey: .attachment)
+        if !sshUsername.isEmpty {
+            try container.encode(sshUsername, forKey: .sshUsername)
+        }
 
         if fileTransferLoginPath != "/" {
             try container.encode(fileTransferLoginPath, forKey: .fileTransferLoginPath)
@@ -343,10 +355,9 @@ public struct RDMachine: Codable, Identifiable, Equatable, Sendable {
     public func shortDescription(withComment: Bool = true) -> String {
         if isUURemoteDevice { return name }
         var build = name + " "
-        if let identity = RayonStore.shared.workerAssociatedIdentity(for: self),
-           !identity.username.isEmpty
-        {
-            build += identity.username + "@"
+        let username = sshLoginUsername(identity: RayonStore.shared.workerAssociatedIdentity(for: self))
+        if !username.isEmpty {
+            build += username + "@"
         }
         build += remoteAddress
         if remotePort != "22" {
@@ -358,6 +369,19 @@ public struct RDMachine: Codable, Identifiable, Equatable, Sendable {
         return build
     }
 
+    /// The server's own user name, trimmed; nil when it has none and the
+    /// identity's user name applies.
+    public var sshUsernameOverride: String? {
+        let trimmed = sshUsername.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    /// The user name this server signs in as: its own when set, else the
+    /// identity's, else empty.
+    public func sshLoginUsername(identity: RDIdentity?) -> String {
+        sshUsernameOverride ?? identity?.username ?? ""
+    }
+
     public func isNotPlaceholder() -> Bool {
         !remoteAddress.isEmpty && !remotePort.isEmpty
     }
@@ -365,10 +389,9 @@ public struct RDMachine: Codable, Identifiable, Equatable, Sendable {
     public func getCommand(insertLeadingSSH: Bool = true) -> String {
         var build = ""
         let leading = insertLeadingSSH ? "ssh " : ""
-        if let oid = RayonStore.shared.workerAssociatedIdentity(for: self),
-           !oid.username.isEmpty
-        {
-            build = leading + "\(oid.username)@\(remoteAddress)"
+        let username = sshLoginUsername(identity: RayonStore.shared.workerAssociatedIdentity(for: self))
+        if !username.isEmpty {
+            build = leading + "\(username)@\(remoteAddress)"
         }
         if build.isEmpty {
             build = leading + "\(remoteAddress)"

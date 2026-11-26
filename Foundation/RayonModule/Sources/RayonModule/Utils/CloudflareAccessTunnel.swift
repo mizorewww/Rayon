@@ -329,7 +329,8 @@ public extension NSRemoteShell {
                     .setupConnectionTimeout(timeout)
                 let authResult = bastionShell.connectAndAuthenticate(
                     identity: RayonStore.shared.workerAssociatedIdentity(for: bastion),
-                    autoIdentities: RayonStore.shared.workerIdentitiesForAutoAuth
+                    autoIdentities: RayonStore.shared.workerIdentitiesForAutoAuth,
+                    username: bastion.sshUsernameOverride
                 )
                 guard authResult == .success else {
                     let reason = authResult == .connectFailed

@@ -29,6 +29,7 @@ struct ServerEditorSheet: View {
     @State private var serviceTokenID = ""
     @State private var serviceTokenSecret = ""
     @State private var identity: RDIdentity.ID?
+    @State private var sshUsername = ""
     @State private var group = ""
     @State private var startFolder = "/"
     @State private var comment = ""
@@ -175,6 +176,14 @@ struct ServerEditorSheet: View {
                         }
                     )
                 }
+                RXField("User name") {
+                    TextField(sshUsernamePlaceholder, text: $sshUsername)
+                        .textFieldStyle(.rxMono)
+                        .disableAutocorrection(true)
+                }
+            }
+            HelpText("The user name to sign in as on this server. It overrides the identity's, so one key can sign in as different users on different servers.")
+            HStack(alignment: .top, spacing: RX.Space.s4) {
                 RXField("Group") {
                     HStack(spacing: RX.Space.s1) {
                         TextField("Default", text: $group)
@@ -307,6 +316,13 @@ struct ServerEditorSheet: View {
         HelpText("Connects like ssh -o ProxyCommand='cloudflared access ssh --hostname %h', without cloudflared. Leave the service token empty when the application has no Access policy. The port only names the server's host key.")
     }
 
+    /// The identity's user name, which applies while the field is empty.
+    var sshUsernamePlaceholder: String {
+        guard let identity else { return "Use identity user name" }
+        let username = store.identityGroup[identity].username
+        return username.isEmpty ? "Use identity user name" : "\(username) (from identity)"
+    }
+
     /// The server as the form describes it, for checking the connection.
     var draft: RDMachine {
         var draft = RDMachine(remoteAddress: address.trimmingCharacters(in: .whitespaces), remotePort: port)
@@ -315,6 +331,7 @@ struct ServerEditorSheet: View {
     }
 
     func apply(to target: inout RDMachine) {
+        target.sshUsername = sshUsername.trimmingCharacters(in: .whitespaces)
         target.transport = transport
         target.proxyJumpMachineID = transport == .proxyJump ? proxyJumpMachineID?.uuidString : nil
         let cloudflare = transport == .cloudflareAccess
@@ -348,6 +365,7 @@ struct ServerEditorSheet: View {
         vncPort = read.vncPort
         vncPassword = read.vncPassword
         vncUsername = read.vncUsername
+        sshUsername = read.sshUsername
         vncOverSSH = read.vncOverSSH
         vncShared = read.vncShared
         uuDeviceID = read.uuDeviceID

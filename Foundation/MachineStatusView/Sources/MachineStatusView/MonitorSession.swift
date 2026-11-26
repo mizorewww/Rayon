@@ -216,7 +216,8 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
     private func connectAndAuthenticate() {
         shell.connectAndAuthenticate(
             identity: identity,
-            autoIdentities: RayonStore.shared.workerIdentitiesForAutoAuth
+            autoIdentities: RayonStore.shared.workerIdentitiesForAutoAuth,
+            username: machine.sshUsernameOverride
         )
     }
 

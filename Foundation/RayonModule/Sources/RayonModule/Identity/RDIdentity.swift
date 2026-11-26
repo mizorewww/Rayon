@@ -93,8 +93,18 @@ public struct RDIdentity: Codable, Identifiable, Equatable, Sendable {
         }
     }
 
-    public func callAuthenticationWith(remote: NSRemoteShell) {
+    /// The user name this identity signs in as: `override` when the server
+    /// sets its own, else the identity's.
+    public func loginUsername(override: String?) -> String {
+        guard let override, !override.isEmpty else { return username }
+        return override
+    }
+
+    /// Signs `remote` in with this identity's credentials, as `username`
+    /// when the server sets its own user name, else as the identity's.
+    public func callAuthenticationWith(remote: NSRemoteShell, username override: String? = nil) {
         if remote.isAuthenticated { return }
+        let username = loginUsername(override: override)
         if useSSHAgent {
             remote.authenticate(withAgent: username)
         } else if privateKey.count > 0 || publicKey.count > 0 {

@@ -44,10 +44,11 @@ public extension RDMachine {
     }
 
     /// The effective Apple Remote Desktop user name: the stored one, else the
-    /// associated identity's when its password is the one used.
+    /// server's SSH user name or the associated identity's when the
+    /// identity's password is the one used.
     func resolvedVNCUsername(identity: RDIdentity?) -> String {
         if !vncUsername.isEmpty { return vncUsername }
-        guard vncPassword.isEmpty else { return "" }
-        return identity?.username ?? ""
+        guard vncPassword.isEmpty, let identity else { return "" }
+        return sshLoginUsername(identity: identity)
     }
 }

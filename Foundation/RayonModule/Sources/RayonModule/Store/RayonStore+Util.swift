@@ -208,7 +208,7 @@ public extension RayonStore {
                         continue
                     }
                     let identity = identityGroup[rid]
-                    if identity.username == withUsername {
+                    if machine.sshLoginUsername(identity: identity) == withUsername {
                         return machine.id
                     } else {
                         continue
@@ -450,9 +450,17 @@ public extension RayonStore {
                         }
                     }
 
-                    if let existing = ig.identities.first(where: {
-                        $0.username == username && (loadedPriv.isEmpty || $0.privateKey == loadedPriv)
-                    }) {
+                    // One identity per key: the user name belongs to the
+                    // server, so hosts that share a key as different users
+                    // share the identity. Without a key, an identity of
+                    // the same user name is reused, else an SSH agent one.
+                    let existing: RDIdentity? = if !loadedPriv.isEmpty {
+                        ig.identities.first(where: { $0.privateKey == loadedPriv })
+                    } else {
+                        ig.identities.first(where: { $0.username == username })
+                            ?? ig.identities.first(where: { $0.useSSHAgent && $0.group == "SSH Config" })
+                    }
+                    if let existing {
                         associatedIdentityID = existing.id.uuidString
                     } else {
                         var newIdentity = RDIdentity(
@@ -483,7 +491,8 @@ public extension RayonStore {
                     group: "SSH Config",
                     lastConnection: Date(timeIntervalSince1970: 0),
                     comment: "Imported from ~/.ssh/config",
-                    associatedIdentity: associatedIdentityID
+                    associatedIdentity: associatedIdentityID,
+                    sshUsername: block.user ?? ""
                 )
                 mg.insert(machine)
                 aliasToMachineID[alias] = machine.id
