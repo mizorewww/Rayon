@@ -190,7 +190,7 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
         let shell = shell
         let sampler = sampler
         var failures = 0
-        while !Task.isCancelled {
+        rounds: while !Task.isCancelled {
             if !(await Self.blocking { shell.isConnected && shell.isAuthenticated }) {
                 if phase != .connected { setPhase(.connecting) }
                 let identity = identity
@@ -210,8 +210,7 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
             }
             if Task.isCancelled { break }
             if await Self.blocking({ shell.isConnected && shell.isAuthenticated }) {
-                failures = 0
-                setPhase(.connected)
+                if failures == 0 { setPhase(.connected) }
                 let timeout = max(10, Double(refreshInterval * 2))
                 let round = await Self.blocking { sampler.sample(with: shell, timeout: timeout) }
                 // A loop replaced by reconnect() or ended by shutdown()
@@ -219,14 +218,24 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
                 if Task.isCancelled { break }
                 switch round {
                 case let .status(status):
+                    failures = 0
+                    setPhase(.connected)
                     snapshot = snapshot.recording(status)
                 case .baseline:
+                    failures = 0
+                    setPhase(.connected)
                     // Rates need a second reading; take it after a second
                     // instead of a whole interval.
                     try? await Task.sleep(nanoseconds: NSEC_PER_SEC)
                     continue
                 case .empty:
-                    break
+                    // Nothing came back though the shell says it is up: a
+                    // dead link would otherwise show its last numbers as
+                    // live forever. It fails, and the next round reconnects.
+                    failures += 1
+                    await Self.blocking { shell.requestDisconnectAndWait() }
+                    if Task.isCancelled { break rounds }
+                    setPhase(.failed("The server stopped answering."))
                 }
             } else {
                 failures += 1
