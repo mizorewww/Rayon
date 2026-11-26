@@ -35,7 +35,9 @@ public extension SSHConnection {
         timeout: Duration? = nil,
         output: @escaping @Sendable (_ chunk: ByteBuffer, _ isError: Bool) async -> Void
     ) async throws -> Int32 {
-        let session = try await openSession()
+        // The timeout counts from here, opening the channel included.
+        let start = ContinuousClock.now
+        let session = try await openSession(timeout: timeout)
         let run: @Sendable () async throws -> Int32 = {
             try await session.executeThenClose { inbound, _ in
                 try await session.channel.triggerUserOutboundEvent(
@@ -60,7 +62,7 @@ public extension SSHConnection {
         }
         // The server only confirms a close once the command has ended, so
         // a timed-out or cancelled command is abandoned, not waited for.
-        return try await abandoning(run, after: timeout) {
+        return try await abandoning(run, after: timeout.map { $0 - (ContinuousClock.now - start) }) {
             session.channel.close(promise: nil)
         }
     }

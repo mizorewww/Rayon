@@ -52,5 +52,5 @@ for _ in $(seq 50); do
     sleep 0.2
 done
 
-SSH_DOCKER_LIVE="$WORK" SSH_DOCKER_LIVE_PORT="$PORT" \
+SSH_DOCKER_LIVE="$WORK" SSH_DOCKER_LIVE_PORT="$PORT" SSH_DOCKER_LIVE_SERVER="$NAME-server" \
     swift test --package-path "$PACKAGE" --filter "SSHLiveTests${SSH_LIVE_TESTS:+/$SSH_LIVE_TESTS}" "$@"

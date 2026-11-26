@@ -22,7 +22,11 @@ public actor SSHConnection {
         /// Offered in order until the server accepts one.
         public var credentials: [SSHCredential]
         public var transport: SSHTransport
+        /// Bounds connecting, and opening each channel once connected.
         public var timeout: Duration
+        /// How long the server may stay silent before it is asked whether
+        /// it is still there; three asks unanswered close the connection.
+        public var keepAliveInterval: Duration
         /// Compares the server's host key with the saved one. A key that is
         /// not trusted ends the connection before anything is sent.
         public var hostKeyStatus: @Sendable (SSHHostKey) -> SSHHostKeyStatus
@@ -34,6 +38,7 @@ public actor SSHConnection {
             credentials: [SSHCredential],
             transport: SSHTransport = .tcp,
             timeout: Duration = .seconds(15),
+            keepAliveInterval: Duration = .seconds(10),
             hostKeyStatus: @escaping @Sendable (SSHHostKey) -> SSHHostKeyStatus
         ) {
             self.host = host
@@ -42,6 +47,7 @@ public actor SSHConnection {
             self.credentials = credentials
             self.transport = transport
             self.timeout = timeout
+            self.keepAliveInterval = keepAliveInterval
             self.hostKeyStatus = hostKeyStatus
         }
     }
@@ -52,12 +58,15 @@ public actor SSHConnection {
     public nonisolated let serverVersion: String
     /// Kept open while this connection runs over it.
     private let bastion: SSHConnection?
+    /// How long the server has to confirm a channel.
+    private nonisolated let channelTimeout: TimeAmount
 
-    private init(client: SSHClient, channel: Channel, serverVersion: String, bastion: SSHConnection?) {
+    private init(client: SSHClient, channel: Channel, serverVersion: String, bastion: SSHConnection?, channelTimeout: TimeAmount) {
         self.client = client
         self.channel = channel
         self.serverVersion = serverVersion
         self.bastion = bastion
+        self.channelTimeout = channelTimeout
         // A jump host carries this connection alone, and ends with it.
         if let bastion {
             channel.closeFuture.whenComplete { _ in Task { await bastion.close() } }
@@ -86,7 +95,7 @@ public actor SSHConnection {
         _ configuration: Configuration,
         offering offer: NIOSSHUserAuthenticationOffer.Offer
     ) async throws -> SSHConnection {
-        let timeout = TimeAmount.nanoseconds(Int64(configuration.timeout.components.seconds) * 1_000_000_000)
+        let timeout = TimeAmount(configuration.timeout)
         let channel = try await configuration.transport.makeChannel(
             host: configuration.host, port: configuration.port, timeout: timeout
         )
@@ -107,11 +116,13 @@ public actor SSHConnection {
             channel.close(promise: nil)
             throw Self.translate(error, host: configuration.host)
         }
+        let keepAlive = TimeAmount(configuration.keepAliveInterval)
         let version = try? await channel.eventLoop.submit {
-            try channel.pipeline.syncOperations.handler(type: SSHBannerGate.self).serverVersion
+            try channel.pipeline.syncOperations.addHandler(SSHKeepalive(interval: keepAlive), position: .first)
+            return try channel.pipeline.syncOperations.handler(type: SSHBannerGate.self).serverVersion
         }.get()
         let bastion: SSHConnection? = if case let .jump(connection) = configuration.transport { connection } else { nil }
-        return SSHConnection(client: client, channel: channel, serverVersion: version ?? "", bastion: bastion)
+        return SSHConnection(client: client, channel: channel, serverVersion: version ?? "", bastion: bastion, channelTimeout: timeout)
     }
 
     /// AES-GCM (built in) first, AES-CTR with non-EtM MACs for older
@@ -172,34 +183,53 @@ public actor SSHConnection {
 
     /// Opens a child channel; `setup` runs on the event loop before any
     /// data arrives, and its result is returned once the server confirms.
+    /// A server that does not confirm in time, or a cancelled task, fails
+    /// the open and closes the channel if it opens later.
     nonisolated func openChannel<T: Sendable>(
         _ type: SSHChannelType,
+        timeout: Duration? = nil,
         setup: @escaping @Sendable (Channel) throws -> T
     ) async throws -> T {
         let parent = channel
         let eventLoop = parent.eventLoop
-        do {
-            return try await eventLoop.flatSubmit { () -> EventLoopFuture<T> in
-                let created = eventLoop.makePromise(of: Channel.self)
-                let prepared = eventLoop.makePromise(of: T.self)
-                created.futureResult.whenFailure { prepared.fail($0) }
-                do {
-                    let handler = try parent.pipeline.syncOperations.handler(type: NIOSSHHandler.self)
-                    handler.createChannel(created, channelType: type) { child, _ in
-                        do {
-                            prepared.succeed(try setup(child))
-                            return child.eventLoop.makeSucceededVoidFuture()
-                        } catch {
-                            prepared.fail(error)
-                            return child.eventLoop.makeFailedFuture(error)
-                        }
+        let outcome = eventLoop.makePromise(of: T.self)
+        let deadline = eventLoop.scheduleTask(in: min(timeout.map(TimeAmount.init) ?? channelTimeout, channelTimeout)) {
+            outcome.fail(SSHError.channelRejected("The server did not open a channel in time."))
+        }
+        outcome.futureResult.whenComplete { _ in deadline.cancel() }
+        eventLoop.execute {
+            let created = eventLoop.makePromise(of: Channel.self)
+            let prepared = eventLoop.makePromise(of: T.self)
+            created.futureResult.whenFailure { prepared.fail($0) }
+            // Opened after all was given up on: nobody will use it.
+            created.futureResult.whenSuccess { child in
+                outcome.futureResult.whenFailure { _ in child.close(promise: nil) }
+            }
+            created.futureResult.flatMap { _ in prepared.futureResult }.cascade(to: outcome)
+            do {
+                let handler = try parent.pipeline.syncOperations.handler(type: NIOSSHHandler.self)
+                handler.createChannel(created, channelType: type) { child, _ in
+                    do {
+                        prepared.succeed(try setup(child))
+                        return child.eventLoop.makeSucceededVoidFuture()
+                    } catch {
+                        prepared.fail(error)
+                        return child.eventLoop.makeFailedFuture(error)
                     }
-                } catch {
-                    created.fail(error)
                 }
-                return created.futureResult.flatMap { _ in prepared.futureResult }
-            }.get()
+            } catch {
+                created.fail(error)
+            }
+        }
+        do {
+            return try await withTaskCancellationHandler {
+                try await outcome.futureResult.get()
+            } onCancel: {
+                outcome.fail(CancellationError())
+            }
         } catch let error as SSHError {
+            throw error
+        } catch let error as CancellationError {
             throw error
         } catch {
             throw parent.isActive
@@ -242,8 +272,8 @@ public actor SSHConnection {
     }
 
     /// A session channel, for a shell or a command.
-    nonisolated func openSession() async throws -> NIOAsyncChannel<SSHSessionEvent, ByteBuffer> {
-        try await openChannel(.session) { child in
+    nonisolated func openSession(timeout: Duration? = nil) async throws -> NIOAsyncChannel<SSHSessionEvent, ByteBuffer> {
+        try await openChannel(.session, timeout: timeout) { child in
             try child.allowHalfClosure()
             try child.pipeline.syncOperations.addHandler(SSHSessionHandler())
             return try NIOAsyncChannel(wrappingChannelSynchronously: child)

@@ -348,6 +348,75 @@ final class SSHLiveTests: XCTestCase {
         await connection.close()
     }
 
+    // MARK: A server that stops answering
+
+    /// Freezes the server container (its kernel still answers TCP) until
+    /// the test ends.
+    private func freezeServer() throws {
+        guard let server = ProcessInfo.processInfo.environment["SSH_DOCKER_LIVE_SERVER"] else {
+            throw XCTSkip("needs the server container's name")
+        }
+        func docker(_ arguments: String...) throws {
+            let docker = Process()
+            docker.executableURL = URL(fileURLWithPath: "/usr/local/bin/docker")
+            docker.arguments = arguments
+            try docker.run()
+            docker.waitUntilExit()
+        }
+        try docker("pause", server)
+        addTeardownBlock { try? docker("unpause", server) }
+    }
+
+    func testAServerThatStopsAnsweringIsDropped() async throws {
+        let connection = try await SSHConnection.connect(.init(
+            host: "127.0.0.1", port: port, username: user, credentials: [.password(password)],
+            timeout: .seconds(10), keepAliveInterval: .seconds(1), hostKeyStatus: { _ in .trusted }
+        ))
+        _ = try await connection.execute("true")
+        let running = Task { try await connection.execute("sleep 60") }
+        try await Task.sleep(for: .milliseconds(300))
+        try freezeServer()
+
+        let started = ContinuousClock.now
+        while connection.isActive, ContinuousClock.now - started < .seconds(15) {
+            try await Task.sleep(for: .milliseconds(100))
+        }
+        XCTAssertFalse(connection.isActive, "still active after the server froze")
+        // Four quiet seconds: three unanswered asks, then the close.
+        XCTAssertLessThan(ContinuousClock.now - started, .seconds(8))
+        do {
+            _ = try await running.value
+            XCTFail("a command finished on a frozen server")
+        } catch {}
+        do {
+            _ = try await connection.execute("true")
+            XCTFail("a command ran on a closed connection")
+        } catch SSHError.disconnected {}
+    }
+
+    func testOpeningAChannelOnAFrozenServerEnds() async throws {
+        let connection = try await connect([.password(password)])
+        _ = try await connection.execute("true")
+        try freezeServer()
+
+        let started = ContinuousClock.now
+        do {
+            _ = try await connection.execute("true", timeout: .seconds(2))
+            XCTFail("a command ran on a frozen server")
+        } catch SSHError.channelRejected {}
+        XCTAssertLessThan(ContinuousClock.now - started, .seconds(4))
+
+        let opening = Task { try await connection.execute("true") }
+        try await Task.sleep(for: .milliseconds(500))
+        opening.cancel()
+        do {
+            _ = try await opening.value
+            XCTFail("a command ran on a frozen server")
+        } catch is CancellationError {}
+        XCTAssertLessThan(ContinuousClock.now - started, .seconds(6))
+        await connection.close()
+    }
+
     /// A service that hangs up first: this side's EOF after the server's
     /// closes the channel instead of breaking swift-nio-ssh's state.
     func testAServerThatHangsUpFirst() async throws {
