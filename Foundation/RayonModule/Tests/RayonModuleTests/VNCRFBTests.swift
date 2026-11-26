@@ -8,6 +8,7 @@
 //
 
 @testable import RayonModule
+import BigInt
 import CoreGraphics
 import CryptoKit
 import XCTest
@@ -634,34 +635,18 @@ final class VNCRFBTests: XCTestCase {
 
     // MARK: Apple Remote Desktop authentication (type 30)
 
-    func testBigNumModularPowerSmall() {
-        let result = VNCBigNum(4).power(VNCBigNum(13), modulo: VNCBigNum(497))
-        XCTAssertEqual(result, VNCBigNum(445))
-    }
-
-    func testBigNumModularPowerMatchesUInt64() {
-        // The largest 64-bit prime: two limbs, checked against full-width math.
-        let modulus: UInt64 = 0xFFFF_FFFF_FFFF_FFC5
-        func mulmod(_ a: UInt64, _ b: UInt64) -> UInt64 {
-            let product = a.multipliedFullWidth(by: b)
-            return modulus.dividingFullWidth((product.high, product.low)).remainder
+    func testAppleAuthRejectsDegenerateServerKeys() {
+        let prime = BigUInt(Data(Self.oakleyPrime))
+        for publicKey in [BigUInt(0), 1, prime - 1, prime, prime + 1] {
+            let parameters = VNCAppleAuth.ServerParameters(
+                generator: [0, 2],
+                prime: Self.oakleyPrime,
+                serverPublicKey: Array(VNCAppleAuth.bigEndianBytes(publicKey, length: 129).suffix(128))
+            )
+            XCTAssertThrowsError(try VNCAppleAuth.response(to: parameters, username: "a", password: "b"), "\(publicKey)")
         }
-        var expected: UInt64 = 1
-        var base: UInt64 = 0x1234_5678_9ABC_DEF0 % modulus
-        var exponent: UInt64 = 1_000_003
-        while exponent > 0 {
-            if exponent & 1 == 1 { expected = mulmod(expected, base) }
-            base = mulmod(base, base)
-            exponent >>= 1
-        }
-        let result = VNCBigNum(0x1234_5678_9ABC_DEF0).power(VNCBigNum(1_000_003), modulo: VNCBigNum(modulus))
-        XCTAssertEqual(result, VNCBigNum(expected))
-    }
-
-    func testBigNumBytesRoundTrip() {
-        let bytes: [UInt8] = [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06]
-        XCTAssertEqual(VNCBigNum(bigEndian: bytes).bigEndianBytes(length: 7), bytes)
-        XCTAssertEqual(VNCBigNum(bigEndian: [0x01, 0x00]).bigEndianBytes(length: 4), [0, 0, 1, 0])
+        XCTAssertTrue(VNCAppleAuth.isValidGroupElement(2, prime: prime))
+        XCTAssertTrue(VNCAppleAuth.isValidGroupElement(prime - 2, prime: prime))
     }
 
     /// RFC 2409's 1024-bit MODP group, the size macOS uses.
@@ -677,21 +662,10 @@ final class VNCRFBTests: XCTestCase {
         return bytes
     }()
 
-    func testDiffieHellmanAgrees() {
-        let prime = VNCBigNum(bigEndian: Self.oakleyPrime)
-        let a = VNCBigNum(bigEndian: VNCAppleAuth.randomBytes(32))
-        let b = VNCBigNum(bigEndian: VNCAppleAuth.randomBytes(32))
-        let g = VNCBigNum(2)
-        let left = g.power(a, modulo: prime).power(b, modulo: prime)
-        let right = g.power(b, modulo: prime).power(a, modulo: prime)
-        XCTAssertEqual(left, right)
-        XCTAssertFalse(left.isZero)
-    }
-
     func testHandshake38WithAppleRemoteDesktopAuth() throws {
-        let prime = VNCBigNum(bigEndian: Self.oakleyPrime)
-        let serverSecret = VNCBigNum(bigEndian: VNCAppleAuth.randomBytes(128))
-        let serverPublic = VNCBigNum(2).power(serverSecret, modulo: prime)
+        let prime = BigUInt(Data(Self.oakleyPrime))
+        let serverSecret = BigUInt(Data(VNCAppleAuth.randomBytes(128)))
+        let serverPublic = BigUInt(2).power(serverSecret, modulus: prime)
 
         var server = Data()
         server.append(VNCWire.banner(major: 3, minor: 889)) // macOS's banner
@@ -700,7 +674,7 @@ final class VNCRFBTests: XCTestCase {
         server.appendU16BE(2) // generator
         server.appendU16BE(128) // key length
         server.append(contentsOf: Self.oakleyPrime)
-        server.append(contentsOf: serverPublic.bigEndianBytes(length: 128))
+        server.append(VNCAppleAuth.bigEndianBytes(serverPublic, length: 128))
         server.appendU32BE(0) // security result OK
         server.append(serverInitData(width: 2, height: 2, name: "mac"))
 
@@ -718,9 +692,9 @@ final class VNCRFBTests: XCTestCase {
         let written = channel.written
         XCTAssertEqual(written[12], VNCWire.SecurityType.appleRemoteDesktop.rawValue)
         let cipher = Array(written[13 ..< 141])
-        let clientPublic = VNCBigNum(bigEndian: Array(written[141 ..< 269]))
-        let shared = clientPublic.power(serverSecret, modulo: prime)
-        let key = Array(Insecure.MD5.hash(data: Data(shared.bigEndianBytes(length: 128))))
+        let clientPublic = BigUInt(Data(written[141 ..< 269]))
+        let shared = clientPublic.power(serverSecret, modulus: prime)
+        let key = Array(Insecure.MD5.hash(data: VNCAppleAuth.bigEndianBytes(shared, length: 128)))
         let plain = try XCTUnwrap(VNCAppleAuth.aes128ECB(cipher, key: key, decrypt: true))
         XCTAssertEqual(Array(plain[0 ..< 6]), Array("alice".utf8) + [0])
         XCTAssertEqual(Array(plain[64 ..< 71]), Array("secret".utf8) + [0])

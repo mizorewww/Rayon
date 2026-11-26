@@ -18,6 +18,7 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "NSRemoteShell", path: "../../External/NSRemoteShell"),
+        .package(url: "https://github.com/attaswift/BigInt.git", from: "5.7.0"),
         .package(name: "Keychain", path: "../Keychain"),
         .package(name: "RayonDesign", path: "../RayonDesign"),
         .package(name: "RayonEditor", path: "../RayonEditor"),
@@ -28,6 +29,7 @@ let package = Package(
             name: "RayonModule",
             dependencies: [
                 "NSRemoteShell",
+                .product(name: "BigInt", package: "BigInt"),
                 "Keychain",
                 "RayonDesign",
                 "RayonEditor",
@@ -36,7 +38,10 @@ let package = Package(
         ),
         .testTarget(
             name: "RayonModuleTests",
-            dependencies: ["RayonModule"]
+            dependencies: [
+                "RayonModule",
+                .product(name: "BigInt", package: "BigInt"),
+            ]
         ),
     ]
 )
