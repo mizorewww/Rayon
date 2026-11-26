@@ -16,7 +16,7 @@ set -euo pipefail
 
 KIND="$1" TEAM="$2" BUNDLE_ID="$3" IDENTITY="$4" WILDCARD="${5:-}"
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-$ROOT_DIR/DerivedData}"
+DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-$ROOT_DIR/.build/DerivedData}"
 
 certificate="$(security find-certificate -c "$IDENTITY" -p 2>/dev/null \
     | openssl x509 -outform der 2>/dev/null | openssl dgst -sha1 -r | cut -d' ' -f1)"

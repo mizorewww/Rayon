@@ -123,15 +123,17 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-logs
-          path: DerivedData/Release/*.log
+          path: .build/DerivedData/Release/*.log
+          include-hidden-files: true
 
       - name: Keep the products
         uses: actions/upload-artifact@v4
         with:
           name: Rayon
           path: |
-            DerivedData/Release/Rayon-*.dmg
-            DerivedData/Release/Rayon-*.ipa
+            .build/DerivedData/Release/Rayon-*.dmg
+            .build/DerivedData/Release/Rayon-*.ipa
+          include-hidden-files: true
           if-no-files-found: error
 
       - name: Publish the release
@@ -140,7 +142,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" \
-            DerivedData/Release/Rayon-*.dmg DerivedData/Release/Rayon-*.ipa \
+            .build/DerivedData/Release/Rayon-*.dmg .build/DerivedData/Release/Rayon-*.ipa \
             --title "Rayon ${GITHUB_REF_NAME#v}" --generate-notes --verify-tag
 
       - name: Remove the signing keychain

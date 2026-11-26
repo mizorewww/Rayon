@@ -7,14 +7,14 @@
 #
 # Environment overrides:
 #   INSTALL_DIR        Target directory (default: /Applications)
-#   DERIVED_DATA_PATH  Build products directory (default: ./DerivedData)
+#   DERIVED_DATA_PATH  Build products directory (default: .build/DerivedData)
 
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 APP_NAME="Rayon.app"
 INSTALL_DIR="${INSTALL_DIR:-/Applications}"
-DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-$ROOT_DIR/DerivedData}"
+DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-$ROOT_DIR/.build/DerivedData}"
 
 # 1. Build Release (native macOS, universal arm64/x86_64, signed, codesign-verified).
 bash "$ROOT_DIR/Workflow/Scripts/build-macos.sh" Release

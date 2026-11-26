@@ -18,7 +18,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 # After the team: "<team>.me.mizorewww.rayon" on every platform.
 KEYCHAIN_GROUP="me.mizorewww.rayon"
 CONFIGURATION="${1:-Debug}"
-DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-$ROOT_DIR/DerivedData}"
+DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-$ROOT_DIR/.build/DerivedData}"
 
 case "$CONFIGURATION" in
     Debug|Release) ;;

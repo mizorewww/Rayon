@@ -22,12 +22,12 @@
 #   DEVELOPMENT_TEAM      Team for the iOS signature (default: the certificate's)
 #   CODE_SIGN_IDENTITY    Certificate (default: the first Apple Development one)
 #   PROVISIONING_PROFILE  Path to a .mobileprovision (default: see above)
-#   DERIVED_DATA_PATH     Build products directory (default: ./DerivedData)
+#   DERIVED_DATA_PATH     Build products directory (default: .build/DerivedData)
 
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-$ROOT_DIR/DerivedData}"
+DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-$ROOT_DIR/.build/DerivedData}"
 BUNDLE_ID="me.mizorewww.rayon"
 # What the app was called before; its data on this Mac is carried over once.
 FORMER_BUNDLE_ID="wiki.qaq.ray0n"

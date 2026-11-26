@@ -31,12 +31,12 @@
 # Other environment overrides:
 #   CODE_SIGN_IDENTITY    Certificate for the Mac app; "-" signs ad hoc, which
 #                         is only good for trying the script
-#   DERIVED_DATA_PATH     Build products directory (default: ./DerivedData)
+#   DERIVED_DATA_PATH     Build products directory (default: .build/DerivedData)
 
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-$ROOT_DIR/DerivedData}"
+DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-$ROOT_DIR/.build/DerivedData}"
 OUTPUT_DIR="$DERIVED_DATA_PATH/Release"
 TARGET="${1:-all}"
 

@@ -82,7 +82,7 @@ For an isolated native UI harness, run:
 bash Workflow/Scripts/build-configuration-preview.sh
 ```
 
-This creates `DerivedData/RayonConfigurationPreview.app` with a separate bundle
+This creates `.build/DerivedData/RayonConfigurationPreview.app` with a separate bundle
 identity and preference domain, without opening Rayon's account store.
 
 Catalog refresh instructions live in `Workflow/Scripts/GhosttyConfig/README.md`.

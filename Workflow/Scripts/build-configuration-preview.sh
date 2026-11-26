@@ -3,7 +3,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 swift build --package-path "$ROOT/Foundation/RayonTerminal" --product RayonConfigurationPreview
 BIN="$(swift build --package-path "$ROOT/Foundation/RayonTerminal" --show-bin-path)"
-APP="$ROOT/DerivedData/RayonConfigurationPreview.app"
+APP="$ROOT/.build/DerivedData/RayonConfigurationPreview.app"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN/RayonConfigurationPreview" "$APP/Contents/MacOS/"
 for bundle in "$BIN"/*.bundle; do

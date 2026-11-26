@@ -21,12 +21,12 @@
 # Other environment overrides:
 #   BUILD_NUMBER       CFBundleVersion (default: the time, which only grows)
 #   DEVELOPMENT_TEAM   Team (default: LT98S43NKA)
-#   DERIVED_DATA_PATH  Build products directory (default: ./DerivedData)
+#   DERIVED_DATA_PATH  Build products directory (default: .build/DerivedData)
 
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-$ROOT_DIR/DerivedData}"
+DERIVED_DATA_PATH="${DERIVED_DATA_PATH:-$ROOT_DIR/.build/DerivedData}"
 DEVELOPMENT_TEAM="${DEVELOPMENT_TEAM:-LT98S43NKA}"
 # Each upload needs a build number above the last one of its version.
 BUILD_NUMBER="${BUILD_NUMBER:-$(date +%Y%m%d.%H%M)}"

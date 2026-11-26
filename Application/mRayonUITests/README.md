@@ -7,8 +7,8 @@ terminal (to a closed local port, so no server is contacted).
 ```sh
 # 1. Build and install the app on a simulator
 xcodebuild -workspace App.xcworkspace -scheme mRayon \
-  -destination "id=$SIM" -derivedDataPath DerivedData/iOS CODE_SIGNING_ALLOWED=NO build
-xcrun simctl install "$SIM" DerivedData/iOS/Build/Products/Debug-iphonesimulator/mRayon.app
+  -destination "id=$SIM" -derivedDataPath .build/DerivedData/iOS CODE_SIGNING_ALLOWED=NO build
+xcrun simctl install "$SIM" .build/DerivedData/iOS/Build/Products/Debug-iphonesimulator/mRayon.app
 
 # 2. Run the tests
 cd Application/mRayonUITests && xcodegen generate
