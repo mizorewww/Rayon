@@ -164,6 +164,9 @@ public actor CloudSync {
         } catch let error as CKError where error.code == .zoneNotFound {
             // Nothing there.
         } catch {
+            // Sync stays on: without its engine back, Sync Now and every
+            // change would do nothing until the next launch.
+            if preferences.isOn { start() }
             publish(.failed(error.localizedDescription))
             throw error
         }
