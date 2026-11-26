@@ -12,43 +12,32 @@ import CoreVideo
 import Foundation
 import VideoToolbox
 
-final class UURemoteDesktopDriver: RemoteDesktopDriver, @unchecked Sendable {
+@MainActor
+final class UURemoteDesktopDriver: RemoteDesktopDriver {
     private let session: RemoteDesktopSession
-    /// Main actor only.
     private var connection: UURemoteConnection?
 
     init(session: RemoteDesktopSession) {
         self.session = session
     }
 
-    /// Callers are on the main actor; the protocol does not say so.
-    private func onMain(_ work: @escaping @MainActor (UURemoteConnection) -> Void) {
-        if Thread.isMainThread {
-            MainActor.assumeIsolated { if let connection { work(connection) } }
-        } else {
-            Task { @MainActor in if let connection = self.connection { work(connection) } }
-        }
-    }
-
     func start(session: RemoteDesktopSession) {
-        MainActor.assumeIsolated {
-            let machine = session.machine
-            let connection = UURemoteConnections.shared.desktop(
-                for: machine.uuTarget,
-                settings: UUStreamSettings(session.streamSettings),
-                localRefreshRate: RemoteDesktopSession.localRefreshRate(),
-                preferredScreenID: machine.uuDisplayID == 0 ? nil : machine.uuDisplayID
-            )
-            let session = self.session
-            connection.onFrame = { frame in
-                var image: CGImage?
-                VTCreateCGImageFromCVPixelBuffer(frame.pixelBuffer, options: nil, imageOut: &image)
-                session.reportFrame(image, size: CGSize(width: frame.width, height: frame.height))
-            }
-            connection.onEvent = { event in Self.report(event, to: session) }
-            self.connection = connection
-            connection.start()
+        let machine = session.machine
+        let connection = UURemoteConnections.shared.desktop(
+            for: machine.uuTarget,
+            settings: UUStreamSettings(session.streamSettings),
+            localRefreshRate: RemoteDesktopSession.localRefreshRate(),
+            preferredScreenID: machine.uuDisplayID == 0 ? nil : machine.uuDisplayID
+        )
+        let session = self.session
+        connection.onFrame = { frame in
+            var image: CGImage?
+            VTCreateCGImageFromCVPixelBuffer(frame.pixelBuffer, options: nil, imageOut: &image)
+            session.reportFrame(image, size: CGSize(width: frame.width, height: frame.height))
         }
+        connection.onEvent = { event in Self.report(event, to: session) }
+        self.connection = connection
+        connection.start()
     }
 
     private static func report(_ event: UURemoteEvent, to session: RemoteDesktopSession) {
@@ -77,11 +66,11 @@ final class UURemoteDesktopDriver: RemoteDesktopDriver, @unchecked Sendable {
     }
 
     func stop() {
-        onMain { $0.stop() }
+        connection?.stop()
     }
 
     func sendPointerMove(normalizedX: Double, normalizedY: Double) {
-        onMain { $0.movePointer(x: normalizedX, y: normalizedY) }
+        connection?.movePointer(x: normalizedX, y: normalizedY)
     }
 
     func sendPointerButton(_ button: MouseButton, isDown: Bool, normalizedX: Double, normalizedY: Double) {
@@ -92,48 +81,47 @@ final class UURemoteDesktopDriver: RemoteDesktopDriver, @unchecked Sendable {
         case .back: .back
         case .forward: .forward
         }
-        onMain { $0.pressButton(uuButton, isDown: isDown, x: normalizedX, y: normalizedY) }
+        connection?.pressButton(uuButton, isDown: isDown, x: normalizedX, y: normalizedY)
     }
 
     func sendScroll(deltaX: Double, deltaY: Double, normalizedX: Double, normalizedY: Double) {
-        onMain { $0.scroll(dx: deltaX, dy: deltaY, x: normalizedX, y: normalizedY) }
+        connection?.scroll(dx: deltaX, dy: deltaY, x: normalizedX, y: normalizedY)
     }
 
     /// `keyCode` is a Carbon virtual keycode, what a Mac host takes; a
     /// Windows host gets the matching virtual-key code.
     func sendKey(keyCode: UInt16, keySym _: UInt32?, characters _: String, isDown: Bool) {
-        onMain { connection in
-            let code = connection.hostIsWindows ? (RemoteDesktopKeymap.windowsVKForCarbon[keyCode] ?? Int32(keyCode)) : Int32(keyCode)
-            connection.key(code, isDown: isDown)
-        }
+        guard let connection else { return }
+        let code = connection.hostIsWindows ? (RemoteDesktopKeymap.windowsVKForCarbon[keyCode] ?? Int32(keyCode)) : Int32(keyCode)
+        connection.key(code, isDown: isDown)
     }
 
     func sendText(_ text: String) {
-        onMain { $0.typeText(text) }
+        connection?.typeText(text)
     }
 
     func sendClipboard(_ text: String) {
-        onMain { $0.setRemoteClipboard(text) }
+        connection?.setRemoteClipboard(text)
     }
 
     func selectDisplay(_ displayID: Int) {
-        onMain { $0.selectScreen(displayID) }
+        connection?.selectScreen(displayID)
     }
 
     func updateStream(_ settings: RemoteDesktopStreamSettings) {
-        onMain { $0.updateStream(UUStreamSettings(settings)) }
+        connection?.updateStream(UUStreamSettings(settings))
     }
 
     func requestKeyframeOrRefresh() {
-        onMain { $0.requestKeyFrame() }
+        connection?.requestKeyFrame()
     }
 
     func addVirtualDisplay(width: Int, height: Int) {
-        onMain { $0.addVirtualScreen(width: width, height: height) }
+        connection?.addVirtualScreen(width: width, height: height)
     }
 
     func removeVirtualDisplay(_ displayID: Int) {
-        onMain { $0.removeVirtualScreen(displayID) }
+        connection?.removeVirtualScreen(displayID)
     }
 }
 
