@@ -445,7 +445,8 @@ final class SSHLiveTests: XCTestCase {
 
         func append(_ chunk: ByteBuffer) {
             text += String(decoding: chunk.readableBytesView, as: UTF8.self)
-            if text.count > 1_000_000 { text = String(text.suffix(4096)) }
+            // utf8.count is O(1); count walks every character.
+            if text.utf8.count > 1_000_000 { text = String(text.suffix(4096)) }
         }
 
         func contains(_ marker: String) -> Bool { text.contains(marker) }
