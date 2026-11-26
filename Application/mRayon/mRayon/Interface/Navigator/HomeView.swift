@@ -2,7 +2,9 @@
 //  HomeView.swift
 //  mRayon
 //
-//  Home: a big Quick Connect, recent connections, server tiles.
+//  Home, laid out as the first Rayon had it: the app icon, Quick Connect,
+//  recent connections and the version, over a soft glow with drifting dots.
+//  The server tiles are on Dashboard.
 //
 
 import MachineStatusView
@@ -11,71 +13,45 @@ import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject var store: RayonStore
-    @ObservedObject var monitors = MonitorCenter.shared
-    @State private var openNewServer = false
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: RX.Space.s6) {
-                QuickConnectCard()
-                if store.storeRecent, !store.recentRecord.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: RX.Space.s2) {
-                            ForEach(store.recentRecord) { record in
-                                RecentRow(record: record)
+        GeometryReader { proxy in
+            ScrollView {
+                VStack(spacing: 0) {
+                    Spacer(minLength: RX.Space.s4)
+                    QuickConnectCard()
+                    if store.storeRecent, !store.recentRecord.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: RX.Space.s2) {
+                                ForEach(store.recentRecord) { record in
+                                    RecentRow(record: record)
+                                }
                             }
+                            .padding(.horizontal, RX.Space.s4)
                         }
+                        .padding(.horizontal, -RX.Space.s4)
+                        .padding(.top, RX.Space.s5)
                     }
+                    Spacer(minLength: RX.Space.s6)
+                    Text(RXAppVersion.text)
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.rxInkTertiary)
                 }
-                VStack(alignment: .leading, spacing: RX.Space.s3) {
-                    SectionTitle("Servers", count: store.machineGroup.count) {
-                        if !store.machineGroup.machines.isEmpty {
-                            Button {
-                                ServerActions.batchStartup()
-                            } label: {
-                                Label("Batch Startup", systemImage: "wind")
-                            }
-                            .buttonStyle(.rx(size: .small))
-                        }
-                    }
-                    if store.machineGroup.machines.isEmpty {
-                        EmptyStateView(
-                            "No servers yet",
-                            systemImage: "server.rack",
-                            actionTitle: "New Server"
-                        ) {
-                            openNewServer = true
-                        }
-                        .rxCard()
-                    } else {
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 260), spacing: RX.Space.s3)], spacing: RX.Space.s3) {
-                            ForEach(store.machineGroup.machines) { machine in
-                                ServerTile(machine: machine.id)
-                            }
-                        }
-                    }
-                }
-                Text(appVersion)
-                    .font(.rxHelp)
-                    .foregroundStyle(.rxInkTertiary)
-                    .frame(maxWidth: .infinity)
+                .padding(RX.Space.s4)
+                .frame(maxWidth: .infinity, minHeight: proxy.size.height)
             }
-            .padding(RX.Space.s4)
         }
-        .background(RXBackdrop().ignoresSafeArea())
+        .background {
+            ZStack {
+                RXBackdrop()
+                if !store.reducedViewEffects {
+                    RXStarfield()
+                }
+            }
+            .ignoresSafeArea()
+        }
         .navigationTitle("Home")
-        .toolbar {
-            ToolbarItem {
-                Button {
-                    openNewServer = true
-                } label: {
-                    Label("New Server", systemImage: "plus")
-                }
-            }
-        }
-        .sheet(isPresented: $openNewServer) {
-            NavigationStack { EditMachineView() }
-        }
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -100,41 +76,62 @@ struct QuickConnectCard: View {
         let savedServer = savedServer
         let canConnect = parsed != nil || savedServer != nil
         VStack(spacing: RX.Space.s3) {
-            HStack(spacing: RX.Space.s2) {
-                Image(systemName: "terminal")
-                    .font(.system(size: 18))
-                    .foregroundStyle(.rxInkSecondary)
-                TextField("ssh user@host -p 22", text: $command)
-                    .font(.system(size: 19, design: .monospaced))
-                    .textInputAutocapitalization(.never)
-                    .disableAutocorrection(true)
-                    .keyboardType(.URL)
-                    .submitLabel(.go)
-                    .onSubmit(connect)
-                    .onChange(of: command) { newValue in
-                        if newValue.hasPrefix("ssh ssh ") { command.removeFirst("ssh ".count) }
-                        refreshSuggestion()
+            RXAppIcon(size: 112)
+                .padding(.bottom, RX.Space.s1)
+            Text("Quick Connect")
+                .font(.system(.headline, design: .rounded))
+                .foregroundStyle(.rxInk)
+            VStack(alignment: .leading, spacing: RX.Space.s2) {
+                HStack(spacing: RX.Space.s2) {
+                    TextField("ssh root@www.example.com -p 22 ↵", text: $command)
+                        .font(.system(.headline, design: .rounded))
+                        .textInputAutocapitalization(.never)
+                        .disableAutocorrection(true)
+                        .keyboardType(.URL)
+                        .submitLabel(.go)
+                        .onSubmit(connect)
+                        .onChange(of: command) { newValue in
+                            if newValue.hasPrefix("ssh ssh ") { command.removeFirst("ssh ".count) }
+                            refreshSuggestion()
+                        }
+                        .padding(.horizontal, 12)
+                        .frame(height: 44)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(.thickMaterial)
+                                .shadow(color: .black.opacity(0.08), radius: 10, y: 4)
+                        )
+                    Button(action: connect) {
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 17, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.rxOnAccent)
+                            .frame(width: 44, height: 44)
+                            .background(Circle().fill(Color.rxAccent))
                     }
-                Button(action: connect) {
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.rxOnAccent)
-                        .frame(width: 40, height: 40)
-                        .background(Circle().fill(Color.rxAccent))
+                    .disabled(!canConnect)
+                    .opacity(canConnect ? 1 : 0.35)
+                    .simultaneousGesture(LongPressGesture().onEnded { _ in importFromPasteboard() })
+                    .accessibilityLabel("Connect")
                 }
-                .disabled(!canConnect)
-                .opacity(canConnect ? 1 : 0.35)
-                .simultaneousGesture(LongPressGesture().onEnded { _ in importFromPasteboard() })
-                .accessibilityLabel("Connect")
+                if let suggestion {
+                    Button {
+                        command = suggestion
+                        connect()
+                    } label: {
+                        Text("Did you mean “\(suggestion)”?")
+                            .font(.system(.footnote, design: .rounded))
+                            .foregroundStyle(.rxInkSecondary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .padding(.horizontal, 10)
+                            .frame(height: 28)
+                            .background(RoundedRectangle(cornerRadius: 8, style: .continuous).fill(.regularMaterial))
+                    }
+                    .buttonStyle(.plain)
+                    .transition(.offset(y: -6).combined(with: .opacity))
+                }
             }
-            .padding(.leading, RX.Space.s4)
-            .padding(.trailing, 6)
-            .frame(height: 56)
-            .background(
-                Capsule()
-                    .fill(.thickMaterial)
-                    .shadow(color: .black.opacity(0.12), radius: 14, y: 6)
-            )
+            .frame(maxWidth: 480)
             if let savedServer {
                 Label("\(savedServer.name) · \(savedServerTarget(savedServer))", systemImage: "server.rack")
                     .font(.system(size: 13, design: .monospaced))
@@ -142,26 +139,27 @@ struct QuickConnectCard: View {
                     .lineLimit(1)
                     .accessibilityLabel("Connects to the saved server \(savedServer.name)")
             }
-            if let suggestion {
-                Button {
-                    command = suggestion
-                    connect()
-                } label: {
-                    Label(suggestion, systemImage: "arrow.turn.down.right")
-                        .font(.system(size: 13, design: .monospaced))
-                        .foregroundStyle(.rxInkSecondary)
-                        .lineLimit(1)
-                }
+            Button {
+                store.saveTemporarySession.toggle()
+            } label: {
+                Label("Record Command", systemImage: store.saveTemporarySession ? "checkmark.square.fill" : "square")
+                    .font(.system(.subheadline, design: .rounded))
+                    .foregroundStyle(store.saveTemporarySession ? Color.rxAccent : Color.rxInkSecondary)
             }
+            .buttonStyle(.plain)
+            .disabled(!store.storeRecent)
+            .opacity(store.storeRecent ? 1 : 0.5)
+            .accessibilityValue(store.saveTemporarySession ? "On" : "Off")
             // Said once a command is typed: before, it read as an error
             // on a page with nothing wrong yet.
             if store.identityGroupForAutoAuth.isEmpty, !command.isEmpty {
                 Text("Quick Connect needs an identity that authenticates automatically.")
                     .font(.footnote)
                     .foregroundStyle(.rxWarning)
+                    .multilineTextAlignment(.center)
             }
         }
-        .padding(.vertical, RX.Space.s5)
+        .animation(.easeOut(duration: 0.2), value: suggestion)
     }
 
     /// Where a saved server connects: `user@host` and the port when not 22.
@@ -199,72 +197,6 @@ struct QuickConnectCard: View {
             RayonStore.overrideImport(from: data, key: paste)
         } else if let data = Data(base64Encoded: paste) {
             importData = data
-        }
-    }
-}
-
-/// A server at a glance: name, address, state, CPU and memory while monitored.
-struct ServerTile: View {
-    let machine: RDMachine.ID
-    @EnvironmentObject var store: RayonStore
-    @ObservedObject var monitors = MonitorCenter.shared
-
-    var body: some View {
-        let read = store.machineGroup[machine]
-        Menu {
-            ServerMenuItems(machine: machine)
-        } label: {
-            VStack(alignment: .leading, spacing: RX.Space.s3) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        RedactableText(read.name, redacted: store.machineRedacted == .all)
-                            .font(.headline)
-                            .foregroundStyle(.rxInk)
-                            .lineLimit(1)
-                        RedactableText(read.remoteAddress, redacted: store.machineRedacted != .none)
-                            .font(.rxCode)
-                            .foregroundStyle(.rxInkSecondary)
-                            .lineLimit(1)
-                    }
-                    Spacer()
-                }
-                if let session = monitors.session(for: machine) {
-                    LiveTileBars(session: session)
-                } else {
-                    HStack {
-                        CapsLabel("Last used")
-                        Spacer()
-                        Text(RXFormat.relative(read.lastConnection))
-                            .font(.footnote)
-                            .foregroundStyle(.rxInkSecondary)
-                    }
-                }
-            }
-            .multilineTextAlignment(.leading)
-            .rxCard()
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-private struct LiveTileBars: View {
-    @ObservedObject var session: MonitorSession
-    var body: some View {
-        let cpu = Double(session.status.processor.summary.sumUsed)
-        let memory = session.status.memoryUsedPercent
-        VStack(spacing: RX.Space.s2) {
-            bar("CPU", cpu, .rxAccent)
-            bar("Memory", memory, .rxSeries2)
-        }
-    }
-
-    func bar(_ title: String, _ percent: Double, _ color: Color) -> some View {
-        HStack(spacing: RX.Space.s2) {
-            CapsLabel(title).frame(width: 56, alignment: .leading)
-            UsageBar(fraction: percent / 100, color: color)
-            Text("\(RXFormat.percent(percent))%")
-                .font(.footnote.weight(.semibold).monospacedDigit())
-                .frame(width: 36, alignment: .trailing)
         }
     }
 }

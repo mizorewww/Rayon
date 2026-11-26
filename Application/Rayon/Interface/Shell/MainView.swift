@@ -71,6 +71,8 @@ struct MainView: View {
         switch router.route {
         case .home:
             HomeView()
+        case .dashboard:
+            DashboardView()
         case .servers:
             ServersView()
         case .identities:

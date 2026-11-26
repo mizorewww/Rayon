@@ -15,7 +15,7 @@
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./Resources/Screenshots/home-dark.jpg">
-  <img alt="Rayon 主页：顶部是快速连接，下方是已保存服务器的卡片，每张卡片都有连接、文件和监控按钮。" src="./Resources/Screenshots/home-light.jpg">
+  <img alt="Rayon：上方是快速连接，下方是已保存服务器的卡片，每张卡片都有连接、文件和监控按钮。" src="./Resources/Screenshots/home-light.jpg">
 </picture>
 
 ## 安装
@@ -72,9 +72,9 @@ brew install --cask mizorewww/tap/rayon
 
 ## 使用 Rayon
 
-1. **添加服务器**：在主页点 **New Server**（⇧⌘N）。
-2. **连接**：点服务器卡片。**Files** 打开 SFTP，**Monitor** 打开实时用量；工具栏切换器可在三者间切换。
-3. **快速连接**：在主页输入 `user@host`、`user@host:2222` 或完整的 `ssh` 命令。
+1. **添加服务器**：在 Dashboard 点 **New Server**（⇧⌘N）。
+2. **连接**：在 Dashboard 点服务器卡片。**Files** 打开 SFTP，**Monitor** 打开实时用量；工具栏切换器可在三者间切换。
+3. **快速连接**：在主页输入 `user@host`、`user@host:2222`、已保存服务器的名称或完整的 `ssh` 命令。
 4. **设置**（⌘,）包含应用和终端的全部选项。Ghostty 配置项的覆盖情况见
    [CONFIGURATION.md](Foundation/RayonTerminal/CONFIGURATION.md)。
 
