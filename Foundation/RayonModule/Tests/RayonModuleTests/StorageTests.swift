@@ -56,6 +56,16 @@ final class StorageTests: XCTestCase {
     }
 
     /// Passwords and keys go to the keychain; the database never holds them.
+    /// A save is in the file when it returns: another connection to the
+    /// database, as the next launch opens it, reads it.
+    func testSavesAreInTheFileAtOnce() throws {
+        let machine = try storage.save(RDMachine(remoteAddress: "a", remotePort: "22", name: "a"))
+        let other = Database(at: storage.databaseURL.path)
+        defer { other.close() }
+        let row: RDMachine? = try other.getObject(fromTable: RDMachine.tableName)
+        XCTAssertEqual(row?.id, machine.id)
+    }
+
     func testSecretsStayOutOfTheDatabase() throws {
         let identity = try storage.save(RDIdentity(username: "root", password: "hunter2"))
         let row: RDIdentity? = try storage.db.getObject(fromTable: RDIdentity.tableName)

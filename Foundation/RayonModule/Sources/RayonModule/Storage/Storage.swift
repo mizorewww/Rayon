@@ -142,6 +142,14 @@ public extension RayonStorage {
         }
     }
 
+    /// Whether any record was ever written, deleted ones included.
+    var hasAnyRecord: Bool {
+        func any<T: StoredRecord>(_: T.Type) -> Bool {
+            ((try? db.getValue(on: Column(named: "id").count(), fromTable: T.tableName))?.intValue ?? 0) > 0
+        }
+        return Self.recordTypes.contains { any($0) }
+    }
+
     /// Forgets the deletions older than the tombstone lifetime that have
     /// nothing left to send.
     func purgeTombstones(now: Date = Date()) {
