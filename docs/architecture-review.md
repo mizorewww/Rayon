@@ -80,9 +80,9 @@ UU 远程（当前位于 `Foundation/RayonModule/Sources/RayonModule/RemoteDeskt
 - **设置体系迁入 `ConfigurableKit` 并反转控制权**：
   - 解除 `RayonTerminal` 中 `GhosttyConfigurationView` 对主应用设置页的反向劫持，由宿主应用主导顶层设置导航。
   - 引入 FlowDown 使用的 **`ConfigurableKit`** 单点管理应用偏好键、默认值、变更订阅与声明式设置行，消除 `@AppStorage`、`RayonStore.didSet` 与手动通知混用的乱象，修正 `disableConformation` 等历史拼写错误。
-- **Ghostty 终端配置器大瘦身**：
-  - 砍掉移植自第三方网页生成器的四千余行繁琐配置 UI 以及 309 行内存假 Shell 模拟器（`ConfigSandbox.swift`）。
-  - 仅保留高频核心视觉与行为开关（配色主题、字体与字号、背景透明度、光标形态、剪贴板策略），右侧预览直接挂载真实的只读 `RayonTerminalView` 渲染固定 ANSI 样例（真实呈现连字与字体加粗效果），高级长尾参数直接提供“在内置编辑器中打开 `config.ghostty`”入口。
+- **Ghostty 终端配置器重构（保留全部设置项）**：
+  - 重写移植自第三方网页生成器的配置 UI 与 309 行内存假 Shell 模拟器（`ConfigSandbox.swift`），但**不删除任何设置项**：全部设置、分类、明暗主题、调色板、快捷键、搜索与重置均保留。
+  - 改用原生表单控件与单一数据驱动模型，尽量使用 `libghostty-spm` 自带的主题、配置解析与校验能力；颜色选择统一使用 `Lakr233/BlossomColorPicker`；预览直接挂载真实的只读 `RayonTerminalView` 渲染固定 ANSI 样例（真实呈现连字与字体加粗效果）；配置以 `config.ghostty` 持久化。
   - 移除每次 SSH 收包持锁拷贝 256KB 字符串的 `TerminalOutputBuffer`，对接终端底层真实的离屏缓冲区搜索与视口跳转高亮。
 - **统一 Tree-sitter 代码编辑器**：
   - 删除 `RayonEditor` 中 macOS 分支手写的 TextKit 1 行号尺与每次按键主线程跑 4 遍全文正则的 `MacSyntaxHighlighter`。
@@ -128,7 +128,7 @@ UU 远程（当前位于 `Foundation/RayonModule/Sources/RayonModule/RemoteDeskt
 | **Rayon 弹窗与通知** | 双端 `UIBridge`、`DoubleConfirm`、`0.1s` 轮询 `PresentationQueue`、40 字截断 Toast | `Lakr233/AlertController` + `Lakr233/UIEffectKit` + `SPIndicator` | FlowDown `Indicator.swift` |
 | **Rayon 通用控件与表格** | `RayonDesign`（私有 `_VariadicView`、无滚动 `RXPicker`/`RXMenuButton`、假表头 `FileTable`、旧 `SymbolPicker`） | 原生 `NavigationSplitView`、`Form(.grouped)`、`Table`、`Picker`、`Menu`、`ListViewKit` | Apple 原生框架 / FlowDown |
 | **Rayon 图表与动效** | `Charts.swift` 手算折线 `Path`、`Welcome.swift` CPU 30fps `RXStarfield`、菜单栏 20Hz `Timer` | 原生 `Swift Charts` + `Lakr233/ColorfulX` + `Lakr233/DisplayLink` | Apple 原生框架 / FlowDown |
-| **Rayon 终端配置预览** | 4,304 行网页移植配置器 + `ConfigSandbox.swift` 309 行内存假 Shell | 精简核心配置项 + 真实只读 `RayonTerminalView` 预览 + 内置编辑器直改 `config.ghostty` | `libghostty-spm` 原生能力 |
+| **Rayon 终端配置预览** | 4,304 行网页移植配置器 + `ConfigSandbox.swift` 309 行内存假 Shell | 保留全部设置项的原生数据驱动配置器 + `BlossomColorPicker` + 真实只读 `RayonTerminalView` 预览 + `config.ghostty` | `libghostty-spm` 原生能力 |
 | **Rayon SSH 网络栈** | `External/NSRemoteShell` (ObjC `NSThread` + `usleep(800)`) + 2021 年 `CSSH.xcframework` | `swift-nio` + `swift-nio-ssh` / `Citadel` + `NIOTransportServices` (`Network.framework`) | FlowDown 已用 `swift-nio` 生态 |
 | **Rayon VNC 网络与压缩** | 手写 BSD `VNCSocket`、废弃 `NetServiceBrowser`、手写无上限 `VNCZlibStream` | `Network.framework` (`NWConnection` / `NWBrowser`) + 系统 `Compression` 框架 | Apple 原生框架 |
 | **Rayon 日志与更新** | iOS 独占 `dup2` `LogRedirect.swift`、无自更新检查 | FlowDown `Frameworks/Logger` (`os.Logger` + `LogStore`) + `DpkgVersion` (`UpdateManager`) | FlowDown `Logger` & `UpdateManager` |
