@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./Resources/Icon.png" width="128" height="128" alt="Rayon's app icon">
+</p>
+
 # Rayon
 
 **English** · [简体中文](./README.zh-Hans.md) · [繁體中文](./README.zh-Hant.md)

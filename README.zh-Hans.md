@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="./Resources/Icon.png" width="128" height="128" alt="Rayon 应用图标">
+</p>
+
 # Rayon
 
 [English](./README.md) · **简体中文** · [繁體中文](./README.zh-Hant.md)
