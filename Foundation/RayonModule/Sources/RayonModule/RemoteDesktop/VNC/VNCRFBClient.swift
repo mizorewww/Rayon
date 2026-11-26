@@ -40,7 +40,7 @@ final class VNCRFBClient: @unchecked Sendable {
     weak var delegate: VNCRFBClientDelegate?
 
     private let framebuffer = VNCFramebuffer()
-    private let zlib = VNCZlibStream()
+    private var inflater: VNCInflateStream?
     private var channel: VNCByteChannel?
     private var reader: Thread?
     private let writeLock = NSLock()
@@ -63,7 +63,7 @@ final class VNCRFBClient: @unchecked Sendable {
             bytesPerPixel: pixelFormat.bytesPerPixel,
             cpixelByteCount: pixelFormat.cpixelByteCount,
             cpixelPadsAtEnd: !pixelFormat.bigEndian,
-            zlib: zlib
+            zlib: inflater
         )
     }
 
@@ -238,10 +238,11 @@ final class VNCRFBClient: @unchecked Sendable {
             throw RemoteDesktopFailure("The server sent a malformed init message.")
         }
         desktopName = serverInit.desktopName
+        inflater = try VNCInflateStream()
         guard serverInit.pixelFormat.translator() != nil else {
             throw RemoteDesktopFailure("The server's pixel format (\(serverInit.pixelFormat.bitsPerPixel)bpp, depth \(serverInit.pixelFormat.depth)) is unsupported.")
         }
-        framebuffer.resize(width: serverInit.width, height: serverInit.height)
+        try resizeFramebuffer(width: serverInit.width, height: serverInit.height)
 
         // From here on the server emits `clientRequested` pixels.
         pixelFormat = .clientRequested
@@ -322,6 +323,13 @@ final class VNCRFBClient: @unchecked Sendable {
         }
     }
 
+    private func resizeFramebuffer(width: Int, height: Int) throws {
+        guard width <= VNCFramebuffer.maximumDimension, height <= VNCFramebuffer.maximumDimension else {
+            throw RemoteDesktopFailure("The remote desktop is too large (\(width)×\(height)).")
+        }
+        framebuffer.resize(width: width, height: height)
+    }
+
     private func handleUpdate(over channel: VNCByteChannel) throws {
         _ = try channel.read(exactly: 1) // padding
         let count = Int(try channel.read(exactly: 2).readU16BE(at: 0))
@@ -334,7 +342,7 @@ final class VNCRFBClient: @unchecked Sendable {
             }
             switch VNCWire.Encoding(rawValue: header.encoding) {
             case .desktopSize:
-                framebuffer.resize(width: header.width, height: header.height)
+                try resizeFramebuffer(width: header.width, height: header.height)
                 sizeChanged = true
             case .cursor:
                 let cursor = try VNCDecoders.decodeCursor(header, from: channel, context: context)

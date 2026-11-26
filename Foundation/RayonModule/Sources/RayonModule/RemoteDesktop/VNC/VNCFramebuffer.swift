@@ -12,6 +12,10 @@ import CoreGraphics
 import Foundation
 
 final class VNCFramebuffer: @unchecked Sendable {
+    /// The widest or tallest desktop accepted (a 1 GiB buffer at most);
+    /// the server names the size, so it is bounded before allocating.
+    static let maximumDimension = 16384
+
     private let lock = NSLock()
     private var pixels: [UInt32] = []
     private(set) var width = 0

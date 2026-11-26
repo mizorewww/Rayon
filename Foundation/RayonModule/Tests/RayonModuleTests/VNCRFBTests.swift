@@ -380,37 +380,82 @@ final class VNCRFBTests: XCTestCase {
 
     // MARK: ZRLE
 
-    private func zlibCompress(_ data: Data) -> Data {
-        var stream = z_stream()
-        deflateInit_(&stream, Z_DEFAULT_COMPRESSION, ZLIB_VERSION, Int32(MemoryLayout<z_stream>.size))
-        defer { deflateEnd(&stream) }
-        var output = Data()
-        let capacity = 64 * 1024
-        let chunk = UnsafeMutablePointer<UInt8>.allocate(capacity: capacity)
-        defer { chunk.deallocate() }
-        data.withUnsafeBytes { input in
-            stream.next_in = UnsafeMutablePointer<UInt8>(mutating: input.baseAddress!.assumingMemoryBound(to: UInt8.self))
-            stream.avail_in = uInt(input.count)
-            repeat {
-                stream.next_out = chunk
-                stream.avail_out = uInt(capacity)
-                deflate(&stream, Z_FINISH)
-                let produced = capacity - Int(stream.avail_out)
-                output.append(chunk, count: produced)
-            } while stream.avail_out == 0
+    /// A server-side ZRLE stream: one deflate state, each chunk sync-flushed.
+    private final class Deflater {
+        private var stream = z_stream()
+
+        init() {
+            deflateInit_(&stream, Z_DEFAULT_COMPRESSION, ZLIB_VERSION, Int32(MemoryLayout<z_stream>.size))
         }
-        return output
+
+        deinit { deflateEnd(&stream) }
+
+        func chunk(_ data: Data) -> Data {
+            var output = Data()
+            let capacity = 64 * 1024
+            let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: capacity)
+            defer { buffer.deallocate() }
+            data.withUnsafeBytes { input in
+                stream.next_in = UnsafeMutablePointer(mutating: input.baseAddress?.assumingMemoryBound(to: UInt8.self))
+                stream.avail_in = uInt(input.count)
+                repeat {
+                    stream.next_out = buffer
+                    stream.avail_out = uInt(capacity)
+                    deflate(&stream, Z_SYNC_FLUSH)
+                    output.append(buffer, count: capacity - Int(stream.avail_out))
+                } while stream.avail_out == 0
+            }
+            return output
+        }
     }
 
-    private func inflate(_ compressed: Data) throws -> Data {
-        let stream = VNCZlibStream()
-        return try stream.inflate(compressed)
+    func testInflateKeepsOneStreamAcrossChunks() throws {
+        let deflater = Deflater()
+        let inflater = try VNCInflateStream()
+        let first = Data((0 ..< 5000).map { UInt8($0 % 251) })
+        let second = Data(repeating: 7, count: 70000)
+        let third = Data("x".utf8)
+        for original in [first, second, third] {
+            let compressed = deflater.chunk(original)
+            XCTAssertEqual(try inflater.inflate(compressed, maximumOutput: original.count), original)
+        }
     }
 
-    func testZlibRoundTrip() throws {
-        let original = Data((0 ..< 1000).map { UInt8($0 % 251) })
-        let inflated = try inflate(zlibCompress(original))
-        XCTAssertEqual(inflated, original)
+    func testInflateRefusesOutputPastTheLimit() throws {
+        // 16 MiB of zeros deflate to a few KiB: a zip bomb in one rect.
+        let bomb = Deflater().chunk(Data(count: 16 * 1024 * 1024))
+        XCTAssertLessThan(bomb.count, 64 * 1024)
+        let inflater = try VNCInflateStream()
+        XCTAssertThrowsError(try inflater.inflate(bomb, maximumOutput: 1024 * 1024)) { error in
+            XCTAssertEqual(error as? VNCInflateStream.Failure, .outputLimitExceeded(1024 * 1024))
+        }
+    }
+
+    func testZRLEBoundCoversWorstCaseTiles() {
+        // A 64x64 plain-RLE tile of single-pixel runs: 1 + 4096 * (3 + 1).
+        let header = rectHeader(x: 0, y: 0, w: 64, h: 64, encoding: 16)
+        XCTAssertGreaterThanOrEqual(VNCDecoders.zrleMaximumLength(header, cpixelByteCount: 3), 1 + 4096 * 4)
+    }
+
+    func testZRLERunOverflowingItsTileIsMalformed() {
+        let framebuffer = VNCFramebuffer()
+        framebuffer.resize(width: 4, height: 4)
+        var payload = Data([0x80, 0x00, 0x00, 0xFF]) // plain RLE, red
+        payload.append(contentsOf: [255, 255, 255, 0]) // a 766-pixel run in a 16-pixel tile
+        XCTAssertThrowsError(try VNCDecoders.decodeZRLE(
+            rectHeader(x: 0, y: 0, w: 4, h: 4, encoding: 16),
+            inflated: payload, context: makeContext(framebuffer: framebuffer)
+        ))
+    }
+
+    func testRectangleOutsideFramebufferIsMalformed() {
+        let framebuffer = VNCFramebuffer()
+        framebuffer.resize(width: 4, height: 4)
+        XCTAssertThrowsError(try VNCDecoders.decode(
+            rectHeader(x: 2, y: 0, w: 4, h: 1, encoding: 0),
+            from: MemoryChannel(Array(repeating: 0, count: 64)),
+            context: makeContext(framebuffer: framebuffer)
+        ))
     }
 
     func testZRLESolidAndRawTiles() throws {

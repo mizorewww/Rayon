@@ -22,7 +22,7 @@ enum VNCDecoders {
         var bytesPerPixel: Int
         var cpixelByteCount: Int
         var cpixelPadsAtEnd = true
-        var zlib: VNCZlibStream?
+        var zlib: VNCInflateStream?
     }
 
     private static func readFullPixel(from source: VNCByteChannel, using context: Context) throws -> UInt32 {
@@ -31,6 +31,12 @@ enum VNCDecoders {
     }
 
     static func decode(_ header: VNCWire.RectangleHeader, from source: VNCByteChannel, context: Context) throws {
+        // A rectangle must lie inside the framebuffer: its size drives every
+        // read and allocation below, and the server picks it.
+        let size = context.framebuffer.size
+        guard header.x + header.width <= Int(size.width), header.y + header.height <= Int(size.height) else {
+            throw VNCDecodeError.malformed("rectangle \(header.width)x\(header.height) at \(header.x),\(header.y) outside the \(Int(size.width))x\(Int(size.height)) framebuffer")
+        }
         switch VNCWire.Encoding(rawValue: header.encoding) {
         case .raw:
             try raw(header, from: source, context: context)
@@ -172,8 +178,22 @@ enum VNCDecoders {
             throw VNCDecodeError.malformed("ZRLE payload length \(length)")
         }
         let compressed = try source.read(exactly: length)
-        let inflated = try zlib.inflate(compressed)
+        let inflated: Data
+        do {
+            inflated = try zlib.inflate(compressed, maximumOutput: zrleMaximumLength(header, cpixelByteCount: context.cpixelByteCount))
+        } catch {
+            throw VNCDecodeError.malformed("ZRLE stream: \(error)")
+        }
         try decodeZRLE(header, inflated: inflated, context: context)
+    }
+
+    /// The most a well-formed ZRLE rectangle inflates to: per 64×64 tile a
+    /// subencoding byte and at most a 127-entry palette, and per pixel at
+    /// most one CPIXEL plus one run-length byte (raw and RLE tiles cost no
+    /// more; longer runs cost fewer bytes per pixel).
+    static func zrleMaximumLength(_ header: VNCWire.RectangleHeader, cpixelByteCount: Int) -> Int {
+        let tiles = ((header.width + 63) / 64) * ((header.height + 63) / 64)
+        return tiles * (1 + 127 * cpixelByteCount) + header.width * header.height * (cpixelByteCount + 1)
     }
 
     /// Zero-allocation ZRLE rectangle decoder using direct buffer reading and batch tile writes.
@@ -301,12 +321,15 @@ enum VNCDecoders {
                         while pixelsWritten < total {
                             let pixel = try cpixel()
                             let length = try runLength()
+                            guard length <= total - pixelsWritten else {
+                                throw VNCDecodeError.malformed("ZRLE run of \(length) overflows its tile")
+                            }
                             tileBuffer.append(contentsOf: repeatElement(pixel, count: length))
                             pixelsWritten += length
                         }
                         context.framebuffer.putRun(
                             x: header.x + tileX, y: header.y + tileY,
-                            width: tileWidth, pixels: tileBuffer.prefix(total)
+                            width: tileWidth, pixels: tileBuffer[...]
                         )
                     } else {
                         let entries = try palette(subencoding & 0x7F)
@@ -323,12 +346,15 @@ enum VNCDecoders {
                             if indicator & 0x80 != 0 {
                                 length = try runLength()
                             }
+                            guard length <= total - pixelsWritten else {
+                                throw VNCDecodeError.malformed("ZRLE run of \(length) overflows its tile")
+                            }
                             tileBuffer.append(contentsOf: repeatElement(entries[index], count: length))
                             pixelsWritten += length
                         }
                         context.framebuffer.putRun(
                             x: header.x + tileX, y: header.y + tileY,
-                            width: tileWidth, pixels: tileBuffer.prefix(total)
+                            width: tileWidth, pixels: tileBuffer[...]
                         )
                     }
                     tileX += tileWidth
@@ -343,6 +369,9 @@ enum VNCDecoders {
     static func decodeCursor(_ header: VNCWire.RectangleHeader, from source: VNCByteChannel, context: Context) throws -> RemoteCursorInfo? {
         let pixelCount = header.width * header.height
         guard pixelCount > 0 else { return nil }
+        guard header.width <= 512, header.height <= 512 else {
+            throw VNCDecodeError.malformed("cursor \(header.width)x\(header.height)")
+        }
         let pixelData = try source.read(exactly: pixelCount * context.bytesPerPixel)
         let maskRowBytes = (header.width + 7) / 8
         let mask = try source.read(exactly: maskRowBytes * header.height)
