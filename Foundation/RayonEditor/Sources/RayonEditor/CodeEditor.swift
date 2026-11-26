@@ -13,28 +13,7 @@ public struct EditorCaret: Equatable, Sendable {
 }
 
 #if os(iOS)
-import Runestone
-import TreeSitterBashRunestone
-import TreeSitterCPPRunestone
-import TreeSitterCRunestone
-import TreeSitterCSSRunestone
-import TreeSitterGoRunestone
-import TreeSitterHTMLRunestone
-import TreeSitterJavaRunestone
-import TreeSitterJavaScriptRunestone
-import TreeSitterJSONRunestone
-import TreeSitterLuaRunestone
-import TreeSitterMarkdownRunestone
-import TreeSitterPerlRunestone
-import TreeSitterPHPRunestone
-import TreeSitterPythonRunestone
-import TreeSitterRubyRunestone
-import TreeSitterRustRunestone
-import TreeSitterSQLRunestone
-import TreeSitterSwiftRunestone
-import TreeSitterTOMLRunestone
-import TreeSitterTypeScriptRunestone
-import TreeSitterYAMLRunestone
+import RunestoneEditor
 import UIKit
 
 extension EditorLanguage {

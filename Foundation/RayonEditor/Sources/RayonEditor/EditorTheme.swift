@@ -1,6 +1,6 @@
 #if os(iOS)
 import RayonDesign
-import Runestone
+import RunestoneEditor
 import SwiftUI
 import UIKit
 
