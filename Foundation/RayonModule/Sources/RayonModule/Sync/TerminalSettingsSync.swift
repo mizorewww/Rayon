@@ -46,9 +46,10 @@ final class TerminalSettingsSync {
 
     /// Writes what this device has, if it differs from the record. A first
     /// record from settings that have not changed keeps the file's time, so
-    /// it does not win over another device's later change.
+    /// it does not win over another device's later change. A file that
+    /// cannot be read writes nothing.
     func push(changed: Date? = nil) {
-        let entries = TerminalConfigurationSync.entries(of: settings)
+        guard let entries = TerminalConfigurationSync.entries(of: settings) else { return }
         let existing = storage.record(RDTerminalSettings.self, id: RDTerminalSettings.recordID)
         if existing == nil, entries.isEmpty { return }
         if existing?.values == entries { return }

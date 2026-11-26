@@ -55,6 +55,19 @@ final class TerminalSettingsSyncTests: XCTestCase {
         XCTAssertNil(record)
     }
 
+    /// A hand-edited file with a line that is not `key = value`, newer than
+    /// the record: it is not read as "nothing set", which would remove
+    /// every device's settings.
+    func testAnUnreadableFileDoesNotEmptyTheRecord() throws {
+        var synced = RDTerminalSettings(entries: ["background": ["#101010"]])
+        synced.modified = Date(timeIntervalSince1970: 1_000_000)
+        try storage.save(synced, changed: synced.modified)
+        let local = try settings("background = #101010\noops\n")
+        TerminalSettingsSync(storage: storage, settings: local).start()
+        XCTAssertEqual(record?.values, ["background": ["#101010"]])
+        XCTAssertEqual(record?.modified, synced.modified)
+    }
+
     func testChangesHereAndFromAnotherDevice() throws {
         let local = try settings("font-size = 18\nbackground = #101010\n")
         let sync = TerminalSettingsSync(storage: storage, settings: local)

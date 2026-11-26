@@ -21,6 +21,10 @@ public final class TerminalSettings {
     private(set) var applied: GhosttyConfigText
     /// Why the last change, or the file at launch, was not applied.
     var issue: String?
+    /// The file is there but is not UTF-8 text: what Settings shows does not
+    /// stand for it, so iCloud sync neither sends nor applies settings until
+    /// a change made here writes it anew.
+    @ObservationIgnored private(set) var fileIsUnreadable = false
 
     /// Undo and redo for Settings' own changes.
     @ObservationIgnored let undoManager: UndoManager = {
@@ -44,8 +48,9 @@ public final class TerminalSettings {
 
     public init(fileURL: URL = defaultFileURL, defaults: UserDefaults = .standard) {
         self.fileURL = fileURL
-        var text = (try? String(contentsOf: fileURL, encoding: .utf8)).map(GhosttyConfigText.init)
-        if text == nil, let legacy = Self.legacySettings(in: defaults) {
+        let data = try? Data(contentsOf: fileURL)
+        var text = data.flatMap { String(data: $0, encoding: .utf8) }.map(GhosttyConfigText.init)
+        if data == nil, let legacy = Self.legacySettings(in: defaults) {
             text = legacy
             if (try? Self.write(legacy, to: fileURL)) != nil {
                 defaults.removeObject(forKey: Self.legacyKey)
@@ -54,6 +59,10 @@ public final class TerminalSettings {
         let initial = text ?? GhosttyConfigText()
         config = initial
         applied = initial
+        if data != nil, text == nil {
+            fileIsUnreadable = true
+            issue = "config.ghostty is not UTF-8 text, so it was not read."
+        }
     }
 
     // MARK: Reading
@@ -148,6 +157,7 @@ public final class TerminalSettings {
         try RayonTerminalConfiguration.apply(next)
         try Self.write(next, to: fileURL)
         applied = next
+        fileIsUnreadable = false
         issue = nil
         NotificationCenter.default.post(name: Self.didChange, object: self)
         if let size = next.values("font-size").last, size != oldSize, let points = Double(size) {

@@ -16,13 +16,17 @@ public enum TerminalConfigurationSync {
         SettingCatalog.shared.setting(key) != nil && !deviceBoundKeys.contains(key)
     }
 
-    /// The keys that travel, as applied here.
-    public static func entries(of settings: TerminalSettings = .shared) -> [String: [String]] {
-        entries(of: settings.applied)
+    /// The keys that travel, as applied here; nil when the file cannot be
+    /// read (not UTF-8, or a line that is not `key = value`). Such a file
+    /// says nothing about them: taken for "none set", it would remove every
+    /// device's settings.
+    public static func entries(of settings: TerminalSettings = .shared) -> [String: [String]]? {
+        guard !settings.fileIsUnreadable else { return nil }
+        return entries(of: settings.applied)
     }
 
-    nonisolated static func entries(of config: GhosttyConfigText) -> [String: [String]] {
-        let lines = (try? config.entries()) ?? []
+    nonisolated static func entries(of config: GhosttyConfigText) -> [String: [String]]? {
+        guard let lines = try? config.entries() else { return nil }
         return lines.reduce(into: [:]) { result, line in
             if syncs(line.key) { result[line.key, default: []].append(line.value) }
         }
@@ -41,9 +45,11 @@ public enum TerminalConfigurationSync {
         return result
     }
 
-    /// Makes the keys that travel what another device has, and applies them.
+    /// Makes the keys that travel what another device has, and applies them;
+    /// not to a file that cannot be read, which stays as it is.
     public static func adopt(_ remote: [String: [String]], into settings: TerminalSettings = .shared) {
-        let changes = changes(from: entries(of: settings), to: remote)
+        guard let local = entries(of: settings) else { return }
+        let changes = changes(from: local, to: remote)
         guard !changes.isEmpty else { return }
         settings.adopt(changes)
     }

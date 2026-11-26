@@ -197,10 +197,30 @@ final class ConfigurationRuntimeTests: XCTestCase {
         let expected: [String: [String]?] = [
             "background": nil as [String]?, "foreground": ["#eeeeee"], "keybind": ["clear", "ctrl+j=ignore"],
         ]
-        XCTAssertEqual(TerminalConfigurationSync.changes(from: TerminalConfigurationSync.entries(of: settings), to: remote), expected)
+        XCTAssertEqual(try TerminalConfigurationSync.changes(from: XCTUnwrap(TerminalConfigurationSync.entries(of: settings)), to: remote), expected)
         TerminalConfigurationSync.adopt(remote, into: settings)
         XCTAssertEqual(settings.applied.text, "# mine\nfont-size = 16\nwindow-padding-x = 4\nfuture-key = 1\nkeybind = clear\nkeybind = ctrl+j=ignore\nforeground = #eeeeee\n")
         XCTAssertEqual(TerminalConfigurationSync.entries(of: settings), ["foreground": ["#eeeeee"], "keybind": ["clear", "ctrl+j=ignore"]])
-        XCTAssertTrue(TerminalConfigurationSync.changes(from: TerminalConfigurationSync.entries(of: settings), to: remote).isEmpty)
+        XCTAssertTrue(try TerminalConfigurationSync.changes(from: XCTUnwrap(TerminalConfigurationSync.entries(of: settings)), to: remote).isEmpty)
+    }
+
+    /// A file that cannot be read says nothing about the settings that
+    /// travel: none are read from it, and another device's do not replace it.
+    @MainActor func testAnUnreadableFileNeitherSyncsNorIsReplaced() throws {
+        let malformed = try scratchSettings("background = #111111\nthis line has no equals sign\n")
+        XCTAssertNil(TerminalConfigurationSync.entries(of: malformed))
+        TerminalConfigurationSync.adopt(["foreground": ["#eeeeee"]], into: malformed)
+        XCTAssertEqual(malformed.applied.text, "background = #111111\nthis line has no equals sign\n")
+
+        let url = FileManager.default.temporaryDirectory.appending(path: "RayonTerminalTests-\(UUID())/config.ghostty")
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
+        let bytes = Data("background = #111111\n".utf8) + Data([0xFF, 0xFE, 0x0A])
+        try bytes.write(to: url)
+        let binary = TerminalSettings(fileURL: url, defaults: .standard)
+        XCTAssertNil(TerminalConfigurationSync.entries(of: binary))
+        XCTAssertNotNil(binary.issue)
+        TerminalConfigurationSync.adopt(["foreground": ["#eeeeee"]], into: binary)
+        XCTAssertEqual(try Data(contentsOf: url), bytes)
     }
 }
