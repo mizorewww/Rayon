@@ -9,21 +9,29 @@
 import XCTest
 
 final class LicenseNoticesTests: XCTestCase {
-    func testTheLibrariesAreTheShippedOnes() throws {
+    func testEachPlatformListsTheLibrariesItShips() throws {
         let license = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             .deletingLastPathComponent().deletingLastPathComponent()
             .appendingPathComponent("Resources/LICENSE")
-        let names = LicenseNotices.libraries(in: try String(contentsOf: license, encoding: .utf8))
-        for shipped in ["Citadel", "SwiftNIO SSH", "SwiftNIO", "CodeEditSourceEditor", "UURemoteKit", "WebRTC", "SwiftProtobuf", "BigInt", "Runestone.xcframework"] {
-            XCTAssertTrue(names.contains(shipped), "\(shipped) in \(names)")
+        let text = try String(contentsOf: license, encoding: .utf8)
+        let mac = LicenseNotices.libraries(in: text, for: .macOS)
+        let iOS = LicenseNotices.libraries(in: text, for: .iOS)
+        let both = ["Citadel", "SwiftNIO SSH", "SwiftNIO", "GhosttyKit / GhosttyTerminal", "WCDB", "UURemoteKit", "WebRTC", "SwiftProtobuf", "BigInt", "Swift Collections"]
+        for shipped in both + ["CodeEditSourceEditor", "CodeEditTextView", "SwiftTreeSitter", "tree-sitter"] {
+            XCTAssertTrue(mac.contains(shipped), "\(shipped) in \(mac)")
         }
-        // Runestone itself is inside Runestone.xcframework; SwiftLint never
-        // ships; libssh2 and OpenSSL left with NSRemoteShell.
-        for absent in ["Runestone", "SwiftLintPlugin", "* Footnote", "libssh2", "OpenSSL"] {
-            XCTAssertFalse(names.contains(absent), "\(absent) in \(names)")
+        for shipped in both + ["Runestone.xcframework"] {
+            XCTAssertTrue(iOS.contains(shipped), "\(shipped) in \(iOS)")
+        }
+        XCTAssertFalse(mac.contains("Runestone.xcframework"), "\(mac)")
+        XCTAssertFalse(iOS.contains { $0.hasPrefix("CodeEdit") || $0 == "tree-sitter" }, "\(iOS)")
+        // Runestone and its grammars are inside Runestone.xcframework;
+        // SwiftLint never ships; libssh2 and OpenSSL left with NSRemoteShell.
+        for absent in ["Runestone", "TreeSitterLanguages", "tree-sitter-bash", "SwiftLintPlugin", "* Footnote", "libssh2", "OpenSSL"] {
+            XCTAssertFalse(mac.contains(absent) || iOS.contains(absent), "\(absent) in \(mac) / \(iOS)")
         }
         // A NOTICE's own dividers do not start a library.
-        XCTAssertFalse(names.contains { $0.hasPrefix("This product") || $0.hasPrefix("Please visit") }, "\(names)")
+        XCTAssertFalse((mac + iOS).contains { $0.hasPrefix("This product") || $0.hasPrefix("Please visit") }, "\(mac)")
     }
 }
