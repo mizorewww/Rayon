@@ -329,6 +329,23 @@ final class ProcParsersTests: XCTestCase {
         XCTAssertFalse(elements.contains { $0.mountPoint == "/sys/fs/cgroup" })
     }
 
+    func testDfPkKeepsAFullDisk() {
+        // Regression: a root partition with nothing available vanished
+        // from the monitor exactly when it was full.
+        let raw = """
+        Filesystem     1024-blocks     Used Available Capacity Mounted on
+        /dev/vda1         51281224 51281224         0     100% /
+        /dev/vdb1        102400000 97280000         0     100% /data
+        /dev/loop3           56832    56832         0     100% /snap/core18/2829
+        devfs                  213      213         0     100% /dev
+        map auto_home            0        0         0     100% /System/Volumes/Data/home
+        """
+        let elements = ProcParsers.parseDfPk(raw)
+        XCTAssertEqual(elements.map(\.mountPoint), ["/", "/data"])
+        XCTAssertEqual(elements.first?.percent, 100)
+        XCTAssertEqual(elements.first?.free, "0K")
+    }
+
     func testDfPkFormatsKilobytesLikeDfH() {
         XCTAssertEqual(ProcParsers.formatKilobytes(957_440), "935M")
         XCTAssertEqual(ProcParsers.formatKilobytes(512), "512K")

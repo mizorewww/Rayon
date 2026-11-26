@@ -235,8 +235,13 @@ enum ProcParsers {
                 continue
             }
             let mount = cut[5...].joined(separator: " ")
-            // Skip pseudo and empty filesystems (udev reports 0 available).
-            guard mount.hasPrefix("/"), free > 0 else {
+            // A full disk (nothing available) must stay listed: that is
+            // when it matters most. Only sizeless pseudo filesystems and
+            // the always-full read-only images go: macOS devfs and the
+            // squashfs loop mounts snap leaves on Ubuntu.
+            let device = cut[0]
+            let isReadOnlyImage = device == "devfs" || device.hasPrefix("/dev/loop")
+            guard mount.hasPrefix("/"), size > 0, !(isReadOnlyImage && free == 0) else {
                 continue
             }
             result.append(.init(
