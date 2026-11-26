@@ -67,9 +67,23 @@ final class ConfigurationRuntimeTests: XCTestCase {
         doc.set("keybind", ["ctrl+k=text:hello"])
         let text = RayonTerminalConfiguration.runtimeContents(doc, dark: true)
         let keybinds = text.components(separatedBy: "\n").filter { $0.hasPrefix("keybind =") }
-        XCTAssertEqual(keybinds, ["keybind = clear", "keybind = ctrl+k=text:hello"])
+        XCTAssertEqual(Array(keybinds.drop { $0 != "keybind = clear" }), ["keybind = clear", "keybind = ctrl+k=text:hello"])
         XCTAssertFalse(RayonTerminalConfiguration.runtimeContents(ConfigDocument(), dark: true).contains("keybind = clear"))
         try RayonTerminalConfiguration.apply(doc, to: TerminalController(configuration: .default))
+    }
+
+    @MainActor func testFindBarKeysAreNotGhosttys() throws {
+        for document in [ConfigDocument(), { var d = ConfigDocument(); d.set("keybind", ["ctrl+k=ignore"]); return d }()] {
+            let text = RayonTerminalConfiguration.runtimeContents(document, dark: false)
+            for trigger in ["escape", "super+f", "super+shift+f", "super+e", "super+g", "super+shift+g"] {
+                XCTAssertTrue(text.contains("keybind = \(trigger)=unbind"), trigger)
+            }
+            let controller = TerminalController(configuration: .default)
+            try RayonTerminalConfiguration.apply(document, to: controller)
+            XCTAssertNil(controller.lastConfigurationIssue)
+        }
+        // The shared controller has them before any setting is applied.
+        XCTAssertTrue(TerminalController(configuration: RayonTerminalConfiguration.base).renderedConfig.contains("keybind = escape=unbind"))
     }
 
     func testCompoundDurationValidation() throws {

@@ -158,7 +158,7 @@ enum RayonTerminalConfiguration {
     /// (OSC 52). Like Copy on Select, the app stores it with its preferences.
     static private(set) var clipboardSharing = true
     static let controller: TerminalController = {
-        let result = TerminalController(configuration: TerminalConfiguration.default
+        let result = TerminalController(configuration: base
             .custom("copy-on-select", copyOnSelectValue)
             .custom("clipboard-read", clipboardAccessValue).custom("clipboard-write", clipboardAccessValue))
         let document = ConfigEditorModel.storedDocument()
@@ -187,6 +187,17 @@ enum RayonTerminalConfiguration {
         guard clipboardSharing != enabled else { return }
         clipboardSharing = enabled
         try? apply(ConfigEditorModel.shared.saved)
+    }
+
+    /// Ghostty's search bindings, which Rayon leaves to its own find bar: with
+    /// them bound, Escape ended Ghostty's search instead of reaching the remote
+    /// program (vim stayed in insert mode) and left the bar showing a query
+    /// whose highlights were gone.
+    nonisolated static let unboundTriggers = ["escape", "super+f", "super+shift+f", "super+e", "super+g", "super+shift+g"]
+
+    /// What every terminal starts from, ahead of the user's settings.
+    nonisolated static let base: TerminalConfiguration = unboundTriggers.reduce(TerminalConfiguration.default) {
+        $0.custom("keybind", "\($1)=unbind")
     }
 
     /// Values Rayon's terminal starts from where they differ from Ghostty's own
@@ -228,7 +239,7 @@ enum RayonTerminalConfiguration {
         "adjust_selection", "jump_to_prompt", "toggle_readonly", "toggle_mouse_reporting", "end_key_sequence"
     ]
     static func runtimeContents(_ document: ConfigDocument, dark: Bool) -> String {
-        var lines = [TerminalConfiguration.default.rendered]
+        var lines = [base.rendered]
         if let theme = document.effectiveTheme(dark: dark) {
             lines += theme.entries.map { "\($0.0) = \($0.1)" }
         }
