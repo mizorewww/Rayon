@@ -434,6 +434,24 @@ final class SSHLiveTests: XCTestCase {
         await connection.close()
     }
 
+    /// A link full of terminal output still opens channels, though the
+    /// server's confirmation queues behind the output for longer than the
+    /// connection's timeout.
+    func testAChannelOpensBehindABusyLink() async throws {
+        let proxy = try await Self.slowProxy(to: port, delay: .zero, downBytesPerSecond: 200_000)
+        defer { proxy.close(promise: nil) }
+        let connection = try await SSHConnection.connect(.init(
+            host: "127.0.0.1", port: proxy.localAddress!.port!, username: user, credentials: [.password(password)],
+            timeout: .seconds(5), hostKeyStatus: { _ in .trusted }
+        ))
+        let flood = Task { try await connection.execute("head -c 40000000 /dev/zero") { _, _ in } }
+        try await Task.sleep(for: .seconds(4))
+        let result = try await connection.execute("true")
+        XCTAssertEqual(result.status, 0)
+        flood.cancel()
+        await connection.close()
+    }
+
     func testSFTPListUploadDownload() async throws {
         let connection = try await connect([.password(password)])
         let sftp = try await connection.openSFTP()
@@ -740,21 +758,27 @@ final class SSHLiveTests: XCTestCase {
     private static func slowProxy(
         to port: Int,
         delay: TimeAmount,
+        downBytesPerSecond: Int? = nil,
         accepted: @escaping @Sendable () -> Void = {}
     ) async throws -> Channel {
+        /// Holds what passes for `delay`, and at most `rate` bytes a second.
         final class Delay: ChannelInboundHandler {
             typealias InboundIn = ByteBuffer
             let peer: Channel
             let delay: TimeAmount
-            init(peer: Channel, delay: TimeAmount) { self.peer = peer; self.delay = delay }
+            let rate: Int?
+            var free = NIODeadline.now()
+            init(peer: Channel, delay: TimeAmount, rate: Int? = nil) { self.peer = peer; self.delay = delay; self.rate = rate }
             func channelRead(context: ChannelHandlerContext, data: NIOAny) {
                 let bytes = unwrapInboundIn(data)
                 let peer = peer
-                context.eventLoop.scheduleTask(in: delay) { peer.writeAndFlush(bytes, promise: nil) }
+                free = max(free, .now() + delay)
+                if let rate { free = free + .nanoseconds(Int64(bytes.readableBytes) * 1_000_000_000 / Int64(rate)) }
+                context.eventLoop.scheduleTask(deadline: free) { peer.writeAndFlush(bytes, promise: nil) }
             }
             func channelInactive(context: ChannelHandlerContext) {
                 let peer = peer
-                context.eventLoop.scheduleTask(in: delay) { peer.close(promise: nil) }
+                context.eventLoop.scheduleTask(deadline: max(free, .now() + delay)) { peer.close(promise: nil) }
             }
         }
         return try await ServerBootstrap(group: MultiThreadedEventLoopGroup.singleton)
@@ -763,7 +787,7 @@ final class SSHLiveTests: XCTestCase {
                 return ClientBootstrap(group: inbound.eventLoop)
                     .channelInitializer { outbound in
                         outbound.eventLoop.makeCompletedFuture {
-                            try outbound.pipeline.syncOperations.addHandler(Delay(peer: inbound, delay: delay))
+                            try outbound.pipeline.syncOperations.addHandler(Delay(peer: inbound, delay: delay, rate: downBytesPerSecond))
                         }
                     }
                     .connect(host: "127.0.0.1", port: port)

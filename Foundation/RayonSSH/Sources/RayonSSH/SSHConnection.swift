@@ -22,7 +22,7 @@ public actor SSHConnection {
         /// Offered in order until the server accepts one.
         public var credentials: [SSHCredential]
         public var transport: SSHTransport
-        /// Bounds connecting, and opening each channel once connected.
+        /// Bounds connecting and signing in.
         public var timeout: Duration
         /// How long the server may stay silent before it is asked whether
         /// it is still there; three asks unanswered close the connection.
@@ -58,15 +58,16 @@ public actor SSHConnection {
     public nonisolated let serverVersion: String
     /// Kept open while this connection runs over it.
     private let bastion: SSHConnection?
-    /// How long the server has to confirm a channel.
-    private nonisolated let channelTimeout: TimeAmount
+    /// How long the server has to confirm a channel. Generous: on a link
+    /// busy with output the confirmation queues behind it, and a link that
+    /// is down is noticed by the keepalive sooner.
+    private static let channelTimeout = TimeAmount.seconds(60)
 
-    private init(client: SSHClient, channel: Channel, serverVersion: String, bastion: SSHConnection?, channelTimeout: TimeAmount) {
+    private init(client: SSHClient, channel: Channel, serverVersion: String, bastion: SSHConnection?) {
         self.client = client
         self.channel = channel
         self.serverVersion = serverVersion
         self.bastion = bastion
-        self.channelTimeout = channelTimeout
         // A jump host carries this connection alone, and ends with it.
         if let bastion {
             channel.closeFuture.whenComplete { _ in Task { await bastion.close() } }
@@ -216,7 +217,7 @@ public actor SSHConnection {
             return gate.value.serverVersion
         }.get()
         let bastion: SSHConnection? = if case let .jump(connection) = configuration.transport { connection } else { nil }
-        return SSHConnection(client: client, channel: channel, serverVersion: version ?? "", bastion: bastion, channelTimeout: timeout)
+        return SSHConnection(client: client, channel: channel, serverVersion: version ?? "", bastion: bastion)
     }
 
     /// AES-GCM (built in) first, AES-CTR with non-EtM MACs for older
@@ -287,7 +288,7 @@ public actor SSHConnection {
         let parent = channel
         let eventLoop = parent.eventLoop
         let outcome = eventLoop.makePromise(of: T.self)
-        let deadline = eventLoop.scheduleTask(in: min(timeout.map(TimeAmount.init) ?? channelTimeout, channelTimeout)) {
+        let deadline = eventLoop.scheduleTask(in: min(timeout.map(TimeAmount.init) ?? Self.channelTimeout, Self.channelTimeout)) {
             outcome.fail(SSHError.channelRejected("The server did not open a channel in time."))
         }
         outcome.futureResult.whenComplete { _ in deadline.cancel() }
