@@ -63,6 +63,29 @@ final class BackupTests: XCTestCase {
 
     /// A wrong password is refused, never answered with another key, and
     /// nothing is restored.
+    /// A folder of the backup whose name is taken here is that folder: no
+    /// second folder of the name, and the servers in it go there. A server
+    /// whose folder is in neither goes to the default one.
+    func testFoldersAreMergedByName() throws {
+        let (machine, _) = seed()
+        var orphan = RDMachine(remoteAddress: "10.0.0.9", remotePort: "22", name: "orphan", folderId: UUID())
+        orphan = try source.storage.save(orphan)
+        try DataBackup.export(from: source.storage, to: file, includeSecrets: false, password: nil)
+
+        let store = target.store()
+        let here = store.createFolder(named: "prod")
+        store.restore(try DataBackup.read(file, password: nil))
+        XCTAssertEqual(store.folders.map(\.name), ["prod"])
+        XCTAssertEqual(store.machine(machine.id)?.folderId, here.id)
+        XCTAssertNil(store.machine(orphan.id)?.folderId)
+
+        // One whose folder went away later is listed with the default ones.
+        var stranded = RDMachine(remoteAddress: "10.0.0.8", remotePort: "22", name: "stranded", folderId: UUID())
+        stranded = try target.storage.save(stranded)
+        store.reload()
+        XCTAssertTrue(store.machines(inFolder: nil).contains { $0.id == stranded.id })
+    }
+
     func testAWrongPasswordIsRefused() throws {
         _ = seed()
         try source.store().exportBackup(to: file, includeSecrets: true, password: "correct horse")

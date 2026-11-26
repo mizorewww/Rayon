@@ -160,9 +160,24 @@ public extension RayonStore {
             record.secretsUnread = existing.secretsUnread
             return record
         }
-        contents.folders.forEach { save(merged($0, folder($0.id))) }
+        // A folder is known by its name: one of the backup's whose name is
+        // taken here becomes that one, rather than a second of the name.
+        var folderIDs: [RDFolder.ID: RDFolder.ID] = [:]
+        for backup in contents.folders {
+            if let existing = folder(named: backup.name), existing.id != backup.id {
+                folderIDs[backup.id] = existing.id
+            } else {
+                save(merged(backup, folder(backup.id)))
+                folderIDs[backup.id] = backup.id
+            }
+        }
         contents.identities.forEach { save(merged($0, identity($0.id))) }
-        contents.machines.forEach { save(merged($0, machine($0.id))) }
+        for var machine in contents.machines {
+            // In a folder of the backup, or one here; else the default one,
+            // where it can be seen.
+            machine.folderId = machine.folderId.flatMap { folderIDs[$0] ?? folder($0)?.id }
+            save(merged(machine, self.machine(machine.id)))
+        }
         contents.snippets.forEach { save($0) }
         contents.portForwards.forEach { save($0) }
         for host in contents.knownHosts where storage.knownHost(named: host.name) == nil {

@@ -14,7 +14,9 @@ public extension RayonStore {
     }
 
     func machines(inFolder id: RDFolder.ID?) -> [RDMachine] {
-        machines.filter { $0.folderId == id }
+        // A server whose folder is gone (deleted on another device, say)
+        // is in the default one, where it can be seen.
+        machines.filter { folder($0.folderId)?.id == id }
     }
 
     /// The name of the server's folder; empty for the default one.

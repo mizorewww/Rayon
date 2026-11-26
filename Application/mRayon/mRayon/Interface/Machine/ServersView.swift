@@ -28,8 +28,12 @@ struct ServersView: View {
     /// searching.
     var groups: [(name: String, machines: [RDMachine])] {
         let machines = filtered
-        var names = store.folders.map(\.name)
-        if machines.contains(where: { $0.folderId == nil }) { names.append("") }
+        // One group per name: folders of the same name from two devices
+        // would list their servers twice.
+        var names: [String] = []
+        for folder in store.folders where !names.contains(folder.name) { names.append(folder.name) }
+        // A server whose folder is gone is with the default ones.
+        if machines.contains(where: { store.folder($0.folderId) == nil }) { names.append("") }
         return names.compactMap { name in
             let inside = machines.filter { store.folderName(of: $0) == name }
                 .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
