@@ -346,7 +346,10 @@ struct AddValueField: View {
 
     var body: some View {
         HStack {
-            TextField(placeholder, text: $text)
+            // Inside a Form the title would be the field's label, beside
+            // an empty field; it is the placeholder instead.
+            TextField(placeholder, text: $text, prompt: Text(placeholder))
+                .labelsHidden()
                 .font(.body.monospaced())
                 .onSubmit(commit)
                 #if os(iOS)
