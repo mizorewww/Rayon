@@ -97,4 +97,13 @@ final class SSHPrivateKeyTests: XCTestCase {
         }
         XCTAssertThrowsError(try offers("not a key"))
     }
+
+    func testWhichServersTakeRSASHA2Signatures() {
+        XCTAssertTrue(SSHConnection.takesRSASHA2("SSH-2.0-OpenSSH_9.6p1 Ubuntu-3ubuntu13"))
+        XCTAssertTrue(SSHConnection.takesRSASHA2("SSH-2.0-OpenSSH_7.2"))
+        XCTAssertTrue(SSHConnection.takesRSASHA2("SSH-2.0-OpenSSH_10.0"))
+        XCTAssertFalse(SSHConnection.takesRSASHA2("SSH-2.0-OpenSSH_7.1p2"))
+        XCTAssertFalse(SSHConnection.takesRSASHA2("SSH-2.0-dropbear_2022.83"))
+        XCTAssertFalse(SSHConnection.takesRSASHA2(nil))
+    }
 }

@@ -11,6 +11,7 @@ import Crypto
 import Foundation
 import NIOCore
 import NIOPosix
+import os
 @testable import RayonSSH
 import XCTest
 
@@ -94,12 +95,17 @@ final class SSHLiveTests: XCTestCase {
 
     /// An ssh-agent of this machine's, on a socket of its own, holding
     /// `names`; stopped when the test ends.
-    private func agent(holding names: [String]) throws -> SSHAgent {
+    /// Keys in `confirm` must be confirmed for each use, which no one can
+    /// here: the agent refuses to sign with them.
+    private func agent(holding names: [String], confirm: Set<String> = []) throws -> SSHAgent {
         let socket = FileManager.default.temporaryDirectory.appendingPathComponent("rayon-agent-\(UUID().uuidString.prefix(8))").path
         let daemon = Process()
         daemon.executableURL = URL(fileURLWithPath: "/usr/bin/ssh-agent")
         daemon.arguments = ["-D", "-a", socket]
+        // No askpass to confirm with.
+        daemon.environment = ["PATH": "/usr/bin:/bin"]
         daemon.standardOutput = FileHandle.nullDevice
+        daemon.standardError = FileHandle.nullDevice
         try daemon.run()
         addTeardownBlock {
             daemon.terminate()
@@ -111,7 +117,7 @@ final class SSHLiveTests: XCTestCase {
         for name in names {
             let add = Process()
             add.executableURL = URL(fileURLWithPath: "/usr/bin/ssh-add")
-            add.arguments = ["-q", keys.appendingPathComponent(name).path]
+            add.arguments = (confirm.contains(name) ? ["-c"] : []) + ["-q", keys.appendingPathComponent(name).path]
             add.environment = ["SSH_AUTH_SOCK": socket]
             try add.run()
             add.waitUntilExit()
@@ -137,6 +143,34 @@ final class SSHLiveTests: XCTestCase {
         XCTAssertEqual(try agent.identities().count, 2)
         let connection = try await connect([.agent(agent)])
         await connection.close()
+    }
+
+    /// A key the agent will not sign with (its confirmation declined)
+    /// is passed over for the next one.
+    func testAKeyTheAgentRefusesIsPassedOver() async throws {
+        let agent = try agent(holding: ["rsa-unknown", "ecdsa"], confirm: ["rsa-unknown"])
+        let connection = try await connect([.agent(agent)])
+        await connection.close()
+    }
+
+    /// A server that takes RSA's SHA-512 signatures and turns one down
+    /// turned the key down: its SHA-256 and SHA-1 signatures, each another
+    /// connection (and another confirmation for an agent key), are not
+    /// offered after it.
+    func testAnRSAKeyTheServerRefusesCostsOneConnection() async throws {
+        let accepted = OSAllocatedUnfairLock(initialState: 0)
+        let proxy = try await Self.slowProxy(to: port, delay: .zero) { accepted.withLock { $0 += 1 } }
+        defer { proxy.close(promise: nil) }
+        let proxied = proxy.localAddress!.port!
+        let connection = try await connect([key("rsa-unknown"), key("ed25519")], port: proxied)
+        await connection.close()
+        XCTAssertEqual(accepted.withLock { $0 }, 2)
+
+        accepted.withLock { $0 = 0 }
+        let agent = try agent(holding: ["rsa-unknown", "ecdsa"])
+        let viaAgent = try await connect([.agent(agent)], port: proxied)
+        await viaAgent.close()
+        XCTAssertEqual(accepted.withLock { $0 }, 2)
     }
 
     func testAnEmptyOrMissingAgent() async throws {
@@ -630,7 +664,11 @@ final class SSHLiveTests: XCTestCase {
 
     /// A TCP proxy to the server on a port of its own that holds what
     /// passes, either way, for `delay`: a link with a round trip.
-    private static func slowProxy(to port: Int, delay: TimeAmount) async throws -> Channel {
+    private static func slowProxy(
+        to port: Int,
+        delay: TimeAmount,
+        accepted: @escaping @Sendable () -> Void = {}
+    ) async throws -> Channel {
         final class Delay: ChannelInboundHandler {
             typealias InboundIn = ByteBuffer
             let peer: Channel
@@ -648,7 +686,8 @@ final class SSHLiveTests: XCTestCase {
         }
         return try await ServerBootstrap(group: MultiThreadedEventLoopGroup.singleton)
             .childChannelInitializer { inbound in
-                ClientBootstrap(group: inbound.eventLoop)
+                accepted()
+                return ClientBootstrap(group: inbound.eventLoop)
                     .channelInitializer { outbound in
                         outbound.eventLoop.makeCompletedFuture {
                             try outbound.pipeline.syncOperations.addHandler(Delay(peer: inbound, delay: delay))

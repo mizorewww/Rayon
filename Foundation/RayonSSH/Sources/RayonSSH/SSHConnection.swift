@@ -92,25 +92,62 @@ public actor SSHConnection {
         let offers = try configuration.credentials.flatMap { try $0.offers() }
         guard !offers.isEmpty else { throw SSHError.authenticationFailed }
         var lastError: Error = SSHError.authenticationFailed
+        var serverVersion: String?
         for offer in offers {
-            do {
-                return try await connect(configuration, offering: offer)
-            } catch SSHError.authenticationFailed {
-                lastError = SSHError.authenticationFailed
-                try Task.checkCancellation()
+            for attempt in [offer.offer] + offer.fallbacks {
+                do {
+                    return try await connect(configuration, offering: attempt, serverVersion: &serverVersion)
+                } catch SSHError.authenticationFailed {
+                    lastError = SSHError.authenticationFailed
+                    try Task.checkCancellation()
+                    // A server that takes SHA-512 RSA signatures turned
+                    // the key down, not the algorithm.
+                    if takesRSASHA2(serverVersion) { break }
+                } catch let error as AgentSignedAnotherAlgorithm {
+                    lastError = error.sshError
+                    try Task.checkCancellation()
+                } catch let error as SSHError {
+                    // The agent would not sign with the key (a declined
+                    // confirmation, a cancelled Touch ID, a key it may not
+                    // use here): the next key may do.
+                    guard case .agentUnavailable = error else { throw error }
+                    lastError = error
+                    try Task.checkCancellation()
+                    break
+                }
             }
         }
         throw lastError
     }
 
+    /// OpenSSH takes RSA keys' SHA-2 signatures since 7.2.
+    static func takesRSASHA2(_ serverVersion: String?) -> Bool {
+        guard let match = serverVersion?.firstMatch(of: /OpenSSH_(\d+)\.(\d+)/),
+              let major = Int(match.1), let minor = Int(match.2)
+        else { return false }
+        return (major, minor) >= (7, 2)
+    }
+
+    /// One attempt with one offer. `serverVersion` is set to the server's
+    /// identification once it is known, whether or not the attempt works.
     private static func connect(
         _ configuration: Configuration,
-        offering offer: NIOSSHUserAuthenticationOffer.Offer
+        offering offer: NIOSSHUserAuthenticationOffer.Offer,
+        serverVersion: inout String?
     ) async throws -> SSHConnection {
         let timeout = TimeAmount(configuration.timeout)
         let channel = try await configuration.transport.makeChannel(
             host: configuration.host, port: configuration.port, timeout: timeout
         )
+        let gate: NIOLoopBound<SSHBannerGate>
+        do {
+            gate = try await channel.eventLoop.submit {
+                try NIOLoopBound(channel.pipeline.syncOperations.handler(type: SSHBannerGate.self), eventLoop: channel.eventLoop)
+            }.get()
+        } catch {
+            channel.close(promise: nil)
+            throw SSHError.connectionFailed("The connection to \(configuration.host) closed (\(SSHTransport.describe(error))).")
+        }
         let authenticator = SSHCredentialAuthenticator(username: configuration.username, offer: offer)
         var settings = SSHClientSettings(
             host: configuration.host,
@@ -146,14 +183,15 @@ public actor SSHConnection {
                 signedIn.fail(CancellationError())
             }
         } catch {
+            if let version = try? await channel.eventLoop.submit({ gate.value.serverVersion }).get() { serverVersion = version }
             channel.close(promise: nil)
-            if error is CancellationError { throw error }
+            if error is CancellationError || error is AgentSignedAnotherAlgorithm { throw error }
             throw Self.translate(error, host: configuration.host)
         }
         let keepAlive = TimeAmount(configuration.keepAliveInterval)
         let version = try? await channel.eventLoop.submit {
             try channel.pipeline.syncOperations.addHandler(SSHKeepalive(interval: keepAlive), position: .first)
-            return try channel.pipeline.syncOperations.handler(type: SSHBannerGate.self).serverVersion
+            return gate.value.serverVersion
         }.get()
         let bastion: SSHConnection? = if case let .jump(connection) = configuration.transport { connection } else { nil }
         return SSHConnection(client: client, channel: channel, serverVersion: version ?? "", bastion: bastion, channelTimeout: timeout)

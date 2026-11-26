@@ -15,17 +15,36 @@ public enum SSHCredential: Sendable {
     case agent(SSHAgent)
 }
 
+/// One password or key offered to the server, each attempt on a
+/// connection of its own.
+struct SignInOffer: Sendable {
+    let offer: NIOSSHUserAuthenticationOffer.Offer
+    /// The same RSA key signing with SHA-256, then SHA-1, for a server
+    /// that may not take the SHA-512 signature `offer` makes.
+    var fallbacks: [NIOSSHUserAuthenticationOffer.Offer] = []
+
+    /// `keys` are one key's signature algorithms, most preferred first.
+    init?(_ keys: [NIOSSHPrivateKey]) {
+        guard let first = keys.first else { return nil }
+        offer = .privateKey(.init(privateKey: first))
+        fallbacks = keys.dropFirst().map { .privateKey(.init(privateKey: $0)) }
+    }
+
+    init(password: String) {
+        offer = .password(.init(password: password))
+    }
+}
+
 extension SSHCredential {
-    /// What signing in with this credential offers the server, in order:
-    /// an RSA key offers SHA-512, then SHA-256, then SHA-1 signatures.
-    func offers() throws -> [NIOSSHUserAuthenticationOffer.Offer] {
+    /// What signing in with this credential offers the server, in order.
+    func offers() throws -> [SignInOffer] {
         switch self {
         case let .password(password):
-            return [.password(.init(password: password))]
+            [SignInOffer(password: password)]
         case let .privateKey(key):
-            return try key.offers().map { .privateKey(.init(privateKey: $0)) }
+            try [SignInOffer(key.offers())].compactMap(\.self)
         case let .agent(agent):
-            return try agent.offers().map { .privateKey(.init(privateKey: $0)) }
+            try agent.offers().compactMap(SignInOffer.init)
         }
     }
 }

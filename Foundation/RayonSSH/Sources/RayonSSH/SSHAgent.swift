@@ -156,11 +156,11 @@ public struct SSHAgent: Sendable {
 
 extension SSHAgent {
     /// What signing in with the agent offers, key by key in the agent's
-    /// order: an RSA key offers SHA-512, then SHA-256, then SHA-1
-    /// signatures. Key types the agent holds but cannot sign in with here
-    /// (certificates) are left out.
-    func offers() throws -> [NIOSSHPrivateKey] {
-        try identities().flatMap { identity -> [NIOSSHPrivateKey] in
+    /// order, each key's signature algorithms most preferred first: an RSA
+    /// key's SHA-512, then SHA-256, then SHA-1. Key types the agent holds
+    /// but cannot sign in with here (certificates) are left out.
+    func offers() throws -> [[NIOSSHPrivateKey]] {
+        try identities().map { identity -> [NIOSSHPrivateKey] in
             switch identity.type {
             case "ssh-ed25519": [key(AgentEd25519.self, identity)]
             case "ecdsa-sha2-nistp256": [key(AgentP256.self, identity)]
@@ -228,9 +228,20 @@ final class AgentKey<Algorithm: AgentAlgorithm>: NIOSSHPrivateKeyProtocol, Senda
     func signature<D: DataProtocol>(for data: D) throws -> NIOSSHSignatureProtocol {
         var signature = try agent.sign(Array(data), with: blob, flags: Algorithm.flags)
         guard signature.readSSHText() == Algorithm.name else {
-            throw SSHError.agentUnavailable("The SSH agent signed with another algorithm than \(Algorithm.name).")
+            throw AgentSignedAnotherAlgorithm(algorithm: Algorithm.name)
         }
         return AgentSignature<Algorithm>(rawRepresentation: Data(signature.readableBytesView))
+    }
+}
+
+/// The agent signed, but not with the algorithm asked for: an agent that
+/// does not know the flags for RSA's SHA-2 signatures. The key's next
+/// algorithm may still do.
+struct AgentSignedAnotherAlgorithm: Error {
+    let algorithm: String
+
+    var sshError: SSHError {
+        .agentUnavailable("The SSH agent signed with another algorithm than \(algorithm).")
     }
 }
 
