@@ -7,7 +7,7 @@
       "layers" : [
         {
           "glass" : false,
-          "image-name" : "rayon.png",
+          "image-name" : "rayon.svg",
           "name" : "rayon"
         }
       ],
