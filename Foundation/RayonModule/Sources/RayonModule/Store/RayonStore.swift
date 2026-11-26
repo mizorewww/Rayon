@@ -12,6 +12,7 @@
 import Combine
 import Foundation
 import os
+import Synchronization
 #if canImport(UIKit)
     import UIKit
 #endif
@@ -23,8 +24,13 @@ public final class RayonStore: ObservableObject {
         RayonStorage.shared.purgeTombstones()
         let store = RayonStore(storage: .shared)
         if case let .blocked(reason) = legacy { store.legacyImportProblem = reason }
+        store.publishesWorkerSnapshot = true
+        store.updateWorkerSnapshot()
         return store
     }()
+
+    /// Whether this store is the one the worker lookups read: `shared`.
+    var publishesWorkerSnapshot = false
 
     /// Why the previous version's data could not be brought over, when it
     /// could not; the apps tell the user at launch.
@@ -32,8 +38,13 @@ public final class RayonStore: ObservableObject {
 
     public nonisolated let storage: RayonStorage
 
-    @Published public internal(set) var machines: [RDMachine]
-    @Published public internal(set) var identities: [RDIdentity]
+    @Published public internal(set) var machines: [RDMachine] {
+        didSet { updateWorkerSnapshot() }
+    }
+
+    @Published public internal(set) var identities: [RDIdentity] {
+        didSet { updateWorkerSnapshot() }
+    }
     /// Sorted by name.
     @Published public internal(set) var folders: [RDFolder]
     @Published public internal(set) var snippets: [RDSnippet]
@@ -369,22 +380,43 @@ extension RayonStore {
 
 // MARK: - Off the main actor
 
-/// Code off the main actor cannot reach `shared`; it reads the database
-/// and the defaults directly.
+/// What code off the main actor reads of the shared store's servers and
+/// identities: a copy kept in step with them, so a lookup (made from a
+/// view's body too) costs no database read and no keychain query.
+struct WorkerSnapshot: Sendable {
+    var machines: [RDMachine.ID: RDMachine] = [:]
+    var identities: [RDIdentity.ID: RDIdentity] = [:]
+}
+
+extension RayonStore {
+    nonisolated static let workerSnapshot = Mutex(WorkerSnapshot())
+
+    func updateWorkerSnapshot() {
+        guard publishesWorkerSnapshot else { return }
+        let snapshot = WorkerSnapshot(
+            machines: Dictionary(machines.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first }),
+            identities: Dictionary(identities.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        )
+        Self.workerSnapshot.withLock { $0 = snapshot }
+    }
+}
+
+/// Code off the main actor cannot reach `shared`; it reads its snapshot
+/// and the defaults.
 public extension RayonStore {
-    /// The server, read from the database.
     nonisolated static func workerMachine(for id: RDMachine.ID) -> RDMachine? {
-        RayonStorage.shared.record(RDMachine.self, id: id)
+        workerSnapshot.withLock { $0.machines[id] }
     }
 
-    /// The identity the server signs in with, read from the database.
+    /// The identity the server signs in with.
     nonisolated static func workerAssociatedIdentity(for machine: RDMachine) -> RDIdentity? {
-        machine.associatedIdentity.flatMap { RayonStorage.shared.record(RDIdentity.self, id: $0) }
+        guard let id = machine.associatedIdentity else { return nil }
+        return workerSnapshot.withLock { $0.identities[id] }
     }
 
-    /// `identitiesForAutoAuth`, read from the database.
+    /// `identitiesForAutoAuth`.
     nonisolated static var workerIdentitiesForAutoAuth: [RDIdentity] {
-        Self.autoAuth(RayonStorage.shared.records(RDIdentity.self))
+        Self.autoAuth(workerSnapshot.withLock { Array($0.identities.values) })
     }
 
     nonisolated static var workerTimeoutNumber: NSNumber {

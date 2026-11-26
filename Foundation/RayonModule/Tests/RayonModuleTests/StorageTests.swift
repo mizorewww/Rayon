@@ -262,4 +262,22 @@ final class StorageTests: XCTestCase {
         }
         XCTAssertEqual(fixed.filter { $0.transport == .proxyJump }.count, 2, "one link is cut")
     }
+
+    /// Lookups off the main actor (made from view bodies too) read the
+    /// shared store's copy, not the database and the keychain.
+    @MainActor
+    func testWorkerLookupsFollowTheStore() {
+        let store = test.store()
+        store.publishesWorkerSnapshot = true
+        defer { RayonStore.workerSnapshot.withLock { $0 = WorkerSnapshot() } }
+        let identity = RDIdentity(username: "root", password: "pw")
+        store.save(identity)
+        let machine = RDMachine(remoteAddress: "a", remotePort: "22", name: "a", associatedIdentity: identity.id)
+        store.save(machine)
+        XCTAssertEqual(RayonStore.workerMachine(for: machine.id)?.name, "a")
+        XCTAssertEqual(RayonStore.workerAssociatedIdentity(for: machine)?.password, "pw")
+        XCTAssertEqual(RayonStore.workerIdentitiesForAutoAuth.map(\.id), [identity.id])
+        store.deleteMachines([machine.id])
+        XCTAssertNil(RayonStore.workerMachine(for: machine.id))
+    }
 }
