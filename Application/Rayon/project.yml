@@ -13,11 +13,12 @@ packages:
   MachineStatus: { path: ../../Foundation/MachineStatus }
   MachineStatusView: { path: ../../Foundation/MachineStatusView }
   SymbolPicker: { path: ../../Foundation/SymbolPicker }
+configFiles:
+  Debug: ../../Configuration/Version.xcconfig
+  Release: ../../Configuration/Version.xcconfig
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    MARKETING_VERSION: "2.8"
-    CURRENT_PROJECT_VERSION: 54
     DEVELOPMENT_TEAM: ""
 targets:
   Rayon:

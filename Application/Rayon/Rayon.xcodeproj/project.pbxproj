@@ -56,6 +56,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		C0F16A7E2B9D4E5F00A1B2C4 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Version.xcconfig; path = ../../Configuration/Version.xcconfig; sourceTree = "<group>"; };
 		0AAF63C57D629C74FCF707D9 /* PickerSheets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PickerSheets.swift; sourceTree = "<group>"; };
 		16D39CED118800E0E3CE611C /* FolderActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderActions.swift; sourceTree = "<group>"; };
 		170CBEF5BCEC366195C96002 /* RayonEditor */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RayonEditor; path = ../../Foundation/RayonEditor; sourceTree = SOURCE_ROOT; };
@@ -295,6 +296,7 @@
 				C5BB6EF848B250BF6AB2198C /* Packages */,
 				C83047E4C0AB4EC227C8C367 /* Rayon */,
 				686CC492E4EE8C3A294BCED6 /* Products */,
+				C0F16A7E2B9D4E5F00A1B2C4 /* Version.xcconfig */,
 			);
 			sourceTree = "<group>";
 		};
@@ -510,6 +512,7 @@
 /* Begin XCBuildConfiguration section */
 		5F0632D12446B235C8FF5BD5 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C0F16A7E2B9D4E5F00A1B2C4 /* Version.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -542,7 +545,6 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 54;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -562,7 +564,6 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2.8;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -606,6 +607,7 @@
 		};
 		A76C88FCDF77DA45ED6277CC /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C0F16A7E2B9D4E5F00A1B2C4 /* Version.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -638,7 +640,6 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 54;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -652,7 +653,6 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 13.0;
-				MARKETING_VERSION = 2.8;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

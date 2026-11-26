@@ -1,0 +1,3 @@
+// The version of both apps, Rayon (macOS) and mRayon (iOS). Bump it here only.
+MARKETING_VERSION = 2.8
+CURRENT_PROJECT_VERSION = 54

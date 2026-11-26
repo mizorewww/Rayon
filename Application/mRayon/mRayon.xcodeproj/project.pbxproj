@@ -61,6 +61,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		C0F16A7E2B9D4E5F00A1B2C3 /* Version.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; name = Version.xcconfig; path = ../../Configuration/Version.xcconfig; sourceTree = SOURCE_ROOT; };
 		771BEB9C5B44CF10ECB82077 /* DataBackupSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DataBackupSettings.swift; sourceTree = "<group>"; };
 		7535DEABE9DF921F618B72C6 /* FolderActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderActions.swift; sourceTree = "<group>"; };
 		0A2048D0A4ED7235ED40374E /* ServersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ServersView.swift; path = mRayon/Interface/Machine/ServersView.swift; sourceTree = SOURCE_ROOT; };
@@ -154,6 +155,7 @@
 				501FF78927CEFADD00380D59 /* mRayon */,
 				501FF78827CEFADD00380D59 /* Products */,
 				501FF79927CEFC6300380D59 /* Frameworks */,
+				C0F16A7E2B9D4E5F00A1B2C3 /* Version.xcconfig */,
 			);
 			sourceTree = "<group>";
 		};
@@ -450,6 +452,7 @@
 /* Begin XCBuildConfiguration section */
 		501FF79327CEFADD00380D59 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C0F16A7E2B9D4E5F00A1B2C3 /* Version.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -515,6 +518,7 @@
 		};
 		501FF79427CEFADD00380D59 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C0F16A7E2B9D4E5F00A1B2C3 /* Version.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -581,7 +585,6 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = "mRayon/mRayon-iOS.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 54;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = LT98S43NKA;
 				ENABLE_PREVIEWS = YES;
@@ -608,7 +611,6 @@
 					"$(SRCROOT)/mRayon/Interface/Machine",
 					"$(SRCROOT)/mRayon/Interface/Navigator",
 				);
-				MARKETING_VERSION = 2.8;
 				PRODUCT_BUNDLE_IDENTIFIER = me.mizorewww.rayon;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTS_MACCATALYST = YES;
@@ -627,7 +629,6 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = "mRayon/mRayon-iOS.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 54;
 				DEVELOPMENT_ASSET_PATHS = "";
 				DEVELOPMENT_TEAM = LT98S43NKA;
 				ENABLE_PREVIEWS = YES;
@@ -654,7 +655,6 @@
 					"$(SRCROOT)/mRayon/Interface/Machine",
 					"$(SRCROOT)/mRayon/Interface/Navigator",
 				);
-				MARKETING_VERSION = 2.8;
 				PRODUCT_BUNDLE_IDENTIFIER = me.mizorewww.rayon;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTS_MACCATALYST = YES;
