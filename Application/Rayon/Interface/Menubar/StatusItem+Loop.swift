@@ -40,6 +40,6 @@ extension MenubarStatusItem {
             let down = RXFormat.rateString(Double(status.totalReceivePerSecond))
             title = "↑ \(up)\n↓ \(down)"
         }
-        updateDisplay(title: title, reachable: reachable)
+        updateDisplay(title: title, cpu: reachable ? Double(status.processor.summary.sumUsed) : nil)
     }
 }

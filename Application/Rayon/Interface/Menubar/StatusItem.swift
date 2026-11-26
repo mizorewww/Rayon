@@ -29,6 +29,7 @@ final class MenubarStatusItem: NSObject, Identifiable, NSPopoverDelegate {
     private var outsideClickMonitor: Any?
 
     private var frameIndex = 0
+    private var stepTimer: Timer?
 
     static let frameNames = (0 ... 4).map { "cat_frame_\($0)" }
     static let crashFrameName = "cat_frame_crash"
@@ -94,10 +95,23 @@ final class MenubarStatusItem: NSObject, Identifiable, NSPopoverDelegate {
         NSApp.terminate(nil)
     }
 
-    /// Called once per monitor round, never on a timer: the cat takes one
-    /// step per reading while the server answers and lies down when it
-    /// does not.
-    func updateDisplay(title: String, reachable: Bool) {
+    /// Seconds between the cat's steps for a CPU reading: the busier the
+    /// server, the faster it runs.
+    static func stepInterval(cpu: Double) -> TimeInterval {
+        switch cpu {
+        case ..<5: 1
+        case ..<20: 0.5
+        case ..<50: 0.25
+        case ..<80: 0.1
+        default: 0.05
+        }
+    }
+
+    /// Called once per monitor round. `cpu` is nil while the server does
+    /// not answer: the cat lies down and its step timer stops. Otherwise
+    /// the timer runs at the pace of the latest reading, replaced only
+    /// when that pace changes.
+    func updateDisplay(title: String, cpu: Double?) {
         guard let button = statusItem.button else { return }
         if title.isEmpty {
             button.attributedTitle = NSAttributedString(string: "")
@@ -115,12 +129,32 @@ final class MenubarStatusItem: NSObject, Identifiable, NSPopoverDelegate {
                 ]
             )
         }
-        guard reachable, !frames.isEmpty else {
+        guard let cpu, !frames.isEmpty else {
+            stopStepping()
             button.image = idleFrame
             return
         }
+        let interval = Self.stepInterval(cpu: cpu)
+        guard stepTimer?.timeInterval != interval else { return }
+        stopStepping()
+        let timer = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
+            MainActor.assumeIsolated { self?.step() }
+        }
+        // A tenth of slack lets the system coalesce the wakeups.
+        timer.tolerance = interval / 10
+        RunLoop.main.add(timer, forMode: .common)
+        stepTimer = timer
+        step()
+    }
+
+    private func step() {
         frameIndex = (frameIndex + 1) % frames.count
-        button.image = frames[frameIndex]
+        statusItem.button?.image = frames[frameIndex]
+    }
+
+    private func stopStepping() {
+        stepTimer?.invalidate()
+        stepTimer = nil
     }
 
     func togglePopover() {
@@ -174,6 +208,7 @@ final class MenubarStatusItem: NSObject, Identifiable, NSPopoverDelegate {
     }
 
     func closeThisItem() {
+        stopStepping()
         closePopover()
         NSStatusBar.system.removeStatusItem(statusItem)
         MonitorCenter.shared.release(session)
