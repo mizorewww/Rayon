@@ -770,6 +770,7 @@ private struct CloudSyncSettings: View {
                 SwitchRow("Snippets", isOn: $sync.preferences.snippets)
                 SwitchRow("Port forwards", isOn: $sync.preferences.portForwards)
                 SwitchRow("Terminal settings", description: "Theme, colors, fonts and shortcuts. Font size and padding stay on each device.", isOn: $sync.preferences.terminalSettings)
+                SwitchRow("Settings", description: "Appearance, sessions, recent servers, timeouts, monitor and terminal behavior.", isOn: $sync.preferences.appSettings)
             }
             .disabled(!sync.preferences.isOn)
         }

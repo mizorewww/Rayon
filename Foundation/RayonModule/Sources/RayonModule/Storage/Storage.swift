@@ -249,7 +249,7 @@ extension RayonStorage {
     /// Every kind of record, in the order a backup or a full upload writes
     /// them (folders before the servers in them).
     static let recordTypes: [any StoredRecord.Type] = [
-        RDFolder.self, RDIdentity.self, RDMachine.self, RDSnippet.self, RDPortForward.self, RDTerminalSettings.self,
+        RDFolder.self, RDIdentity.self, RDMachine.self, RDSnippet.self, RDPortForward.self, RDTerminalSettings.self, RDAppSettings.self,
     ]
 
     /// Adds records that are not here yet (a deleted one counts as here)

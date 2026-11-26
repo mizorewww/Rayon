@@ -27,11 +27,15 @@ public final class CloudSyncModel: ObservableObject {
 
     private let defaults: UserDefaults
     private let terminalSettings: TerminalSettingsSync
+    private let appSettings: AppSettingsSync
     private var observers: [any NSObjectProtocol] = []
 
     init(store: RayonStore, defaults: UserDefaults = .standard, terminal: TerminalSettings = .shared) {
         self.defaults = defaults
         terminalSettings = TerminalSettingsSync(storage: store.storage, settings: terminal)
+        appSettings = AppSettingsSync(storage: store.storage, defaults: defaults) { [weak store] in
+            store?.reloadPreferences(from: defaults)
+        }
         preferences = CloudSyncPreferences(defaults: defaults)
         observers.append(NotificationCenter.default.addObserver(
             forName: CloudSync.statusDidChange, object: nil, queue: .main
@@ -49,6 +53,7 @@ public final class CloudSyncModel: ObservableObject {
     /// Starts sync if the user turned it on. Called once at launch.
     public func start() {
         terminalSettings.start()
+        appSettings.start()
         let preferences = preferences
         Task { await CloudSync.shared.apply(preferences) }
     }
