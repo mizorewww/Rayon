@@ -30,9 +30,11 @@ public enum SSHTransport: Sendable {
 }
 
 extension SSHTransport {
-    /// With `ownEventLoop`, a TCP or WebSocket connection runs on an event
-    /// loop of its own, ended when it closes, so that blocking it holds no
-    /// other connection. A socket's and a jump's channel stay where they are.
+    /// With `ownEventLoop`, the connection runs on an event loop of its
+    /// own, ended when it closes, so that blocking it holds no other
+    /// connection. A jump's channel cannot: it is a child of the bastion's
+    /// and runs on its loop, so an agent asking the person to confirm still
+    /// holds whatever else shares that loop until the agent answers.
     func makeChannel(host: String, port: Int, timeout: TimeAmount, ownEventLoop: Bool = false) async throws -> Channel {
         switch self {
         case .tcp:
@@ -45,8 +47,9 @@ extension SSHTransport {
             }
         case let .socket(open):
             let descriptor = try await open()
+            let own = ownEventLoop ? MultiThreadedEventLoopGroup(numberOfThreads: 1) : nil
             do {
-                return try await ClientBootstrap(group: MultiThreadedEventLoopGroup.singleton)
+                let channel = try await ClientBootstrap(group: own ?? MultiThreadedEventLoopGroup.singleton)
                     .channelInitializer { channel in
                         channel.eventLoop.makeCompletedFuture {
                             try channel.pipeline.syncOperations.addHandler(SSHBannerGate())
@@ -54,7 +57,10 @@ extension SSHTransport {
                     }
                     .withConnectedSocket(descriptor)
                     .get()
+                if let own { channel.closeFuture.whenComplete { _ in own.shutdownGracefully { _ in } } }
+                return channel
             } catch {
+                own?.shutdownGracefully { _ in }
                 close(descriptor)
                 throw SSHError.connectionFailed("The tunnel to \(host):\(port) could not be used (\(Self.describe(error))).")
             }
