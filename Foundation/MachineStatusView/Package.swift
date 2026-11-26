@@ -26,5 +26,9 @@ let package = Package(
             dependencies: ["MachineStatus", "RayonModule"],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
+        .testTarget(
+            name: "MachineStatusViewTests",
+            dependencies: ["MachineStatusView"]
+        ),
     ]
 )

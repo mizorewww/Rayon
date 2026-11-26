@@ -96,8 +96,10 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
     }
 
     public nonisolated let id = UUID()
-    public let machine: RDMachine
-    let identity: RDIdentity?
+    /// The server's details the connection was made with; `retarget`
+    /// replaces them when they were edited since.
+    public private(set) var machine: RDMachine
+    private(set) var identity: RDIdentity?
 
     @Published public private(set) var phase: Phase = .connecting
     @Published public private(set) var snapshot = MonitorSnapshot()
@@ -105,7 +107,7 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
     public var status: ServerStatus { snapshot.status }
     public var history: MonitorHistory { snapshot.history }
 
-    private let shell: NSRemoteShell
+    private var shell: NSRemoteShell
     private let sampler = ServerStatusSampler()
     private var updateTask: Task<Void, Never>?
 
@@ -272,8 +274,22 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
     public func shutdown() {
         updateTask?.cancel()
         phase = .closed
-        let shell = shell
-        MonitorSession.queue.async {
+        Self.dispose(shell)
+    }
+
+    /// Starts over on the server's current details: a new connection, and
+    /// no readings from the old one (it may have been another host).
+    func retarget(machine: RDMachine, identity: RDIdentity?) {
+        self.machine = machine
+        self.identity = identity
+        Self.dispose(shell)
+        shell = NSRemoteShell.configured(for: machine, timeout: RayonStore.shared.timeoutNumber)
+        snapshot = MonitorSnapshot()
+        reconnect()
+    }
+
+    private nonisolated static func dispose(_ shell: NSRemoteShell) {
+        queue.async {
             shell.requestDisconnectAndWait()
             shell.destroyPermanently()
         }
@@ -354,13 +370,49 @@ public final class MonitorCenter: ObservableObject {
         stopIfUnused(session.id)
     }
 
+    /// The server's running session, pointed at its current details: one
+    /// started before the server or its identity was edited reconnects
+    /// with the new ones, so whoever holds it sees the change too.
     private func runningSession(for machineID: RDMachine.ID) throws -> MonitorSession {
-        if let existing = running.first(where: { $0.machine.id == machineID }) { return existing }
         let machine = RayonStore.shared.machineGroup[machineID]
         guard machine.isNotPlaceholder() else { throw BeginError.malformedMachine }
-        let session = MonitorSession(machine: machine, identity: RayonStore.shared.associatedIdentity(for: machine))
+        let identity = RayonStore.shared.associatedIdentity(for: machine)
+        if let existing = running.first(where: { $0.machine.id == machineID }) {
+            if Self.connectsDifferently(existing.machine, existing.identity, machine, identity) {
+                existing.retarget(machine: machine, identity: identity)
+            }
+            return existing
+        }
+        let session = MonitorSession(machine: machine, identity: identity)
         running.append(session)
         return session
+    }
+
+    /// Whether the new details reach the server differently. What is
+    /// written back while connected (banner, last connection, terminfo,
+    /// stream choices) or only shown (name, group, comment) does not count.
+    static func connectsDifferently(_ machine: RDMachine, _ identity: RDIdentity?, _ newMachine: RDMachine, _ newIdentity: RDIdentity?) -> Bool {
+        func connection(_ machine: RDMachine) -> RDMachine {
+            var machine = machine
+            machine.name = ""
+            machine.group = ""
+            machine.comment = ""
+            machine.lastConnection = .distantPast
+            machine.lastBanner = ""
+            machine.ghosttyTerminfoVersion = nil
+            machine.uuDisplayID = 0
+            machine.uuFPS = 0
+            machine.uuQuality = 0
+            return machine
+        }
+        func credentials(_ identity: RDIdentity?) -> RDIdentity? {
+            guard var identity else { return nil }
+            identity.lastRecentUsed = .distantPast
+            identity.comment = ""
+            identity.group = ""
+            return identity
+        }
+        return connection(machine) != connection(newMachine) || credentials(identity) != credentials(newIdentity)
     }
 
     private func stopIfUnused(_ id: MonitorSession.ID) {
