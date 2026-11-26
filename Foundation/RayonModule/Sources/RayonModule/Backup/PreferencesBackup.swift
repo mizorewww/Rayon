@@ -4,14 +4,16 @@
 //
 //  A backup of the app's preferences, apart from the data: the Rayon
 //  settings in the user defaults, without what belongs to this device or
-//  this install.
+//  this install, and the terminal's config.ghostty.
 //
 
 import Foundation
+import RayonTerminal
 
 public enum PreferencesBackup {
     public static let fileExtension = "rayonsettings"
     static let preferencesFile = "preferences.plist"
+    static let terminalFile = "config.ghostty"
 
     /// Rayon's own settings: its prefix, and the license agreement.
     static func isPreference(_ key: String) -> Bool {
@@ -25,22 +27,43 @@ public enum PreferencesBackup {
         return !deviceBound.contains { key.hasPrefix($0) }
     }
 
-    public static func export(from defaults: UserDefaults = .standard, to url: URL) throws {
+    @MainActor
+    public static func export(
+        from defaults: UserDefaults = .standard,
+        terminal: TerminalSettings = .shared,
+        to url: URL
+    ) throws {
         let values = defaults.dictionaryRepresentation().filter { isPreference($0.key) }
         let data = try PropertyListSerialization.data(fromPropertyList: values, format: .binary, options: 0)
-        try BackupArchive.write([preferencesFile: data], kind: .preferences, includesSecrets: false, password: nil, to: url)
+        try BackupArchive.write(
+            [preferencesFile: data, terminalFile: Data(terminal.contents.utf8)],
+            kind: .preferences, includesSecrets: false, password: nil, to: url
+        )
     }
 
-    /// Reads the preferences at `url` and sets them; returns how many.
-    @discardableResult
-    public static func restore(from url: URL, into defaults: UserDefaults = .standard) throws -> Int {
+    /// Reads the preferences at `url`, sets them and applies the terminal
+    /// settings in it; returns how many preferences. A backup from before
+    /// config.ghostty carries the terminal settings among the preferences.
+    @MainActor @discardableResult
+    public static func restore(
+        from url: URL,
+        into defaults: UserDefaults = .standard,
+        terminal: TerminalSettings = .shared
+    ) throws -> Int {
         let (_, files) = try BackupArchive.read(url, kind: .preferences, password: nil)
         guard let data = files[preferencesFile],
               let values = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
         else { throw BackupError.damaged("it has no preferences") }
+        if let file = files[terminalFile] {
+            guard let text = String(data: file, encoding: .utf8) else { throw BackupError.damaged("its terminal settings are not text") }
+            try terminal.load(text)
+        }
         let accepted = values.filter { isPreference($0.key) }
         for (key, value) in accepted {
             defaults.set(value, forKey: key)
+        }
+        if files[terminalFile] == nil {
+            try terminal.loadLegacy(from: defaults)
         }
         return accepted.count
     }

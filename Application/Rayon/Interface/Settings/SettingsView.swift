@@ -639,7 +639,7 @@ private struct DataBackupSettings: View {
                 try PreferencesBackup.restore(from: url)
                 store.reloadPreferences()
                 AppearancePreference.applyStored()
-                statusMessage = "Imported settings. The terminal's take effect when Rayon opens next."
+                statusMessage = "Imported settings."
             } catch {
                 UIBridge.presentError(with: "Could not import settings: \(error.localizedDescription)")
             }
