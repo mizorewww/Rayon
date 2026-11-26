@@ -1,0 +1,61 @@
+# Rayon build entry. Run `make` for the list of targets.
+
+SHELL := /bin/bash
+.SHELLFLAGS := -euo pipefail -c
+.DEFAULT_GOAL := help
+
+CONFIGURATION ?= Debug
+# Build products stay out of the source tree's top level; .build/ is ignored.
+DERIVED_DATA ?= $(CURDIR)/.build/DerivedData
+export DERIVED_DATA_PATH := $(DERIVED_DATA)
+
+WORKSPACE := App.xcworkspace
+TEST_PACKAGES := $(patsubst %/Tests,%,$(wildcard Foundation/*/Tests))
+RESOLVED_PACKAGES := $(patsubst %/Package.resolved,%,$(wildcard Foundation/*/Package.resolved))
+
+.PHONY: help build build-macos build-ios test resolve scan-license clean
+
+help:
+	@echo "build         Build the Mac and iOS apps"
+	@echo "build-macos   Build the Mac app, signed with your Apple Development certificate or ad hoc"
+	@echo "build-ios     Build the iOS app for the simulator, unsigned"
+	@echo "test          Run the Swift package tests: $(notdir $(TEST_PACKAGES))"
+	@echo "resolve       Resolve the workspace's and the packages' dependencies"
+	@echo "scan-license  List the resolved dependencies; fail on any missing from Resources/LICENSE"
+	@echo "clean         Remove .build/ here and in every package"
+	@echo
+	@echo "CONFIGURATION=Debug|Release (default Debug), DERIVED_DATA=<dir> (default .build/DerivedData)"
+	@echo "Install and release: Workflow/Scripts/install.sh, release.sh, testflight.sh"
+
+build: build-macos build-ios
+
+build-macos:
+	bash Workflow/Scripts/build-macos.sh $(CONFIGURATION)
+
+build-ios:
+	xcodebuild -quiet \
+		-workspace $(WORKSPACE) \
+		-scheme mRayon \
+		-configuration $(CONFIGURATION) \
+		-destination 'generic/platform=iOS Simulator' \
+		-derivedDataPath "$(DERIVED_DATA)" \
+		COMPILER_INDEX_STORE_ENABLE=NO \
+		CODE_SIGNING_ALLOWED=NO \
+		build
+
+test:
+	for package in $(TEST_PACKAGES); do \
+		echo "==> $$package"; \
+		swift test --package-path "$$package"; \
+	done
+
+resolve:
+	xcodebuild -resolvePackageDependencies -workspace $(WORKSPACE) -scheme Rayon
+	xcodebuild -resolvePackageDependencies -workspace $(WORKSPACE) -scheme mRayon
+	for package in $(RESOLVED_PACKAGES); do swift package --package-path "$$package" resolve; done
+
+scan-license:
+	bash Workflow/Scripts/scan-license.sh
+
+clean:
+	rm -rf .build Foundation/*/.build External/*/.build
