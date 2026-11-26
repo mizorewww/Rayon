@@ -139,6 +139,29 @@ final class StorageTests: XCTestCase {
         XCTAssertEqual(RecordMerge.resolve(local: nil, remote: remote), .takeRemote(remote))
     }
 
+    /// A version from a device whose clock is ahead is not newer than an
+    /// edit made after it here: the edit counts as made just after it.
+    func testAnEditWinsOverAVersionFromAClockAhead() throws {
+        let server = try storage.save(RDMachine(remoteAddress: "a", remotePort: "22", name: "here"))
+        var ahead = server
+        ahead.name = "from the future"
+        ahead.modified = Date().addingTimeInterval(3600).wholeMilliseconds
+        XCTAssertEqual(try storage.mergeRemote(ahead), .tookRemote)
+
+        var edited = try XCTUnwrap(storage.record(RDMachine.self, id: server.id))
+        edited.name = "edited"
+        edited = try storage.save(edited)
+        XCTAssertEqual(edited.modified.millisecondsSince1970, ahead.modified.millisecondsSince1970 + 1)
+        guard case let .takeRemote(merged) = RecordMerge.resolve(local: ahead, remote: edited) else {
+            return XCTFail("the edit should win")
+        }
+        XCTAssertEqual(merged.name, "edited")
+
+        try storage.delete(RDMachine.self, ids: [server.id])
+        let tombstone = try XCTUnwrap(storage.row(RDMachine.self, id: server.id))
+        XCTAssertEqual(tombstone.modified.millisecondsSince1970, edited.modified.millisecondsSince1970 + 1)
+    }
+
     func testPayloadCarriesTheSecrets() throws {
         var identity = RDIdentity(username: "root", password: "pw", lastRecentUsed: Self.when)
         identity.modified = Date(timeIntervalSince1970: 1_700_000_000.123)

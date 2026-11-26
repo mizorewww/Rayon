@@ -119,7 +119,7 @@ public extension RayonStorage {
             try db.insertOrReplace([record], intoTable: T.tableName)
             return record
         }
-        record.modified = (changed ?? Date()).wholeMilliseconds
+        record.modified = Self.stamp(changed ?? Date(), after: existing)
         record.removed = false
         let present = try writeSecrets(of: record)
         try db.run(transaction: { handle in
@@ -134,12 +134,12 @@ public extension RayonStorage {
     /// Marks the records deleted, forgets their secrets and queues the
     /// deletions for iCloud.
     func delete<T: StoredRecord>(_: T.Type, ids: [UUID]) throws {
-        let now = Date().wholeMilliseconds
+        let now = Date()
         var deleted: [T] = []
         for id in ids {
             guard var row = row(T.self, id: id), !row.removed else { continue }
+            row.modified = Self.stamp(now, after: row)
             row.removed = true
-            row.modified = now
             row.secrets = .init()
             deleted.append(row)
         }
@@ -148,7 +148,7 @@ public extension RayonStorage {
             try handle.insertOrReplace(deleted, intoTable: T.tableName)
             for row in deleted {
                 try self.notePresence(false, of: row, handle: handle)
-                try self.enqueueUpload(T.self, id: row.id, modified: now, handle: handle)
+                try self.enqueueUpload(T.self, id: row.id, modified: row.modified, handle: handle)
             }
         })
         for row in deleted {
@@ -238,7 +238,16 @@ extension RayonStorage {
         NotificationCenter.default.post(name: Self.didQueueChanges, object: self)
     }
 
-    /// The row, deleted or not, without its secrets.
+    /// When a change made at `date` counts as made: after the version it
+    /// changes, even when that one came from a device whose clock is ahead,
+    /// so that the change wins over it everywhere.
+    static func stamp<T: StoredRecord>(_ date: Date, after existing: T?) -> Date {
+        let date = date.wholeMilliseconds
+        guard let existing, existing.modified >= date else { return date }
+        return Date(timeIntervalSince1970: TimeInterval(existing.modified.millisecondsSince1970 + 1) / 1000)
+    }
+
+        /// The row, deleted or not, without its secrets.
     func row<T: StoredRecord>(_: T.Type, id: UUID) -> T? {
         try? db.getObject(fromTable: T.tableName, where: idColumn == id.uuidString)
     }
