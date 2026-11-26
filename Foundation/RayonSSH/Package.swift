@@ -35,5 +35,13 @@ let package = Package(
                 .product(name: "_CryptoExtras", package: "swift-crypto"),
             ]
         ),
+        .testTarget(
+            name: "RayonSSHTests",
+            dependencies: [
+                "RayonSSH",
+                .product(name: "NIOPosix", package: "swift-nio"),
+                .product(name: "Crypto", package: "swift-crypto"),
+            ]
+        ),
     ]
 )
