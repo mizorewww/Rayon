@@ -91,9 +91,9 @@ struct EditMachineView: View {
         return true
     }
 
-    var jumpServerCandidates: [RDMachine] {
-        RayonStore.shared.jumpServerCandidates(for: inEditWith)
-            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    var jumpServerChoices: [RayonStore.JumpServerChoice] {
+        RayonStore.shared.jumpServerChoices(for: inEditWith)
+            .sorted { $0.machine.name.localizedStandardCompare($1.machine.name) == .orderedAscending }
     }
 
     var existingFolders: [String] {
@@ -125,12 +125,21 @@ struct EditMachineView: View {
                     Text("NetEase UU Remote").tag(RDMachine.Transport.uuRemote)
                 }
                 if transport == .proxyJump {
-                    Picker("Jump server", selection: $proxyJumpMachineID) {
-                        Text(jumpServerCandidates.isEmpty ? "No other SSH servers saved" : "Choose…")
-                            .tag(RDMachine.ID?.none)
-                        ForEach(jumpServerCandidates) { item in
-                            Text("\(item.name) (\(item.remoteAddress):\(item.remotePort))")
-                                .tag(RDMachine.ID?.some(item.id))
+                    let choices = jumpServerChoices
+                    LabeledContent("Jump server") {
+                        // A menu, so the servers that cannot be chosen show
+                        // disabled with the reason.
+                        Menu {
+                            ForEach(choices) { choice in
+                                Toggle(choice.title, isOn: Binding(
+                                    get: { proxyJumpMachineID == choice.id },
+                                    set: { _ in proxyJumpMachineID = choice.id }
+                                ))
+                                .disabled(choice.unavailableReason != nil)
+                            }
+                        } label: {
+                            Text(choices.first { $0.id == proxyJumpMachineID }?.machine.name
+                                ?? (choices.isEmpty ? "No other SSH servers saved" : "Choose…"))
                         }
                     }
                 }

@@ -57,8 +57,8 @@ struct ServerEditorSheet: View {
         return true
     }
 
-    var jumpServerCandidates: [RDMachine] {
-        store.jumpServerCandidates(for: machine)
+    var jumpServerChoices: [RayonStore.JumpServerChoice] {
+        store.jumpServerChoices(for: machine)
     }
 
     var existingGroups: [String] {
@@ -132,13 +132,22 @@ struct ServerEditorSheet: View {
             }
             if transport == .proxyJump {
                 RXField("Jump server (Bastion)", help: "Reaches this server through an SSH tunnel opened on the jump server (`ssh -J`).") {
-                    RXPicker(
-                        selection: $proxyJumpMachineID,
-                        options: jumpServerCandidates.map { item in
-                            .init(Optional(item.id), "\(item.name) (\(item.remoteAddress):\(item.remotePort))")
-                        },
-                        placeholder: jumpServerCandidates.isEmpty ? "No other SSH servers saved" : "Choose a jump server…"
-                    )
+                    // A menu rather than a Picker: a Picker's items cannot be
+                    // disabled on macOS, and the unavailable ones are shown.
+                    let choices = jumpServerChoices
+                    Menu {
+                        ForEach(choices) { choice in
+                            Toggle(choice.title, isOn: Binding(
+                                get: { proxyJumpMachineID == choice.id },
+                                set: { _ in proxyJumpMachineID = choice.id }
+                            ))
+                            .disabled(choice.unavailableReason != nil)
+                        }
+                    } label: {
+                        Text(choices.first { $0.id == proxyJumpMachineID }?.title
+                            ?? (choices.isEmpty ? "No other SSH servers saved" : "Choose a jump server…"))
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             HStack(alignment: .top, spacing: RX.Space.s4) {

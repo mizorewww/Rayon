@@ -233,21 +233,32 @@ final class StorageTests: XCTestCase {
         XCTAssertTrue(store.portForwards.isEmpty)
     }
 
-    /// The jump servers offered are those that do not lead back; a server
-    /// whose jumps loop already (from another device, or a backup) still
-    /// saves what it records of its connections.
+    /// A jump server that would lead back, or a remote desktop never
+    /// reached over SSH, is listed but cannot be chosen; a server whose
+    /// jumps loop already (from another device, or a backup) still saves
+    /// what it records of its connections.
     @MainActor
-    func testJumpServersThatWouldLoopAreNotOffered() throws {
+    func testJumpServersThatWouldLoopCannotBeChosen() throws {
         let store = test.store()
         let a = RDMachine(remoteAddress: "a", remotePort: "22", name: "a")
         var b = RDMachine(remoteAddress: "b", remotePort: "22", name: "b")
         b.transport = .proxyJump
         b.proxyJumpMachineID = a.id
+        var desktop = RDMachine(remoteAddress: "vnc", remotePort: "22", name: "vnc")
+        desktop.remoteDesktopProtocol = .vnc
         XCTAssertTrue(store.save(a))
         XCTAssertTrue(store.save(b))
-        XCTAssertEqual(store.jumpServerCandidates(for: a.id).map(\.name), [], "b jumps through a")
-        XCTAssertEqual(store.jumpServerCandidates(for: b.id).map(\.name), ["a"])
-        XCTAssertEqual(Set(store.jumpServerCandidates(for: nil).map(\.name)), ["a", "b"])
+        XCTAssertTrue(store.save(desktop))
+        func choosable(_ id: RDMachine.ID?) -> Set<String> {
+            Set(store.jumpServerChoices(for: id).filter { $0.unavailableReason == nil }.map(\.machine.name))
+        }
+        XCTAssertEqual(choosable(a.id), [], "b jumps through a")
+        XCTAssertEqual(Set(store.jumpServerChoices(for: a.id).map(\.machine.name)), ["b", "vnc"])
+        XCTAssertEqual(choosable(b.id), ["a"])
+        XCTAssertEqual(choosable(nil), ["a", "b"])
+        desktop.lastBanner = "SSH-2.0-OpenSSH_9.7"
+        XCTAssertTrue(store.save(desktop))
+        XCTAssertEqual(choosable(nil), ["a", "b", "vnc"])
 
         var looping = a
         looping.transport = .proxyJump

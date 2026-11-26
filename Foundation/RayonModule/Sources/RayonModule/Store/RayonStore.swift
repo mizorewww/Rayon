@@ -291,16 +291,38 @@ public extension RayonStore {
         return persist(machine, into: \.machines)
     }
 
-    /// The servers the server `id` (nil: a new one) can jump through:
-    /// not itself, not a UU Remote device, and none whose own jumps lead
-    /// back to it.
-    func jumpServerCandidates(for id: RDMachine.ID?) -> [RDMachine] {
+    /// A server offered as a jump server, and why it cannot be chosen
+    /// when it cannot.
+    struct JumpServerChoice: Identifiable {
+        public let machine: RDMachine
+        public let unavailableReason: String?
+        public var id: RDMachine.ID { machine.id }
+
+        /// The server and its address, then why it cannot be chosen.
+        public var title: String {
+            let title = "\(machine.name) (\(machine.remoteAddress):\(machine.remotePort))"
+            return unavailableReason.map { "\(title) — \($0)" } ?? title
+        }
+    }
+
+    /// The servers the server `id` (nil: a new one) could jump through:
+    /// every SSH server but itself. One whose own jumps lead back to it, or
+    /// a remote desktop never reached over SSH, is listed with the reason it
+    /// cannot be chosen; UU Remote devices and servers without an address
+    /// are not SSH servers to jump through and are left out.
+    func jumpServerChoices(for id: RDMachine.ID?) -> [JumpServerChoice] {
         var probe = id.flatMap(machine) ?? RDMachine(id: id ?? UUID())
         probe.transport = .proxyJump
-        return machines.filter { candidate in
-            guard candidate.id != probe.id, !candidate.isUURemoteDevice else { return false }
+        return machines.compactMap { candidate in
+            guard candidate.id != probe.id, !candidate.isUURemoteDevice, candidate.hasAddress else { return nil }
             probe.proxyJumpMachineID = candidate.id
-            return problem(saving: probe) == nil
+            if problem(saving: probe) != nil {
+                return JumpServerChoice(machine: candidate, unavailableReason: "its jumps lead back here")
+            }
+            if candidate.hasRemoteDesktop, candidate.lastBanner.isEmpty {
+                return JumpServerChoice(machine: candidate, unavailableReason: "remote desktop, never reached over SSH")
+            }
+            return JumpServerChoice(machine: candidate, unavailableReason: nil)
         }
     }
 
