@@ -20,10 +20,19 @@ import Synchronization
 @MainActor
 public final class RayonStore: ObservableObject {
     public static let shared: RayonStore = {
-        let legacy = LegacyStoreImport.runIfNeeded(into: .shared)
-        RayonStorage.shared.purgeTombstones()
-        let store = RayonStore(storage: .shared)
-        if case let .blocked(reason) = legacy { store.legacyImportProblem = reason }
+        let storage = RayonStorage.shared
+        let store: RayonStore
+        if let problem = storage.openProblem {
+            // The previous version's data is left for the database it
+            // belongs in.
+            store = RayonStore(storage: storage)
+            store.launchProblem = problem
+        } else {
+            let legacy = LegacyStoreImport.runIfNeeded(into: storage)
+            storage.purgeTombstones()
+            store = RayonStore(storage: storage)
+            if case let .blocked(reason) = legacy { store.launchProblem = reason }
+        }
         store.publishesWorkerSnapshot = true
         store.updateWorkerSnapshot()
         return store
@@ -32,9 +41,9 @@ public final class RayonStore: ObservableObject {
     /// Whether this store is the one the worker lookups read: `shared`.
     var publishesWorkerSnapshot = false
 
-    /// Why the previous version's data could not be brought over, when it
-    /// could not; the apps tell the user at launch.
-    public private(set) var legacyImportProblem: String?
+    /// What the user must know at launch: the database is a newer
+    /// version's, or the previous version's data could not be brought over.
+    public private(set) var launchProblem: String?
 
     public nonisolated let storage: RayonStorage
 

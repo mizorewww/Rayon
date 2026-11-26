@@ -50,7 +50,7 @@ struct mRayonApp: App {
                     RayonTerminalView.setCopyOnSelect(store.terminalCopyOnSelect)
                     RayonTerminalView.setClipboardSharing(store.terminalClipboardSharing)
                     checkAgreement()
-                    if let problem = store.legacyImportProblem {
+                    if let problem = store.launchProblem {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1) { UIBridge.presentAlert(with: problem) }
                     }
                     #if DEBUG

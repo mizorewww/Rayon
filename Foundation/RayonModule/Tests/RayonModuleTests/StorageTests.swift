@@ -307,4 +307,24 @@ final class StorageTests: XCTestCase {
         XCTAssertEqual(storage.record(RDMachine.self, id: original.id)?.name, "v100")
         XCTAssertEqual(storage.pendingUploads().map(\.objectId), [original.id])
     }
+
+    /// A database a newer Rayon wrote is left where it is, untouched, and
+    /// the reason is given; a damaged one is moved aside.
+    func testANewerDatabaseIsLeftAlone() throws {
+        let url = test.directory.appendingPathComponent("newer/database.db")
+        let newer = try RayonStorage(databaseURL: url, secrets: test.secrets)
+        try newer.save(RDMachine(remoteAddress: "a", remotePort: "22", name: "a"))
+        try newer.db.exec(StatementPragma().pragma(.userVersion).to(999))
+        newer.close()
+
+        let opened = RayonStorage.open(at: url, secrets: test.secrets)
+        defer { opened.close() }
+        XCTAssertNotNil(opened.openProblem)
+        XCTAssertNotEqual(opened.databaseURL, url)
+        let files = try FileManager.default.contentsOfDirectory(atPath: url.deletingLastPathComponent().path)
+        XCTAssertFalse(files.contains { $0.contains("unreadable") })
+        let check = Database(at: url.path)
+        defer { check.close() }
+        XCTAssertEqual(try check.getValue(from: StatementPragma().pragma(.userVersion))?.intValue, 999)
+    }
 }

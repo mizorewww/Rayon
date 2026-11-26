@@ -21,7 +21,7 @@ struct RayonApp: App {
         #endif
         _ = RayonStore.shared
         CloudSyncModel.shared.start()
-        if let problem = RayonStore.shared.legacyImportProblem {
+        if let problem = RayonStore.shared.launchProblem {
             UIBridge.presentError(with: problem, delay: 1)
         }
 

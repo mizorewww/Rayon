@@ -21,7 +21,7 @@ public final class RayonStorage: Sendable {
 
     static let logger = Logger(subsystem: "me.mizorewww.rayon", category: "storage")
 
-    public static let shared: RayonStorage = openDefault()
+    public static let shared: RayonStorage = open(at: defaultDatabaseURL)
 
     let db: Database
     let secrets: SecretStore
@@ -30,9 +30,17 @@ public final class RayonStorage: Sendable {
     /// on a version another one is replacing.
     let writes = Mutex(())
     public let databaseURL: URL
+    /// Why the app's own database is not the one open, when it is not; the
+    /// apps tell the user.
+    public let openProblem: String?
 
-    public init(databaseURL: URL, secrets: SecretStore = .shared) throws {
+    public convenience init(databaseURL: URL, secrets: SecretStore = .shared) throws {
+        try self.init(databaseURL: databaseURL, secrets: secrets, openProblem: nil)
+    }
+
+    init(databaseURL: URL, secrets: SecretStore = .shared, openProblem: String?) throws {
         self.databaseURL = databaseURL
+        self.openProblem = openProblem
         self.secrets = secrets
         try FileManager.default.createDirectory(
             at: databaseURL.deletingLastPathComponent(),
@@ -53,18 +61,33 @@ public final class RayonStorage: Sendable {
     }
 
     /// A database that cannot be opened is moved aside, kept for recovery,
-    /// and a new one is made in its place.
-    private static func openDefault() -> RayonStorage {
-        let url = defaultDatabaseURL
+    /// and a new one is made in its place. One a newer Rayon wrote is left
+    /// as it is, for that version, and this one runs on an empty database
+    /// that is not kept.
+    static func open(at url: URL, secrets: SecretStore = .shared) -> RayonStorage {
         do {
-            return try RayonStorage(databaseURL: url)
+            return try RayonStorage(databaseURL: url, secrets: secrets)
+        } catch let error as DBMigration.NewerSchema {
+            logger.error("the database at \(url.path) is newer: \(error.localizedDescription)")
+            let scratch = FileManager.default.temporaryDirectory
+                .appending(path: "rayon-\(UUID().uuidString)", directoryHint: .isDirectory)
+                .appending(path: "database.db")
+            do {
+                return try RayonStorage(
+                    databaseURL: scratch,
+                    secrets: secrets,
+                    openProblem: "Your servers were last saved by a newer version of Rayon, so this one cannot open them. Update Rayon to see them; nothing changed until then is kept."
+                )
+            } catch {
+                fatalError("unable to create a database at \(scratch.path): \(error)")
+            }
         } catch {
             logger.error("unable to open the database at \(url.path): \(error.localizedDescription)")
             let aside = url.deletingPathExtension()
                 .appendingPathExtension("unreadable-\(Int(Date().timeIntervalSince1970)).db")
             try? FileManager.default.moveItem(at: url, to: aside)
             do {
-                return try RayonStorage(databaseURL: url)
+                return try RayonStorage(databaseURL: url, secrets: secrets)
             } catch {
                 fatalError("unable to create a database at \(url.path): \(error)")
             }

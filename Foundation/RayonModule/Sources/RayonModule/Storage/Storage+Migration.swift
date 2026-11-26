@@ -57,11 +57,15 @@ struct DBMigration: Sendable {
     static func currentVersion(of db: Database) throws -> DBVersion {
         let value = try db.getValue(from: StatementPragma().pragma(.userVersion))
         let raw = value?.intValue ?? 0
-        guard let version = DBVersion(rawValue: raw) else {
-            throw CocoaError(.featureUnsupported, userInfo: [
-                NSLocalizedDescriptionKey: "The database is from a newer version of Rayon (schema \(raw)).",
-            ])
-        }
+        guard let version = DBVersion(rawValue: raw) else { throw NewerSchema(version: raw) }
         return version
+    }
+
+    /// The database was last written by a newer Rayon.
+    struct NewerSchema: LocalizedError {
+        let version: Int
+        var errorDescription: String? {
+            "The database is from a newer version of Rayon (schema \(version))."
+        }
     }
 }
