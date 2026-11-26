@@ -158,6 +158,16 @@ public actor SSHConnection {
         }
     }
 
+    /// Runs Citadel's remote-forward request on this connection's client.
+    func withRemotePortForward(
+        host: String,
+        port: Int,
+        onOpen: @escaping @Sendable (SSHRemotePortForward) async throws -> Void,
+        handleChannel: @escaping @Sendable (Channel, SSHChannelType.ForwardedTCPIP) -> EventLoopFuture<Void>
+    ) async throws {
+        try await client.withRemotePortForward(host: host, port: port, onOpen: onOpen, handleChannel: handleChannel)
+    }
+
     // MARK: Channels
 
     /// Opens a child channel; `setup` runs on the event loop before any
