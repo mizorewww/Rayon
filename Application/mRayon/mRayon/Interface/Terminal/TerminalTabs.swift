@@ -64,13 +64,12 @@ struct TerminalTabStrip: View {
         HStack(spacing: 2) {
             // The split badge: orientation and pane count; tap to switch.
             Button {
-                let next: TerminalManager.SplitOrientation = group.orientation == .horizontal ? .vertical : .horizontal
                 if let firstID = items.first?.context.id {
-                    withAnimation(.rxQuick) { terminals.setSplitOrientation(for: firstID, orientation: next) }
+                    withAnimation(.rxQuick) { terminals.setSplitOrientation(for: firstID, orientation: group.orientation.next) }
                 }
             } label: {
                 HStack(spacing: 3) {
-                    Image(systemName: group.orientation == .horizontal ? "rectangle.split.2x1.fill" : "rectangle.split.1x2.fill")
+                    Image(systemName: group.orientation.systemImage + ".fill")
                         .font(.system(size: 11, weight: .semibold))
                     Text("\(items.count)")
                         .font(.system(size: 11, weight: .bold).monospacedDigit())
@@ -84,7 +83,7 @@ struct TerminalTabStrip: View {
                 )
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Split group (\(items.count) panes) · Tap to switch horizontal/vertical")
+            .accessibilityLabel("Split group (\(items.count) panes) · Tap to lay out as \(group.orientation.next.title)")
             .padding(.leading, 3)
 
             ForEach(items, id: \.context.id) { item in

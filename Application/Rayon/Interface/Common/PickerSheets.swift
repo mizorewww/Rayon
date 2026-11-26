@@ -426,3 +426,160 @@ struct UURemoteSessionPickerSheet: View {
         if sessions.isEmpty { onComplete(.new) }
     }
 }
+
+/// What joins the split in front, from "Split with Server…": a terminal
+/// already open, on any server, or a new one to a saved server or the
+/// local shell.
+struct SplitWithServerSheet: View {
+    enum Choice: Hashable {
+        case tab(TerminalManager.Context.ID)
+        case server(RDMachine.ID)
+        case local
+    }
+
+    let current: TerminalManager.Context
+    /// nil when cancelled.
+    let onComplete: (Choice?) -> Void
+
+    @EnvironmentObject var store: RayonStore
+    @ObservedObject private var terminals = TerminalManager.shared
+    @ObservedObject private var uuAccount = UURemoteAccountStore.shared
+    @State private var selection: Choice?
+    @State private var searchText = ""
+
+    private var openTabs: [TerminalManager.Context] {
+        let all = terminals.splitCandidates(for: current)
+        guard !searchText.isEmpty else { return all }
+        let key = searchText.lowercased()
+        return all.filter {
+            $0.displayName.lowercased().contains(key) || $0.navigationSubtitle.lowercased().contains(key)
+        }
+    }
+
+    private var machines: [RDMachine] {
+        let all = store.machineGroup.machines.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        guard !searchText.isEmpty else { return all }
+        return all.filter { $0.isQualifiedForSearch(text: searchText) }
+    }
+
+    private var showsLocal: Bool {
+        searchText.isEmpty || "local terminal".contains(searchText.lowercased())
+    }
+
+    var body: some View {
+        SheetScaffold(
+            "Split with Server",
+            lead: "Show another terminal beside this one, from any server. Three panes or more are laid out as a grid."
+        ) {
+            VStack(alignment: .leading, spacing: RX.Space.s3) {
+                RXSearchField("Search terminals and servers", text: $searchText, width: nil)
+                ScrollView {
+                    VStack(alignment: .leading, spacing: RX.Space.s3) {
+                        if !openTabs.isEmpty {
+                            RXSectionHeader("Open Terminals")
+                                .padding(.horizontal, RX.Space.s2)
+                            RXDividedStack {
+                                ForEach(openTabs) { tab in
+                                    row(
+                                        .tab(tab.id),
+                                        title: tab.displayName,
+                                        detail: tab.navigationSubtitle,
+                                        redactTitle: tab.remoteType == .machine && store.machineRedacted == .all,
+                                        systemImage: tab.closed ? "bolt.slash" : "terminal"
+                                    )
+                                }
+                            }
+                        }
+                        RXSectionHeader("New Terminal")
+                            .padding(.horizontal, RX.Space.s2)
+                        RXDividedStack {
+                            ForEach(machines) { machine in
+                                serverRow(machine)
+                            }
+                            if showsLocal {
+                                row(.local, title: "Local Terminal", detail: ProcessInfo.processInfo.hostName, systemImage: "laptopcomputer")
+                            }
+                        }
+                    }
+                    .padding(RX.Space.s2)
+                }
+                .frame(height: 340)
+                .background(
+                    RoundedRectangle(cornerRadius: RX.Radius.lg, style: .continuous)
+                        .fill(Color.rxSurface)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: RX.Radius.lg, style: .continuous)
+                                .strokeBorder(Color.rxHairline, lineWidth: 1)
+                        )
+                )
+            }
+        } footer: {
+            Spacer()
+            Button("Cancel") { onComplete(nil) }
+                .buttonStyle(.rx)
+                .keyboardShortcut(.cancelAction)
+            Button("Split") { onComplete(selection) }
+                .buttonStyle(.rxPrimary)
+                .keyboardShortcut(.defaultAction)
+                .disabled(selection == nil)
+        }
+        .frame(width: 520)
+    }
+
+    private func serverRow(_ machine: RDMachine) -> some View {
+        let online: Bool? = machine.isUURemoteDevice
+            ? uuAccount.devices.first { $0.deviceID == machine.uuDeviceID }?.isOnline ?? false
+            : nil
+        let detail = online.map { $0 ? "UU Remote · Online" : "UU Remote · Offline" }
+            ?? "\(machine.remoteAddress):\(machine.remotePort)"
+        return row(
+            .server(machine.id),
+            title: machine.name,
+            detail: detail,
+            redactTitle: store.machineRedacted == .all,
+            redactDetail: online == nil && store.machineRedacted != .none,
+            systemImage: "server.rack"
+        )
+        .disabled(online == false)
+        .opacity(online == false ? 0.5 : 1)
+    }
+
+    private func row(
+        _ choice: Choice,
+        title: String,
+        detail: String,
+        redactTitle: Bool = false,
+        redactDetail: Bool = false,
+        systemImage: String
+    ) -> some View {
+        let isSelected = selection == choice
+        return Button {
+            selection = choice
+        } label: {
+            HStack(spacing: RX.Space.s3) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 13))
+                    .frame(width: 18)
+                    .foregroundStyle(isSelected ? Color.rxAccent : Color.rxInkSecondary)
+                VStack(alignment: .leading, spacing: 1) {
+                    RedactableText(title, redacted: redactTitle)
+                        .font(.rxBody)
+                        .foregroundStyle(.rxInk)
+                    if !detail.isEmpty {
+                        RedactableText(detail, redacted: redactDetail)
+                            .font(.rxCaption)
+                            .foregroundStyle(.rxInkSecondary)
+                            .lineLimit(1)
+                    }
+                }
+                Spacer()
+            }
+            .padding(.horizontal, RX.Space.s2)
+            .frame(height: RX.tableRowHeight)
+            .rxRowBackground(selected: isSelected)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .simultaneousGesture(TapGesture(count: 2).onEnded { onComplete(choice) })
+    }
+}

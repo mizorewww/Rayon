@@ -131,6 +131,9 @@ struct TerminalPage: View {
             ToolbarAction("Split Down (⌘⇧D)", systemImage: "rectangle.split.1x2") {
                 splitWithNewOrExisting(orientation: .vertical)
             }
+            ToolbarAction("Split with Server… (⌥⌘D)", systemImage: "square.grid.2x2") {
+                splitWithServer()
+            }
             ToolbarAction("Find in Terminal (⌘F)", systemImage: "magnifyingglass") {
                 withAnimation(.rxQuick) { showSearch.toggle() }
             }
@@ -165,6 +168,10 @@ struct TerminalPage: View {
                         splitWithNewOrExisting(orientation: .vertical)
                     }
                     .keyboardShortcut("d", modifiers: [.command, .shift])
+                    Button("Split with Server") {
+                        splitWithServer()
+                    }
+                    .keyboardShortcut("d", modifiers: [.command, .option])
                 }
                 .opacity(0)
                 .accessibilityHidden(true)
@@ -235,58 +242,84 @@ struct TerminalPage: View {
         // Otherwise create a new tab and immediately join it into the current split group.
         switch context.remoteType {
         case .machine:
-            let machine = store.machineGroup[context.machine.id]
-            guard machine.isNotPlaceholder() else { return }
-            if machine.isUURemoteDevice {
-                let anchorID = context.id
-                SheetPresenter.present { dismiss in
-                    UURemoteSessionPickerSheet(machine: machine) { choice in
-                        dismiss()
-                        switch choice {
-                        case .new:
-                            TerminalManager.shared.createSession(withMachineObject: machine, force: true, resuming: nil) { created in
-                                withAnimation(.rxQuick) {
-                                    TerminalManager.shared.groupSessions(anchorID: anchorID, newID: created.id, orientation: orientation)
-                                    AppRouter.shared.route = .terminal(created.id)
-                                }
-                            }
-                        case let .resume(sessionID):
-                            TerminalManager.shared.createSession(withMachineObject: machine, force: true, resuming: sessionID) { created in
-                                withAnimation(.rxQuick) {
-                                    TerminalManager.shared.groupSessions(anchorID: anchorID, newID: created.id, orientation: orientation)
-                                    AppRouter.shared.route = .terminal(created.id)
-                                }
-                            }
-                        case nil:
-                            break
-                        }
-                    }
-                }
-            } else {
-                let anchorID = context.id
-                TerminalManager.shared.createSession(withMachineObject: machine, force: true) { created in
-                    withAnimation(.rxQuick) {
-                        TerminalManager.shared.groupSessions(anchorID: anchorID, newID: created.id, orientation: orientation)
-                        AppRouter.shared.route = .terminal(created.id)
-                    }
-                }
-            }
+            Self.openAndJoin(machine: context.machine.id, anchorID: context.id, orientation: orientation)
         case .command:
             if let command = context.command {
-                let anchorID = context.id
-                let created = TerminalManager.shared.createSession(withCommand: command)
-                withAnimation(.rxQuick) {
-                    TerminalManager.shared.groupSessions(anchorID: anchorID, newID: created.id, orientation: orientation)
-                    AppRouter.shared.route = .terminal(created.id)
-                }
+                Self.join(TerminalManager.shared.createSession(withCommand: command).id, anchorID: context.id, orientation: orientation)
             }
         case .local:
-            let anchorID = context.id
-            let created = TerminalManager.shared.createLocalSession()
-            withAnimation(.rxQuick) {
-                TerminalManager.shared.groupSessions(anchorID: anchorID, newID: created.id, orientation: orientation)
-                AppRouter.shared.route = .terminal(created.id)
+            Self.join(TerminalManager.shared.createLocalSession().id, anchorID: context.id, orientation: orientation)
+        }
+    }
+
+    /// Picks a terminal from any server, open or new, and shows it in the
+    /// split with this one.
+    private func splitWithServer() {
+        let anchorID = context.id
+        let current = context
+        SheetPresenter.present { dismiss in
+            SplitWithServerSheet(current: current) { choice in
+                dismiss()
+                switch choice {
+                case let .tab(id):
+                    Self.join(id, anchorID: anchorID, orientation: nil)
+                case let .server(machineID):
+                    // After this sheet has gone, so a UU Remote device's
+                    // session picker opens on the window, not on this sheet.
+                    Task { @MainActor in
+                        Self.openAndJoin(machine: machineID, anchorID: anchorID, orientation: nil)
+                    }
+                case .local:
+                    Self.join(TerminalManager.shared.createLocalSession().id, anchorID: anchorID, orientation: nil)
+                case nil:
+                    break
+                }
             }
+        }
+    }
+
+    /// Opens another terminal to a saved server, asking first which session
+    /// to resume on a UU Remote device, and joins it to `anchorID`'s split.
+    private static func openAndJoin(
+        machine machineID: RDMachine.ID,
+        anchorID: TerminalManager.Context.ID,
+        orientation: TerminalManager.SplitOrientation?
+    ) {
+        let machine = RayonStore.shared.machineGroup[machineID]
+        guard machine.isNotPlaceholder() else { return }
+        let open = { (resuming: UInt32?) in
+            TerminalManager.shared.createSession(withMachineObject: machine, force: true, resuming: resuming) { created in
+                join(created.id, anchorID: anchorID, orientation: orientation)
+            }
+        }
+        guard machine.isUURemoteDevice else {
+            open(nil)
+            return
+        }
+        SheetPresenter.present { dismiss in
+            UURemoteSessionPickerSheet(machine: machine) { choice in
+                dismiss()
+                switch choice {
+                case .new: open(nil)
+                case let .resume(sessionID): open(sessionID)
+                case nil: break
+                }
+            }
+        }
+    }
+
+    /// Shows `newID` in the split with `anchorID`, in front, laid out as
+    /// `orientation`, or as a tab from another server joins (nil).
+    private static func join(
+        _ newID: TerminalManager.Context.ID,
+        anchorID: TerminalManager.Context.ID,
+        orientation: TerminalManager.SplitOrientation?
+    ) {
+        let manager = TerminalManager.shared
+        let layout = orientation ?? manager.layoutForJoining(anchorID)
+        withAnimation(.rxQuick) {
+            manager.groupSessions(anchorID: anchorID, newID: newID, orientation: layout)
+            AppRouter.shared.route = .terminal(newID)
         }
     }
 
@@ -324,6 +357,19 @@ struct TerminalPage: View {
         if panes.count == 1, let single = panes.first {
             paneSurface(for: single, showHeader: false, totalPanes: 1, index: 0)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if splitOrientation == .grid {
+            // Rows stacked, panes side by side in each: both dividers drag.
+            let rows = SplitGrid.rows(Array(panes.enumerated()))
+            VSplitView {
+                ForEach(rows, id: \.first?.element.id) { row in
+                    HSplitView {
+                        ForEach(row, id: \.element.id) { idx, pane in
+                            paneSurface(for: pane, showHeader: true, totalPanes: panes.count, index: idx)
+                                .frame(minWidth: 200, maxWidth: .infinity, minHeight: 120, maxHeight: .infinity)
+                        }
+                    }
+                }
+            }
         } else if splitOrientation == .horizontal {
             HSplitView {
                 ForEach(Array(panes.enumerated()), id: \.element.id) { idx, pane in
@@ -343,13 +389,14 @@ struct TerminalPage: View {
 
     @ViewBuilder private func paneSurface(for pane: TerminalManager.Context, showHeader: Bool, totalPanes: Int, index: Int) -> some View {
         let isFocused = pane.id == context.id
+        let spansServers = showHeader && terminals.splitSpansServers(context)
         VStack(spacing: 0) {
             if showHeader {
                 HStack(spacing: RX.Space.s2) {
                     Circle()
                         .fill(isFocused ? Color.rxAccent : Color.rxInkTertiary.opacity(0.4))
                         .frame(width: 7, height: 7)
-                    Text("Pane \(index + 1) · \(pane.navigationSubtitle.isEmpty ? pane.displayName : pane.navigationSubtitle)")
+                    Text("Pane \(index + 1) · \(Self.paneTitle(pane, namingServer: spansServers))")
                         .font(.system(size: 11, weight: isFocused ? .semibold : .medium))
                         .foregroundStyle(isFocused ? Color.rxInk : Color.rxInkSecondary)
                         .lineLimit(1)
@@ -360,15 +407,16 @@ struct TerminalPage: View {
                     }
                     if index == totalPanes - 1 {
                         Button {
-                            let next: TerminalManager.SplitOrientation = splitOrientation == .horizontal ? .vertical : .horizontal
-                            terminals.setSplitOrientation(for: pane.id, orientation: next)
+                            withAnimation(.rxQuick) {
+                                terminals.setSplitOrientation(for: pane.id, orientation: splitOrientation.next)
+                            }
                         } label: {
-                            Image(systemName: splitOrientation == .horizontal ? "rectangle.split.1x2" : "rectangle.split.2x1")
+                            Image(systemName: splitOrientation.next.systemImage)
                                 .font(.system(size: 11))
                         }
                         .buttonStyle(.plain)
                         .foregroundStyle(.rxInkSecondary)
-                        .help("Switch split orientation")
+                        .help("Lay out as \(splitOrientation.next.title)")
                     }
                     Button {
                         withAnimation(.rxQuick) {
@@ -427,6 +475,14 @@ struct TerminalPage: View {
                 .strokeBorder(showHeader && isFocused ? Color.rxAccent.opacity(0.45) : Color.clear, lineWidth: 1)
                 .allowsHitTesting(false)
         )
+    }
+
+    /// What a pane's header calls it: its title, with the server first
+    /// when the split shows more than one server.
+    private static func paneTitle(_ pane: TerminalManager.Context, namingServer: Bool) -> String {
+        let title = pane.navigationSubtitle
+        guard namingServer else { return title.isEmpty ? pane.displayName : title }
+        return title.isEmpty || title == pane.displayName ? pane.displayName : "\(pane.displayName) · \(title)"
     }
 
     private var searchBar: some View {
@@ -588,13 +644,14 @@ struct SessionTabs: View {
         HStack(spacing: 2) {
             // Split group badge: shows orientation icon + pane count, click to toggle H/V, context menu to ungroup
             Button {
-                let next: TerminalManager.SplitOrientation = group.orientation == .horizontal ? .vertical : .horizontal
                 if let firstID = items.first?.context.id {
-                    terminals.setSplitOrientation(for: firstID, orientation: next)
+                    withAnimation(.rxQuick) {
+                        terminals.setSplitOrientation(for: firstID, orientation: group.orientation.next)
+                    }
                 }
             } label: {
                 HStack(spacing: 3) {
-                    Image(systemName: group.orientation == .horizontal ? "rectangle.split.2x1.fill" : "rectangle.split.1x2.fill")
+                    Image(systemName: group.orientation.systemImage + ".fill")
                         .font(.system(size: 10, weight: .semibold))
                     Text("\(items.count)")
                         .font(.system(size: 10, weight: .bold).monospacedDigit())
@@ -608,7 +665,7 @@ struct SessionTabs: View {
                 )
             }
             .buttonStyle(.plain)
-            .help("Split group (\(items.count) panes) · Click to switch horizontal/vertical")
+            .help("Split group (\(items.count) panes) · Click to lay out as \(group.orientation.next.title)")
             .padding(.leading, 3)
 
             ForEach(items, id: \.context.id) { item in
@@ -1037,6 +1094,12 @@ enum TerminalSessionActions {
     @MainActor
     private static func showNeighbour(of context: TerminalManager.Context) {
         guard AppRouter.shared.route == .terminal(context.id) else { return }
+        let panes = TerminalManager.shared.visiblePanes(for: context)
+        if let index = panes.firstIndex(where: { $0.id == context.id }), panes.count > 1 {
+            let neighbour = index + 1 < panes.count ? panes[index + 1] : panes[index - 1]
+            AppRouter.shared.route = .terminal(neighbour.id)
+            return
+        }
         let siblings = context.tabSiblings
         guard let index = siblings.firstIndex(where: { $0.id == context.id }), siblings.count > 1 else {
             if context.remoteType == .machine,
