@@ -51,6 +51,8 @@ public actor CloudSync {
         storage.databaseURL.deletingLastPathComponent().appendingPathComponent("sync-scopes.json")
     }
 
+    /// Where earlier builds left the files of large records sent as
+    /// assets; removed at start.
     private var assetDirectory: URL {
         storage.databaseURL.deletingLastPathComponent().appendingPathComponent("SyncAssets", isDirectory: true)
     }
@@ -123,6 +125,7 @@ public actor CloudSync {
     }
 
     private func start() {
+        try? FileManager.default.removeItem(at: assetDirectory)
         var configuration = CKSyncEngine.Configuration(
             database: CKContainer(identifier: Self.containerIdentifier).privateCloudDatabase,
             stateSerialization: loadState(),
@@ -221,11 +224,12 @@ public actor CloudSync {
             return nil
         }
         func encode<T: StoredRecord>(_ record: T) -> CKRecord? {
-            try? CloudRecordCoding.ckRecord(
-                for: record,
-                systemFields: storage.systemFields(for: id.recordName),
-                assetDirectory: assetDirectory
-            )
+            do {
+                return try CloudRecordCoding.ckRecord(for: record, systemFields: storage.systemFields(for: id.recordName))
+            } catch {
+                Self.logger.error("not sending \(id.recordName): \(error.localizedDescription)")
+                return nil
+            }
         }
         return encode(record)
     }

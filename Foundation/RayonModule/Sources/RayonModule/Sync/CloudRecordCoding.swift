@@ -4,8 +4,8 @@
 //
 //  A record as a CloudKit record, after FlowDown's sync: record type = the
 //  table, record name = "<id>:<table>". The record (without its secrets)
-//  is JSON in an encrypted field, or a CKAsset when it is large; the
-//  secrets are always in an encrypted field of their own. The CloudKit
+//  is JSON in an encrypted field, and the secrets are in an encrypted field
+//  of their own. Nothing goes in a CKAsset: an asset is not encrypted. The CloudKit
 //  system fields kept from the last exchange make a save an update, not a
 //  conflict.
 //
@@ -23,8 +23,10 @@ enum CloudRecordCoding {
         static let modified = "modified"
     }
 
-    /// Larger records go in an asset; a CloudKit record holds about 1 MB.
-    static let inlineLimit = 20 * 1024
+    /// A CloudKit record holds about 1 MB; a larger record is not sent.
+    static let inlineLimit = 768 * 1024
+
+    struct TooLarge: Error {}
 
     static func recordID(table: String, id: UUID) -> CKRecord.ID {
         CKRecord.ID(recordName: RayonStorage.recordName(table: table, id: id), zoneID: zoneID)
@@ -57,8 +59,8 @@ enum CloudRecordCoding {
     }
 
     /// The CloudKit record for `record`, on top of the system fields last
-    /// seen for it. A large record goes in a file under `assetDirectory`.
-    static func ckRecord<T: StoredRecord>(for record: T, systemFields: Data?, assetDirectory: URL) throws -> CKRecord {
+    /// seen for it; `TooLarge` when it cannot fit in one.
+    static func ckRecord<T: StoredRecord>(for record: T, systemFields: Data?) throws -> CKRecord {
         let id = recordID(table: T.tableName, id: record.id)
         let ck = systemFields.flatMap(decode(systemFields:)).flatMap { $0.recordID == id ? $0 : nil }
             ?? CKRecord(recordType: T.tableName, recordID: id)
@@ -66,16 +68,10 @@ enum CloudRecordCoding {
         var plain = record.syncedContent
         plain.secrets = .init()
         let data = try encoder.encode(plain)
-        if data.count > inlineLimit {
-            try FileManager.default.createDirectory(at: assetDirectory, withIntermediateDirectories: true)
-            let file = assetDirectory.appendingPathComponent(id.recordName.replacingOccurrences(of: ":", with: "-"))
-            try data.write(to: file, options: .atomic)
-            ck[Field.recordAsset] = CKAsset(fileURL: file)
-            ck.encryptedValues[Field.record] = nil
-        } else {
-            ck.encryptedValues[Field.record] = data
-            ck[Field.recordAsset] = nil
-        }
+        guard data.count <= inlineLimit else { throw TooLarge() }
+        ck.encryptedValues[Field.record] = data
+        // Earlier builds put large records in an asset, unencrypted.
+        ck[Field.recordAsset] = nil
         if T.Secrets.self != NoSecrets.self {
             ck.encryptedValues[Field.secrets] = try encoder.encode(record.secrets)
         }

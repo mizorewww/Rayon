@@ -81,7 +81,7 @@ final class TerminalSettingsSyncTests: XCTestCase {
     func testTheRecordRoundTripsThroughCloudKit() throws {
         var settings = RDTerminalSettings(entries: ["keybind": ["clear", "ctrl+k=ignore"], "theme": ["light:A,dark:B"]])
         settings.modified = Date(timeIntervalSince1970: 1_700_000_000)
-        let ck = try CloudRecordCoding.ckRecord(for: settings, systemFields: nil, assetDirectory: test.directory)
+        let ck = try CloudRecordCoding.ckRecord(for: settings, systemFields: nil)
         XCTAssertEqual(ck.recordType, RDTerminalSettings.tableName)
         XCTAssertEqual(try CloudRecordCoding.decode(ck) as? RDTerminalSettings, settings)
         XCTAssertTrue(CloudSyncPreferences(isOn: true).syncs(table: RDTerminalSettings.tableName))

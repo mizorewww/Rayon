@@ -14,7 +14,6 @@ import XCTest
 final class CloudSyncMappingTests: XCTestCase {
     private var test: TestStorage!
     private var storage: RayonStorage { test.storage }
-    private var assets: URL { test.directory.appendingPathComponent("assets") }
 
     override func setUpWithError() throws {
         test = try TestStorage()
@@ -35,7 +34,7 @@ final class CloudSyncMappingTests: XCTestCase {
     func testSecretsTravelEncryptedAndLocalStateStaysHere() throws {
         var identity = RDIdentity(username: "root", password: "pw")
         identity.modified = Date(timeIntervalSince1970: 1_700_000_000)
-        let ck = try CloudRecordCoding.ckRecord(for: identity, systemFields: nil, assetDirectory: assets)
+        let ck = try CloudRecordCoding.ckRecord(for: identity, systemFields: nil)
         XCTAssertEqual(ck.recordType, RDIdentity.tableName)
         XCTAssertEqual(ck.recordID.zoneID, CloudRecordCoding.zoneID)
         XCTAssertNotNil(ck.encryptedValues[CloudRecordCoding.Field.secrets])
@@ -46,32 +45,49 @@ final class CloudSyncMappingTests: XCTestCase {
         var machine = RDMachine(remoteAddress: "a", remotePort: "22", name: "a")
         machine.lastBanner = "Welcome"
         let sent = try XCTUnwrap(CloudRecordCoding.decode(
-            CloudRecordCoding.ckRecord(for: machine, systemFields: nil, assetDirectory: assets)
+            CloudRecordCoding.ckRecord(for: machine, systemFields: nil)
         ) as? RDMachine)
         XCTAssertEqual(sent.lastBanner, "")
     }
 
-    func testLargeRecordsGoInAnAsset() throws {
+    /// A large record is still encrypted, never in an asset; one too large
+    /// for a CloudKit record is not sent. A record an earlier build sent in
+    /// an asset is still read, and the asset dropped when it is sent again.
+    func testLargeRecordsStayEncrypted() throws {
         var snippet = RDSnippet(name: "big", group: "", code: String(repeating: "x", count: 64 * 1024), comment: "")
         snippet.modified = Date(timeIntervalSince1970: 1_700_000_000)
-        let ck = try CloudRecordCoding.ckRecord(for: snippet, systemFields: nil, assetDirectory: assets)
-        XCTAssertNil(ck.encryptedValues[CloudRecordCoding.Field.record])
-        XCTAssertNotNil(ck[CloudRecordCoding.Field.recordAsset] as? CKAsset)
+        let ck = try CloudRecordCoding.ckRecord(for: snippet, systemFields: nil)
+        XCTAssertNotNil(ck.encryptedValues[CloudRecordCoding.Field.record])
+        XCTAssertNil(ck[CloudRecordCoding.Field.recordAsset])
         XCTAssertEqual(try CloudRecordCoding.decode(ck) as? RDSnippet, snippet)
+
+        var huge = snippet
+        huge.code = String(repeating: "x", count: 1024 * 1024)
+        XCTAssertThrowsError(try CloudRecordCoding.ckRecord(for: huge, systemFields: nil))
+
+        let file = test.directory.appendingPathComponent("asset")
+        var older = snippet
+        older.name = "old"
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .millisecondsSince1970
+        try encoder.encode(older).write(to: file)
+        let old = CKRecord(recordType: RDSnippet.tableName, recordID: ck.recordID)
+        old[CloudRecordCoding.Field.recordAsset] = CKAsset(fileURL: file)
+        XCTAssertEqual((try CloudRecordCoding.decode(old) as? RDSnippet)?.name, "old")
+        let resent = try CloudRecordCoding.ckRecord(for: snippet, systemFields: CloudRecordCoding.encode(systemFields: old))
+        XCTAssertNil(resent[CloudRecordCoding.Field.recordAsset])
     }
 
     func testSystemFieldsAreReused() throws {
         let machine = RDMachine(remoteAddress: "a", remotePort: "22", name: "a")
-        let first = try CloudRecordCoding.ckRecord(for: machine, systemFields: nil, assetDirectory: assets)
+        let first = try CloudRecordCoding.ckRecord(for: machine, systemFields: nil)
         let fields = CloudRecordCoding.encode(systemFields: first)
-        let again = try CloudRecordCoding.ckRecord(for: machine, systemFields: fields, assetDirectory: assets)
+        let again = try CloudRecordCoding.ckRecord(for: machine, systemFields: fields)
         XCTAssertEqual(again.recordID, first.recordID)
         // Fields of another record are not taken.
         let other = try CloudRecordCoding.ckRecord(
             for: RDMachine(remoteAddress: "b", remotePort: "22", name: "b"),
-            systemFields: fields,
-            assetDirectory: assets
-        )
+            systemFields: fields)
         XCTAssertNotEqual(other.recordID, first.recordID)
     }
 
