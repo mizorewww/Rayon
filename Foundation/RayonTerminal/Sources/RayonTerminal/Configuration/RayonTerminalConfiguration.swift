@@ -1,0 +1,166 @@
+import Foundation
+import GhosttyTerminal
+import GhosttyTheme
+
+/// The configuration every terminal shares: Rayon's base, the theme's
+/// colors, the settings that apply inside Rayon, then the app's clipboard
+/// policy. Changing it keeps open terminals, their SSH backends and their
+/// scrollback.
+@MainActor
+enum RayonTerminalConfiguration {
+    static let didApply = Notification.Name("RayonTerminalConfigurationDidApply")
+
+    /// The font size the applied settings set, if they set one; terminals
+    /// read it when told `didApply`.
+    private(set) static var appliedFontSize: Double?
+
+    /// The app's Copy on Select preference. The app stores it with its own
+    /// preferences and sets it here; the file's own value is not used.
+    private(set) static var copyOnSelect = true
+    /// The app's Clipboard Sharing preference: programs running on the remote
+    /// host may read and write the system clipboard through the terminal
+    /// (OSC 52). Like Copy on Select, the app stores it.
+    private(set) static var clipboardSharing = true
+
+    static let controller: TerminalController = {
+        let controller = TerminalController(configuration: base)
+        do {
+            try apply(TerminalSettings.shared.applied, to: controller)
+            appliedFontSize = TerminalSettings.shared.applied.values("font-size").last.flatMap(Double.init)
+        } catch {
+            TerminalSettings.shared.issue = "config.ghostty was not applied: \(error.localizedDescription)"
+        }
+        return controller
+    }()
+
+    /// `clipboard`, not `true`: the runtime advertises a selection clipboard
+    /// that nothing on Apple platforms reads, and `true` may copy only there.
+    private static var copyOnSelectValue: String { copyOnSelect ? "clipboard" : "none" }
+
+    /// `allow`/`deny` rather than `ask`: the sharing preference is the user's
+    /// answer, so no per-request confirmation is needed.
+    private static var clipboardAccessValue: String { clipboardSharing ? "allow" : "deny" }
+
+    /// Applies to every terminal, open ones included, keeping their scrollback.
+    static func setCopyOnSelect(_ enabled: Bool) {
+        guard copyOnSelect != enabled else { return }
+        copyOnSelect = enabled
+        try? apply(TerminalSettings.shared.applied)
+    }
+
+    /// Applies to every terminal, open ones included, keeping their scrollback.
+    static func setClipboardSharing(_ enabled: Bool) {
+        guard clipboardSharing != enabled else { return }
+        clipboardSharing = enabled
+        try? apply(TerminalSettings.shared.applied)
+    }
+
+    /// Ghostty's search bindings, which Rayon leaves to its own find bar: with
+    /// them bound, Escape ended Ghostty's search instead of reaching the remote
+    /// program (vim stayed in insert mode) and left the bar showing a query
+    /// whose highlights were gone.
+    nonisolated static let unboundTriggers = ["escape", "super+f", "super+shift+f", "super+e", "super+g", "super+shift+g"]
+
+    /// What every terminal starts from, ahead of the user's settings.
+    nonisolated static let base: TerminalConfiguration = unboundTriggers.reduce(TerminalConfiguration.default) {
+        $0.custom("keybind", "\($1)=unbind")
+    }
+
+    /// Values Rayon's terminal starts from where they differ from Ghostty's own
+    /// defaults (font size, thickened text, blinking block cursor). Settings
+    /// shows these as the defaults, because they are what the terminal uses.
+    nonisolated static let runtimeDefaults: [String: [String]] = {
+        var result: [String: [String]] = [:]
+        for line in TerminalConfiguration.default.rendered.components(separatedBy: "\n") {
+            guard let eq = line.firstIndex(of: "=") else { continue }
+            let key = line[..<eq].trimmingCharacters(in: .whitespaces)
+            let value = line[line.index(after: eq)...].trimmingCharacters(in: .whitespaces)
+            result[key, default: []].append(value)
+        }
+        return result
+    }()
+
+    /// The settings that take effect inside Rayon. The rest belong to the
+    /// standalone Ghostty app (windows, tabs, its process, GTK, its icon, the
+    /// blur behind its window), to Linux (`freetype-load-flags`) or to Rayon's
+    /// own preferences, and stay in the file without effect.
+    nonisolated static let supportedKeys: Set<String> = [
+        "background", "foreground", "background-opacity", "background-opacity-cells",
+        "selection-background", "selection-foreground", "selection-clear-on-typing", "selection-clear-on-copy",
+        "cursor-color", "cursor-text", "cursor-style", "cursor-style-blink", "cursor-opacity", "cursor-click-to-move",
+        "palette", "bold-color", "minimum-contrast", "keybind", "font-size",
+        "font-family", "font-family-bold", "font-family-italic", "font-family-bold-italic", "font-feature",
+        "font-variation", "font-variation-bold", "font-variation-italic", "font-variation-bold-italic",
+        "font-thicken", "font-thicken-strength", "font-style", "font-style-bold", "font-style-italic", "font-style-bold-italic",
+        "font-codepoint-map", "font-synthetic-style", "grapheme-width-method",
+        "adjust-cell-width", "adjust-cell-height", "adjust-font-baseline", "adjust-underline-position", "adjust-underline-thickness",
+        "adjust-strikethrough-position", "adjust-strikethrough-thickness", "adjust-cursor-thickness", "adjust-cursor-height",
+        "adjust-box-thickness", "adjust-overline-position", "adjust-overline-thickness",
+        "mouse-hide-while-typing", "mouse-shift-capture", "mouse-scroll-multiplier", "scrollback-limit",
+        "window-padding-x", "window-padding-y", "window-padding-balance", "window-padding-color",
+        "clipboard-trim-trailing-spaces", "clipboard-paste-protection", "clipboard-paste-bracketed-safe",
+        "link-url", "image-storage-limit", "title", "vt-kam-allowed", "enquiry-response",
+    ]
+
+    nonisolated static let supportedActions: Set<String> = [
+        "ignore", "unbind", "csi", "esc", "text", "cursor_key", "reset", "copy_to_clipboard", "paste_from_clipboard",
+        "paste_from_selection", "copy_url_to_clipboard", "copy_title_to_clipboard", "increase_font_size", "decrease_font_size",
+        "reset_font_size", "set_font_size", "clear_screen", "select_all", "scroll_to_top", "scroll_to_bottom",
+        "scroll_to_selection", "scroll_to_row", "scroll_page_up", "scroll_page_down", "scroll_page_fractional", "scroll_page_lines",
+        "adjust_selection", "jump_to_prompt", "toggle_readonly", "toggle_mouse_reporting", "end_key_sequence",
+    ]
+
+    /// Whether a `keybind` value takes effect inside Rayon.
+    nonisolated static func applies(keybind value: String) -> Bool {
+        if value == "clear" { return true }
+        let binding = Keybinding(value)
+        return binding.errors.isEmpty && supportedActions.contains(binding.action)
+            && !binding.prefixes.contains("global") && !binding.prefixes.contains("all")
+    }
+
+    /// The configuration lines for one appearance.
+    static func lines(for config: GhosttyConfigText, dark: Bool) throws -> [(key: String, value: String)] {
+        var lines: [(key: String, value: String)] = []
+        if let theme = TerminalThemes.theme(for: config.values("theme").last ?? "", dark: dark) {
+            lines += ["background", "foreground", "cursor-color", "cursor-text", "selection-background", "selection-foreground"]
+                .compactMap { key in theme.color(key).map { (key, $0) } }
+            lines += (0 ..< 256).compactMap { index in theme.paletteColor(index).map { ("palette", "\(index)=\($0)") } }
+        }
+        for entry in try config.entries() where supportedKeys.contains(entry.key) {
+            if entry.key == "keybind", !applies(keybind: entry.value) { continue }
+            lines.append(entry)
+        }
+        lines += [("copy-on-select", copyOnSelectValue), ("clipboard-read", clipboardAccessValue), ("clipboard-write", clipboardAccessValue)]
+        return lines
+    }
+
+    /// The whole configuration one appearance gets, as Ghostty reads it.
+    static func contents(_ config: GhosttyConfigText, dark: Bool) throws -> String {
+        ([base.rendered] + (try lines(for: config, dark: dark)).map { "\($0.key) = \($0.value)" }).joined(separator: "\n")
+    }
+
+    /// Applies `config` to `target` (every terminal, by default) once Ghostty
+    /// accepts both appearances of it; otherwise throws Ghostty's diagnostics
+    /// and changes nothing.
+    static func apply(_ config: GhosttyConfigText, to target: TerminalController? = nil) throws {
+        let shared = target == nil
+        let target = target ?? controller
+        let light = try contents(config, dark: false)
+        let dark = try contents(config, dark: true)
+        for contents in Set([light, dark]) {
+            let validation = TerminalController(configSource: .generated(contents), theme: .init())
+            if let issue = validation.lastConfigurationIssue { throw ConfigError(issue) }
+        }
+        func configuration(_ dark: Bool) throws -> TerminalConfiguration {
+            try lines(for: config, dark: dark).reduce(TerminalConfiguration()) { $0.custom($1.key, $1.value) }
+        }
+        let theme = try TerminalTheme(light: configuration(false), dark: configuration(true))
+        if target.theme != theme, !target.setTheme(theme) {
+            throw ConfigError(target.lastConfigurationIssue ?? "Ghostty did not accept the configuration")
+        }
+        if shared {
+            appliedFontSize = config.values("font-size").last.flatMap(Double.init)
+            NotificationCenter.default.post(name: didApply, object: nil)
+        }
+    }
+}

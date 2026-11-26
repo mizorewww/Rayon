@@ -5,7 +5,9 @@ import Foundation
 /// most (General, the terminal's text and colours) to what they rarely touch
 /// (Advanced, About). Each category holds titled groups; a group lists catalog
 /// keys or a block of rows supplied by the app (`ConfigHostSettingsSection`).
-struct ConfigLayout {
+/// Settings that take no effect inside Rayon close the list, grouped as
+/// Ghostty's documentation groups them, so every option stays reachable.
+struct SettingsLayout {
     enum Item: Hashable {
         /// A Ghostty setting, by catalog key.
         case setting(String)
@@ -17,15 +19,24 @@ struct ConfigLayout {
         let id: String
         let title: String
         let items: [Item]
+        var footer: String?
 
-        init(_ id: String, _ title: String, _ items: [Item]) {
+        init(_ id: String, _ title: String, _ items: [Item], footer: String? = nil) {
             self.id = id
             self.title = title
             self.items = items
+            self.footer = footer
         }
 
-        init(_ id: String, _ title: String, keys: [String]) {
-            self.init(id, title, keys.map(Item.setting))
+        init(_ id: String, _ title: String, keys: [String], footer: String? = nil) {
+            self.init(id, title, keys.map(Item.setting), footer: footer)
+        }
+
+        var keys: [String] {
+            items.compactMap { item in
+                if case let .setting(key) = item { return key }
+                return nil
+            }
         }
     }
 
@@ -37,20 +48,40 @@ struct ConfigLayout {
         let icon: String
         let section: Section
         let groups: [Group]
+        /// Said above the category's settings.
+        var note: String?
 
         /// Ghostty keys in this category.
-        var keys: [String] {
-            groups.flatMap(\.items).compactMap { item in
-                if case let .setting(key) = item { return key }
-                return nil
-            }
-        }
+        var keys: [String] { groups.flatMap(\.keys) }
 
-        /// Shows the live terminal preview beside it.
-        var previews: Bool { section == .terminal && id != "keyboard" }
+        /// Shows the live terminal preview with it.
+        var previews: Bool { section == .terminal && id != "keyboard" && id != Self.ghosttyID }
+
+        static let ghosttyID = "ghostty"
     }
 
-    static let categories: [Category] = [
+    static let categories: [Category] = rayonCategories.filter { $0.section != .info }
+        + [ghosttyCategory]
+        + rayonCategories.filter { $0.section == .info }
+
+    /// Every option Rayon's terminal does not use, in Ghostty's documentation order.
+    private static let ghosttyCategory: Category = {
+        let shown = Set(rayonCategories.flatMap(\.keys))
+        var groups: [Group] = []
+        for setting in SettingCatalog.shared.settings where !shown.contains(setting.key) {
+            if let index = groups.firstIndex(where: { $0.id == setting.section }) {
+                groups[index] = Group(setting.section, setting.section, keys: groups[index].keys + [setting.key])
+            } else {
+                groups.append(Group(setting.section, setting.section, keys: [setting.key]))
+            }
+        }
+        return Category(
+            id: Category.ghosttyID, title: "Ghostty App", icon: "app.dashed", section: .terminal, groups: groups,
+            note: "Rayon's terminal does not use these: they belong to the Ghostty app, or Rayon sets them itself. They are kept in config.ghostty, so the file also works in Ghostty."
+        )
+    }()
+
+    private static let rayonCategories: [Category] = [
         Category(id: "general", title: "General", icon: "gearshape", section: .app, groups: [
             Group("appearance", "Appearance", [.host("general.appearance")]),
             Group("sessions", "Sessions", [.host("general.sessions")]),
@@ -118,11 +149,6 @@ struct ConfigLayout {
         ]),
     ]
 
-    /// Supported keys Settings deliberately leaves out: `background-blur` blurs a
-    /// standalone Ghostty window and has no effect inside Rayon, whose window
-    /// material already blurs; `freetype-load-flags` is Linux-only.
-    static let hiddenKeys: Set<String> = ["background-blur", "freetype-load-flags"]
-
     static let categoryOfKey: [String: Category] = {
         var result: [String: Category] = [:]
         for category in categories {
@@ -131,15 +157,6 @@ struct ConfigLayout {
         return result
     }()
 
-    static let groupOfKey: [String: Group] = {
-        var result: [String: Group] = [:]
-        for category in categories {
-            for group in category.groups {
-                for case let .setting(key) in group.items where result[key] == nil { result[key] = group }
-            }
-        }
-        return result
-    }()
 
     static func category(_ id: String) -> Category? { categories.first { $0.id == id } }
 
@@ -185,8 +202,12 @@ struct ConfigLayout {
         "cursor-opacity": ("Opacity", nil),
     ]
 
-    static func title(_ setting: ConfigSetting) -> String {
+    static func title(_ setting: Setting) -> String {
         wording[setting.key]?.title ?? setting.name
+    }
+
+    static func summary(_ setting: Setting) -> String {
+        wording[setting.key].flatMap(\.summary) ?? setting.summary
     }
 
     /// Human names for option values the catalog leaves raw.

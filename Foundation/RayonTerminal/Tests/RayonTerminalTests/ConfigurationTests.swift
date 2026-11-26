@@ -2,35 +2,77 @@ import XCTest
 @testable import RayonTerminal
 
 final class ConfigurationTests: XCTestCase {
-    func testCatalogCoversEverySettingExactlyOnce() {
-        let catalog = ConfigCatalog.shared
-        XCTAssertEqual(catalog.registry.count, 200)
-        XCTAssertEqual(catalog.themes.count, 633)
-        let ids = catalog.navigation.flatMap(\.settingIDs)
-        XCTAssertEqual(Set(ids), Set(catalog.registry.keys))
-        XCTAssertEqual(ids.count, Set(ids).count)
-        XCTAssertEqual(catalog.registry["quitAfterLastWindowClosed"]?.defaultValue, .scalar("false"))
-    }
-    func testSettingsLayoutShowsEveryAppliedSettingOnce() {
-        let keys = ConfigLayout.categories.flatMap(\.keys)
+    /// Every Ghostty option the catalog has is in exactly one place in
+    /// Settings, so none can be lost from it.
+    func testEverySettingIsReachableExactlyOnce() {
+        let catalog = SettingCatalog.shared
+        XCTAssertEqual(catalog.settings.count, 200)
+        let keys = SettingsLayout.categories.flatMap(\.keys)
         XCTAssertEqual(keys.count, Set(keys).count, "a setting appears in two places")
-        XCTAssertEqual(Set(keys), ConfigCatalog.RayonKeys, "Settings and the applied keys disagree")
-        for key in keys {
-            XCTAssertNotNil(ConfigCatalog.shared.setting(key: key), "\(key) is not in the catalog")
-        }
-        XCTAssertEqual(ConfigLayout.categories.map(\.id).count, Set(ConfigLayout.categories.map(\.id)).count)
+        XCTAssertEqual(Set(keys), Set(catalog.settings.map(\.key)), "Settings and the catalog disagree")
+        for key in keys { XCTAssertNotNil(catalog.setting(key), "\(key) is not in the catalog") }
+        XCTAssertEqual(SettingsLayout.categories.map(\.id).count, Set(SettingsLayout.categories.map(\.id)).count)
+        XCTAssertEqual(catalog.setting("quit-after-last-window-closed")?.defaultValue, .scalar("false"))
     }
+
+    /// The categories Rayon's terminal reads hold exactly the keys it applies;
+    /// the others are under Ghostty App.
+    func testAppliedSettingsAreOutsideGhosttyApp() throws {
+        let ghostty = try XCTUnwrap(SettingsLayout.category(SettingsLayout.Category.ghosttyID))
+        let applied = Set(SettingsLayout.categories.filter { $0.id != ghostty.id }.flatMap(\.keys))
+        XCTAssertEqual(applied, RayonTerminalConfiguration.supportedKeys.union(["theme"]))
+        XCTAssertTrue(Set(ghostty.keys).isDisjoint(with: RayonTerminalConfiguration.supportedKeys))
+    }
+
+    /// Each setting gets a control from its catalog entry.
+    func testEverySettingHasAControl() {
+        for setting in SettingCatalog.shared.settings {
+            let kind = SettingControlKind(setting)
+            if case let .choice(options) = kind { XCTAssertFalse(options.isEmpty, setting.key) }
+            if case let .flags(features) = kind { XCTAssertFalse(features.isEmpty, setting.key) }
+        }
+        XCTAssertNotNil(SettingCatalog.shared.setting("cursor-color").map(SettingControlKind.init).flatMap { kind -> Bool? in
+            if case .color = kind { return true } else { return nil }
+        })
+    }
+
+    /// No theme offered before is lost: GhosttyTheme's and the supplement's together.
+    func testThemes() throws {
+        let names = TerminalThemes.all.map(\.name)
+        XCTAssertEqual(names.count, 633)
+        XCTAssertEqual(names.count, Set(names).count)
+        let day = try XCTUnwrap(TerminalThemes.theme(for: "light:3024 Day,dark:3024 Night", dark: false))
+        XCTAssertEqual(day.color("background"), "#f7f7f7")
+        XCTAssertEqual(TerminalThemes.theme(for: "light:3024 Day,dark:3024 Night", dark: true)?.color("background"), "#090300")
+        for theme in TerminalThemes.all {
+            XCTAssertNotNil(theme.paletteColor(15), theme.name)
+        }
+    }
+
+    func testConfigTextKeepsWhatItDoesNotTouch() throws {
+        var text = GhosttyConfigText("# mine\nfont-size = 12\n\nunknown-future = x\nkeybind = a=ignore\nkeybind = b=ignore\n")
+        text.set("keybind", ["c=ignore"])
+        text.set("font-size", ["13"])
+        text.set("background", ["#123456"])
+        XCTAssertEqual(text.text, "# mine\nfont-size = 13\n\nunknown-future = x\nkeybind = c=ignore\nbackground = #123456\n")
+        text.set("unknown-future", [])
+        XCTAssertEqual(text.values("unknown-future"), [])
+        XCTAssertEqual(try text.entries().count, 3)
+        XCTAssertThrowsError(try GhosttyConfigText("palette broken").entries())
+    }
+
     func testShortcutsReadAsKeyCaps() {
         XCTAssertEqual(KeybindingNames.step("super+shift+k"), "⇧⌘K")
         XCTAssertEqual(KeybindingNames.step("super+physical:four"), "⌘4")
         XCTAssertEqual(KeybindingNames.step("ctrl+alt+arrow_left"), "⌃⌥←")
         XCTAssertEqual(KeybindingNames.step("super+equal"), "⌘=")
-        XCTAssertEqual(KeybindingNames.summary(ConfigKeybinding("super+equal=increase_font_size:1")), "Make Text Bigger (1 pt)")
-        XCTAssertEqual(KeybindingNames.summary(ConfigKeybinding("super+backspace=text:\\x15")), "Delete to Start of Line")
-        XCTAssertEqual(KeybindingNames.summary(ConfigKeybinding("alt+arrow_left=esc:b")), "Move Back a Word")
-        XCTAssertFalse(KeybindingNames.applies(ConfigKeybinding("super+t=new_tab")))
-        XCTAssertTrue(KeybindingNames.applies(ConfigKeybinding("super+k=clear_screen")))
+        XCTAssertEqual(KeybindingNames.summary(Keybinding("super+equal=increase_font_size:1")), "Make Text Bigger (1 pt)")
+        XCTAssertEqual(KeybindingNames.summary(Keybinding("super+backspace=text:\\x15")), "Delete to Start of Line")
+        XCTAssertEqual(KeybindingNames.summary(Keybinding("alt+arrow_left=esc:b")), "Move Back a Word")
+        XCTAssertFalse(KeybindingNames.applies(Keybinding("super+t=new_tab")))
+        XCTAssertTrue(KeybindingNames.applies(Keybinding("super+k=clear_screen")))
     }
+
     func testCodepointMappingRoundTrip() {
         let mapping = CodepointMapping("U+E000-U+F8FF,U+F0000-U+FFFFD=Symbols Nerd Font")
         XCTAssertEqual(mapping?.family, "Symbols Nerd Font")
@@ -38,58 +80,41 @@ final class ConfigurationTests: XCTestCase {
         XCTAssertEqual(mapping?.rendered, "U+E000-U+F8FF,U+F0000-U+FFFFD=Symbols Nerd Font")
         XCTAssertEqual(CodepointRangeSet.describe("U+1234"), "U+1234")
     }
+
     @MainActor func testInstalledFontsComeFromCoreText() {
         XCTAssertTrue(FontLibrary.isMonospaced("Menlo"))
         XCTAssertFalse(FontLibrary.styles(of: "Menlo").isEmpty)
         XCTAssertFalse(FontLibrary.families.contains { $0.name.hasPrefix(".") })
     }
-    func testEditorShowsRayonRuntimeDefaults() {
-        let document = ConfigDocument()
+
+    @MainActor func testSettingsShowRayonRuntimeDefaults() {
         // Ghostty's built-in size differs per platform.
         #if os(macOS)
-            XCTAssertEqual(document.text("font-size"), "14")
+            XCTAssertEqual(TerminalSettings.defaultValues("font-size"), ["14"])
         #else
-            XCTAssertEqual(document.text("font-size"), "10")
+            XCTAssertEqual(TerminalSettings.defaultValues("font-size"), ["10"])
         #endif
-        XCTAssertEqual(document.text("font-thicken"), "true")
-        XCTAssertEqual(document.text("cursor-style-blink"), "true")
-        XCTAssertEqual(document.text("minimum-contrast"), ConfigCatalog.shared.setting(key: "minimum-contrast")?.defaultValue.text)
+        XCTAssertEqual(TerminalSettings.defaultValues("font-thicken"), ["true"])
+        XCTAssertEqual(TerminalSettings.defaultValues("cursor-style-blink"), ["true"])
+        XCTAssertEqual(TerminalSettings.defaultValues("minimum-contrast"), SettingCatalog.shared.setting("minimum-contrast")?.defaultValue.values)
     }
-    func testImportMergePaletteRepeatableAndScalar() throws {
-        var draft = ConfigDocument()
-        try draft.merge("font-size = 17\nfont-family = Mono\nfont-family = 日本語\npalette = 2=#112233\nkeybind = ctrl+k=text:a=b:c")
-        try draft.merge("font-size = 19\npalette = 3=#334455\nfont-family = Other\nkeybind = ctrl+x=ignore")
-        XCTAssertEqual(draft.text("font-size"), "19")
-        XCTAssertEqual(draft.values("font-family"), ["Other"])
-        XCTAssertEqual(draft.paletteOverrides, [2: "#112233", 3: "#334455"])
-        XCTAssertEqual(Array(draft.values("keybind").suffix(2)), ["ctrl+k=text:a=b:c", "ctrl+x=ignore"])
-        let original = draft
-        XCTAssertThrowsError(try draft.merge("font-size = 22\npalette = broken"))
-        XCTAssertEqual(original, draft)
-    }
-    func testThemesDoNotContaminateDiffAndExplicitColorsWin() throws {
-        var draft = ConfigDocument()
-        draft.set("theme", ["light:3024 Day,dark:3024 Night"])
-        XCTAssertEqual(draft.effectiveColor("background", dark: false), "#f7f7f7")
-        XCTAssertEqual(draft.effectiveColor("background", dark: true), "#090300")
-        XCTAssertFalse(draft.serialized().contains("background ="))
-        draft.set("background", ["#123456"])
-        XCTAssertEqual(draft.effectiveColor("background", dark: true), "#123456")
-        draft.setPalette(255, color: "#010203")
-        XCTAssertTrue(draft.serialized().contains("palette = 255=#010203"))
-        draft.setPalette(255, color: nil)
-        XCTAssertFalse(draft.serialized().contains("palette ="))
-    }
-    func testUnicodeSharingAndLargeFallback() throws {
-        var draft = ConfigDocument()
-        try draft.merge("font-family = 日本語\nkeybind = ctrl++=text:a=b:c\nfuture-key = one\nfuture-key = two")
-        let url = try XCTUnwrap(draft.shareURL())
-        XCTAssertFalse(url.contains("=="))
-        var imported = ConfigDocument()
-        try imported.merge(url)
-        XCTAssertEqual(imported, draft)
-        draft.set("title", [String(repeating: "大", count: 1000)])
-        XCTAssertNil(draft.shareURL())
-        XCTAssertThrowsError(try ConfigDocument.decodeShareOrText("https://ghostty.zerebos.com/#share=%%%"))
+
+    func testCompoundValues() throws {
+        XCTAssertEqual(DurationValue.describe(try DurationValue.parse("1h30m", allowEmpty: false)), "1 hour, 30 minutes")
+        XCTAssertEqual(try DurationValue.parse("4ms", allowEmpty: false).first?.1, "ms")
+        XCTAssertThrowsError(try DurationValue.parse("1s2s", allowEmpty: false))
+        XCTAssertThrowsError(try DurationValue.parse("-1m", allowEmpty: false))
+        XCTAssertThrowsError(try DurationValue.parse("1.5s", allowEmpty: false))
+        XCTAssertTrue(try DurationValue.parse("", allowEmpty: true).isEmpty)
+        XCTAssertEqual(PairValue.parse("discrete:3,precision:1", scroll: true).values, ["1", "3"])
+        XCTAssertEqual(PairValue.parse("precision:2", scroll: true).values, ["2", "3"])
+        XCTAssertFalse(PairValue.parse("precision:2", scroll: true).linked)
+        XCTAssertEqual(PairValue.parse("", scroll: true).values, ["1", "3"])
+        XCTAssertTrue(PairValue.parse("2", scroll: false).linked)
+        XCTAssertEqual(PairValue.render("2", "4", linked: false, scroll: false), "2,4")
+        XCTAssertEqual(LengthValue.render("120", percent: true), "120%")
+        XCTAssertEqual(LengthValue.parse("120%").number, "120")
+        XCTAssertEqual(1234.5.configText, "1234.5")
+        XCTAssertEqual(0.30000000000000004.configText, "0.3")
     }
 }

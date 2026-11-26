@@ -1,9 +1,42 @@
-import RayonDesign
+#if os(macOS)
+    import AppKit
+#endif
 import SwiftUI
 
-/// Rows the app supplies for a group in `ConfigLayout` (General, Connection,
-/// About), so its preferences share Settings without coupling this package to
-/// RayonStore. The content is the group's rows, usually an `RXDividedStack`.
+/// Which category Settings shows, and the ones it showed before. The app can
+/// hold one to open Settings at a category.
+@MainActor
+public final class ConfigNavigation: ObservableObject {
+    @Published public private(set) var selection: String
+    @Published private var history: [String]
+    @Published private var index = 0
+
+    public init(_ selection: String = "general") {
+        self.selection = selection
+        history = [selection]
+    }
+
+    public func go(_ id: String) {
+        guard id != selection else { return }
+        history = Array(history.prefix(index + 1)) + [id]
+        index = history.count - 1
+        selection = id
+    }
+
+    var canGoBack: Bool { index > 0 }
+    var canGoForward: Bool { index + 1 < history.count }
+
+    func step(_ delta: Int) {
+        let next = index + delta
+        guard history.indices.contains(next) else { return }
+        index = next
+        selection = history[next]
+    }
+}
+
+/// Rows the app supplies for a group in `SettingsLayout` (General,
+/// Connection, About), so its preferences share Settings without coupling
+/// this package to RayonStore.
 public struct ConfigHostSettingsSection: Identifiable {
     public let id: String
     let keywords: String
@@ -16,45 +49,20 @@ public struct ConfigHostSettingsSection: Identifiable {
     }
 }
 
-/// All of Settings: a category column, then the selected category's groups as
-/// cards. The categories, their order and their groups come from `ConfigLayout`;
-/// Ghostty settings are drawn from the catalog, app rows from `hostSections`.
+/// All of Settings: the categories in a sidebar list, the selected one as a
+/// form, the live terminal preview above the terminal's categories, and
+/// search across every setting. The categories, their order and groups come
+/// from `SettingsLayout`; Ghostty settings are drawn from the catalog, the
+/// app's rows from `hostSections`.
 public struct GhosttyConfigurationView: View {
-    /// Not observed here: the parts that show the document or the selected
-    /// category observe them, so an edit or another category leaves the rest
-    /// of Settings as it is.
-    private let model: ConfigEditorModel
-    @State private var ownNavigation: ConfigNavigation
+    @StateObject private var ownNavigation: ConfigNavigation
     private let externalNavigation: ConfigNavigation?
-    private var navigation: ConfigNavigation { externalNavigation ?? ownNavigation }
-    @State private var search = ""
-    @StateObject private var pageState = ConfigPageState()
-    @State private var showPreview = true
-    @State private var resetConfirm = false
-    /// Width beside the category column; the preview sits beside the settings
-    /// only when both fit, and above them (pinned) otherwise.
-    @State private var detailWidth: CGFloat = 1200
-    private var previewBeside: Bool { detailWidth >= 740 }
-    private let onApplied: ((Double?) -> Void)?
     private let embedded: Bool
     /// False while the app keeps Settings out of sight: it then adds nothing
     /// to the window toolbar.
     private let active: Bool
     private let hostSections: [String: ConfigHostSettingsSection]
-
-    /// Categories with something to show: app categories need their host rows.
-    private var categories: [ConfigLayout.Category] {
-        ConfigLayout.categories.filter { category in
-            category.groups.contains { group in
-                group.items.contains { item in
-                    switch item {
-                    case let .setting(key): return ConfigCatalog.shared.setting(key: key) != nil
-                    case let .host(id): return hostSections[id] != nil
-                    }
-                }
-            }
-        }
-    }
+    private let onApplied: ((Double?) -> Void)?
 
     public init(
         embedded: Bool = false,
@@ -63,268 +71,136 @@ public struct GhosttyConfigurationView: View {
         active: Bool = true,
         onApplied: ((Double?) -> Void)? = nil
     ) {
-        model = .shared
         self.hostSections = Dictionary(hostSections.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         externalNavigation = navigation
-        _ownNavigation = State(initialValue: navigation ?? ConfigNavigation(hostSections.isEmpty ? "text" : "general"))
+        _ownNavigation = StateObject(wrappedValue: ConfigNavigation(hostSections.isEmpty ? "text" : "general"))
         self.embedded = embedded
         self.active = active
         self.onApplied = onApplied
-        _showPreview = State(initialValue: !embedded)
-    }
-
-    private func installApplyHandler() {
-        model.onApplied = onApplied
     }
 
     public var body: some View {
-        #if os(macOS) || targetEnvironment(macCatalyst)
-            columns
-        #else
-            CompactSettings(
-                categories: categories,
-                hostSections: hostSections,
-                model: model,
-                categoryPage: { category in categoryPage(category) },
-                searchContent: { searchContent },
-                search: $search,
-                resetConfirm: $resetConfirm
-            )
-            .onAppear(perform: installApplyHandler)
-            .confirmationDialog("Reset every terminal setting to its default?", isPresented: $resetConfirm) {
-                Button("Reset", role: .destructive) { model.edit { $0 = ConfigDocument() } }
-            } message: {
-                Text("Rayon's General and Connection preferences are kept.")
-            }
-        #endif
-    }
-
-    #if os(macOS) || targetEnvironment(macCatalyst)
-    /// macOS: a category column beside the selected category, with the live
-    /// preview beside or above it.
-    private var columns: some View {
-        HStack(spacing: 0) {
-            ConfigCategoryColumn(categories: categories, navigation: navigation, model: model, search: $search)
-                .frame(width: 176)
-            Hairline(vertical: true)
-            VStack(spacing: 0) {
-                HStack(alignment: .top, spacing: RX.Space.s3) {
-                    content
-                        .frame(minWidth: 340, maxWidth: .infinity, maxHeight: .infinity)
-                    ConfigPreviewBeside(
-                        categories: categories, navigation: navigation, model: model,
-                        visible: showPreview && previewBeside && search.isEmpty
-                    )
-                }
-                ConfigErrorBar(model: model)
-            }
-            .readWidth($detailWidth)
-        }
-        // Embedded in Rayon, the window material is drawn behind every page.
-        .background {
-            if !embedded { RXWindowBackground().ignoresSafeArea() }
-        }
-        .rxClearToolbar()
-        .modifier(ConfigToolbar(active: active, leading: {
-            ConfigHistoryButtons(navigation: navigation, chrome: navigation.chrome)
-        }, trailing: {
-            ConfigToolbarTools(
-                chrome: navigation.chrome, model: model, history: model.history,
-                searching: !search.isEmpty, showPreview: $showPreview, resetConfirm: $resetConfirm
-            )
-        }))
-        .configSearch(text: $search, active: active)
+        SettingsShell(
+            navigation: externalNavigation ?? ownNavigation,
+            categories: categories,
+            hostSections: hostSections,
+            embedded: embedded,
+            active: active
+        )
         .onAppear {
-            installApplyHandler()
-            #if DEBUG
-                if let text = ProcessInfo.processInfo.environment["RAYON_PREVIEW_SEARCH"] { search = text }
-                if ProcessInfo.processInfo.environment["RAYON_PREVIEW_PREVIEW"] != nil { showPreview = true }
-            #endif
-            if !categories.contains(where: { $0.id == navigation.selection }) {
-                navigation.go(categories.first?.id ?? "text")
-            }
-            pageState.previewAbove = showPreview && !previewBeside
+            if let onApplied { TerminalSettings.shared.onFontSizeChange = { onApplied($0) } }
         }
-        .onChange(of: showPreview && !previewBeside) { pageState.previewAbove = $0 }
-        // Settings stays in the window; a search left behind would cover the
-        // category it is next opened at.
-        .onChange(of: active) { if !$0 { search = "" } }
-        .animation(.easeOut(duration: 0.18), value: search.isEmpty)
-        .confirmationDialog("Reset every terminal setting to its default?", isPresented: $resetConfirm) {
-            Button("Reset", role: .destructive) { model.edit { $0 = ConfigDocument() } }
-        } message: {
-            Text("Rayon's General and Connection preferences are kept.")
-        }
-        .frame(minWidth: embedded ? 700 : 960, minHeight: 560)
     }
-    #endif
 
-    /// One category's groups as cards: the iOS page pushed from the category list.
-    private func categoryPage(_ category: ConfigLayout.Category) -> some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: RX.Space.s6) {
-                if category.previews {
-                    DisclosureGroup("Preview") {
-                        ConfigPreview(model: model)
-                            .rxCard(padding: 0)
-                            .padding(.top, RX.Space.s2)
-                    }
-                    .font(.rxBodyStrong)
-                }
-                if category.id == "keyboard" {
-                    ConfigKeybindingList(model: model)
-                } else {
-                    ForEach(category.groups) { group in
-                        ConfigGroupCard(group: group, hostSections: hostSections, model: model)
+    /// Categories with something to show: app categories need their rows.
+    private var categories: [SettingsLayout.Category] {
+        SettingsLayout.categories.filter { category in
+            category.groups.contains { group in
+                group.items.contains { item in
+                    switch item {
+                    case let .setting(key): SettingCatalog.shared.setting(key) != nil
+                    case let .host(id): hostSections[id] != nil
                     }
                 }
             }
-            .padding(RX.Space.s4)
         }
-        .background(RXBackdrop().ignoresSafeArea())
-        .navigationTitle(category.title)
-    }
-
-    // MARK: Content
-
-    @ViewBuilder private var content: some View {
-        if !search.isEmpty {
-            searchContent
-        } else {
-            ConfigSelectedCategory(categories: categories, navigation: navigation, hostSections: hostSections, model: model, state: pageState)
-        }
-    }
-
-    // MARK: Search
-
-    private var searchContent: some View {
-        let settings = searchResults
-        let hosts = hostSearchResults
-        return ScrollView {
-            LazyVStack(alignment: .leading, spacing: RX.Space.s6) {
-                PageTitle("Search Results", subtitle: searchSubtitle(settings.count + hosts.count))
-                ForEach(categories) { category in
-                    let groups = category.groups.compactMap { group -> (ConfigLayout.Group, [String])? in
-                        let hostMatch = group.items.contains { item in
-                            if case let .host(id) = item { return hosts.contains(id) }
-                            return false
-                        }
-                        let keys = group.items.compactMap { item -> String? in
-                            if case let .setting(key) = item, settings.contains(key) { return key }
-                            return nil
-                        }
-                        return hostMatch || !keys.isEmpty ? (group, keys) : nil
-                    }
-                    if !groups.isEmpty {
-                        VStack(alignment: .leading, spacing: RX.Space.s3) {
-                            HStack {
-                                Label(category.title, systemImage: category.icon)
-                                    .font(.rxBodyStrong)
-                                    .foregroundStyle(.rxInk)
-                                Spacer()
-                                Button("Show in \(category.title)") {
-                                    pageState.jump = groups.first?.1.first.map { .init(category: category.id, key: $0) }
-                                    navigation.go(category.id)
-                                    search = ""
-                                }
-                                .rxLinkButton()
-                                .font(.rxHelp)
-                            }
-                            ForEach(groups, id: \.0.id) { group, keys in
-                                ConfigGroupCard(group: group, keys: keys, hostSections: hostSections, model: model, query: search)
-                            }
-                        }
-                    }
-                }
-                if settings.isEmpty && hosts.isEmpty {
-                    EmptyStateView("No settings match “\(search)”", systemImage: "magnifyingglass")
-                        .rxCard()
-                }
-            }
-            .padding(.horizontal, RX.Space.s6)
-            .padding(.top, RX.Space.s3)
-            .padding(.bottom, RX.Space.s6)
-        }
-    }
-
-    private func searchSubtitle(_ count: Int) -> String {
-        count == 0 ? "Nothing found" : "\(count) match\(count == 1 ? "" : "es") for “\(search)”"
-    }
-
-    private var tokens: [Substring] { search.lowercased().split(whereSeparator: \.isWhitespace) }
-
-    /// Host groups whose keywords, group or category title match.
-    private var hostSearchResults: Set<String> {
-        var result = Set<String>()
-        for category in categories {
-            for group in category.groups {
-                for case let .host(id) in group.items {
-                    guard let section = hostSections[id] else { continue }
-                    let text = "\(category.title) \(group.title) \(section.keywords)".lowercased()
-                    if tokens.allSatisfy({ text.contains($0) }) { result.insert(id) }
-                }
-            }
-        }
-        return result
-    }
-
-    /// Ghostty keys whose name, description, key, group or category match.
-    private var searchResults: Set<String> {
-        let tokens = tokens
-        var result = Set<String>()
-        for category in categories {
-            for group in category.groups {
-                for case let .setting(key) in group.items {
-                    guard let setting = ConfigCatalog.shared.setting(key: key) else { continue }
-                    let wording = ConfigLayout.wording[key]
-                    let haystack = [setting.key, setting.name, setting.description, wording?.title ?? "", wording?.summary ?? "", category.title, group.title]
-                        .joined(separator: " ").lowercased()
-                    if tokens.allSatisfy({ haystack.contains($0) }) { result.insert(key) }
-                }
-            }
-        }
-        return result
     }
 }
 
-#if !(os(macOS) || targetEnvironment(macCatalyst))
-    /// iPhone and iPad: the categories as a grouped list, each pushing its page;
-    /// searching replaces the list with matching settings.
-    private struct CompactSettings<Page: View, Results: View>: View {
-        let categories: [ConfigLayout.Category]
-        let hostSections: [String: ConfigHostSettingsSection]
-        @ObservedObject var model: ConfigEditorModel
-        let categoryPage: (ConfigLayout.Category) -> Page
-        let searchContent: () -> Results
-        @Binding var search: String
-        @Binding var resetConfirm: Bool
+private struct SettingsShell: View {
+    @ObservedObject var navigation: ConfigNavigation
+    let categories: [SettingsLayout.Category]
+    let hostSections: [String: ConfigHostSettingsSection]
+    let embedded: Bool
+    let active: Bool
+    private var settings: TerminalSettings { .shared }
+    @State private var search = ""
+    @State private var showsPreview = true
+    @State private var confirmReset = false
 
-        private func modifiedCount(_ category: ConfigLayout.Category) -> Int {
-            model.document.overrides.keys.filter { ConfigLayout.categoryOfKey[$0]?.id == category.id }.count
+    private var selected: SettingsLayout.Category? { categories.first { $0.id == navigation.selection } }
+
+    var body: some View {
+        content
+            .safeAreaInset(edge: .bottom) { IssueBar() }
+            .confirmationDialog("Reset every terminal setting to its default?", isPresented: $confirmReset) {
+                Button("Reset", role: .destructive) { settings.resetAll() }
+            } message: {
+                Text("Rayon's General and Connection preferences are kept.")
+            }
+            .onAppear {
+                #if DEBUG
+                    if let text = ProcessInfo.processInfo.environment["RAYON_PREVIEW_SEARCH"] { search = text }
+                #endif
+                if !categories.contains(where: { $0.id == navigation.selection }) {
+                    navigation.go(categories.first?.id ?? "text")
+                }
+            }
+    }
+
+    // MARK: Layout
+
+    #if os(macOS)
+        @ViewBuilder private var content: some View {
+            HStack(spacing: 0) {
+                List(selection: Binding(get: { search.isEmpty ? navigation.selection : nil }, set: { id in
+                    guard let id else { return }
+                    search = ""
+                    navigation.go(id)
+                })) {
+                    ForEach([SettingsLayout.Category.Section.app, .terminal, .info], id: \.self) { section in
+                        let members = categories.filter { $0.section == section }
+                        if !members.isEmpty {
+                            Section(section.rawValue) {
+                                ForEach(members) { category in
+                                    Label(category.title, systemImage: category.icon)
+                                        .badge(changedCount(category))
+                                        .tag(category.id)
+                                }
+                            }
+                        }
+                    }
+                }
+                .listStyle(.sidebar)
+                .frame(width: 200)
+                Divider()
+                detail
+                    .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .toolbar {
+                if active {
+                    ToolbarItemGroup(placement: .navigation) {
+                        Button { navigation.step(-1) } label: { Label("Back", systemImage: "chevron.left") }
+                            .disabled(!navigation.canGoBack)
+                            .help("Previous category")
+                        Button { navigation.step(1) } label: { Label("Forward", systemImage: "chevron.right") }
+                            .disabled(!navigation.canGoForward)
+                            .help("Next category")
+                    }
+                    ToolbarItemGroup(placement: .primaryAction) { tools }
+                }
+            }
+            .modifier(SearchField(text: $search, active: active))
+            .onChange(of: active) { _, now in if !now { search = "" } }
+            .frame(minWidth: embedded ? 700 : 960, minHeight: 560)
         }
-
-        var body: some View {
+    #else
+        @ViewBuilder private var content: some View {
             Group {
                 if search.isEmpty {
                     List {
-                        ForEach([ConfigLayout.Category.Section.app, .terminal, .info], id: \.self) { section in
+                        ForEach([SettingsLayout.Category.Section.app, .terminal, .info], id: \.self) { section in
                             let members = categories.filter { $0.section == section }
                             if !members.isEmpty {
                                 Section(section.rawValue) {
                                     ForEach(members) { category in
                                         NavigationLink {
-                                            categoryPage(category)
+                                            CategoryPage(category: category, hostSections: hostSections, showsPreview: $showsPreview)
+                                                .navigationTitle(category.title)
+                                                .toolbar { ToolbarItem(placement: .primaryAction) { moreMenu } }
                                         } label: {
-                                            HStack {
-                                                Label(category.title, systemImage: category.icon)
-                                                Spacer()
-                                                let count = modifiedCount(category)
-                                                if count > 0 {
-                                                    Text("\(count) changed")
-                                                        .font(.rxHelp)
-                                                        .foregroundStyle(.rxInkSecondary)
-                                                }
-                                            }
+                                            Label(category.title, systemImage: category.icon)
+                                                .badge(changedCount(category))
                                         }
                                     }
                                 }
@@ -332,72 +208,224 @@ public struct GhosttyConfigurationView: View {
                         }
                     }
                 } else {
-                    searchContent()
+                    SearchResults(query: search, categories: categories, hostSections: hostSections) { category in
+                        search = ""
+                        navigation.go(category)
+                    }
                 }
             }
             .searchable(text: $search, prompt: "Search settings")
             .navigationTitle("Settings")
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Menu {
-                        Button { model.undo() } label: { Label("Undo", systemImage: "arrow.uturn.backward") }
-                            .disabled(model.undoStack.isEmpty)
-                        Button { model.redo() } label: { Label("Redo", systemImage: "arrow.uturn.forward") }
-                            .disabled(model.redoStack.isEmpty)
-                        Divider()
-                        Button(role: .destructive) { resetConfirm = true } label: {
-                            Label("Reset Terminal Settings…", systemImage: "arrow.counterclockwise")
-                        }
-                    } label: {
-                        Label("More", systemImage: "ellipsis.circle")
+            .toolbar { ToolbarItem(placement: .primaryAction) { moreMenu } }
+        }
+
+        private var moreMenu: some View {
+            Menu {
+                tools
+            } label: {
+                Label("More", systemImage: "ellipsis.circle")
+            }
+        }
+    #endif
+
+    @ViewBuilder private var detail: some View {
+        if !search.isEmpty {
+            SearchResults(query: search, categories: categories, hostSections: hostSections) { category in
+                search = ""
+                navigation.go(category)
+            }
+        } else if let selected {
+            CategoryPage(category: selected, hostSections: hostSections, showsPreview: $showsPreview)
+                .id(selected.id)
+        } else {
+            ContentUnavailableView("Choose a category", systemImage: "slider.horizontal.3")
+        }
+    }
+
+    /// Undo, Redo, Reset, the preview and the file.
+    @ViewBuilder private var tools: some View {
+        let _ = settings.revision
+        let terminal = selected?.section == .terminal || !search.isEmpty
+        Button { settings.undo() } label: { Label("Undo", systemImage: "arrow.uturn.backward") }
+            .disabled(!settings.undoManager.canUndo)
+            .help("Undo the last terminal setting change")
+        Button { settings.redo() } label: { Label("Redo", systemImage: "arrow.uturn.forward") }
+            .disabled(!settings.undoManager.canRedo)
+            .help("Redo")
+        Toggle(isOn: $showsPreview.animation()) { Label("Preview", systemImage: "rectangle.topthird.inset.filled") }
+            .disabled(!(selected?.previews ?? false) || !search.isEmpty)
+            .help(showsPreview ? "Hide the terminal preview" : "Show a terminal preview above the settings")
+        #if os(macOS)
+            Button { NSWorkspace.shared.activateFileViewerSelecting([settings.fileURL]) } label: {
+                Label("Show config.ghostty in Finder", systemImage: "doc.text.magnifyingglass")
+            }
+            .disabled(!FileManager.default.fileExists(atPath: settings.fileURL.path))
+            .help("The file the terminal settings are kept in")
+        #else
+            if FileManager.default.fileExists(atPath: settings.fileURL.path) {
+                ShareLink(item: settings.fileURL) { Label("Share config.ghostty", systemImage: "square.and.arrow.up") }
+            }
+        #endif
+        Button(role: .destructive) { confirmReset = true } label: {
+            Label("Reset Terminal Settings…", systemImage: "arrow.counterclockwise")
+        }
+        .disabled(!terminal)
+        .help("Reset every terminal setting to its default")
+    }
+
+    private func changedCount(_ category: SettingsLayout.Category) -> Int {
+        category.keys.filter(settings.isSet).count
+    }
+}
+
+#if os(macOS)
+    private struct SearchField: ViewModifier {
+        @Binding var text: String
+        let active: Bool
+
+        func body(content: Content) -> some View {
+            if active {
+                content.searchable(text: $text, placement: .toolbar, prompt: "Search settings")
+            } else {
+                content
+            }
+        }
+    }
+#endif
+
+// MARK: - Pages
+
+/// One category as a form: its groups as sections, the app's rows and
+/// Ghostty settings alike, with the terminal preview above when it helps.
+private struct CategoryPage: View {
+    let category: SettingsLayout.Category
+    let hostSections: [String: ConfigHostSettingsSection]
+    @Binding var showsPreview: Bool
+
+    var body: some View {
+        VStack(spacing: 0) {
+            if category.previews, showsPreview {
+                TerminalPreview()
+                    .frame(height: 168)
+                    .padding([.horizontal, .top])
+                    .transition(.opacity)
+            }
+            Form {
+                if let note = category.note {
+                    Section { Text(note).foregroundStyle(.secondary) }
+                }
+                ForEach(category.groups) { group in
+                    GroupSection(group: group, keys: group.keys, hostSections: hostSections)
+                }
+            }
+            .formStyle(.grouped)
+        }
+    }
+}
+
+/// A group: the app's rows, then its Ghostty settings.
+private struct GroupSection: View {
+    let group: SettingsLayout.Group
+    let keys: [String]
+    let hostSections: [String: ConfigHostSettingsSection]
+    var query = ""
+
+    var body: some View {
+        let hosts = group.items.compactMap { item -> ConfigHostSettingsSection? in
+            if case let .host(id) = item { return hostSections[id] }
+            return nil
+        }
+        let settings = keys.compactMap { SettingCatalog.shared.setting($0) }
+        if keys == ["keybind"], query.isEmpty {
+            KeybindingList()
+        } else if !hosts.isEmpty || !settings.isEmpty {
+            Section {
+                ForEach(hosts) { $0.content }
+                ForEach(settings) { SettingRow(setting: $0, query: query) }
+            } header: {
+                Text(group.title)
+            } footer: {
+                if let footer = group.footer { Text(footer) }
+            }
+        }
+    }
+}
+
+/// Every setting and app group matching all the words typed, under their
+/// categories, each with a way to its category.
+private struct SearchResults: View {
+    let query: String
+    let categories: [SettingsLayout.Category]
+    let hostSections: [String: ConfigHostSettingsSection]
+    let show: (String) -> Void
+
+    private var tokens: [Substring] { query.lowercased().split(whereSeparator: \.isWhitespace) }
+
+    private func matches(_ text: String) -> Bool {
+        let text = text.lowercased()
+        return tokens.allSatisfy { text.contains($0) }
+    }
+
+    private func settingMatches(_ key: String, in category: SettingsLayout.Category, _ group: SettingsLayout.Group) -> Bool {
+        guard let setting = SettingCatalog.shared.setting(key) else { return false }
+        let options = (setting.widget?.options ?? []).map { SettingsLayout.optionName(key, value: $0.value, fallback: $0.name) }
+        return matches(([setting.key, setting.name, setting.plainDescription, SettingsLayout.title(setting),
+                         SettingsLayout.summary(setting), category.title, group.title] + options).joined(separator: " "))
+    }
+
+    var body: some View {
+        let results = categories.compactMap { category -> (SettingsLayout.Category, [(SettingsLayout.Group, [String])])? in
+            let groups = category.groups.compactMap { group -> (SettingsLayout.Group, [String])? in
+                let hostMatch = group.items.contains { item in
+                    guard case let .host(id) = item, let host = hostSections[id] else { return false }
+                    return matches("\(category.title) \(group.title) \(host.keywords)")
+                }
+                let keys = group.keys.filter { settingMatches($0, in: category, group) }
+                return hostMatch || !keys.isEmpty ? (group, keys) : nil
+            }
+            return groups.isEmpty ? nil : (category, groups)
+        }
+        if results.isEmpty {
+            ContentUnavailableView.search(text: query)
+        } else {
+            Form {
+                ForEach(results, id: \.0.id) { category, groups in
+                    Section {
+                        Button("Show \(category.title)", systemImage: category.icon) { show(category.id) }
+                    }
+                    ForEach(groups, id: \.0.id) { group, keys in
+                        GroupSection(
+                            group: SettingsLayout.Group(group.id, "\(category.title) › \(group.title)", group.items),
+                            keys: keys,
+                            hostSections: group.items.contains { if case .host = $0 { true } else { false } } ? hostSections : [:],
+                            query: query
+                        )
                     }
                 }
             }
-        }
-    }
-#endif
-
-#if os(macOS)
-private extension View {
-    @ViewBuilder
-    func configSearch(text: Binding<String>, active: Bool) -> some View {
-        if active {
-            searchable(text: text, placement: .toolbar, prompt: "Search settings")
-        } else {
-            self
+            .formStyle(.grouped)
         }
     }
 }
 
-/// Navigation at the leading edge, actions at the trailing edge of the window toolbar.
-private struct ConfigToolbar<Leading: View, Trailing: View>: ViewModifier {
-    let active: Bool
-    let leading: Leading
-    let trailing: Trailing
+/// Why the last change was not applied, until it is dismissed or one is.
+private struct IssueBar: View {
+    private var settings: TerminalSettings { .shared }
 
-    init(active: Bool, @ViewBuilder leading: () -> Leading, @ViewBuilder trailing: () -> Trailing) {
-        self.active = active
-        self.leading = leading()
-        self.trailing = trailing()
-    }
-
-    func body(content: Content) -> some View {
-        if #available(macOS 26.0, iOS 26.0, *) {
-            content.toolbar {
-                if active {
-                    ToolbarItemGroup(placement: .navigation) { leading }
-                    ToolbarSpacer(.flexible)
-                    ToolbarItemGroup(placement: .automatic) { trailing }
-                }
+    var body: some View {
+        if let issue = settings.issue {
+            HStack(alignment: .firstTextBaseline) {
+                Label(issue, systemImage: "exclamationmark.triangle.fill")
+                    .symbolRenderingMode(.multicolor)
+                    .textSelection(.enabled)
+                Spacer()
+                Button { settings.issue = nil } label: { Label("Dismiss", systemImage: "xmark") }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.borderless)
             }
-        } else {
-            content.toolbar {
-                if active {
-                    ToolbarItemGroup(placement: .navigation) { leading }
-                    ToolbarItemGroup(placement: .automatic) { trailing }
-                }
-            }
+            .padding(10)
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+            .padding()
         }
     }
 }
-#endif

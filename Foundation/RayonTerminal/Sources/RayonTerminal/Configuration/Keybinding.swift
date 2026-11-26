@@ -1,12 +1,12 @@
 import Foundation
 
-struct ConfigKeybindingCatalog: Decodable, Sendable {
+struct KeybindingCatalog: Decodable, Sendable {
     let keys: [String]
-    let actions: [ConfigAction]
+    let actions: [KeybindingAction]
     static let shared = try! JSONDecoder().decode(Self.self, from: Data(contentsOf:
         Bundle.module.url(forResource: "keybindings", withExtension: "json")!))
 }
-struct ConfigAction: Decodable, Identifiable, Sendable {
+struct KeybindingAction: Decodable, Identifiable, Sendable {
     var id: String { name }
     let name: String
     let description: String?
@@ -15,7 +15,7 @@ struct ConfigAction: Decodable, Identifiable, Sendable {
     let allowEmpty: Bool?
     let min: Double?
 }
-struct ConfigKeybinding: Equatable {
+struct Keybinding: Equatable {
     var prefixes: [String] = []
     var steps: [String] = ["super+k"]
     var action = "ignore"
@@ -41,9 +41,9 @@ struct ConfigKeybinding: Equatable {
         for step in steps {
             let (mods, key) = Self.splitStep(step)
             if mods.count > 4 || mods.contains(where: { !["super", "ctrl", "shift", "alt"].contains($0) }) { errors.append("Invalid modifiers in \(step)") }
-            if key.isEmpty || !(key.unicodeScalars.count == 1 || key.hasPrefix("physical:") || ConfigKeybindingCatalog.shared.keys.contains(key)) { errors.append("Invalid key: \(key)") }
+            if key.isEmpty || !(key.unicodeScalars.count == 1 || key.hasPrefix("physical:") || KeybindingCatalog.shared.keys.contains(key)) { errors.append("Invalid key: \(key)") }
         }
-        guard let definition = ConfigKeybindingCatalog.shared.actions.first(where: { $0.name == action }) else {
+        guard let definition = KeybindingCatalog.shared.actions.first(where: { $0.name == action }) else {
             errors.append("Unknown action: \(action)"); return
         }
         let arg = argument ?? ""
@@ -75,7 +75,7 @@ struct ConfigKeybinding: Equatable {
         let aliases = ["cmd": "super", "command": "super", "control": "ctrl", "opt": "alt", "option": "alt"]
         mods = mods.filter { !$0.isEmpty }.map { aliases[$0.lowercased()] ?? $0.lowercased() }
         let lowered = key.lowercased()
-        if !ConfigKeybindingCatalog.shared.keys.contains(lowered), key.unicodeScalars.count > 1, !lowered.hasPrefix("physical:") {
+        if !KeybindingCatalog.shared.keys.contains(lowered), key.unicodeScalars.count > 1, !lowered.hasPrefix("physical:") {
             key = lowerDigitToUpperRegex.stringByReplacingMatches(
                 in: key, range: NSRange(key.startIndex..., in: key), withTemplate: "$1_$2"
             )

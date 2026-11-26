@@ -4,106 +4,95 @@ import XCTest
 
 final class ConfigurationRuntimeTests: XCTestCase {
     func testKeybindingGrammarAndArguments() {
-        XCTAssertTrue(ConfigKeybinding("ctrl++=text:a=b:c").errors.isEmpty)
-        XCTAssertTrue(ConfigKeybinding("+=ignore").errors.isEmpty)
-        XCTAssertEqual(ConfigKeybinding("ctrl++=text:a=b:c").argument, "a=b:c")
-        XCTAssertEqual(ConfigKeybinding("unconsumed:cmd+ctrl+k=ignore").canonical,
-                       ConfigKeybinding("control+super+k=ignore").canonical)
-        XCTAssertTrue(ConfigKeybinding("super+ArrowUp=scroll_to_top").errors.isEmpty)
-        XCTAssertFalse(ConfigKeybinding("global:super+k>c=ignore").errors.isEmpty)
-        XCTAssertFalse(ConfigKeybinding("ctrl+k=goto_tab:0").errors.isEmpty)
-        XCTAssertFalse(ConfigKeybinding("ctrl+k=resize_split:sideways,-1").errors.isEmpty)
-        XCTAssertEqual(ConfigKeybindingCatalog.shared.actions.count, 83)
+        XCTAssertTrue(Keybinding("ctrl++=text:a=b:c").errors.isEmpty)
+        XCTAssertTrue(Keybinding("+=ignore").errors.isEmpty)
+        XCTAssertEqual(Keybinding("ctrl++=text:a=b:c").argument, "a=b:c")
+        XCTAssertEqual(Keybinding("unconsumed:cmd+ctrl+k=ignore").canonical,
+                       Keybinding("control+super+k=ignore").canonical)
+        XCTAssertTrue(Keybinding("super+ArrowUp=scroll_to_top").errors.isEmpty)
+        XCTAssertFalse(Keybinding("global:super+k>c=ignore").errors.isEmpty)
+        XCTAssertFalse(Keybinding("ctrl+k=goto_tab:0").errors.isEmpty)
+        XCTAssertFalse(Keybinding("ctrl+k=resize_split:sideways,-1").errors.isEmpty)
+        XCTAssertEqual(KeybindingCatalog.shared.actions.count, 83)
     }
-    @MainActor func testSandboxIsolationChainsHistoryAndCompletion() throws {
-        let shell = ConfigSandbox()
-        shell.input = "mkdir Demo && cd Demo && touch hello && ls"
-        shell.submit()
-        XCTAssertEqual(shell.cwd, "/Demo")
-        XCTAssertNotNil(shell.files["/Demo/hello"])
-        XCTAssertEqual(shell.lines.last?.text, "hello")
-        shell.input = "cat missing && echo should-not-run"; shell.submit()
-        XCTAssertFalse(shell.lines.last?.text.contains("should-not-run") == true)
-        shell.input = "echo '中文 && x'"; shell.submit()
-        XCTAssertEqual(shell.lines.last?.text, "中文 && x")
-        shell.historyMove(-1); XCTAssertEqual(shell.input, "echo '中文 && x'")
-        shell.input = "pw"; shell.complete(); XCTAssertEqual(shell.input, "pwd")
-        XCTAssertThrowsError(try ConfigSandbox.tokenize("echo 'unfinished"))
-        XCTAssertEqual(shell.path("../../Documents"), "/Documents")
+
+    /// A file of its own and a clean shared terminal configuration afterwards.
+    @MainActor private func scratchSettings(_ text: String? = nil, defaults: UserDefaults = .standard) throws -> TerminalSettings {
+        let url = FileManager.default.temporaryDirectory.appending(path: "RayonTerminalTests-\(UUID())/config.ghostty")
+        if let text {
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try Data(text.utf8).write(to: url)
+        }
+        addTeardownBlock { @MainActor in
+            try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+            try? RayonTerminalConfiguration.apply(TerminalSettings.shared.applied)
+        }
+        return TerminalSettings(fileURL: url, defaults: defaults)
     }
-    @MainActor func testExplicitGhosttyDefaultCanOverrideRayonLegacyDefault() {
-        var doc = ConfigDocument()
-        let size = ConfigCatalog.shared.registry["fontSize"]!.defaultValue.text
-        let thicken = ConfigCatalog.shared.registry["fontThicken"]!.defaultValue.text
-        doc.set("font-size", [size]); doc.set("font-thicken", [thicken])
-        XCTAssertEqual(doc.overrides["font-size"], [size])
-        XCTAssertFalse(doc.serialized().contains("font-size ="))
-        let runtime = RayonTerminalConfiguration.runtimeContents(doc, dark: true)
-        XCTAssertTrue(runtime.contains("font-size = \(size)"))
-        XCTAssertTrue(runtime.contains("font-thicken = \(thicken)"))
+
+    @MainActor func testExplicitGhosttyDefaultOverridesRayonDefault() throws {
+        let size = try XCTUnwrap(SettingCatalog.shared.setting("font-size")?.defaultValue.values.first)
+        let text = try RayonTerminalConfiguration.contents(GhosttyConfigText("font-size = \(size)\nfont-thicken = false"), dark: true)
+        XCTAssertTrue(text.contains("font-size = \(size)"))
+        let lines = text.components(separatedBy: "\n")
+        XCTAssertGreaterThan(try XCTUnwrap(lines.lastIndex(of: "font-thicken = false")), try XCTUnwrap(lines.lastIndex(of: "font-thicken = true")))
     }
+
     @MainActor func testRuntimeFilterAndDualThemes() throws {
         TestHost.prepare()
-        var doc = ConfigDocument()
-        try doc.merge("theme = light:3024 Day,dark:3024 Night\nbackground = #223344\ncommand = rm -rf /\nconfig-file = /tmp/config\nclipboard-write = deny\nkeybind = global:ctrl+k=quit\nkeybind = ctrl+k=text:hello")
-        let text = RayonTerminalConfiguration.runtimeContents(doc, dark: true)
+        let config = GhosttyConfigText("theme = light:3024 Day,dark:3024 Night\nbackground = #223344\ncommand = rm -rf /\nconfig-file = /tmp/config\nclipboard-write = deny\nkeybind = global:ctrl+k=quit\nkeybind = ctrl+k=text:hello")
+        let text = try RayonTerminalConfiguration.contents(config, dark: true)
         XCTAssertFalse(text.contains("command ="))
         XCTAssertFalse(text.contains("config-file ="))
-        // A user's clipboard-write override is filtered out: the only such
-        // line is the one the app's sharing preference appends.
+        // A user's clipboard-write is filtered out: the only such line is the
+        // one the app's sharing preference appends.
         XCTAssertFalse(text.contains("clipboard-write = deny"))
         XCTAssertFalse(text.contains("=quit"))
         XCTAssertTrue(text.contains("ctrl+k=text:hello"))
-        let controller = TerminalController(configuration: .default)
-        try RayonTerminalConfiguration.apply(doc, to: controller)
-        XCTAssertTrue(controller.renderedConfig.contains("background = #223344"))
-        let before = controller.renderedConfig
-        doc.set("font-size", ["not a number"])
-        XCTAssertThrowsError(try RayonTerminalConfiguration.apply(doc, to: controller))
-        XCTAssertEqual(controller.renderedConfig, before)
+        XCTAssertTrue(text.contains("background = #090300"))
+        XCTAssertTrue(try RayonTerminalConfiguration.contents(config, dark: false).contains("background = #f7f7f7"))
+        let controller = TerminalController(configuration: RayonTerminalConfiguration.base)
+        try RayonTerminalConfiguration.apply(config, to: controller)
+        let before = controller.theme
+        var broken = config
+        broken.set("font-size", ["not a number"])
+        XCTAssertThrowsError(try RayonTerminalConfiguration.apply(broken, to: controller))
+        XCTAssertEqual(controller.theme, before)
+        XCTAssertThrowsError(try RayonTerminalConfiguration.apply(GhosttyConfigText("not a line"), to: controller))
     }
+
+    /// The shortcut list as written replaces Ghostty's: a default deleted in
+    /// Settings stays deleted.
     @MainActor func testDeletedDefaultShortcutIsUnbound() throws {
-        var doc = ConfigDocument()
-        doc.set("keybind", ["ctrl+k=text:hello"])
-        let text = RayonTerminalConfiguration.runtimeContents(doc, dark: true)
-        let keybinds = text.components(separatedBy: "\n").filter { $0.hasPrefix("keybind =") }
-        XCTAssertEqual(Array(keybinds.drop { $0 != "keybind = clear" }), ["keybind = clear", "keybind = ctrl+k=text:hello"])
-        XCTAssertFalse(RayonTerminalConfiguration.runtimeContents(ConfigDocument(), dark: true).contains("keybind = clear"))
-        try RayonTerminalConfiguration.apply(doc, to: TerminalController(configuration: .default))
+        let settings = try scratchSettings()
+        let defaults = settings.shortcuts
+        XCTAssertFalse(defaults.isEmpty)
+        XCTAssertFalse(settings.config.values("keybind").contains("clear"))
+        settings.setShortcuts(Array(defaults.dropFirst()) + ["ctrl+k=text:hello"])
+        XCTAssertEqual(settings.shortcuts, Array(defaults.dropFirst()) + ["ctrl+k=text:hello"])
+        XCTAssertEqual(settings.config.values("keybind").first, "clear")
+        let text = try RayonTerminalConfiguration.contents(settings.config, dark: true)
+        XCTAssertTrue(text.contains("keybind = clear"))
+        try RayonTerminalConfiguration.apply(settings.config, to: TerminalController(configuration: .default))
     }
 
     @MainActor func testFindBarKeysAreNotGhosttys() throws {
-        for document in [ConfigDocument(), { var d = ConfigDocument(); d.set("keybind", ["ctrl+k=ignore"]); return d }()] {
-            let text = RayonTerminalConfiguration.runtimeContents(document, dark: false)
-            for trigger in ["escape", "super+f", "super+shift+f", "super+e", "super+g", "super+shift+g"] {
+        for config in [GhosttyConfigText(), GhosttyConfigText("keybind = ctrl+k=ignore")] {
+            let text = try RayonTerminalConfiguration.contents(config, dark: false)
+            for trigger in RayonTerminalConfiguration.unboundTriggers {
                 XCTAssertTrue(text.contains("keybind = \(trigger)=unbind"), trigger)
             }
-            let controller = TerminalController(configuration: .default)
-            try RayonTerminalConfiguration.apply(document, to: controller)
+            let controller = TerminalController(configuration: RayonTerminalConfiguration.base)
+            try RayonTerminalConfiguration.apply(config, to: controller)
             XCTAssertNil(controller.lastConfigurationIssue)
         }
         // The shared controller has them before any setting is applied.
         XCTAssertTrue(TerminalController(configuration: RayonTerminalConfiguration.base).renderedConfig.contains("keybind = escape=unbind"))
     }
 
-    func testCompoundDurationValidation() throws {
-        XCTAssertEqual(ConfigDuration.humanize(try ConfigDuration.parse("1h30m", allowEmpty: false)), "1 hour, 30 minutes")
-        XCTAssertEqual(try ConfigDuration.parse("4ms", allowEmpty: false).first?.1, "ms")
-        XCTAssertThrowsError(try ConfigDuration.parse("1s2s", allowEmpty: false))
-        XCTAssertThrowsError(try ConfigDuration.parse("-1m", allowEmpty: false))
-        XCTAssertThrowsError(try ConfigDuration.parse("1.5s", allowEmpty: false))
-        XCTAssertTrue(try ConfigDuration.parse("", allowEmpty: true).isEmpty)
-    }
-    func testScrollMultiplierLabelsAndDefaults() {
-        XCTAssertEqual(ConfigPairCodec.parse("discrete:3,precision:1", scroll: true).values, ["1", "3"])
-        XCTAssertEqual(ConfigPairCodec.parse("precision:2", scroll: true).values, ["2", "3"])
-        XCTAssertFalse(ConfigPairCodec.parse("precision:2", scroll: true).linked)
-        XCTAssertEqual(ConfigPairCodec.parse("", scroll: true).values, ["1", "3"])
-        XCTAssertTrue(ConfigPairCodec.parse("2", scroll: true).linked)
-    }
     @MainActor func testApplyPreservesSurfaceAndFractionalFontForNewSessions() async throws {
         TestHost.prepare()
-        defer { try? RayonTerminalConfiguration.apply(ConfigEditorModel.storedDocument()) }
+        defer { try? RayonTerminalConfiguration.apply(TerminalSettings.shared.applied) }
         let terminal = RayonTerminalView()
         let native = terminal.session.platformView()
         let window = TestHost(native)
@@ -111,10 +100,7 @@ final class ConfigurationRuntimeTests: XCTestCase {
         try await Task.sleep(for: .milliseconds(100))
         terminal.write("configuration survival marker\r\n")
         XCTAssertTrue(terminal.session.backend.waitForPendingOutput())
-        var document = ConfigDocument()
-        document.set("font-size", ["13.5"])
-        document.set("theme", ["3024 Night"])
-        try RayonTerminalConfiguration.apply(document)
+        try RayonTerminalConfiguration.apply(GhosttyConfigText("font-size = 13.5\ntheme = 3024 Night"))
         try await Task.sleep(for: .milliseconds(100))
         XCTAssertTrue(native === terminal.session.platformView())
         XCTAssertEqual(native.fontSize, 13.5)
@@ -136,27 +122,67 @@ final class ConfigurationRuntimeTests: XCTestCase {
         try await Task.sleep(for: .milliseconds(50))
         XCTAssertEqual(native.fontSize, 20, "Reappearance must preserve local toolbar zoom")
     }
-    @MainActor func testDraftPersistenceUndoAndFailedImport() throws {
+    @MainActor func testChangesApplySaveAndUndo() throws {
+        let settings = try scratchSettings("# kept\nfuture-key = 1\n")
+        settings.set("background", "#123456")
+        XCTAssertTrue(settings.applyNow())
+        XCTAssertEqual(try String(contentsOf: settings.fileURL, encoding: .utf8), "# kept\nfuture-key = 1\nbackground = #123456\n")
+        settings.undo()
+        XCTAssertFalse(settings.isSet("background"))
+        settings.redo()
+        XCTAssertEqual(settings.value("background"), "#123456")
+        XCTAssertTrue(settings.applyNow())
+        // A value Ghostty rejects is shown but neither applied nor saved.
+        settings.set("font-size", "not a number")
+        XCTAssertFalse(settings.applyNow())
+        XCTAssertNotNil(settings.issue)
+        XCTAssertEqual(settings.applied.values("font-size"), [])
+        XCTAssertFalse(try String(contentsOf: settings.fileURL, encoding: .utf8).contains("font-size"))
+        settings.resetAll()
+        XCTAssertTrue(settings.applyNow())
+        XCTAssertNil(settings.issue)
+        XCTAssertEqual(try String(contentsOf: settings.fileURL, encoding: .utf8), "# kept\nfuture-key = 1\n")
+    }
+
+    @MainActor func testPaletteAndEffectiveColors() throws {
+        let settings = try scratchSettings("theme = light:3024 Day,dark:3024 Night\n")
+        XCTAssertEqual(settings.effectiveColor("background", dark: false), "#f7f7f7")
+        XCTAssertEqual(settings.effectiveColor("background", dark: true), "#090300")
+        settings.set("background", "#123456")
+        XCTAssertEqual(settings.effectiveColor("background", dark: true), "#123456")
+        settings.setPalette(255, "#010203")
+        settings.setPalette(2, "#112233")
+        XCTAssertEqual(settings.config.values("palette"), ["2=#112233", "255=#010203"])
+        XCTAssertEqual(settings.effectivePalette(255, dark: true), "#010203")
+        settings.setPalette(255, nil)
+        settings.setPalette(2, nil)
+        XCTAssertFalse(settings.isSet("palette"))
+    }
+
+    /// Settings the previous release kept in the user defaults become config.ghostty.
+    @MainActor func testLegacySettingsMoveToTheFile() throws {
         let suite = "RayonConfigurationTests.\(UUID())"
-        let defaults = UserDefaults(suiteName: suite)!
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
-        let model = ConfigEditorModel(defaults: defaults)
-        model.edit { $0.set("background", ["#123456"]) }
-        XCTAssertTrue(model.isDirty)
-        model.undo(); XCTAssertFalse(model.isDirty)
-        model.redo(); XCTAssertEqual(model.document.text("background"), "#123456")
-        model.edit {
-            var bindings = $0.values("keybind"); bindings.removeFirst(); bindings.append("ctrl+k=text:custom")
-            $0.set("keybind", bindings)
-            $0.overrides["font-family"] = []
-            $0.setPalette(1, color: ConfigCatalog.shared.registry["palette"]!.defaultValue.values[1])
-        }
-        let before = model.document
-        XCTAssertThrowsError(try model.importConfig("palette = broken"))
-        XCTAssertEqual(model.document, before)
-        XCTAssertTrue(model.save())
-        XCTAssertEqual(ConfigEditorModel(defaults: defaults).document, before)
-        // The shared controller was temporarily changed by Save; restore its persisted production state.
-        try RayonTerminalConfiguration.apply(ConfigEditorModel.storedDocument())
+        let legacy = #"{"document":{"overrides":{"font-size":["15"],"keybind":["ctrl+k=ignore"],"palette":["1=#010101"]}}}"#
+        defaults.set(Data(legacy.utf8), forKey: "me.mizorewww.rayon.ghosttyConfiguration.v1")
+        let settings = try scratchSettings(defaults: defaults)
+        XCTAssertEqual(settings.value("font-size"), "15")
+        XCTAssertEqual(settings.shortcuts, ["ctrl+k=ignore"])
+        XCTAssertEqual(settings.paletteOverrides, [1: "#010101"])
+        XCTAssertTrue(FileManager.default.fileExists(atPath: settings.fileURL.path))
+        XCTAssertNil(defaults.data(forKey: "me.mizorewww.rayon.ghosttyConfiguration.v1"))
+    }
+
+    /// What another device set is applied at once, keeps local lines, and is
+    /// not something Undo takes back.
+    @MainActor func testAdoptingRemoteChanges() throws {
+        let settings = try scratchSettings("# mine\nfont-size = 16\n")
+        settings.adopt(["background": ["#222222"], "font-size": nil])
+        XCTAssertEqual(settings.applied.text, "# mine\nbackground = #222222\n")
+        XCTAssertFalse(settings.undoManager.canUndo)
+        settings.adopt(["font-size": ["not a number"]])
+        XCTAssertNotNil(settings.issue)
+        XCTAssertEqual(settings.applied.values("font-size"), [])
     }
 }

@@ -1,4 +1,3 @@
-import RayonDesign
 import SwiftUI
 #if os(macOS)
     import AppKit
@@ -38,11 +37,11 @@ enum KeybindingNames {
     }
 
     static func step(_ step: String) -> String {
-        let (mods, key) = ConfigKeybinding.splitStep(step)
+        let (mods, key) = Keybinding.splitStep(step)
         return modifiers.filter { mods.contains($0.id) }.map(\.symbol).joined() + self.key(key)
     }
 
-    static func trigger(_ binding: ConfigKeybinding) -> String {
+    static func trigger(_ binding: Keybinding) -> String {
         binding.steps.map(step).joined(separator: " then ")
     }
 
@@ -94,12 +93,12 @@ enum KeybindingNames {
     ]
 
     /// "Make Text Bigger (2 pt)" for a binding with an argument.
-    static func summary(_ binding: ConfigKeybinding) -> String {
+    static func summary(_ binding: Keybinding) -> String {
         if let known = knownSequences["\(binding.action):\(binding.argument ?? "")"] { return known }
         let title = action(binding.action)
         guard let argument = binding.argument, !argument.isEmpty else { return title }
         if binding.action.hasSuffix("font_size") { return "\(title) (\(argument) pt)" }
-        let definition = ConfigKeybindingCatalog.shared.actions.first { $0.name == binding.action }
+        let definition = KeybindingCatalog.shared.actions.first { $0.name == binding.action }
         return "\(title) (\(definition?.type == "enum" ? option(argument) : argument))"
     }
 
@@ -108,7 +107,7 @@ enum KeybindingNames {
         groups.first { $0.actions.contains(action) }?.title ?? "Other"
     }
 
-    static func applies(_ binding: ConfigKeybinding) -> Bool {
+    static func applies(_ binding: Keybinding) -> Bool {
         RayonTerminalConfiguration.supportedActions.contains(binding.action)
             && !binding.prefixes.contains("global") && !binding.prefixes.contains("all")
     }
@@ -116,7 +115,7 @@ enum KeybindingNames {
     // MARK: Keys
 
     static let keyGroups: [(title: String, keys: [String])] = {
-        let all = ConfigKeybindingCatalog.shared.keys
+        let all = KeybindingCatalog.shared.keys
         return [
             ("Letters", all.filter { $0.hasPrefix("key_") }),
             ("Numbers", all.filter { $0.hasPrefix("digit_") }),
@@ -135,267 +134,210 @@ struct KeyCaps: View {
 
     var body: some View {
         Text(text)
-            .font(.system(size: 12, weight: .medium, design: .rounded))
-            .foregroundStyle(.rxInk)
-            .padding(.horizontal, 7)
-            .frame(minWidth: 26, minHeight: 22)
-            .background(RoundedRectangle(cornerRadius: 5, style: .continuous).fill(Color.rxSurfaceSunken))
-            .overlay(RoundedRectangle(cornerRadius: 5, style: .continuous).strokeBorder(Color.rxHairline))
+            .font(.callout.weight(.medium))
+            .padding(.horizontal, 6)
+            .padding(.vertical, 2)
+            .background(.quaternary, in: RoundedRectangle(cornerRadius: 5))
     }
 }
 
 // MARK: - List
 
-struct ConfigKeybindingList: View {
-    let model: ConfigEditorModel
-    /// Drawn again when the shortcuts change, not when any setting does.
-    @ObservedObject private var scope: ConfigEditorModel.Scope
-    @State private var editIndex: Int?
-    @State private var draft = ConfigKeybinding().rendered
-    @State private var editing = false
+extension TerminalSettings {
+    /// The shortcuts in effect: after the file's last `keybind = clear`, its
+    /// own; else Ghostty's defaults and then the file's.
+    var shortcuts: [String] {
+        let own = config.values("keybind")
+        if let clear = own.lastIndex(of: "clear") { return Array(own[(clear + 1)...]) }
+        return (SettingCatalog.shared.setting("keybind")?.defaultValue.values ?? []) + own
+    }
+
+    /// Makes `list` the whole set of shortcuts.
+    func setShortcuts(_ list: [String]) {
+        set("keybind", ["clear"] + list)
+    }
+}
+
+/// The Keyboard page: every shortcut Rayon's terminal takes, grouped by what
+/// it does, with Add, Edit, Delete and Restore Defaults.
+struct KeybindingList: View {
+    private var settings: TerminalSettings { .shared }
+    @State private var editing: Editing?
     @State private var filter = ""
     @State private var confirmReset = false
 
-    init(model: ConfigEditorModel) {
-        self.model = model
-        scope = model.scope("keybind")
-    }
-
-    private var entries: [String] { model.document.values("keybind") }
-
-    /// The shortcuts read once: those to list, how many are not Rayon's to
-    /// offer, and the key sequences more than one of them uses.
-    private struct Listing {
-        var visible: [(index: Int, binding: ConfigKeybinding)] = []
-        var hiddenCount = 0
-        var repeated: Set<String> = []
-
-        init(entries: [String], filter: String) {
-            var seen: [String: Int] = [:]
-            for (index, entry) in entries.enumerated() {
-                let binding = ConfigKeybinding(entry)
-                seen[binding.canonical, default: 0] += 1
-                guard KeybindingNames.applies(binding) else { hiddenCount += 1; continue }
-                if !filter.isEmpty {
-                    let text = "\(KeybindingNames.trigger(binding)) \(KeybindingNames.summary(binding)) \(entry)"
-                    guard text.localizedCaseInsensitiveContains(filter) else { continue }
-                }
-                visible.append((index, binding))
-            }
-            repeated = Set(seen.filter { $0.value > 1 }.keys)
-        }
-    }
-
-    /// Parses every shortcut once per (entries, filter) pair: body runs on
-    /// each sheet and search state change, the parsed list rarely does.
-    private final class ListingCache {
-        private var entries: [String] = []
-        private var filter = ""
-        private var value: Listing?
-
-        func listing(entries: [String], filter: String) -> Listing {
-            if let value, self.entries == entries, self.filter == filter { return value }
-            let built = Listing(entries: entries, filter: filter)
-            self.entries = entries
-            self.filter = filter
-            value = built
-            return built
-        }
-    }
-
-    @State private var listingCache = ListingCache()
-
-    private var listing: Listing {
-        listingCache.listing(entries: entries, filter: filter)
+    private struct Editing: Identifiable {
+        let id = UUID()
+        /// The shortcut's place in the list; nil for a new one.
+        let index: Int?
+        var raw: String
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: RX.Space.s3) {
-            // One row when it fits; on a narrow screen the buttons go under the search.
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: RX.Space.s2) {
-                    RXSearchField("Search shortcuts", text: $filter, width: 220)
-                    Spacer()
-                    headerButtons
-                }
-                VStack(alignment: .leading, spacing: RX.Space.s2) {
-                    RXSearchField("Search shortcuts", text: $filter, width: nil)
-                    HStack(spacing: RX.Space.s2) { headerButtons }
-                }
+        let entries = settings.shortcuts
+        let parsed = entries.map(Keybinding.init)
+        let counts = Dictionary(parsed.map { ($0.canonical, 1) }, uniquingKeysWith: +)
+        let visible = parsed.indices.filter { index in
+            KeybindingNames.applies(parsed[index]) && (filter.isEmpty
+                || "\(KeybindingNames.trigger(parsed[index])) \(KeybindingNames.summary(parsed[index])) \(entries[index])"
+                .localizedCaseInsensitiveContains(filter))
+        }
+        let hidden = parsed.filter { !KeybindingNames.applies($0) }.count
+        Section {
+            TextField("Search shortcuts", text: $filter)
+            HStack {
+                Button("Add Shortcut", systemImage: "plus") { editing = Editing(index: nil, raw: Keybinding().rendered) }
+                Spacer()
+                Button("Restore Defaults…") { confirmReset = true }
+                    .disabled(!settings.isSet("keybind"))
             }
-            let listing = listing
-            let rows = listing.visible
-            let hiddenCount = listing.hiddenCount
-            ForEach(KeybindingNames.groups.map(\.title) + ["Other"], id: \.self) { group in
-                let members = rows.filter { KeybindingNames.group(of: $0.binding.action) == group }
-                if !members.isEmpty {
-                    VStack(alignment: .leading, spacing: RX.Space.s2) {
-                        CapsLabel(group)
-                            .padding(.leading, RX.Space.s4)
-                        RXDividedStack {
-                            ForEach(members, id: \.index) { index, binding in
-                                row(index: index, binding: binding, duplicate: listing.repeated.contains(binding.canonical))
-                            }
-                        }
-                        .padding(.horizontal, RX.Space.s4)
-                        .background(Color.clear.rxCard(padding: 0))
-                    }
-                }
-            }
-            if hiddenCount > 0 {
-                HelpText("\(hiddenCount) of Ghostty's shortcuts are for windows, tabs and splits, which Rayon manages itself; they are not shown.")
+        } footer: {
+            if hidden > 0 {
+                Text("\(hidden) of Ghostty's shortcuts are for windows, tabs and splits, which Rayon manages itself; they are not shown.")
             }
         }
         .confirmationDialog("Restore the default shortcuts?", isPresented: $confirmReset) {
-            Button("Restore", role: .destructive) { model.reset("keybind") }
+            Button("Restore", role: .destructive) { settings.reset("keybind") }
         }
-        .sheet(isPresented: $editing) {
-            ConfigKeybindingBuilder(raw: $draft) {
-                model.edit { document in
-                    var values = document.values("keybind")
-                    if let editIndex, values.indices.contains(editIndex) { values[editIndex] = draft } else { values.append(draft) }
-                    document.set("keybind", values)
+        .sheet(item: $editing) { item in
+            KeybindingBuilder(raw: item.raw) { raw in
+                var next = entries
+                if let index = item.index, next.indices.contains(index) { next[index] = raw } else { next.append(raw) }
+                settings.setShortcuts(next)
+                editing = nil
+            } cancel: {
+                editing = nil
+            }
+        }
+        ForEach(KeybindingNames.groups.map(\.title) + ["Other"], id: \.self) { group in
+            let members = visible.filter { KeybindingNames.group(of: parsed[$0].action) == group }
+            if !members.isEmpty {
+                Section(group) {
+                    ForEach(members, id: \.self) { index in
+                        row(parsed[index], raw: entries[index], duplicate: (counts[parsed[index].canonical] ?? 0) > 1) {
+                            editing = Editing(index: index, raw: entries[index])
+                        } delete: {
+                            settings.setShortcuts(entries.enumerated().filter { $0.offset != index }.map(\.element))
+                        }
+                    }
                 }
-                editing = false
             }
         }
     }
 
-    @ViewBuilder private var headerButtons: some View {
-        Button("Restore Defaults…") { confirmReset = true }
-            .buttonStyle(.rx)
-            .disabled(model.document.overrides["keybind"] == nil)
-            .fixedSize()
-        Button {
-            editIndex = nil
-            draft = ConfigKeybinding().rendered
-            editing = true
-        } label: {
-            Label("Add Shortcut", systemImage: "plus")
-        }
-        .buttonStyle(.rxPrimary)
-        .fixedSize()
-    }
-
-    private func row(index: Int, binding: ConfigKeybinding, duplicate: Bool) -> some View {
-        HStack(spacing: RX.Space.s3) {
+    private func row(_ binding: Keybinding, raw: String, duplicate: Bool, edit: @escaping () -> Void, delete: @escaping () -> Void) -> some View {
+        HStack {
             HStack(spacing: 4) {
                 ForEach(Array(binding.steps.enumerated()), id: \.offset) { offset, step in
-                    if offset > 0 { Text("then").font(.rxHelp).foregroundStyle(.rxInkSecondary) }
+                    if offset > 0 { Text("then").font(.caption).foregroundStyle(.secondary) }
                     KeyCaps(text: KeybindingNames.step(step))
                 }
             }
             .frame(minWidth: 96, alignment: .leading)
             VStack(alignment: .leading, spacing: 2) {
                 Text(KeybindingNames.summary(binding))
-                    .font(.rxBody)
-                    .foregroundStyle(.rxInk)
                 if !binding.errors.isEmpty {
-                    HelpText(binding.errors.joined(separator: "; "), isError: true)
+                    Text(binding.errors.joined(separator: "; ")).font(.caption).foregroundStyle(.red)
+                }
+                if duplicate {
+                    Text("Same keys as another shortcut").font(.caption).foregroundStyle(.orange)
                 }
             }
             Spacer()
-            if duplicate {
-                RXTag("Same keys as another shortcut", style: .warning)
-            }
-            Button("Edit") {
-                editIndex = index
-                draft = entries[index]
-                editing = true
-            }
-            .buttonStyle(.rx(size: .small))
-            RXIconButton("Delete Shortcut", systemImage: "trash", kind: .plain, size: .small) {
-                model.edit { $0.set("keybind", entries.enumerated().filter { $0.offset != index }.map(\.element)) }
-            }
+            Button("Edit", action: edit)
+            Button(role: .destructive, action: delete) { Label("Delete Shortcut", systemImage: "trash") }
+                .labelStyle(.iconOnly)
         }
-        .padding(.vertical, 6)
-        .frame(minHeight: RX.tableRowHeight)
-        .help(entries[index])
+        .buttonStyle(.borderless)
+        .help(raw)
+        .contextMenu {
+            Button("Edit…", action: edit)
+            Button("Delete", role: .destructive, action: delete)
+        }
     }
 }
 
 // MARK: - Builder
 
-struct ConfigKeybindingBuilder: View {
-    @Binding var raw: String
-    let save: () -> Void
-    @Environment(\.dismiss) private var dismiss
+/// One shortcut: its keys (recorded or picked), its action and the action's
+/// argument, and when it applies; Ghostty's own syntax underneath.
+struct KeybindingBuilder: View {
+    @State var raw: String
+    let save: (String) -> Void
+    let cancel: () -> Void
     @State private var recordingStep: Int?
-    @State private var showsSyntax = false
 
-    private var parsed: ConfigKeybinding { ConfigKeybinding(raw) }
-    private var definition: ConfigAction? { ConfigKeybindingCatalog.shared.actions.first { $0.name == parsed.action } }
+    init(raw: String, save: @escaping (String) -> Void, cancel: @escaping () -> Void) {
+        _raw = State(initialValue: raw)
+        self.save = save
+        self.cancel = cancel
+    }
 
-    private func edit(_ mutation: (inout ConfigKeybinding) -> Void) {
+    private var parsed: Keybinding { Keybinding(raw) }
+    private var definition: KeybindingAction? { KeybindingCatalog.shared.actions.first { $0.name == parsed.action } }
+
+    private func edit(_ mutation: (inout Keybinding) -> Void) {
         var next = parsed
         mutation(&next)
         raw = next.rendered
     }
 
     var body: some View {
-        SheetScaffold(parsed.steps.isEmpty ? "Shortcut" : KeybindingNames.trigger(parsed)) {
-            VStack(alignment: .leading, spacing: RX.Space.s4) {
+        NavigationStack {
+            Form {
                 ForEach(Array(parsed.steps.enumerated()), id: \.offset) { index, step in
-                    RXField(parsed.steps.count > 1 ? "Keys · step \(index + 1)" : "Keys") {
+                    Section(parsed.steps.count > 1 ? "Keys, step \(index + 1)" : "Keys") {
                         stepEditor(index: index, step: step)
                     }
                 }
-                Button {
-                    edit { $0.steps.append("key_k") }
-                } label: {
-                    Label("Add Step", systemImage: "plus")
+                Section {
+                    Button("Add Step", systemImage: "plus") { edit { $0.steps.append("key_k") } }
+                        .disabled(parsed.steps.count >= 4)
+                        .help("Make a sequence: press the first keys, release, then the next")
                 }
-                .buttonStyle(.rx(.plain, size: .small))
-                .disabled(parsed.steps.count >= 4)
-                .help("Make a sequence: press the first keys, release, then the next")
-
-                RXField("Action", help: definition?.description) {
+                Section {
                     Picker("Action", selection: Binding(get: { parsed.action }, set: { name in edit { $0.action = name; $0.argument = nil } })) {
                         ForEach(KeybindingNames.groups, id: \.title) { group in
                             Section(group.title) {
-                                ForEach(group.actions, id: \.self) { name in
-                                    Text(KeybindingNames.action(name)).tag(name)
-                                }
+                                ForEach(group.actions, id: \.self) { Text(KeybindingNames.action($0)).tag($0) }
                             }
                         }
                     }
-                    .labelsHidden()
-                    .pickerStyle(.menu)
-                    .fixedSize()
+                    argumentEditor
+                } footer: {
+                    if let description = definition?.description { Text(description) }
                 }
-                argumentEditor
-
-                RXField("When") {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Toggle("Also send the keys to the program", isOn: prefix("unconsumed"))
-                        Toggle("Only when the action can run", isOn: prefix("performable"))
+                Section("When") {
+                    Toggle("Also send the keys to the program", isOn: prefix("unconsumed"))
+                    Toggle("Only when the action can run", isOn: prefix("performable"))
+                }
+                Section {
+                    TextField("Ghostty syntax", text: $raw)
+                        .font(.body.monospaced())
+                        #if os(iOS)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        #endif
+                } header: {
+                    Text("Ghostty Syntax")
+                } footer: {
+                    if !parsed.errors.isEmpty {
+                        Text(parsed.errors.joined(separator: "\n")).foregroundStyle(.red)
                     }
-                    .rxCheckboxToggle()
-                    .font(.rxBody)
-                }
-
-                DisclosureGroup("Ghostty syntax", isExpanded: $showsSyntax) {
-                    TextField("Binding", text: $raw)
-                        .textFieldStyle(.rxMono)
-                        .padding(.top, RX.Space.s1)
-                }
-                .font(.rxHelp)
-                if !parsed.errors.isEmpty {
-                    HelpText(parsed.errors.joined(separator: "\n"), isError: true)
                 }
             }
-        } footer: {
-            Spacer()
-            Button("Cancel") { dismiss() }
-                .buttonStyle(.rx)
-                .keyboardShortcut(.cancelAction)
-            Button("Save", action: save)
-                .buttonStyle(.rxPrimary)
-                .keyboardShortcut(.defaultAction)
-                .disabled(!parsed.errors.isEmpty || recordingStep != nil)
+            .formStyle(.grouped)
+            .navigationTitle(parsed.steps.isEmpty ? "Shortcut" : KeybindingNames.trigger(parsed))
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: cancel) }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save") { save(raw) }
+                        .disabled(!parsed.errors.isEmpty || recordingStep != nil)
+                }
+            }
         }
-        #if os(macOS) || targetEnvironment(macCatalyst)
-        .frame(width: 580)
+        #if os(macOS)
+        .frame(minWidth: 520, minHeight: 520)
         #endif
     }
 
@@ -408,59 +350,54 @@ struct ConfigKeybindingBuilder: View {
         })
     }
 
-    private func stepEditor(index: Int, step: String) -> some View {
-        let (mods, key) = ConfigKeybinding.splitStep(step)
-        return VStack(alignment: .leading, spacing: RX.Space.s2) {
-            HStack(spacing: RX.Space.s2) {
-                KeyCaps(text: recordingStep == index ? "Press keys…" : KeybindingNames.step(step))
-                #if os(macOS) || targetEnvironment(macCatalyst)
-                    Button(recordingStep == index ? "Cancel" : "Record") {
-                        recordingStep = recordingStep == index ? nil : index
+    @ViewBuilder private func stepEditor(index: Int, step: String) -> some View {
+        let (mods, key) = Keybinding.splitStep(step)
+        HStack {
+            KeyCaps(text: recordingStep == index ? "Press keys…" : KeybindingNames.step(step))
+            #if os(macOS) || targetEnvironment(macCatalyst)
+                Button(recordingStep == index ? "Cancel" : "Record") {
+                    recordingStep = recordingStep == index ? nil : index
+                }
+                .help("Press the shortcut on the keyboard")
+                .background(KeyRecorder(
+                    active: recordingStep == index,
+                    record: { recorded in
+                        edit { if $0.steps.indices.contains(index) { $0.steps[index] = recorded } }
+                        recordingStep = nil
+                    },
+                    cancel: { recordingStep = nil }
+                ))
+            #endif
+            Spacer()
+            if parsed.steps.count > 1 {
+                Button(role: .destructive) { edit { $0.steps.remove(at: index) } } label: {
+                    Label("Remove Step", systemImage: "minus.circle")
+                }
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+            }
+        }
+        HStack {
+            ForEach(KeybindingNames.modifiers, id: \.id) { modifier in
+                Toggle("\(modifier.symbol) \(modifier.name)", isOn: Binding(get: { mods.contains(modifier.id) }, set: { on in
+                    edit {
+                        var (current, key) = Keybinding.splitStep($0.steps[index])
+                        current.removeAll { $0 == modifier.id }
+                        if on { current.append(modifier.id) }
+                        $0.steps[index] = (current.sorted() + [key]).joined(separator: "+")
                     }
-                    .buttonStyle(.rx(size: .small))
-                    .help("Press the shortcut on the keyboard")
-                    .background(KeyRecorder(
-                        active: recordingStep == index,
-                        record: { recorded in
-                            edit { if $0.steps.indices.contains(index) { $0.steps[index] = recorded } }
-                            recordingStep = nil
-                        },
-                        cancel: { recordingStep = nil }
-                    ))
-                #endif
-                Spacer()
-                if parsed.steps.count > 1 {
-                    RXIconButton("Remove Step", systemImage: "minus.circle", kind: .plain, size: .small) {
-                        edit { $0.steps.remove(at: index) }
-                    }
+                }))
+                .toggleStyle(.button)
+            }
+        }
+        Picker("Key", selection: Binding(get: { key }, set: { name in edit { $0.steps[index] = (mods.sorted() + [name]).joined(separator: "+") } })) {
+            ForEach(KeybindingNames.keyGroups, id: \.title) { group in
+                Section(group.title) {
+                    ForEach(group.keys, id: \.self) { Text(KeybindingNames.key($0)).tag($0) }
                 }
             }
-            HStack(spacing: 6) {
-                ForEach(KeybindingNames.modifiers, id: \.id) { modifier in
-                    RXChip("\(modifier.symbol) \(modifier.name)", isOn: mods.contains(modifier.id)) {
-                        edit {
-                            var (current, key) = ConfigKeybinding.splitStep($0.steps[index])
-                            if current.contains(modifier.id) { current.removeAll { $0 == modifier.id } } else { current.append(modifier.id) }
-                            $0.steps[index] = (current.sorted() + [key]).joined(separator: "+")
-                        }
-                    }
-                }
-                Menu {
-                    ForEach(KeybindingNames.keyGroups, id: \.title) { group in
-                        Menu(group.title) {
-                            ForEach(group.keys, id: \.self) { name in
-                                Button(KeybindingNames.key(name)) {
-                                    edit { $0.steps[index] = (mods.sorted() + [name]).joined(separator: "+") }
-                                }
-                            }
-                        }
-                    }
-                } label: {
-                    Text("Key: \(KeybindingNames.key(key))")
-                }
-                .rxButtonMenu()
-                .buttonStyle(.rx(size: .small))
-                .fixedSize()
+            if !KeybindingNames.keyGroups.contains(where: { $0.keys.contains(key) }) {
+                Text(KeybindingNames.key(key)).tag(key)
             }
         }
     }
@@ -470,46 +407,39 @@ struct ConfigKeybindingBuilder: View {
             let argument = Binding(get: { parsed.argument ?? "" }, set: { value in edit { $0.argument = value.isEmpty ? nil : value } })
             switch definition.type {
             case "enum":
-                RXField("Option") {
-                    Picker("Option", selection: argument) {
-                        if definition.allowEmpty == true { Text("Default").tag("") }
-                        ForEach(definition.options ?? [], id: \.self) { Text(KeybindingNames.option($0)).tag($0) }
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.menu)
-                    .fixedSize()
+                Picker("Option", selection: argument) {
+                    if definition.allowEmpty == true { Text("Default").tag("") }
+                    ForEach(definition.options ?? [], id: \.self) { Text(KeybindingNames.option($0)).tag($0) }
                 }
             case "number", "integer", "unsignedInteger":
-                RXField(definition.name.contains("font") ? "Points" : "Amount") {
-                    HStack(spacing: RX.Space.s1) {
+                LabeledContent(definition.name.contains("font") ? "Points" : "Amount") {
+                    HStack {
                         TextField("1", text: argument)
+                            .labelsHidden()
                             .multilineTextAlignment(.trailing)
-                            .textFieldStyle(.rx)
                             .frame(width: 80)
                         Stepper("Amount", onIncrement: { argument.wrappedValue = format((Double(argument.wrappedValue) ?? 0) + 1) },
                                 onDecrement: {
                                     let next = (Double(argument.wrappedValue) ?? 0) - 1
                                     argument.wrappedValue = format(definition.type == "unsignedInteger" ? max(0, next) : next)
                                 })
-                                .labelsHidden()
+                            .labelsHidden()
                     }
                 }
             default:
-                RXField(definition.type == "text" ? "Text to type" : "Sequence",
-                        help: definition.type == "text" ? "Escapes such as \\n and \\x1b are allowed." : nil) {
-                    TextField(definition.type == "text" ? "Text" : "Sequence", text: argument)
-                        .textFieldStyle(.rxMono)
-                }
+                TextField(definition.type == "text" ? "Text to type (\\n, \\x1b…)" : "Sequence", text: argument)
+                    .font(.body.monospaced())
             }
         }
     }
 
     private func format(_ number: Double) -> String {
-        // beyond this the Int conversion would trap; keep the free-form text as typed
+        // Beyond this the Int conversion would trap; keep the text as typed.
         guard number.isFinite, abs(number) <= 9e15 else { return String(number) }
         return number.rounded() == number ? String(Int(number)) : String(number)
     }
 }
+
 
 #if os(macOS)
     /// Captures the next key press, with its modifiers, while `active`.
