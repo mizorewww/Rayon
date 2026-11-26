@@ -106,6 +106,12 @@ public class ServerStatus: ObservableObject, Equatable {
             ("df", "/bin/df -Pk"),
             ("uptime", "if [ \"$RAYON_KERNEL\" = Darwin ]; then /bin/date +%s; /usr/sbin/sysctl -n kern.boottime; else /bin/cat /proc/uptime; fi"),
             ("loadavg", "if [ \"$RAYON_KERNEL\" != Darwin ]; then /bin/cat /proc/loadavg; fi"),
+            // The busiest processes, the header and a dozen rows each: room
+            // for the ps and head of this probe, which the parser drops.
+            // busybox's ps cannot pick columns or sort, so it prints its
+            // plain listing once and the parser orders it.
+            ("procs-cpu", "if [ \"$RAYON_KERNEL\" = Darwin ]; then /bin/ps -Ao pid,user,pcpu,pmem,rss,comm -r | /usr/bin/head -13; elif RAYON_PS=\"$(ps -eo pid,user,pcpu,pmem,rss,comm --sort=-pcpu 2>/dev/null)\"; then echo \"$RAYON_PS\" | head -13; else ps 2>/dev/null | head -500; fi"),
+            ("procs-mem", "if [ \"$RAYON_KERNEL\" = Darwin ]; then /bin/ps -Ao pid,user,pcpu,pmem,rss,comm -m | /usr/bin/head -13; else ps -eo pid,user,pcpu,pmem,rss,comm --sort=-rss 2>/dev/null | head -13; fi"),
         ]
         if includeStatic {
             sections += [
@@ -144,6 +150,7 @@ public class ServerStatus: ObservableObject, Equatable {
     public var memory: MemoryInfo = .init()
     public var system: SystemInfo = .init()
     public var network: NetworkInfo = .init()
+    public var processes: TopProcessesInfo = .init()
 
     // not all server have gpu, bro
     public var graphics: GraphicsInfo? = nil
@@ -154,6 +161,7 @@ public class ServerStatus: ObservableObject, Equatable {
             lhs.memory == rhs.memory &&
             lhs.system == rhs.system &&
             lhs.network == rhs.network &&
+            lhs.processes == rhs.processes &&
             lhs.graphics == rhs.graphics
     }
 
@@ -250,6 +258,7 @@ public class ServerStatus: ObservableObject, Equatable {
             uptime = ProcParsers.parseUptime(sections["uptime"] ?? "")
         }
         let fileSystem = FileSystemInfo(dfPk: sections["df"] ?? "")
+        let processes = TopProcessesInfo(cpuSection: sections["procs-cpu"] ?? "", memorySection: sections["procs-mem"] ?? "")
         let system = SystemInfo(
             release: releaseName,
             uptimeInSec: uptime,
@@ -272,6 +281,7 @@ public class ServerStatus: ObservableObject, Equatable {
             self.memory = memory
             self.system = system
             self.network = network
+            self.processes = processes
             self.graphics = graphics
         }
     }

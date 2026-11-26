@@ -8,7 +8,8 @@ import RayonModule
 import SwiftUI
 
 /// The monitor's card grid. Two columns when there is room (Load, Processor,
-/// Memory, Disks on the left; Receive and Transmit, Network, Graphics on the right),
+/// Memory, Disks on the left; Receive and Transmit, Network, Top processes,
+/// Graphics on the right),
 /// one otherwise.
 public struct MonitorDashboard: View {
     @ObservedObject var session: MonitorSession
@@ -50,7 +51,8 @@ public struct MonitorDashboard: View {
             }
             .rxRise(1)
             NetworkCard(session: session).rxRise(3)
-            GraphicsCard(session: session).rxRise(5)
+            ProcessesCard(session: session).rxRise(5)
+            GraphicsCard(session: session).rxRise(7)
         }
         .frame(maxWidth: .infinity)
     }

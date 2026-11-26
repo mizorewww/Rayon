@@ -362,6 +362,101 @@ public struct NetworkCard: View {
     }
 }
 
+// MARK: - Processes
+
+/// The busiest processes, by CPU or by memory, as the server's `ps` reports them.
+public struct ProcessesCard: View {
+    @ObservedObject var session: MonitorSession
+    @State private var byMemory = false
+
+    public init(session: MonitorSession) {
+        self.session = session
+    }
+
+    public var body: some View {
+        let processes = session.status.processes
+        let rows = byMemory ? processes.byMemory : processes.byCPU
+        VStack(alignment: .leading, spacing: 0) {
+            CardHead("Top processes") {
+                RXSegmented(selection: $byMemory, options: [
+                    .init(false, "CPU"),
+                    .init(true, "Memory"),
+                ], caps: false)
+            }
+            if rows.isEmpty {
+                HelpText("No data")
+                    .padding(.top, RX.Space.s2)
+            } else {
+                VStack(spacing: RX.Space.s2) {
+                    HStack(spacing: RX.Space.s2) {
+                        CapsLabel("Name")
+                        Spacer(minLength: RX.Space.s2)
+                        CapsLabel("CPU")
+                            .frame(width: ProcessRow.cpuWidth, alignment: .trailing)
+                        CapsLabel("Memory")
+                            .frame(width: ProcessRow.memoryWidth, alignment: .trailing)
+                    }
+                    ForEach(rows) { process in
+                        ProcessRow(process: process, byMemory: byMemory)
+                    }
+                }
+                .padding(.top, RX.Space.s2)
+            }
+        }
+        .rxCard()
+    }
+}
+
+/// Name, then owner and PID, which give way first when the card is narrow;
+/// CPU and memory in fixed columns, the sorted one in bold.
+struct ProcessRow: View {
+    static let cpuWidth: CGFloat = 52
+    static let memoryWidth: CGFloat = 72
+
+    let process: ServerStatus.TopProcess
+    let byMemory: Bool
+
+    var cpu: String {
+        process.cpuPercent.map { "\(RXFormat.oneDecimal($0))%" } ?? "—"
+    }
+
+    var memory: String {
+        if let resident = process.residentKB {
+            return RXFormat.bytesString(resident * 1024)
+        }
+        return process.memoryPercent.map { "\(RXFormat.oneDecimal($0))%" } ?? "—"
+    }
+
+    var body: some View {
+        HStack(spacing: RX.Space.s2) {
+            Text(process.command)
+                .font(.rxCode)
+                .foregroundStyle(.rxInk)
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .layoutPriority(1)
+            Text(process.user.isEmpty ? "\(process.pid)" : "\(process.user) · \(process.pid)")
+                .font(.rxAxis)
+                .foregroundStyle(.rxInkTertiary)
+                .lineLimit(1)
+            Spacer(minLength: RX.Space.s2)
+            value(cpu, emphasized: !byMemory)
+                .frame(width: Self.cpuWidth, alignment: .trailing)
+            value(memory, emphasized: byMemory)
+                .frame(width: Self.memoryWidth, alignment: .trailing)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(process.command), PID \(process.pid)\(process.user.isEmpty ? "" : ", \(process.user)"), CPU \(cpu), memory \(memory)")
+    }
+
+    func value(_ text: String, emphasized: Bool) -> some View {
+        Text(text)
+            .font(.system(size: 12, weight: emphasized ? .semibold : .regular).monospacedDigit())
+            .foregroundStyle(emphasized ? Color.rxInk : Color.rxInkSecondary)
+            .lineLimit(1)
+    }
+}
+
 // MARK: - Graphics
 
 /// One row per GPU from nvidia-smi. Hidden when the server has no GPU.

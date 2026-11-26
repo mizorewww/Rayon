@@ -60,6 +60,10 @@
                 XCTAssertEqual(sections["hostname"]?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, false, shell)
                 XCTAssertTrue(ProcParsers.parseDarwinReleaseName(sections["os-release"] ?? "").contains("macOS"), shell)
                 XCTAssertGreaterThan(ServerStatus.MemoryInfo(darwinMemory: sections["mem"] ?? "").memTotal, 0, shell)
+                let processes = ServerStatus.TopProcessesInfo(cpuSection: sections["procs-cpu"] ?? "", memorySection: sections["procs-mem"] ?? "")
+                XCTAssertFalse(processes.byCPU.isEmpty, shell)
+                XCTAssertFalse(processes.byMemory.isEmpty, shell)
+                XCTAssertNotNil(processes.byMemory.first?.residentKB, shell)
             }
         }
 

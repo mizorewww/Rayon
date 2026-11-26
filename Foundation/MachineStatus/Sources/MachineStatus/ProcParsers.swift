@@ -246,4 +246,111 @@ enum ProcParsers {
         }
         return result
     }
+
+    // MARK: - ps
+
+    enum ProcessOrder {
+        case cpu
+        case memory
+    }
+
+    /// Reads a `ps` listing by its header, so procps
+    /// (`ps -eo pid,user,pcpu,pmem,rss,comm`), macOS (`ps -Ao …`) and plain
+    /// busybox `ps` (`PID USER TIME COMMAND`, or with VSZ and STAT) all
+    /// parse. The command is the last column and keeps its spaces. Rows
+    /// of the probe itself (`ps`, `head`) are dropped. Ordered by `order`
+    /// when the listing has that column, else left as `ps` printed them.
+    static func parseProcessList(_ raw: String, order: ProcessOrder, limit: Int = 10) -> [ServerStatus.TopProcess] {
+        let lines = raw.components(separatedBy: "\n")
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        guard let headerIndex = lines.firstIndex(where: { splitWhitespaceRuns($0).contains("PID") }) else {
+            return []
+        }
+        let header = splitWhitespaceRuns(lines[headerIndex]).map { $0.uppercased() }
+        guard let commandName = header.last,
+              ["COMMAND", "COMM", "CMD", "ARGS"].contains(commandName),
+              let pidColumn = header.firstIndex(of: "PID")
+        else {
+            return []
+        }
+        let userColumn = header.firstIndex { $0 == "USER" || $0 == "UID" }
+        let cpuColumn = header.firstIndex { $0 == "%CPU" || $0 == "CPU" }
+        let memoryColumn = header.firstIndex(of: "%MEM")
+        let residentColumn = header.firstIndex(of: "RSS")
+
+        var processes: [ServerStatus.TopProcess] = []
+        for line in lines[(headerIndex + 1)...] {
+            let fields = line.split(maxSplits: header.count - 1, omittingEmptySubsequences: true, whereSeparator: \.isWhitespace)
+            guard fields.count == header.count, let pid = Int(fields[pidColumn]) else {
+                continue
+            }
+            // The split leaves the padding before the last column on it.
+            let rawCommand = fields[header.count - 1].trimmingCharacters(in: .whitespaces)
+            let command = processName(rawCommand, isExecutablePath: commandName == "COMM")
+            guard !command.isEmpty, !isMonitorProbe(command) else {
+                continue
+            }
+            processes.append(.init(
+                pid: pid,
+                user: userColumn.map { String(fields[$0]) } ?? "",
+                command: command,
+                cpuPercent: cpuColumn.flatMap { Double(fields[$0]) },
+                memoryPercent: memoryColumn.flatMap { Double(fields[$0]) },
+                residentKB: residentColumn.flatMap { parseKilobytes(fields[$0]) }
+            ))
+        }
+
+        let key: (ServerStatus.TopProcess) -> Double? = switch order {
+        case .cpu: { $0.cpuPercent }
+        case .memory: { $0.residentKB ?? $0.memoryPercent }
+        }
+        if processes.contains(where: { key($0) != nil }) {
+            // Stable: equal values keep the order ps printed them in.
+            processes = processes.enumerated()
+                .sorted { lhs, rhs in
+                    let left = key(lhs.element) ?? -1
+                    let right = key(rhs.element) ?? -1
+                    return left != right ? left > right : lhs.offset < rhs.offset
+                }
+                .map(\.element)
+        }
+        return Array(processes.prefix(limit))
+    }
+
+    /// The monitor's own `ps` and `head`, and on busybox, which prints
+    /// command lines, the sh running the monitor script.
+    static func isMonitorProbe(_ command: String) -> Bool {
+        let program = command.split(separator: " ", maxSplits: 1).first ?? ""
+        return program == "ps" || program == "head" || command.contains("RAYON_KERNEL")
+    }
+
+    /// macOS `comm` is the executable's whole path, spaces and all; busybox
+    /// prints the command line. Both are cut to the program's name, and
+    /// busybox keeps its arguments. Linux `comm` and kernel threads
+    /// (`[kworker/0:1]`) stay as they are.
+    static func processName(_ raw: String, isExecutablePath: Bool) -> String {
+        guard raw.hasPrefix("/") else { return raw }
+        if isExecutablePath {
+            return (raw as NSString).lastPathComponent
+        }
+        let parts = raw.split(separator: " ", maxSplits: 1)
+        let program = (String(parts[0]) as NSString).lastPathComponent
+        return parts.count > 1 ? "\(program) \(parts[1])" : program
+    }
+
+    /// `ps` prints RSS in kilobytes; busybox shortens large values to
+    /// `12m` or `1.2g`.
+    static func parseKilobytes(_ raw: Substring) -> Double? {
+        let text = raw.lowercased()
+        let scale: Double
+        var number = Substring(text)
+        switch text.last {
+        case "k": scale = 1; number = number.dropLast()
+        case "m": scale = 1024; number = number.dropLast()
+        case "g": scale = 1024 * 1024; number = number.dropLast()
+        default: scale = 1
+        }
+        return Double(number).map { $0 * scale }
+    }
 }
