@@ -27,5 +27,21 @@ final class EditorViewTests: XCTestCase {
             XCTAssertNotNil(controller.textView)
         }
     }
+
+    /// Text the binding gets after the editor is made (a snippet read on
+    /// appear) shows in the editor.
+    func testTextFromOutsideReachesTheEditor() {
+        let sync = EditorTextSync()
+        let controller = TextViewController(
+            string: "",
+            language: EditorLanguage.bash.codeLanguage,
+            configuration: CodeEditor.configuration(for: "", wrapsLines: true, fontSize: 13),
+            cursorPositions: [],
+            coordinators: [sync]
+        )
+        controller.loadView()
+        sync.show("echo hello-snippet; uname -s")
+        XCTAssertEqual(controller.text, "echo hello-snippet; uname -s")
+    }
 }
 #endif

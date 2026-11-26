@@ -44,6 +44,7 @@ public struct CodeEditor: View {
     let fontSize: CGFloat
     let onCaretChange: (EditorCaret) -> Void
     @State private var state = SourceEditorState()
+    @State private var textSync = EditorTextSync()
 
     public init(
         text: Binding<String>,
@@ -64,8 +65,10 @@ public struct CodeEditor: View {
             $text,
             language: language.codeLanguage,
             configuration: Self.configuration(for: text, wrapsLines: wrapsLines, fontSize: fontSize),
-            state: $state
+            state: $state,
+            coordinators: [textSync]
         )
+            .onChange(of: text) { textSync.show($0) }
             .onChange(of: state.cursorPositions) { positions in
                 guard let start = positions?.first?.start, start.line > 0 else { return }
                 onCaretChange(EditorCaret(line: start.line, column: start.column))
@@ -88,6 +91,27 @@ public struct CodeEditor: View {
             behavior: .init(indentOption: indentOption),
             peripherals: .init(showMinimap: false, showFoldingRibbon: false)
         )
+    }
+}
+
+/// Puts text the binding gets from outside the editor into it: a snippet
+/// read after the editor appeared, a file loaded again. SourceEditor takes
+/// its binding's text once, when it is made, and from then on only writes
+/// the binding.
+final class EditorTextSync: TextViewCoordinator {
+    private weak var controller: TextViewController?
+
+    func prepareCoordinator(controller: TextViewController) {
+        self.controller = controller
+    }
+
+    func destroy() {
+        controller = nil
+    }
+
+    func show(_ text: String) {
+        guard let controller, controller.text != text else { return }
+        controller.setText(text)
     }
 }
 
