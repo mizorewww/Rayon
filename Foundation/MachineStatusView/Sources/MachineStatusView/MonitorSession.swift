@@ -136,6 +136,17 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
                 .init(mountPoint: "/", size: "98G", used: "41G", free: "52G", percent: 44),
                 .init(mountPoint: "/data", size: "1.8T", used: "1.3T", free: "450G", percent: 74),
             ])
+            let processes: [ServerStatus.TopProcess] = [
+                .init(pid: 2214, user: "postgres", command: "postgres", cpuPercent: 38.2, memoryPercent: 6.1, residentKB: 1_002_400),
+                .init(pid: 1873, user: "www-data", command: "nginx", cpuPercent: 12.6, memoryPercent: 0.4, residentKB: 64_200),
+                .init(pid: 3302, user: "app", command: "node", cpuPercent: 9.8, memoryPercent: 3.2, residentKB: 524_800),
+                .init(pid: 912, user: "root", command: "dockerd", cpuPercent: 2.1, memoryPercent: 0.9, residentKB: 148_000),
+                .init(pid: 1, user: "root", command: "systemd", cpuPercent: 0.1, memoryPercent: 0.1, residentKB: 12_900),
+            ]
+            status.processes = .init(
+                byCPU: processes,
+                byMemory: processes.sorted { ($0.residentKB ?? 0) > ($1.residentKB ?? 0) }
+            )
             phase = .connected
             for step in 0 ..< 40 {
                 status.network = .init(elements: [
