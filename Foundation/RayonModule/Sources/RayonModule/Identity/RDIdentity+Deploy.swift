@@ -19,10 +19,14 @@ public enum PublicKeyDeployment {
 
     /// The remote command: makes ~/.ssh and authorized_keys with the
     /// permissions sshd requires, and appends the key unless it is there.
+    /// sh runs it, so it works whatever the server's login shell is. A
+    /// public key is one line; a stray line break becomes a space.
     public static func installCommand(for publicKey: String) -> String {
         let pub = publicKey.trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: "\r", with: " ")
+            .replacingOccurrences(of: "\n", with: " ")
         let escapedKey = pub.replacingOccurrences(of: "'", with: "'\\''")
-        return "umask 077 && mkdir -p ~/.ssh && chmod 700 ~/.ssh && touch ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys && (grep -qxF '\(escapedKey)' ~/.ssh/authorized_keys || printf '%s\\n' '\(escapedKey)' >> ~/.ssh/authorized_keys)"
+        return RemoteShellCommand.posix("umask 077 && mkdir -p ~/.ssh && chmod 700 ~/.ssh && touch ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys && (grep -qxF '\(escapedKey)' ~/.ssh/authorized_keys || printf '%s\\n' '\(escapedKey)' >> ~/.ssh/authorized_keys)")
     }
 
     /// Installs `publicKey` on each server in turn, signing in as each

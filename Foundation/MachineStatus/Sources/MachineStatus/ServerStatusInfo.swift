@@ -62,12 +62,35 @@ public class ServerStatus: ObservableObject, Equatable {
     /// most machines, and its failure must not cost the other sections.
     static let graphicsScript = "nvidia-smi --query-gpu=driver_version,uuid,name,memory.total,memory.used,memory.free,vbios_version,fan.speed,utilization.gpu,utilization.memory --format=csv,noheader,nounits 2>/dev/null || echo \"no nvidia gpu available\""
 
+    /// Hands `script` to `/bin/sh` whatever the login shell is. An exec
+    /// channel runs its command through the user's login shell, so POSIX
+    /// syntax sent bare fails under fish or csh; wrapped like this every
+    /// shell only sees a command name and one single-quoted word. Single
+    /// quotes inside the script are closed, escaped and reopened. csh
+    /// rejects a newline inside quotes, so the script must be one line.
+    /// RayonModule keeps its own copy (`RemoteShellCommand.posix`): it does
+    /// not depend on MachineStatus, and the two only share NSRemoteShell,
+    /// which is Objective-C.
+    static func posixShellCommand(_ script: String) -> String {
+        assert(!script.contains("\n"), "csh cannot take a newline inside quotes")
+        return "/bin/sh -c '" + script.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
+
+    /// The monitor script, ready for any login shell.
+    static func monitorCommand(includeStatic: Bool) -> String {
+        posixShellCommand(monitorScript(includeStatic: includeStatic))
+    }
+
+    /// The GPU probe, ready for any login shell.
+    static let graphicsCommand = posixShellCommand(graphicsScript)
+
     /// One remote run that samples the CPU and network counters twice one
     /// second apart and reads every other payload behind markers, so a
     /// refresh costs one exec channel instead of nine and one remote second
     /// instead of two. Linux reads /proc; Darwin uses its native tools.
     /// Static payloads join only while `includeStatic` — they cannot change
-    /// while a connection stays up.
+    /// while a connection stays up. The script is POSIX sh on one line;
+    /// servers get it through `monitorCommand`.
     static func monitorScript(includeStatic: Bool) -> String {
         var sections = [
             ("platform", "echo \"$RAYON_KERNEL\""),
@@ -91,10 +114,10 @@ public class ServerStatus: ObservableObject, Equatable {
             ]
         }
         let commands = sections.map { name, command in
-            "echo '\(sectionMarkerPrefix)\(name)\(sectionMarkerSuffix)'\n\(command)"
+            "echo '\(sectionMarkerPrefix)\(name)\(sectionMarkerSuffix)'; \(command)"
         }
         return (["RAYON_KERNEL=\"$(/usr/bin/uname -s 2>/dev/null || uname -s)\""] + commands)
-            .joined(separator: "\n")
+            .joined(separator: "; ")
     }
 
     static func downloadResultFrom(shell: NSRemoteShell, command: String, timeout: Double) -> String {
@@ -171,7 +194,7 @@ public class ServerStatus: ObservableObject, Equatable {
         group.enter()
         queue.async {
             defer { group.leave() }
-            mergedOutput.store(Self.downloadResultFrom(shell: remote, command: Self.monitorScript(includeStatic: includeStatic), timeout: timeout))
+            mergedOutput.store(Self.downloadResultFrom(shell: remote, command: Self.monitorCommand(includeStatic: includeStatic), timeout: timeout))
         }
 
         let graphicsResult = ConcurrentValue<GraphicsInfo?>(nil)

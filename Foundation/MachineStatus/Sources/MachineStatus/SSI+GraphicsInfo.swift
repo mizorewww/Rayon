@@ -30,7 +30,7 @@ public extension ServerStatus {
         }
 
         public init?(withRemote shell: NSRemoteShell, timeout: Double) {
-            let downloadResult = downloadResultFrom(shell: shell, command: ServerStatus.graphicsScript, timeout: timeout)
+            let downloadResult = downloadResultFrom(shell: shell, command: ServerStatus.graphicsCommand, timeout: timeout)
             guard let parsed = Self.parseCSV(downloadResult) else {
                 return nil
             }
