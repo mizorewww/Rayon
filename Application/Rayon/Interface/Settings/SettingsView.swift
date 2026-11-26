@@ -756,6 +756,8 @@ private struct BackupPasswordSheet: View {
 /// iCloud sync: on or off, and which kinds of records go.
 private struct CloudSyncSettings: View {
     @ObservedObject var sync = CloudSyncModel.shared
+    @State private var confirmingDelete = false
+    @State private var deleting = false
 
     var body: some View {
         RXDividedStack {
@@ -764,6 +766,13 @@ private struct CloudSyncSettings: View {
                 description: sync.preferences.isOn ? sync.statusText : "Keep your data the same on every device signed in to your iCloud account. Passwords and keys travel end-to-end encrypted.",
                 isOn: $sync.preferences.isOn
             )
+            if sync.preferences.isOn, sync.status != .unavailable {
+                RXFormRow("Sync now", description: "Fetch and send changes without waiting.") {
+                    Button("Sync Now") { sync.syncNow() }
+                        .buttonStyle(.rx(size: .small))
+                        .disabled(!sync.canSyncNow)
+                }
+            }
             Group {
                 SwitchRow("Servers", description: "With their folders.", isOn: $sync.preferences.servers)
                 SwitchRow("Identities", description: "Including passwords and private keys.", isOn: $sync.preferences.identities)
@@ -773,6 +782,27 @@ private struct CloudSyncSettings: View {
                 SwitchRow("Settings", description: "Appearance, sessions, recent servers, timeouts, monitor and terminal behavior.", isOn: $sync.preferences.appSettings)
             }
             .disabled(!sync.preferences.isOn)
+            if CloudSync.isAvailable {
+                RXFormRow("Data in iCloud", description: "Remove it and stop syncing on this device.") {
+                    Button("Delete…") { confirmingDelete = true }
+                        .buttonStyle(.rx(size: .small))
+                        .disabled(deleting)
+                }
+            }
+        }
+        .alert("Delete what Rayon keeps in iCloud?", isPresented: $confirmingDelete) {
+            Button("Delete", role: .destructive) {
+                deleting = true
+                Task {
+                    if let problem = await sync.deleteCloudData() {
+                        UIBridge.presentError(with: "Could not delete the data in iCloud: \(problem)")
+                    }
+                    deleting = false
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Your data stays on this device. A device that still syncs will store its own again, so turn sync off there too.")
         }
     }
 }

@@ -152,6 +152,27 @@ public actor CloudSync {
         engine = nil
     }
 
+    /// Deletes what Rayon keeps in iCloud and stops syncing here; what is
+    /// on this device stays. A device still syncing puts its own back.
+    public func deleteCloudData() async throws {
+        guard Self.isAvailable else { throw CKError(.notAuthenticated) }
+        stop()
+        publish(.syncing)
+        do {
+            try await CKContainer(identifier: Self.containerIdentifier).privateCloudDatabase
+                .deleteRecordZone(withID: CloudRecordCoding.zoneID)
+        } catch let error as CKError where error.code == .zoneNotFound {
+            // Nothing there.
+        } catch {
+            publish(.failed(error.localizedDescription))
+            throw error
+        }
+        preferences.isOn = false
+        storage.forgetSyncState()
+        saveState(nil)
+        publish(.off)
+    }
+
     /// Fetches and sends now, instead of when the system gets to it.
     public func syncNow() async {
         guard let engine else { return }

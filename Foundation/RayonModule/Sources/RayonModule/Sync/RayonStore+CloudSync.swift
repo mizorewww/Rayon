@@ -62,6 +62,26 @@ public final class CloudSyncModel: ObservableObject {
         Task { await CloudSync.shared.syncNow() }
     }
 
+    /// Deletes what Rayon keeps in iCloud and turns sync off; nil, or why
+    /// it could not.
+    public func deleteCloudData() async -> String? {
+        do {
+            try await CloudSync.shared.deleteCloudData()
+            preferences.isOn = false
+            return nil
+        } catch {
+            return error.localizedDescription
+        }
+    }
+
+    /// Whether "Sync Now" has something to do.
+    public var canSyncNow: Bool {
+        switch status {
+        case .idle, .failed: return true
+        case .off, .unavailable, .syncing: return false
+        }
+    }
+
     /// What to say under the switch.
     public var statusText: String {
         switch status {
