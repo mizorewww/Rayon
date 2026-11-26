@@ -64,8 +64,8 @@ public final class KnownHosts: Sendable {
 
 public extension RDMachine {
     /// The next host key this server presents is asked about again.
-    func forgetHostKey() {
-        KnownHosts.shared.forget(host: remoteAddress, port: Int(remotePort) ?? 0)
-        HostKeyTrust.forgetDeclined(host: remoteAddress, port: Int(remotePort) ?? 0)
+    func forgetHostKey(in hosts: KnownHosts = .shared) {
+        hosts.forget(host: remoteAddress, port: sshPort)
+        HostKeyTrust.forgetDeclined(host: remoteAddress, port: sshPort)
     }
 }

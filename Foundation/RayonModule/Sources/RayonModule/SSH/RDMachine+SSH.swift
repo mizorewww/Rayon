@@ -89,11 +89,17 @@ public extension RDMachine {
         throw SSHFailure(message: (["Could not sign in to \(name.isEmpty ? remoteAddress : name)."] + reasons).joined(separator: "\n"), unreachable: false)
     }
 
+    /// The port connected to, and the host key saved under: 22 when the
+    /// server's port is empty or not a number.
+    var sshPort: Int {
+        Int(remotePort) ?? 22
+    }
+
     /// One connection attempt; asks about the host key and tries again
     /// when the person trusts it.
     private func connect(username: String, credentials: [SSHCredential], timeout: Duration, visited: Set<UUID>) async throws -> SSHConnection {
         let host = remoteAddress
-        let port = Int(remotePort) ?? 22
+        let port = sshPort
         while true {
             let transport = try await makeTransport(timeout: timeout, visited: visited)
             let configuration = SSHConnection.Configuration(

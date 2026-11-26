@@ -65,4 +65,14 @@ final class KnownHostsTests: XCTestCase {
         let empty = KnownHosts.HostKey(type: "ssh-ed25519", key: Data())
         XCTAssertEqual(empty.fingerprint, "SHA256:47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU")
     }
+
+    /// Connecting falls back to port 22, so forgetting must too.
+    func testForgettingTheKeyOfAServerWithNoPort() {
+        var machine = RDMachine()
+        machine.remoteAddress = "example.com"
+        machine.remotePort = ""
+        hosts.trust(first, host: "example.com", port: machine.sshPort)
+        machine.forgetHostKey(in: hosts)
+        XCTAssertNil(hosts.savedKey(host: "example.com", port: 22))
+    }
 }
