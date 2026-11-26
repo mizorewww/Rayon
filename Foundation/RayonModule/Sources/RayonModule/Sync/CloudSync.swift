@@ -84,8 +84,8 @@ public actor CloudSync {
         preferences = new
         guard new.isOn else {
             stop()
-            // Saves keep queueing while off; without this the queue would
-            // pin every deletion's tombstone for good. With no engine
+            // What iCloud has is forgotten; what is queued stays, so a
+            // deletion made while off still reaches iCloud. With no engine
             // state, turning sync on starts as a sign-in, which queues
             // everything again.
             storage.forgetSyncState()

@@ -137,7 +137,10 @@ final class CloudSyncMappingTests: XCTestCase {
     /// Saves keep queueing while sync is off; turning it off (or starting
     /// with it off) drops the queue, so deletions do not pin their
     /// tombstones forever.
-    func testSyncOffForgetsTheQueueAndLetsTombstonesGo() async throws {
+    /// Sync off forgets what iCloud has, but not a deletion still to send:
+    /// its tombstone stays, so the server does not come back from iCloud
+    /// when sync is turned on again.
+    func testSyncOffKeepsDeletionsToSend() async throws {
         let machine = try storage.save(RDMachine(remoteAddress: "a", remotePort: "22", name: "a"))
         try storage.delete(RDMachine.self, ids: [machine.id])
         storage.setSystemFields(Data([1]), for: RayonStorage.recordName(table: RDMachine.tableName, id: machine.id))
@@ -146,11 +149,17 @@ final class CloudSyncMappingTests: XCTestCase {
 
         await CloudSync(storage: storage).apply(CloudSyncPreferences(isOn: false))
 
-        XCTAssertTrue(storage.pendingUploads().isEmpty)
+        XCTAssertEqual(storage.pendingUploads().map(\.objectId), [machine.id])
         XCTAssertNil(storage.systemFields(for: RayonStorage.recordName(table: RDMachine.tableName, id: machine.id)))
         XCTAssertFalse(FileManager.default.fileExists(atPath: stateURL.path), "turning sync on again starts as a sign-in")
         storage.purgeTombstones(now: Date().addingTimeInterval(RayonStorage.tombstoneLifetime + 1))
-        XCTAssertNil(storage.row(RDMachine.self, id: machine.id))
+        XCTAssertEqual(storage.row(RDMachine.self, id: machine.id)?.removed, true)
+
+        // The same server from iCloud, as it was before the deletion, stays deleted.
+        var remote = machine
+        remote.removed = false
+        XCTAssertNotEqual(try storage.mergeRemote(remote), .tookRemote)
+        XCTAssertEqual(storage.row(RDMachine.self, id: machine.id)?.removed, true)
     }
 
     func testTheScopeDecidesWhatSyncs() {
