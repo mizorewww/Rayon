@@ -273,7 +273,8 @@ public final class TerminalSettings {
               let storage = try? JSONDecoder().decode(Storage.self, from: data)
         else { return nil }
         var text = GhosttyConfigText()
-        for (key, values) in storage.document.overrides.sorted(by: { $0.key < $1.key }) where !values.isEmpty {
+        // An empty shortcut list was the user removing every shortcut.
+        for (key, values) in storage.document.overrides.sorted(by: { $0.key < $1.key }) where !values.isEmpty || key == "keybind" {
             text.set(key, key == "keybind" ? ["clear"] + values : values)
         }
         return text

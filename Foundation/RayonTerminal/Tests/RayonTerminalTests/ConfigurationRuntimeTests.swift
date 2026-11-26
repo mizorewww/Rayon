@@ -174,6 +174,18 @@ final class ConfigurationRuntimeTests: XCTestCase {
         XCTAssertNil(defaults.data(forKey: "me.mizorewww.rayon.ghosttyConfiguration.v1"))
     }
 
+    /// Every shortcut removed in the previous release stays removed: Ghostty's
+    /// defaults do not come back.
+    @MainActor func testAnEmptyLegacyShortcutListStaysEmpty() throws {
+        let suite = "RayonConfigurationTests.\(UUID())"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let legacy = #"{"document":{"overrides":{"keybind":[],"palette":[]}}}"#
+        defaults.set(Data(legacy.utf8), forKey: "me.mizorewww.rayon.ghosttyConfiguration.v1")
+        let settings = try scratchSettings(defaults: defaults)
+        XCTAssertEqual(settings.applied.text, "keybind = clear\n")
+    }
+
     /// What another device set is applied at once, keeps local lines, and is
     /// not something Undo takes back.
     @MainActor func testAdoptingRemoteChanges() throws {
