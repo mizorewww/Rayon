@@ -25,6 +25,9 @@ public final class TerminalSettings {
     /// stand for it, so iCloud sync neither sends nor applies settings until
     /// a change made here writes it anew.
     @ObservationIgnored private(set) var fileIsUnreadable = false
+    /// The file's time when it was last read or written here; another one
+    /// on disk means it was changed outside Rayon.
+    @ObservationIgnored private var fileDate: Date?
 
     /// Undo and redo for Settings' own changes.
     @ObservationIgnored let undoManager: UndoManager = {
@@ -59,10 +62,44 @@ public final class TerminalSettings {
         let initial = text ?? GhosttyConfigText()
         config = initial
         applied = initial
+        fileDate = Self.modificationDate(of: fileURL)
         if data != nil, text == nil {
             fileIsUnreadable = true
-            issue = "config.ghostty is not UTF-8 text, so it was not read."
+            issue = Self.unreadableIssue
         }
+    }
+
+    private static let unreadableIssue = "config.ghostty is not UTF-8 text, so it was not read."
+
+    private static func modificationDate(of url: URL) -> Date? {
+        (try? FileManager.default.attributesOfItem(atPath: url.path))?[.modificationDate] as? Date
+    }
+
+    /// Takes the file as it is when it was changed outside Rayon (in a text
+    /// editor, say) since it was read or written here, so that a change
+    /// made here, or another device's, is made to it rather than over it.
+    func reloadIfChangedOutside() {
+        let date = Self.modificationDate(of: fileURL)
+        guard date != fileDate, let data = try? Data(contentsOf: fileURL) else { return }
+        fileDate = date
+        guard let text = String(data: data, encoding: .utf8) else {
+            fileIsUnreadable = true
+            issue = Self.unreadableIssue
+            return
+        }
+        fileIsUnreadable = false
+        let next = GhosttyConfigText(text)
+        guard next != applied else { return }
+        do {
+            try RayonTerminalConfiguration.apply(next)
+            issue = nil
+        } catch {
+            issue = "config.ghostty was not applied: \(error.localizedDescription)"
+        }
+        applied = next
+        config = next
+        undoManager.removeAllActions()
+        revision += 1
     }
 
     // MARK: Reading
@@ -106,6 +143,7 @@ public final class TerminalSettings {
     }
 
     private func edit(_ change: (inout GhosttyConfigText) -> Void) {
+        reloadIfChangedOutside()
         var next = config
         change(&next)
         replace(with: next)
@@ -156,6 +194,7 @@ public final class TerminalSettings {
         let oldSize = applied.values("font-size").last
         try RayonTerminalConfiguration.apply(next)
         try Self.write(next, to: fileURL)
+        fileDate = Self.modificationDate(of: fileURL)
         applied = next
         fileIsUnreadable = false
         issue = nil
@@ -195,6 +234,7 @@ public final class TerminalSettings {
     /// Changes that came from elsewhere (another device): applied at once,
     /// over what is being edited here, and not undone by Undo.
     func adopt(_ changes: [String: [String]?]) {
+        reloadIfChangedOutside()
         var next = config
         for (key, values) in changes { next.set(key, values ?? []) }
         guard next != applied else { return }

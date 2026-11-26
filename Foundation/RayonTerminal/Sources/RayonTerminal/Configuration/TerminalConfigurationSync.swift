@@ -21,6 +21,7 @@ public enum TerminalConfigurationSync {
     /// says nothing about them: taken for "none set", it would remove every
     /// device's settings.
     public static func entries(of settings: TerminalSettings = .shared) -> [String: [String]]? {
+        settings.reloadIfChangedOutside()
         guard !settings.fileIsUnreadable else { return nil }
         return entries(of: settings.applied)
     }

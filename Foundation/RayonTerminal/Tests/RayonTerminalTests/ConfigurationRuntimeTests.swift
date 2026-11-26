@@ -262,4 +262,25 @@ final class ConfigurationRuntimeTests: XCTestCase {
         try settings.load("background = #555555\n")
         XCTAssertFalse(settings.undoManager.canUndo)
     }
+
+    /// The file edited outside Rayon while it runs: a change made in
+    /// Settings, or one from another device, is made to the edited file
+    /// instead of writing the old one over it.
+    @MainActor func testOutsideEditsAreNotOverwritten() throws {
+        let settings = try scratchSettings("background = #111111\n")
+        func editOutside(_ text: String, at seconds: TimeInterval) throws {
+            try Data(text.utf8).write(to: settings.fileURL)
+            try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: seconds)], ofItemAtPath: settings.fileURL.path)
+        }
+
+        try editOutside("background = #111111\nforeground = #eeeeee\n", at: 10)
+        settings.set("cursor-color", "#ff0000")
+        XCTAssertTrue(settings.applyNow())
+        XCTAssertEqual(try String(contentsOf: settings.fileURL, encoding: .utf8), "background = #111111\nforeground = #eeeeee\ncursor-color = #ff0000\n")
+
+        try editOutside("background = #222222\nforeground = #eeeeee\ncursor-color = #ff0000\n", at: 20)
+        XCTAssertEqual(TerminalConfigurationSync.entries(of: settings)?["background"], ["#222222"])
+        TerminalConfigurationSync.adopt(["background": ["#222222"], "foreground": ["#dddddd"], "cursor-color": ["#ff0000"]], into: settings)
+        XCTAssertEqual(try String(contentsOf: settings.fileURL, encoding: .utf8), "background = #222222\nforeground = #dddddd\ncursor-color = #ff0000\n")
+    }
 }
