@@ -13,5 +13,6 @@ RUN apk add --no-cache openssh openssh-sftp-server socat \
     '# Citadel signs with an encrypted OpenSSH RSA key in SHA-1 only.' \
     'PubkeyAcceptedAlgorithms +ssh-rsa' \
     >> /etc/ssh/sshd_config
-# An echo service on the container's loopback, for the forwarding tests.
-CMD ["/bin/sh", "-c", "socat TCP-LISTEN:9000,bind=127.0.0.1,fork,reuseaddr EXEC:cat & exec /usr/sbin/sshd -D -e"]
+# On the container's loopback, for the forwarding tests: an echo service,
+# and one that greets and hangs up before the client is done.
+CMD ["/bin/sh", "-c", "socat TCP-LISTEN:9000,bind=127.0.0.1,fork,reuseaddr EXEC:cat & socat TCP-LISTEN:9001,bind=127.0.0.1,fork,reuseaddr SYSTEM:'echo hello' & exec /usr/sbin/sshd -D -e"]

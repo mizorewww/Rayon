@@ -2,7 +2,8 @@
 
 # Runs RayonSSH's live tests against two throwaway sshd containers — a
 # server and, on a private network behind it, a ProxyJump target — and
-# removes them afterwards. Needs Docker. Arguments go to `swift test`.
+# removes them afterwards. Needs Docker. Arguments go to `swift test`;
+# SSH_LIVE_TESTS=<regex> runs only the matching tests.
 
 set -euo pipefail
 
@@ -49,4 +50,4 @@ for _ in $(seq 50); do
 done
 
 SSH_DOCKER_LIVE="$WORK" SSH_DOCKER_LIVE_PORT="$PORT" \
-    swift test --package-path "$PACKAGE" --filter SSHLiveTests "$@"
+    swift test --package-path "$PACKAGE" --filter "SSHLiveTests${SSH_LIVE_TESTS:+/$SSH_LIVE_TESTS}" "$@"

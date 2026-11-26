@@ -76,7 +76,7 @@ public extension SSHConnection {
                     onOpen: { _ in onListening() },
                     handleChannel: { channel, _ in
                         channel.eventLoop.makeCompletedFuture {
-                            channel.allowRemoteHalfClosure()
+                            try channel.allowHalfClosure()
                             try channel.pipeline.syncOperations.addHandler(SSHChannelByteCodec())
                             continuation.yield(try NIOAsyncChannel(wrappingChannelSynchronously: channel, configuration: .init(isOutboundHalfClosureEnabled: true)))
                         }

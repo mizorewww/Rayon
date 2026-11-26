@@ -226,7 +226,7 @@ public actor SSHConnection {
     /// whose outbound `finish()` sends EOF.
     public nonisolated func openDirectTCPIP(host: String, port: Int) async throws -> NIOAsyncChannel<ByteBuffer, ByteBuffer> {
         try await openChannel(Self.directTCPIP(host: host, port: port)) { child in
-            child.allowRemoteHalfClosure()
+            try child.allowHalfClosure()
             try child.pipeline.syncOperations.addHandler(SSHChannelByteCodec())
             return try NIOAsyncChannel(wrappingChannelSynchronously: child, configuration: .init(isOutboundHalfClosureEnabled: true))
         }
@@ -244,7 +244,7 @@ public actor SSHConnection {
     /// A session channel, for a shell or a command.
     nonisolated func openSession() async throws -> NIOAsyncChannel<SSHSessionEvent, ByteBuffer> {
         try await openChannel(.session) { child in
-            child.allowRemoteHalfClosure()
+            try child.allowHalfClosure()
             try child.pipeline.syncOperations.addHandler(SSHSessionHandler())
             return try NIOAsyncChannel(wrappingChannelSynchronously: child)
         }
@@ -276,8 +276,32 @@ private struct HostKeyValidator: NIOSSHClientServerAuthenticationDelegate {
 }
 
 extension Channel {
-    /// The remote side's EOF arrives as an event instead of closing the channel.
-    func allowRemoteHalfClosure() {
+    /// Lets each side of an SSH child channel end its writes on its own:
+    /// the remote side's EOF arrives as an event instead of closing the
+    /// channel, and this side's EOF after the remote's closes the channel.
+    /// Must be called on the channel's event loop, before other handlers.
+    func allowHalfClosure() throws {
         setOption(ChannelOptions.allowRemoteHalfClosure, value: true).whenComplete { _ in }
+        try pipeline.syncOperations.addHandler(SSHHalfClosureGuard())
+    }
+}
+
+/// swift-nio-ssh refuses an EOF sent after the peer's ("Sent EOF out of
+/// sequence"), fails the channel's closeFuture with it, and NIOAsyncChannel
+/// asserts that never happens. Once the peer has sent EOF both directions
+/// are done, so sending ours is a full close instead.
+final class SSHHalfClosureGuard: ChannelDuplexHandler, RemovableChannelHandler {
+    typealias InboundIn = Any
+    typealias OutboundIn = Any
+
+    private var peerSentEOF = false
+
+    func userInboundEventTriggered(context: ChannelHandlerContext, event: Any) {
+        if case ChannelEvent.inputClosed = event { peerSentEOF = true }
+        context.fireUserInboundEventTriggered(event)
+    }
+
+    func close(context: ChannelHandlerContext, mode: CloseMode, promise: EventLoopPromise<Void>?) {
+        context.close(mode: mode == .output && peerSentEOF ? .all : mode, promise: promise)
     }
 }

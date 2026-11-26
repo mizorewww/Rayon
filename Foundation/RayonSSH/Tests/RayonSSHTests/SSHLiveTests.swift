@@ -287,6 +287,23 @@ final class SSHLiveTests: XCTestCase {
         await connection.close()
     }
 
+    /// A service that hangs up first: this side's EOF after the server's
+    /// closes the channel instead of breaking swift-nio-ssh's state.
+    func testAServerThatHangsUpFirst() async throws {
+        let connection = try await connect([.password(password)])
+        for _ in 0 ..< 20 {
+            let channel = try await connection.openDirectTCPIP(host: "127.0.0.1", port: 9001)
+            let greeting = try await channel.executeThenClose { inbound, outbound in
+                var text = ""
+                for try await chunk in inbound { text += String(buffer: chunk) }
+                outbound.finish()
+                return text
+            }
+            XCTAssertEqual(greeting, "hello\n")
+        }
+        await connection.close()
+    }
+
     func testDynamicForwardSpeaksSOCKS5() async throws {
         let connection = try await connect([.password(password)])
         let bindPort = try Self.freePort()
