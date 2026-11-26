@@ -72,8 +72,18 @@ public struct SSHWebSocketEndpoint: Sendable {
             upgraded.fail(error)
             throw SSHError.connectionFailed("Unable to reach \(host) (\(SSHTransport.describe(error))).")
         }
+        // A server that accepts the connection but never answers the
+        // upgrade is given the connect timeout, and a cancelled task ends it.
+        let deadline = channel.eventLoop.scheduleTask(in: timeout) {
+            upgraded.fail(SSHError.connectionFailed("\(host) did not answer the WebSocket upgrade in time."))
+        }
+        defer { deadline.cancel() }
         do {
-            try await upgraded.futureResult.get()
+            try await withTaskCancellationHandler {
+                try await upgraded.futureResult.get()
+            } onCancel: {
+                upgraded.fail(CancellationError())
+            }
         } catch {
             channel.close(promise: nil)
             throw error

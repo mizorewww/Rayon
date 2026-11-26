@@ -123,13 +123,31 @@ public actor SSHConnection {
         // maximum packet, 128 KB by default: a download then waits for a
         // round trip every 128 KB. 2 MB is OpenSSH's window.
         settings.protocolOptions = [.maximumPacketSize(1 << 21)]
+        // The handshake and sign-in get the connection's timeout too, and
+        // end when the task is cancelled. Citadel gives up only after its
+        // own 10 seconds, and a closed channel (one through a jump host
+        // waits for the bastion to confirm) does not end it sooner, so
+        // this does not wait for Citadel.
+        let signedIn = channel.eventLoop.makePromise(of: SSHClient.self)
+        let deadline = channel.eventLoop.scheduleTask(in: timeout) {
+            signedIn.fail(SSHError.connectionFailed("Timed out signing in to \(configuration.host)."))
+        }
+        signedIn.futureResult.whenComplete { _ in deadline.cancel() }
+        signedIn.completeWithTask { [settings] in
+            try await withTaskExecutorPreference(EventLoopTaskExecutor(channel.eventLoop)) {
+                try await SSHClient.connect(on: channel, settings: settings)
+            }
+        }
         let client: SSHClient
         do {
-            client = try await withTaskExecutorPreference(EventLoopTaskExecutor(channel.eventLoop)) {
-                try await SSHClient.connect(on: channel, settings: settings)
+            client = try await withTaskCancellationHandler {
+                try await signedIn.futureResult.get()
+            } onCancel: {
+                signedIn.fail(CancellationError())
             }
         } catch {
             channel.close(promise: nil)
+            if error is CancellationError { throw error }
             throw Self.translate(error, host: configuration.host)
         }
         let keepAlive = TimeAmount(configuration.keepAliveInterval)

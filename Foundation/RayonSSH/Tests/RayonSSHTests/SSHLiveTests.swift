@@ -590,6 +590,22 @@ final class SSHLiveTests: XCTestCase {
         try await refused.closed.get()
     }
 
+    /// The target is unreachable from the bastion; the sign-in waits on it.
+    func testACancelledJumpEndsAndClosesTheBastion() async throws {
+        let waiting = try await connect([.password(password)])
+        let configuration = SSHConnection.Configuration(
+            host: "10.255.255.1", port: 22, username: user, credentials: [.password(password)],
+            transport: .jump(waiting), timeout: .seconds(60), hostKeyStatus: { _ in .trusted }
+        )
+        let connecting = Task { try await SSHConnection.connect(configuration) }
+        try await Task.sleep(for: .milliseconds(500))
+        let cancelled = ContinuousClock.now
+        connecting.cancel()
+        _ = await connecting.result
+        try await waiting.closed.get()
+        XCTAssertLessThan(ContinuousClock.now - cancelled, .seconds(2))
+    }
+
     // MARK: Helpers
 
     private actor Screen {
