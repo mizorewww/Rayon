@@ -144,14 +144,6 @@ public extension RayonStorage {
         NotificationCenter.default.post(name: Self.didQueueChanges, object: self)
     }
 
-    /// Whether any record was ever written, deleted ones included.
-    var hasAnyRecord: Bool {
-        func any<T: StoredRecord>(_: T.Type) -> Bool {
-            ((try? db.getValue(on: Column(named: "id").count(), fromTable: T.tableName))?.intValue ?? 0) > 0
-        }
-        return Self.recordTypes.contains { any($0) }
-    }
-
     /// Forgets the deletions older than the tombstone lifetime that have
     /// nothing left to send.
     func purgeTombstones(now: Date = Date()) {
@@ -176,12 +168,61 @@ public extension RayonStorage {
     }
 }
 
+/// Writes for `RayonStorage.insertMissing`, inside its transaction.
+final class RecordInserter {
+    private let storage: RayonStorage
+    let handle: Handle
+    /// The keychain items written, to remove if the transaction fails.
+    private(set) var secretAccounts: [String] = []
+
+    fileprivate init(storage: RayonStorage, handle: Handle) {
+        self.storage = storage
+        self.handle = handle
+    }
+
+    func insert<T: StoredRecord>(_ record: T, modified: Date) throws {
+        let existing: T? = try handle.getObject(fromTable: T.tableName, where: idColumn == record.id.uuidString)
+        guard existing == nil else { return }
+        var record = record
+        record.modified = modified.wholeMilliseconds
+        record.removed = false
+        if T.Secrets.self != NoSecrets.self, record.secrets != T.Secrets() {
+            secretAccounts.append(record.secretAccount)
+            try storage.secrets.setValue(record.secrets, for: record.secretAccount)
+        }
+        try handle.insert([record], intoTable: T.tableName)
+        try storage.enqueueUpload(T.self, id: record.id, modified: record.modified, handle: handle)
+    }
+}
+
 extension RayonStorage {
     /// Every kind of record, in the order a backup or a full upload writes
     /// them (folders before the servers in them).
     static let recordTypes: [any StoredRecord.Type] = [
         RDFolder.self, RDIdentity.self, RDMachine.self, RDSnippet.self, RDPortForward.self, RDTerminalSettings.self,
     ]
+
+    /// Adds records that are not here yet (a deleted one counts as here)
+    /// and queues them for iCloud, all in one transaction: when anything
+    /// fails, nothing is kept, the secrets written to the keychain included.
+    func insertMissing(_ write: (RecordInserter) throws -> Void) throws {
+        var inserter: RecordInserter?
+        do {
+            try withoutActuallyEscaping(write) { write in
+                try db.run(transaction: { handle in
+                    let current = RecordInserter(storage: self, handle: handle)
+                    inserter = current
+                    try write(current)
+                })
+            }
+        } catch {
+            for account in inserter?.secretAccounts ?? [] {
+                try? secrets.remove(account)
+            }
+            throw error
+        }
+        NotificationCenter.default.post(name: Self.didQueueChanges, object: self)
+    }
 
     /// The row, deleted or not, without its secrets.
     func row<T: StoredRecord>(_: T.Type, id: UUID) -> T? {

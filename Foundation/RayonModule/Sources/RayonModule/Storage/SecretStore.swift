@@ -24,12 +24,20 @@ public struct SecretStore: Sendable {
     public static let shared = SecretStore(service: "me.mizorewww.rayon.secrets")
 
     public let service: String
+    /// Tests: accounts the keychain refuses, as it does while the device
+    /// is locked before its first unlock.
+    var refusedAccounts: Set<String> = []
 
     public init(service: String) {
         self.service = service
     }
 
+    private func checkAccess(_ account: String) throws {
+        if refusedAccounts.contains(account) { throw Failure(status: errSecInteractionNotAllowed) }
+    }
+
     public func data(for account: String) throws -> Data? {
+        try checkAccess(account)
         var query = baseQuery(account: account)
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
@@ -45,6 +53,7 @@ public struct SecretStore: Sendable {
     /// Nil removes the item.
     public func set(_ data: Data?, for account: String) throws {
         guard let data else { return try remove(account) }
+        try checkAccess(account)
         let query = baseQuery(account: account)
         let attributes: [String: Any] = [
             kSecValueData as String: data,
@@ -58,6 +67,7 @@ public struct SecretStore: Sendable {
     }
 
     public func remove(_ account: String) throws {
+        try checkAccess(account)
         let status = perform { SecItemDelete(merged(baseQuery(account: account), $0) as CFDictionary) }
         guard status == errSecSuccess || status == errSecItemNotFound else { throw Failure(status: status) }
     }

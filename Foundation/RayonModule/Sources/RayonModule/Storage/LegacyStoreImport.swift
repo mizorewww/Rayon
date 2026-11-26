@@ -17,6 +17,7 @@ import CommonCrypto
 import CryptoKit
 import Foundation
 import Security
+@preconcurrency import WCDBSwift
 
 enum LegacyStoreImport {
     static let doneKey = "me.mizorewww.rayon.storage.legacyImported"
@@ -56,13 +57,6 @@ enum LegacyStoreImport {
         forgetMasterKey: () -> Void = removeMasterKey
     ) -> Bool {
         guard !defaults.bool(forKey: doneKey) else { return false }
-        // The database is what counts: once it holds anything (imported
-        // before, or saved since), the old values never come over it, even
-        // when the flag above was lost or the defaults are shared.
-        guard !storage.hasAnyRecord else {
-            defaults.set(true, forKey: doneKey)
-            return false
-        }
         guard Key.sealed.contains(where: { defaults.object(forKey: $0) != nil }) else {
             defaults.set(true, forKey: doneKey)
             return false
@@ -123,30 +117,35 @@ enum LegacyStoreImport {
         }
         let folderIDs = Dictionary(folders.map { ($0.name, $0.id) }, uniquingKeysWith: { first, _ in first })
 
-        for folder in folders {
-            try storage.save(folder)
-        }
-        for identity in identities {
-            try storage.save(identity.identity)
-        }
-        for machine in machines {
-            try storage.save(machine.machine(folderId: folderIDs[machine.group]))
-        }
-        for snippet in snippets {
-            try storage.save(snippet.snippet)
-        }
-        for forward in forwards {
-            try storage.save(forward.forward)
-        }
-
-        if let recent {
-            try storage.saveRecentConnections(recent.enumerated().map { $1.record(at: $0) })
-        }
-        if let hosts {
-            for (name, line) in hosts {
+        // All of it or none. What the database already has stays as it is:
+        // the user may have added or changed things while the old values
+        // could not be read, or the flag was lost and they come again.
+        let now = Date()
+        try storage.insertMissing { inserter in
+            for folder in folders {
+                try inserter.insert(folder, modified: now)
+            }
+            for identity in identities {
+                try inserter.insert(identity.identity, modified: now)
+            }
+            for machine in machines {
+                try inserter.insert(machine.machine(folderId: folderIDs[machine.group]), modified: now)
+            }
+            for snippet in snippets {
+                try inserter.insert(snippet.snippet, modified: now)
+            }
+            for forward in forwards {
+                try inserter.insert(forward.forward, modified: now)
+            }
+            let handle = inserter.handle
+            if let recent, try handle.getValue(on: Column(named: "id").count(), fromTable: RecentConnectionRecord.tableName).intValue == 0 {
+                try handle.insert(recent.enumerated().map { $1.record(at: $0) }, intoTable: RecentConnectionRecord.tableName)
+            }
+            for (name, line) in hosts ?? [:] {
                 let parts = line.split(separator: " ", maxSplits: 1)
                 guard parts.count == 2, let key = Data(base64Encoded: String(parts[1])) else { continue }
-                try storage.saveKnownHost(KnownHostRecord(name: name, type: String(parts[0]), key: key, added: Date()))
+                let host = KnownHostRecord(name: name, type: String(parts[0]), key: key, added: now)
+                try handle.insertOrIgnore([host], intoTable: KnownHostRecord.tableName)
             }
         }
     }

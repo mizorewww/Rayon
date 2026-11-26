@@ -51,6 +51,12 @@ final class LegacyStoreImportTests: XCTestCase {
         }
     }
 
+    private var databaseIsEmpty: Bool {
+        storage.records(RDFolder.self).isEmpty && storage.records(RDIdentity.self).isEmpty
+            && storage.records(RDMachine.self).isEmpty && storage.records(RDSnippet.self).isEmpty
+            && storage.records(RDPortForward.self).isEmpty && storage.pendingUploads().isEmpty
+    }
+
     @discardableResult
     private func runImport(masterKey: String? = nil, forget: @escaping () -> Void = {}) -> Bool {
         let key = masterKey ?? master
@@ -140,7 +146,7 @@ final class LegacyStoreImportTests: XCTestCase {
         var forgotten = false
         XCTAssertFalse(runImport { forgotten = true })
         XCTAssertFalse(forgotten)
-        XCTAssertFalse(storage.hasAnyRecord)
+        XCTAssertTrue(databaseIsEmpty)
         XCTAssertFalse(defaults.bool(forKey: LegacyStoreImport.doneKey))
         for (key, value) in values {
             XCTAssertEqual(defaults.data(forKey: key), value, key)
@@ -150,8 +156,39 @@ final class LegacyStoreImportTests: XCTestCase {
     func testTheWrongKeyImportsNothing() throws {
         try load("v2.4")
         XCTAssertFalse(runImport(masterKey: "6F9619FF-8B86-D011-B42D-00C04FC964FF"))
-        XCTAssertFalse(storage.hasAnyRecord)
+        XCTAssertTrue(databaseIsEmpty)
         XCTAssertNotNil(defaults.object(forKey: "machineGroupEncrypted"))
+    }
+
+    /// The keychain refusing a write halfway leaves nothing behind, in the
+    /// database or the keychain, and the next launch imports everything.
+    func testAKeychainFailureHalfwayImportsNothing() throws {
+        try load("v2.8")
+        storage.close()
+        var refusing = secrets!
+        refusing.refusedAccounts = ["\(RDMachine.tableName).\(serverID.uuidString)"]
+        storage = try RayonStorage(databaseURL: directory.appendingPathComponent("database.db"), secrets: refusing)
+
+        XCTAssertFalse(runImport())
+        XCTAssertTrue(databaseIsEmpty)
+        XCTAssertNil(try secrets.data(for: "\(RDIdentity.tableName).\(identityID.uuidString)"), "the identity's password, written first, is gone again")
+        XCTAssertNotNil(defaults.object(forKey: "machineGroupEncrypted"))
+        XCTAssertFalse(defaults.bool(forKey: LegacyStoreImport.doneKey))
+
+        storage.close()
+        storage = try RayonStorage(databaseURL: directory.appendingPathComponent("database.db"), secrets: secrets)
+        XCTAssertTrue(runImport())
+        XCTAssertEqual(storage.record(RDMachine.self, id: serverID)?.vncPassword, "vnc-secret")
+        XCTAssertEqual(storage.record(RDIdentity.self, id: identityID)?.password, "hunter2")
+    }
+
+    /// What the user saved while the old values could not be read does not
+    /// stop them coming in later.
+    func testRecordsSavedBeforeTheImportDoNotStopIt() throws {
+        try storage.save(RDMachine(remoteAddress: "new", remotePort: "22", name: "Added"))
+        try load("v2.4")
+        XCTAssertTrue(runImport())
+        XCTAssertEqual(Set(storage.records(RDMachine.self).map(\.name)), ["Added", "Inner", "Bastion"])
     }
 
     /// Another launch that finds the old values again (the flag lost, or
