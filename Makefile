@@ -46,7 +46,7 @@ build-ios:
 test:
 	for package in $(TEST_PACKAGES); do \
 		echo "==> $$package"; \
-		swift test --package-path "$$package"; \
+		swift test --package-path "$$package" || exit 1; \
 	done
 
 resolve:
