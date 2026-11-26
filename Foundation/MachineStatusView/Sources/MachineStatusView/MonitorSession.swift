@@ -40,17 +40,15 @@ public struct MonitorHistory: Equatable, Sendable {
 public struct MonitorSnapshot: Equatable, Sendable {
     public private(set) var status = ServerStatus()
     public private(set) var history = MonitorHistory()
-    public private(set) var date: Date?
 
     public init() {}
 
     /// Only real readings get here: a failed round publishes nothing, so
     /// it never lands in the history as a zero.
-    func recording(_ status: ServerStatus, at date: Date = Date()) -> MonitorSnapshot {
+    func recording(_ status: ServerStatus) -> MonitorSnapshot {
         var next = self
         next.status = status
         next.history.record(status)
-        next.date = date
         return next
     }
 }
