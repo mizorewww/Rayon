@@ -188,7 +188,11 @@ final class VNCRFBClient: @unchecked Sendable {
             offered = Array(try channel.read(exactly: count))
         }
 
-        let selected = try chooseSecurityType(from: offered)
+        let selected = try Self.chooseSecurityType(
+            from: offered,
+            username: configuration.username,
+            password: configuration.password
+        )
 
         if version.minor != 3 {
             try send(Data([selected]), over: channel)
@@ -248,29 +252,35 @@ final class VNCRFBClient: @unchecked Sendable {
         delegate?.client(self, didUpdateFrame: nil, size: framebuffer.size, desktopName: desktopName)
     }
 
-    /// None if the server allows it; Apple authentication when there is a
-    /// user name to give (macOS offers it beside a VNC password); else the
-    /// VNC password.
-    private func chooseSecurityType(from offered: [UInt8]) throws -> UInt8 {
+    /// The strongest security type both sides support. With credentials
+    /// configured the client authenticates or fails — it never takes
+    /// `none`, so a man in the middle cannot strip authentication by
+    /// offering only that. Apple authentication (DH + AES) beats the VNC
+    /// password (DES challenge) whenever there is a user name to give.
+    static func chooseSecurityType(from offered: [UInt8], username: String, password: String) throws -> UInt8 {
         let none = VNCWire.SecurityType.none.rawValue
         let vncAuth = VNCWire.SecurityType.vncAuth.rawValue
         let apple = VNCWire.SecurityType.appleRemoteDesktop.rawValue
-        if offered.contains(none) { return none }
-        let hasUser = !configuration.username.isEmpty
-        if offered.contains(apple), hasUser {
-            guard !configuration.password.isEmpty else {
-                throw RemoteDesktopFailure("The Mac asks for the password of \(configuration.username). Set one on the server, or on its identity.")
+        guard !password.isEmpty else {
+            if offered.contains(none) { return none }
+            if offered.contains(apple), !username.isEmpty {
+                throw RemoteDesktopFailure("The Mac asks for the password of \(username). Set one on the server, or on its identity.")
             }
-            return apple
-        }
-        if offered.contains(vncAuth) {
-            guard !configuration.password.isEmpty else {
+            if offered.contains(vncAuth) {
                 throw RemoteDesktopFailure("The VNC server asks for a password. Set one on the server, or on the identity it falls back to.")
             }
-            return vncAuth
+            if offered.contains(apple) {
+                throw RemoteDesktopFailure("The Mac asks for a user name and password. Set the VNC user name on the server, or give it an identity.")
+            }
+            throw RemoteDesktopFailure("The server offers no supported security type (\(offered.map(String.init).joined(separator: ", "))).")
         }
+        if offered.contains(apple), !username.isEmpty { return apple }
+        if offered.contains(vncAuth) { return vncAuth }
         if offered.contains(apple) {
-            throw RemoteDesktopFailure("The Mac asks for a user name and password. Set the VNC user name on the server, or give it an identity.")
+            throw RemoteDesktopFailure("The Mac asks for a user name with the password. Set the VNC user name on the server, or give it an identity.")
+        }
+        if offered.contains(none) {
+            throw RemoteDesktopFailure("A password is set for this server, but it offered to connect without authentication. Refusing, as that is how a man in the middle would strip it; clear the password if the server really has none.")
         }
         throw RemoteDesktopFailure("The server offers no supported security type (\(offered.map(String.init).joined(separator: ", "))).")
     }

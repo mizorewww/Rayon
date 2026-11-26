@@ -740,6 +740,33 @@ final class VNCRFBTests: XCTestCase {
         XCTAssertEqual(channel.written[12], VNCWire.SecurityType.vncAuth.rawValue)
     }
 
+    // MARK: Security-type selection
+
+    private func choose(_ offered: [VNCWire.SecurityType], username: String = "", password: String = "") throws -> VNCWire.SecurityType? {
+        let raw = try VNCRFBClient.chooseSecurityType(from: offered.map(\.rawValue), username: username, password: password)
+        return VNCWire.SecurityType(rawValue: raw)
+    }
+
+    func testSecurityNeverDowngradesToNoneWithPassword() {
+        XCTAssertThrowsError(try choose([.none], password: "pw"))
+        XCTAssertThrowsError(try choose([.none], username: "alice", password: "pw"))
+        XCTAssertEqual(try choose([.none, .vncAuth], password: "pw"), .vncAuth)
+        XCTAssertEqual(try choose([.vncAuth, .none], password: "pw"), .vncAuth)
+    }
+
+    func testSecurityPrefersStrongestType() {
+        XCTAssertEqual(try choose([.none, .vncAuth, .appleRemoteDesktop], username: "alice", password: "pw"), .appleRemoteDesktop)
+        XCTAssertEqual(try choose([.vncAuth, .appleRemoteDesktop], password: "pw"), .vncAuth)
+        XCTAssertThrowsError(try choose([.appleRemoteDesktop], password: "pw"))
+    }
+
+    func testSecurityWithoutPassword() {
+        XCTAssertEqual(try choose([.vncAuth, .none]), VNCWire.SecurityType.none)
+        XCTAssertThrowsError(try choose([.vncAuth]))
+        XCTAssertThrowsError(try choose([.appleRemoteDesktop], username: "alice"))
+        XCTAssertThrowsError(try choose([]))
+    }
+
     func testVNCUsernameFallsBackOnlyWithIdentityPassword() {
         let identity = RDIdentity(username: "alice", password: "login")
         var machine = RDMachine()
