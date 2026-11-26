@@ -2,8 +2,8 @@
 //  TerminalContext+Local.swift
 //  RayonModule
 //
-//  Runs a local login shell (`/bin/zsh -l` or `$SHELL -l`) over a native
-//  pseudo-terminal (`openpty` + `setsid` + `TIOCSCTTY`) on macOS.
+//  Runs a local login shell (`$SHELL -l`, else `/bin/zsh -l`) on a
+//  pseudo-terminal started by `LocalPseudoTerminal`, on macOS.
 //
 
 #if os(macOS)
@@ -12,56 +12,41 @@
 
     extension TerminalContext {
         func runLocalTerminal() {
-            var win = winsize()
             let initial = terminalSize
-            win.ws_col = UInt16(max(8, Int(initial.width)))
-            win.ws_row = UInt16(max(8, Int(initial.height)))
 
             let pw = getpwuid(getuid())
             let pwShell = pw?.pointee.pw_shell.flatMap { String(cString: $0) }
             let pwDir = pw?.pointee.pw_dir.flatMap { String(cString: $0) }
             let shellPath = ProcessInfo.processInfo.environment["SHELL"] ?? pwShell ?? "/bin/zsh"
-            let homeDir = pwDir ?? ("/Users/" + NSUserName())
+            let homeDir = pwDir ?? NSHomeDirectory()
+            let user = NSUserName()
 
-            var masterFD: Int32 = -1
-            let pid = forkpty(&masterFD, nil, nil, &win)
-            if pid < 0 {
-                putInformation("[!] Failed to open local pseudo-terminal (\(String(cString: strerror(errno)))).")
+            var environment = ProcessInfo.processInfo.environment
+            environment["TERM"] = "xterm-256color"
+            environment["COLORTERM"] = "truecolor"
+            environment["TERM_PROGRAM"] = "Rayon"
+            environment["HOME"] = homeDir
+            environment["SHELL"] = shellPath
+            environment["USER"] = user
+            environment["LOGNAME"] = user
+            if environment["LANG"] == nil { environment["LANG"] = "en_US.UTF-8" }
+
+            let terminal: LocalPseudoTerminal
+            do {
+                terminal = try LocalPseudoTerminal.spawn(
+                    executable: shellPath,
+                    arguments: [(shellPath as NSString).lastPathComponent, "-l"],
+                    environment: environment,
+                    directory: homeDir,
+                    columns: max(8, Int(initial.width)),
+                    rows: max(8, Int(initial.height))
+                )
+            } catch {
+                putInformation("[!] Failed to start the local shell (\(error)).")
                 return
             }
-
-            if pid == 0 {
-                var pgrp = getpid()
-                _ = setpgid(0, pgrp)
-                _ = tcsetpgrp(STDIN_FILENO, pgrp)
-
-                for sig in [SIGINT, SIGQUIT, SIGTSTP, SIGTTIN, SIGTTOU, SIGCHLD, SIGHUP, SIGPIPE] {
-                    signal(sig, SIG_DFL)
-                }
-
-                _ = chdir(homeDir)
-                setenv("TERM", "xterm-256color", 1)
-                setenv("COLORTERM", "truecolor", 1)
-                setenv("TERM_PROGRAM", "Rayon", 1)
-                setenv("HOME", homeDir, 1)
-                setenv("SHELL", shellPath, 1)
-                setenv("USER", NSUserName(), 1)
-                setenv("LOGNAME", NSUserName(), 1)
-                if getenv("LANG") == nil {
-                    setenv("LANG", "en_US.UTF-8", 1)
-                }
-
-                let cPath = strdup(shellPath)
-                let cArg0 = strdup((shellPath as NSString).lastPathComponent)
-                let cLogin = strdup("-l")
-                var args: [UnsafeMutablePointer<CChar>?] = [cArg0, cLogin, nil]
-                execv(cPath, &args)
-                _exit(1)
-            }
-            let flags = fcntl(masterFD, F_GETFL, 0)
-            if flags >= 0 {
-                _ = fcntl(masterFD, F_SETFL, flags | O_NONBLOCK)
-            }
+            let pid = terminal.pid
+            let masterFD = terminal.master
 
             let finished = DispatchSemaphore(value: 0)
             let decoder = UTF8StreamDecoder()
