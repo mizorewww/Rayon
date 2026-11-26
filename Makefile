@@ -58,4 +58,4 @@ scan-license:
 	bash Workflow/Scripts/scan-license.sh
 
 clean:
-	rm -rf .build Foundation/*/.build External/*/.build
+	rm -rf .build Foundation/*/.build

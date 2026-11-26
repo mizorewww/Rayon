@@ -75,7 +75,7 @@ jobs:
             - Foundation/RayonModule: servers, identities, store, sync, SSH sessions, files,
               remote desktop; Foundation/RayonTerminal: the Ghostty terminal and its settings
               (CONFIGURATION.md); Foundation/MachineStatus and MachineStatusView: the monitor;
-              Foundation/RayonEditor: the text editor; External/NSRemoteShell: libssh2.
+              Foundation/RayonEditor: the text editor; Foundation/RayonSSH: the SSH client.
             - README.md (and README.zh-Hans.md, README.zh-Hant.md), docs/.
 
             1. Read it with `gh issue view --comments`. Look for duplicates with

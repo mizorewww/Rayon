@@ -17,9 +17,6 @@
       location = "group:Foundation/MachineStatusView">
    </FileRef>
    <FileRef
-      location = "group:External/NSRemoteShell">
-   </FileRef>
-   <FileRef
       location = "group:Foundation/RayonSSH">
    </FileRef>
    <FileRef
