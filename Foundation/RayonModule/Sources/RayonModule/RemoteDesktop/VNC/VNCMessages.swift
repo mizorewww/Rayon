@@ -174,14 +174,15 @@ enum VNCWire {
         case desktopSize = -223
     }
 
-    /// The encodings the client advertises, most-preferred last per spec
-    /// ordering convention (order is not significant for negotiation).
+    /// The encodings the client advertises, most preferred first: RFB
+    /// servers such as x11vnc and TigerVNC pick the first one they support,
+    /// so ZRLE leads and Raw is only the fallback.
     static let clientEncodings: [Int32] = [
-        Encoding.raw.rawValue,
-        Encoding.copyRect.rawValue,
-        Encoding.rre.rawValue,
-        Encoding.hextile.rawValue,
         Encoding.zrle.rawValue,
+        Encoding.hextile.rawValue,
+        Encoding.rre.rawValue,
+        Encoding.copyRect.rawValue,
+        Encoding.raw.rawValue,
         Encoding.cursor.rawValue,
         Encoding.desktopSize.rawValue,
     ]

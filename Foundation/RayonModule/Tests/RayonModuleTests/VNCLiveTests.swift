@@ -6,10 +6,12 @@
 //  VNC_LIVE_HOST, default 127.0.0.1; VNC_LIVE_PASSWORD if it asks for one).
 //  A throwaway server: an Alpine container running Xvfb + x11vnc, e.g.
 //  `docker run --rm -d -p 5900:5900 -e VNC_PASSWORD=secret <image>`.
+//  VNC_LIVE_SNAPSHOT=<path.png> saves the latest decoded frame.
 //
 
 @testable import RayonModule
 import CoreGraphics
+import ImageIO
 import XCTest
 
 final class VNCLiveTests: XCTestCase {
@@ -85,6 +87,12 @@ final class VNCLiveTests: XCTestCase {
         client.requestUpdate(incremental: false)
         try await Task.sleep(for: .seconds(1))
         XCTAssertNil(recorder.failure)
+        // VNC_LIVE_SNAPSHOT=<path.png> keeps the latest decoded frame to look at.
+        if let path = ProcessInfo.processInfo.environment["VNC_LIVE_SNAPSHOT"],
+           let destination = CGImageDestinationCreateWithURL(URL(fileURLWithPath: path) as CFURL, "public.png" as CFString, 1, nil) {
+            CGImageDestinationAddImage(destination, try XCTUnwrap(recorder.image), nil)
+            CGImageDestinationFinalize(destination)
+        }
         client.stop()
     }
 
