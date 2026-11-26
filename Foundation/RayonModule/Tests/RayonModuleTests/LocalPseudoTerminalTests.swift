@@ -58,6 +58,43 @@
             XCTAssertTrue(output.contains("leak=none"), output.debugDescription)
         }
 
+        /// Signals are blocked only while the child is forked: the caller's
+        /// mask is as it was, and the child starts with nothing blocked.
+        func testTheCallersSignalMaskIsKept() throws {
+            var blocked = sigset_t()
+            sigemptyset(&blocked)
+            sigaddset(&blocked, SIGUSR2)
+            var previous = sigset_t()
+            pthread_sigmask(SIG_BLOCK, &blocked, &previous)
+            defer { pthread_sigmask(SIG_SETMASK, &previous, nil) }
+            let terminal = try LocalPseudoTerminal.spawn(
+                executable: "/bin/zsh", arguments: ["zsh", "-f", "-c", "ps -o sigmask= -p $$"],
+                environment: ["PATH": "/usr/bin:/bin"], directory: "/", columns: 80, rows: 24
+            )
+            defer { close(terminal.master) }
+            var after = sigset_t()
+            pthread_sigmask(SIG_SETMASK, nil, &after)
+            XCTAssertEqual(sigismember(&after, SIGUSR2), 1)
+            XCTAssertEqual(sigismember(&after, SIGUSR1), sigismember(&previous, SIGUSR1))
+
+            var output = ""
+            var buffer = [UInt8](repeating: 0, count: 256)
+            let deadline = Date().addingTimeInterval(10)
+            while Date() < deadline {
+                let count = read(terminal.master, &buffer, buffer.count)
+                if count > 0 {
+                    output += String(decoding: buffer[0 ..< count], as: UTF8.self)
+                } else if count == 0 || (errno != EAGAIN && errno != EINTR) {
+                    break
+                } else {
+                    Thread.sleep(forTimeInterval: 0.02)
+                }
+            }
+            var status: Int32 = 0
+            waitpid(terminal.pid, &status, 0)
+            XCTAssertEqual(output.trimmingCharacters(in: .whitespacesAndNewlines), "0", "the child starts with signals blocked")
+        }
+
         func testMissingExecutableThrows() {
             XCTAssertThrowsError(try LocalPseudoTerminal.spawn(
                 executable: "/nonexistent/shell", arguments: ["shell"], environment: [:],
