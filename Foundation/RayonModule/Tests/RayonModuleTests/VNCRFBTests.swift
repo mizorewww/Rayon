@@ -483,6 +483,31 @@ final class VNCRFBTests: XCTestCase {
         XCTAssertEqual(framebuffer.pixel(x: 1, y: 0), 0xFF_FF_00_00) // bit 0 -> entry 0
     }
 
+    /// 3-4 colours pack 2 bits per pixel and 5-16 pack 4; each row starts
+    /// on a byte boundary.
+    func testZRLEPackedPaletteWiderIndices() throws {
+        let framebuffer = VNCFramebuffer()
+        framebuffer.resize(width: 3, height: 2)
+        let context = makeContext(framebuffer: framebuffer)
+        let colours: [[UInt8]] = (0 ..< 5).map { [UInt8($0), 0, 0] }
+
+        var twoBit = Data([0x03])
+        for colour in colours.prefix(3) { twoBit.append(contentsOf: colour) }
+        twoBit.append(contentsOf: [0b0001_1000, 0b1001_0000]) // rows 0,1,2 and 2,1,0
+        try VNCDecoders.decodeZRLE(rectHeader(x: 0, y: 0, w: 3, h: 2, encoding: 16),
+                                   inflated: twoBit, context: context)
+        XCTAssertEqual((0 ..< 3).map { framebuffer.pixel(x: $0, y: 0) }, [0xFF00_0000, 0xFF00_0001, 0xFF00_0002])
+        XCTAssertEqual((0 ..< 3).map { framebuffer.pixel(x: $0, y: 1) }, [0xFF00_0002, 0xFF00_0001, 0xFF00_0000])
+
+        var fourBit = Data([0x05])
+        for colour in colours { fourBit.append(contentsOf: colour) }
+        fourBit.append(contentsOf: [0x43, 0x20, 0x01, 0x40]) // rows 4,3,2 and 0,1,4
+        try VNCDecoders.decodeZRLE(rectHeader(x: 0, y: 0, w: 3, h: 2, encoding: 16),
+                                   inflated: fourBit, context: context)
+        XCTAssertEqual((0 ..< 3).map { framebuffer.pixel(x: $0, y: 0) }, [0xFF00_0004, 0xFF00_0003, 0xFF00_0002])
+        XCTAssertEqual((0 ..< 3).map { framebuffer.pixel(x: $0, y: 1) }, [0xFF00_0000, 0xFF00_0001, 0xFF00_0004])
+    }
+
     func testZRLEPlainRLE() throws {
         let framebuffer = VNCFramebuffer()
         framebuffer.resize(width: 4, height: 4)

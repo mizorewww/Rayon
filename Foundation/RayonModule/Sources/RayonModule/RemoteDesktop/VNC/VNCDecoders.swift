@@ -289,7 +289,8 @@ enum VNCDecoders {
                         )
                     } else if subencoding >= 2, subencoding <= 16 {
                         let entries = try palette(subencoding)
-                        let bitsPerIndex: Int = subencoding > 4 ? 8 : (subencoding > 2 ? 4 : 1)
+                        // RFC 6143 §7.7.6: 1 bit for 2 colours, 2 for 3-4, 4 for 5-16.
+                        let bitsPerIndex: Int = subencoding > 4 ? 4 : (subencoding > 2 ? 2 : 1)
                         let bytesPerRow = (tileWidth * bitsPerIndex + 7) / 8
                         guard offset + bytesPerRow * tileHeight <= totalBytes else {
                             throw VNCDecodeError.malformed("ZRLE payload ended early at \(offset) of \(totalBytes)")

@@ -85,12 +85,29 @@ final class VNCLiveTests: XCTestCase {
         let image = try XCTUnwrap(recorder.image)
         XCTAssertGreaterThan(image.width, 0)
 
-        client.pointerMoved(normalizedX: 0.5, normalizedY: 0.5)
-        client.keyEvent(keyCode: 0, keySym: 0x61, characters: "a", isDown: true)
-        client.keyEvent(keyCode: 0, keySym: 0x61, characters: "a", isDown: false)
-        client.requestUpdate(incremental: false)
-        try await Task.sleep(for: .seconds(1))
-        XCTAssertNil(recorder.failure)
+        // Changing content, not only the first frame: ZRLE runs one zlib
+        // stream across every rectangle, so later updates are where a
+        // decoder that loses stream state breaks. Moving the pointer and
+        // opening and closing a menu repaints parts of a real desktop.
+        let before = recorder.frameCount
+        for step in 0 ..< 20 {
+            let x = 0.1 + 0.8 * Double(step % 5) / 4, y = 0.1 + 0.8 * Double(step / 5) / 3
+            client.pointerMoved(normalizedX: x, normalizedY: y)
+            if step % 5 == 2 {
+                client.pointerButton(.right, isDown: true, normalizedX: x, normalizedY: y)
+                client.pointerButton(.right, isDown: false, normalizedX: x, normalizedY: y)
+            }
+            if step % 5 == 4 {
+                client.keyEvent(keyCode: 0, keySym: 0xFF1B, characters: "", isDown: true)
+                client.keyEvent(keyCode: 0, keySym: 0xFF1B, characters: "", isDown: false)
+                client.requestUpdate(incremental: false)
+            }
+            try await Task.sleep(for: .milliseconds(200))
+            if let failure = recorder.failure {
+                return XCTFail("\(failure) after \(recorder.frameCount - before) more frames")
+            }
+        }
+        XCTAssertGreaterThan(recorder.frameCount - before, 3, "updates stopped arriving")
         // VNC_LIVE_SNAPSHOT=<path.png> keeps the latest decoded frame to look at.
         if let path = ProcessInfo.processInfo.environment["VNC_LIVE_SNAPSHOT"],
            let destination = CGImageDestinationCreateWithURL(URL(fileURLWithPath: path) as CFURL, "public.png" as CFString, 1, nil) {
