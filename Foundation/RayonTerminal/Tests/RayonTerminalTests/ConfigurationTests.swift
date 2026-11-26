@@ -126,6 +126,12 @@ final class ConfigurationTests: XCTestCase {
         XCTAssertThrowsError(try DurationValue.parse("-1m", allowEmpty: false))
         XCTAssertThrowsError(try DurationValue.parse("1.5s", allowEmpty: false))
         XCTAssertTrue(try DurationValue.parse("", allowEmpty: true).isEmpty)
+        for valid in ["liga", "-liga", "+calt", "ss07", "cv01=2", "cv01 2", "liga on", "liga OFF", "\"kern\" = 0", "liga, -calt"] {
+            XCTAssertNoThrow(try FontFeatureValue.validate(valid), valid)
+        }
+        for invalid in ["!!=bad value", "lig", "-liga=0", "liga=x", "liga 2 ", "ligatures", "liga of"] {
+            XCTAssertThrowsError(try FontFeatureValue.validate(invalid), invalid)
+        }
         XCTAssertEqual(PairValue.parse("discrete:3,precision:1", scroll: true).values, ["1", "3"])
         XCTAssertEqual(PairValue.parse("precision:2", scroll: true).values, ["2", "3"])
         XCTAssertFalse(PairValue.parse("precision:2", scroll: true).linked)

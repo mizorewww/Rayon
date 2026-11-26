@@ -27,6 +27,46 @@ enum PairValue {
     }
 }
 
+/// `font-feature` as Ghostty reads it (HarfBuzz's syntax, roughly): a
+/// four-letter tag, `+tag` or `-tag`, `tag=2` or `tag 2`, `tag on` or
+/// `tag off`; one value may list several, separated by commas. Ghostty
+/// passes over a feature it cannot read without saying so, so the value is
+/// checked here, as Ghostty's own parser (`font/shaper/feature.zig`) does.
+enum FontFeatureValue {
+    static func validate(_ value: String) throws {
+        for item in value.split(separator: ",") where !item.allSatisfy({ $0 == " " || $0 == "\t" }) {
+            guard isFeature(item) else {
+                let shown = item.trimmingCharacters(in: .whitespaces)
+                throw ConfigError("font-feature \"\(shown)\" is not an OpenType feature; use a four-letter tag such as liga, -liga, ss07 or cv01=2")
+            }
+        }
+    }
+
+    static func isFeature(_ item: Substring) -> Bool {
+        func isSpace(_ byte: UInt8) -> Bool { byte == UInt8(ascii: " ") || byte == UInt8(ascii: "\t") }
+        // Quote marks around the tag are allowed and ignored.
+        func isQuote(_ byte: UInt8) -> Bool { byte == UInt8(ascii: "\"") || byte == UInt8(ascii: "'") }
+        var bytes = Array(item.utf8)[...]
+        while let byte = bytes.first, isSpace(byte) { bytes.removeFirst() }
+        let signed = bytes.first == UInt8(ascii: "+") || bytes.first == UInt8(ascii: "-")
+        if signed { bytes.removeFirst() }
+        var tagLength = 0
+        while tagLength < 4 {
+            guard let byte = bytes.popFirst() else { return false }
+            if !isQuote(byte) { tagLength += 1 }
+        }
+        while let byte = bytes.first, isSpace(byte) || isQuote(byte) || (byte == UInt8(ascii: "=") && !signed) {
+            bytes.removeFirst()
+        }
+        guard !bytes.isEmpty else { return true }
+        // A sign is the whole value; nothing may follow it.
+        guard !signed else { return false }
+        let rest = String(decoding: bytes, as: UTF8.self)
+        if rest.utf8.allSatisfy({ (UInt8(ascii: "0") ... UInt8(ascii: "9")).contains($0) }) { return UInt32(rest) != nil }
+        return ["on", "off"].contains(rest.trimmingCharacters(in: CharacterSet(charactersIn: " \t")).lowercased())
+    }
+}
+
 /// Ghostty's durations: `1h30m`, `250ms`.
 enum DurationValue {
     static let units = ["ns", "us", "ms", "s", "m", "h", "d", "y"]

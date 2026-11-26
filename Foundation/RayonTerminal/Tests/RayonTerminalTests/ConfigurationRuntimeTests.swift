@@ -59,6 +59,8 @@ final class ConfigurationRuntimeTests: XCTestCase {
         XCTAssertThrowsError(try RayonTerminalConfiguration.apply(broken, to: controller))
         XCTAssertEqual(controller.theme, before)
         XCTAssertThrowsError(try RayonTerminalConfiguration.apply(GhosttyConfigText("not a line"), to: controller))
+        // Ghostty takes any font feature and drops the ones it cannot read.
+        XCTAssertThrowsError(try RayonTerminalConfiguration.apply(GhosttyConfigText("font-feature = !!=bad value"), to: controller))
     }
 
     /// The shortcut list as written replaces Ghostty's: a default deleted in
