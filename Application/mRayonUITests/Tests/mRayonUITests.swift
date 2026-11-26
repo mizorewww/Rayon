@@ -39,6 +39,18 @@ final class MRayonUITests: XCTestCase {
         }
     }
 
+    /// The Dashboard tab (iPhone) or sidebar row (iPad).
+    private func openDashboard() {
+        let tab = app.tabBars.buttons["Dashboard"]
+        if tab.waitForExistence(timeout: 5) {
+            tab.tap()
+        } else {
+            let row = app.cells.containing(.staticText, identifier: "Dashboard").firstMatch
+            XCTAssertTrue(row.waitForExistence(timeout: 5), "The sidebar lists Dashboard")
+            row.tap()
+        }
+    }
+
     func testLaunchShowsHome() {
         XCTAssertTrue(app.staticTexts["Home"].firstMatch.waitForExistence(timeout: 10))
         screenshot("Home")
@@ -82,7 +94,7 @@ final class MRayonUITests: XCTestCase {
     /// Opens a Quick Connect session to a closed local port: the Ghostty terminal
     /// appears, reports the failed connection, and offers Reconnect and Close.
     func testQuickConnectOpensTheGhosttyTerminal() {
-        let field = app.textFields["ssh user@host -p 22"]
+        let field = app.textFields["ssh root@www.example.com -p 22 ↵"]
         XCTAssertTrue(field.waitForExistence(timeout: 10))
         field.tap()
         field.typeText("ssh test@127.0.0.1 -p 1\n")
@@ -109,18 +121,16 @@ final class MRayonUITests: XCTestCase {
         app.buttons["Save"].firstMatch.tap()
     }
 
-    /// A server on Home answers a tap: its actions are offered, and Open
+    /// A server on Dashboard answers a tap: its actions are offered, and Open
     /// Terminal shows the terminal (to a closed local port here).
-    func testAServerOnHomeOpensItsTerminal() {
+    func testAServerOnDashboardOpensItsTerminal() {
         let name = "UITest Server"
         XCTAssertTrue(app.staticTexts["Home"].firstMatch.waitForExistence(timeout: 10))
+        openDashboard()
         ensureServer(named: name)
-        XCTAssertTrue(app.staticTexts[name].firstMatch.waitForExistence(timeout: 5), "Home lists the server")
-        // Once it has been connected to, the server is also among the recent
-        // ones, above; a tap there connects at once.
-        let named = app.staticTexts.matching(identifier: name)
-        let tile = named.element(boundBy: named.count - 1)
-        screenshot("Home with a server")
+        XCTAssertTrue(app.staticTexts[name].firstMatch.waitForExistence(timeout: 5), "Dashboard lists the server")
+        let tile = app.staticTexts[name].firstMatch
+        screenshot("Dashboard with a server")
         tile.tap()
         let open = app.buttons["Open Terminal"].firstMatch
         XCTAssertTrue(open.waitForExistence(timeout: 5), "A tap on the server offers its actions")

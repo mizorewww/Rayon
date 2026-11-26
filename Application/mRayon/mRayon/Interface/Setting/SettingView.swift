@@ -19,7 +19,7 @@ struct SettingView: View {
     var body: some View {
         GhosttyConfigurationView(
             hostSections: [
-                ConfigHostSettingsSection(id: "general.appearance", keywords: "appearance dark light mode theme system") {
+                ConfigHostSettingsSection(id: "general.appearance", keywords: "appearance dark light mode theme system effects animation background home glow reduce motion") {
                     AppearanceSettings()
                 },
                 ConfigHostSettingsSection(id: "general.sessions", keywords: "open sessions automatically ask before closing confirmation") {
@@ -92,17 +92,25 @@ enum AppearancePreference: String, CaseIterable {
 }
 
 private struct AppearanceSettings: View {
+    @ObservedObject var store = RayonStore.shared
     @AppStorage(AppearancePreference.key) private var appearance = AppearancePreference.system.rawValue
 
     var body: some View {
-        RXFormRow("Light or dark", description: "Terminal colors are set under Colors.") {
-            Picker("Appearance", selection: $appearance) {
-                Text("System").tag(AppearancePreference.system.rawValue)
-                Text("Light").tag(AppearancePreference.light.rawValue)
-                Text("Dark").tag(AppearancePreference.dark.rawValue)
+        RXDividedStack {
+            RXFormRow("Light or dark", description: "Terminal colors are set under Colors.") {
+                Picker("Appearance", selection: $appearance) {
+                    Text("System").tag(AppearancePreference.system.rawValue)
+                    Text("Light").tag(AppearancePreference.light.rawValue)
+                    Text("Dark").tag(AppearancePreference.dark.rawValue)
+                }
+                .labelsHidden()
+                .fixedSize()
             }
-            .labelsHidden()
-            .fixedSize()
+            SwitchRow(
+                "Animate Home",
+                description: "A soft glow and drifting dots behind Quick Connect.",
+                isOn: Binding(get: { !store.reducedViewEffects }, set: { store.reducedViewEffects = !$0 })
+            )
         }
         .onChange(of: appearance) { raw in
             (AppearancePreference(rawValue: raw) ?? .system).apply()

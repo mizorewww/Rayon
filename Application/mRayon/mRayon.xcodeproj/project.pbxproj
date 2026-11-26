@@ -53,6 +53,7 @@
 		50D77BE727D2F0FB00177190 /* SettingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50D77BE627D2F0FB00177190 /* SettingView.swift */; };
 		50FD853A27D0445D00F6F01A /* EditSnippetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FD853927D0445D00F6F01A /* EditSnippetView.swift */; };
 		D7DE448E8B49CA07F4E5CDF1 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D04D4885B33AC1EB4C37B541 /* HomeView.swift */; };
+		6F0EC613AB37177DEC9C7C08 /* DashboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 271E5872FAA1F77A57193A69 /* DashboardView.swift */; };
 		53172E9598050B2406402427 /* TerminalTabs.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2D205578BC2973C0F2DE69B /* TerminalTabs.swift */; };
 		057DB022EC2205319E2BF933 /* UURemoteSessionPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F10AFD10AA0032DAD0BB79A /* UURemoteSessionPickerView.swift */; };
 		0C708A7063F42E2B5568DFD2 /* RemoteDesktopsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2EE08574E137CE01A9C5732 /* RemoteDesktopsView.swift */; };
@@ -105,6 +106,7 @@
 		50FD853927D0445D00F6F01A /* EditSnippetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditSnippetView.swift; sourceTree = "<group>"; };
 		CCFD19B327EACC54005DF0A6 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
 		D04D4885B33AC1EB4C37B541 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HomeView.swift; path = mRayon/Interface/Navigator/HomeView.swift; sourceTree = SOURCE_ROOT; };
+		271E5872FAA1F77A57193A69 /* DashboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = DashboardView.swift; path = mRayon/Interface/Navigator/DashboardView.swift; sourceTree = SOURCE_ROOT; };
 		B2D205578BC2973C0F2DE69B /* TerminalTabs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalTabs.swift; sourceTree = "<group>"; };
 		5F10AFD10AA0032DAD0BB79A /* UURemoteSessionPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UURemoteSessionPickerView.swift; sourceTree = "<group>"; };
 		D2EE08574E137CE01A9C5732 /* RemoteDesktopsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RemoteDesktopsView.swift; sourceTree = "<group>"; };
@@ -251,6 +253,7 @@
 				501FF78C27CEFADD00380D59 /* ContentView.swift */,
 				796660E5550D8CCF69D875E8 /* ServerWorkspaceView.swift */,
 				D04D4885B33AC1EB4C37B541 /* HomeView.swift */,
+				271E5872FAA1F77A57193A69 /* DashboardView.swift */,
 			);
 			path = Navigator;
 			sourceTree = "<group>";
@@ -438,6 +441,7 @@
 				5082A1E027D1ED5800C71C0F /* AgreementView.swift in Sources */,
 				4E7249EE914355DEEC0D434C /* ServersView.swift in Sources */,
 				D7DE448E8B49CA07F4E5CDF1 /* HomeView.swift in Sources */,
+				6F0EC613AB37177DEC9C7C08 /* DashboardView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -76,11 +76,12 @@ struct RayonCommands: Commands {
         }
         CommandGroup(after: .sidebar) {
             place("Home", .home, key: "1")
-            place("Servers", .servers, key: "2")
-            place("Identities", .identities, key: "3")
-            place("Snippets", .snippets, key: "4")
-            place("Port Forward", .portForward, key: "5")
-            place("Remote Desktop", .desktops, key: "6")
+            place("Dashboard", .dashboard, key: "2")
+            place("Servers", .servers, key: "3")
+            place("Identities", .identities, key: "4")
+            place("Snippets", .snippets, key: "5")
+            place("Port Forward", .portForward, key: "6")
+            place("Remote Desktop", .desktops, key: "7")
             if let terminal {
                 Divider()
                 let tabs = terminal.tabSiblings
@@ -252,7 +253,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             }
             Bench.runIfRequested()
             if let page = ProcessInfo.processInfo.environment["RAYON_PREVIEW_ROUTE"] {
-                let routes: [String: Route] = ["servers": .servers, "desktops": .desktops, "home": .home]
+                let routes: [String: Route] = ["servers": .servers, "desktops": .desktops, "home": .home, "dashboard": .dashboard]
                 if let route = routes[page] { AppRouter.shared.route = route }
             }
             if let path = ProcessInfo.processInfo.environment["RAYON_PREVIEW_UU_SESSION"] {

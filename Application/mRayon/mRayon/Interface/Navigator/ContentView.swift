@@ -4,7 +4,8 @@
 //
 //  Created by Lakr Aream on 2022/3/2.
 //
-//  iPhone uses a tab bar: Home · Servers · Sessions · Snippets · More.
+//  iPhone uses a tab bar: Home · Dashboard · Servers · Sessions · More
+//  (Snippets is under More).
 //  iPad keeps the macOS sidebar layout: the Mac's places (Remote Desktop
 //  among them), then one row per server with something open, whose page
 //  holds its terminal, files, editor, monitor and desktop.
@@ -34,9 +35,9 @@ struct ContentView: View {
 
 enum AppTab: Hashable {
     case home
+    case dashboard
     case servers
     case sessions
-    case snippets
     case more
 }
 
@@ -52,14 +53,14 @@ struct TabsView: View {
     /// Servers with something open.
     var sessionCount: Int { SessionDirectory.owners.count }
 
-    /// Home; in Debug, `RAYON_PREVIEW_TAB=servers|sessions|snippets|more`
+    /// Home; in Debug, `RAYON_PREVIEW_TAB=dashboard|servers|sessions|more`
     /// opens that tab, for screenshots without input.
     static var initialTab: AppTab {
         #if DEBUG
             switch ProcessInfo.processInfo.environment["RAYON_PREVIEW_TAB"] {
+            case "dashboard": return .dashboard
             case "servers": return .servers
             case "sessions": return .sessions
-            case "snippets": return .snippets
             case "more": return .more
             default: return .home
             }
@@ -73,6 +74,9 @@ struct TabsView: View {
             NavigationStack { HomeView() }
                 .tabItem { Label("Home", systemImage: "house") }
                 .tag(AppTab.home)
+            NavigationStack { DashboardView() }
+                .tabItem { Label("Dashboard", systemImage: "square.grid.2x2") }
+                .tag(AppTab.dashboard)
             NavigationStack { ServersView() }
                 .tabItem { Label("Servers", systemImage: "server.rack") }
                 .tag(AppTab.servers)
@@ -80,9 +84,6 @@ struct TabsView: View {
                 .tabItem { Label("Sessions", systemImage: "terminal") }
                 .badge(sessionCount)
                 .tag(AppTab.sessions)
-            NavigationStack { SnippetView() }
-                .tabItem { Label("Snippets", systemImage: "chevron.left.forwardslash.chevron.right") }
-                .tag(AppTab.snippets)
             NavigationStack { MoreView() }
                 .tabItem { Label("More", systemImage: "ellipsis") }
                 .tag(AppTab.more)
@@ -90,10 +91,12 @@ struct TabsView: View {
     }
 }
 
-/// iPad: Home, Manage, Sessions, File Transfer, Settings.
+/// iPad: Home, Dashboard, Manage, Sessions, File Transfer, Settings.
 struct SidebarView: View {
     enum Route: Hashable {
         case home
+        /// Every saved server as a tile.
+        case dashboard
         case servers
         case identities
         case snippets
@@ -116,6 +119,7 @@ struct SidebarView: View {
         NavigationSplitView {
             List(selection: $navigation.selection) {
                 Label("Home", systemImage: "house").tag(Route.home)
+                Label("Dashboard", systemImage: "square.grid.2x2").tag(Route.dashboard)
                 Section("Manage") {
                     row("Servers", "server.rack", .servers, badge: store.machineGroup.count)
                     row("Identities", "person", .identities, badge: store.identityGroup.count)
@@ -161,6 +165,7 @@ struct SidebarView: View {
     @ViewBuilder var detail: some View {
         switch navigation.selection ?? .home {
         case .home: HomeView()
+        case .dashboard: DashboardView()
         case .servers: ServersView()
         case .identities: IdentityView()
         case .snippets: SnippetView()
@@ -250,7 +255,7 @@ struct SessionRow: View {
     }
 }
 
-/// Identities, Remote Desktop, Settings, About, Logs, License.
+/// Identities, Snippets, Remote Desktop, Settings, About, Logs, License.
 struct MoreView: View {
     @EnvironmentObject var store: RayonStore
     @State private var openUUAccount = false
@@ -260,6 +265,10 @@ struct MoreView: View {
             Section {
                 NavigationLink { IdentityView() } label: {
                     moreRow("Identities", "person", count: store.identityGroup.count)
+                }
+                .rxListRow()
+                NavigationLink { SnippetView() } label: {
+                    moreRow("Snippets", "chevron.left.forwardslash.chevron.right", count: store.snippetGroup.count)
                 }
                 .rxListRow()
                 NavigationLink { RemoteDesktopsView() } label: {

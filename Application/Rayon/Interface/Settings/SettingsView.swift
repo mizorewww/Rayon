@@ -24,7 +24,7 @@ struct SettingsView: View {
             // Each category's page is hosted on its own, so the rows carry the
             // store with them.
             hostSections: [
-                ConfigHostSettingsSection(id: "general.appearance", keywords: "appearance dark light mode theme system") {
+                ConfigHostSettingsSection(id: "general.appearance", keywords: "appearance dark light mode theme system effects animation background home glow reduce motion") {
                     AppearanceSettings().environmentObject(store)
                 },
                 ConfigHostSettingsSection(id: "general.sessions", keywords: "open sessions automatically ask before closing confirmation quit") {
@@ -94,15 +94,23 @@ enum AppearancePreference: String, CaseIterable {
 }
 
 private struct AppearanceSettings: View {
+    @EnvironmentObject var store: RayonStore
     @AppStorage(AppearancePreference.key) private var appearance = AppearancePreference.system.rawValue
 
     var body: some View {
-        RXFormRow("Light or dark", description: "Terminal colors are set under Colors.") {
-            RXSegmented(selection: $appearance, options: [
-                .init(AppearancePreference.system.rawValue, "System"),
-                .init(AppearancePreference.light.rawValue, "Light"),
-                .init(AppearancePreference.dark.rawValue, "Dark"),
-            ], caps: false)
+        RXDividedStack {
+            RXFormRow("Light or dark", description: "Terminal colors are set under Colors.") {
+                RXSegmented(selection: $appearance, options: [
+                    .init(AppearancePreference.system.rawValue, "System"),
+                    .init(AppearancePreference.light.rawValue, "Light"),
+                    .init(AppearancePreference.dark.rawValue, "Dark"),
+                ], caps: false)
+            }
+            SwitchRow(
+                "Animate Home",
+                description: "A soft glow and drifting dots behind Quick Connect.",
+                isOn: Binding(get: { !store.reducedViewEffects }, set: { store.reducedViewEffects = !$0 })
+            )
         }
         .onChange(of: appearance) { raw in
             (AppearancePreference(rawValue: raw) ?? .system).apply()

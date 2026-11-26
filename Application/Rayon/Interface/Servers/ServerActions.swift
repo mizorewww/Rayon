@@ -2,7 +2,7 @@
 //  ServerActions.swift
 //  Rayon (macOS)
 //
-//  The server context menu (Servers table, Home tiles) and the actions behind it.
+//  The server context menu (Servers table, Dashboard tiles) and the actions behind it.
 //
 
 import MachineStatusView

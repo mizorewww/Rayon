@@ -2,7 +2,7 @@
 //  SidebarView.swift
 //  Rayon (macOS)
 //
-//  Home · Manage · Sessions (one row per server with open sessions; the page's
+//  Home, Dashboard · Manage · Sessions (one row per server with open sessions; the page's
 //  toolbar switches between its Terminal, Files and Monitor), with Settings
 //  pinned to the bottom-left corner. Drawn to the measurements of an AppKit
 //  source list, which UIKit's sidebar list does not share.
@@ -53,6 +53,7 @@ struct SidebarView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 place(.home, "Home", systemImage: "house")
+                place(.dashboard, "Dashboard", systemImage: "square.grid.2x2")
 
                 SidebarHeader("Manage")
                 place(.servers, "Servers", systemImage: "server.rack", badge: store.machineGroup.count)

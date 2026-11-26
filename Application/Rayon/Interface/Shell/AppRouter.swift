@@ -13,6 +13,8 @@ import SwiftUI
 
 enum Route: Hashable {
     case home
+    /// Every saved server as a tile.
+    case dashboard
     case servers
     case identities
     case snippets
@@ -50,7 +52,7 @@ final class AppRouter: ObservableObject {
     /// The last page that is not a session; closing a session returns here.
     private(set) var lastPlace: Route = .home
     @Published var columnVisibility: NavigationSplitViewVisibility = .all
-    /// Presents the server editor for a new server from anywhere (menu, Home, Servers).
+    /// Presents the server editor for a new server from anywhere (menu, Dashboard, Servers).
     @Published var presentNewServer = false
     /// Settings category to show when Settings opens.
     /// Settings follows this itself, so a change of category does not go

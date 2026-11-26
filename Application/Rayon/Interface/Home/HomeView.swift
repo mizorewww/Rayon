@@ -2,9 +2,9 @@
 //  HomeView.swift
 //  Rayon (macOS)
 //
-//  Start page: Quick Connect (the typed command parsed into user, host and port),
-//  Recent, then the Servers grid. Every tile is the same size and names its
-//  actions: Connect, Files, Monitor.
+//  Start page, laid out as the first Rayon had it: the app icon, Quick Connect
+//  (the typed command read back as user, host and port) and the version, over
+//  a soft glow with drifting dots. The server tiles are on Dashboard.
 //
 
 import MachineStatusView
@@ -15,63 +15,37 @@ struct HomeView: View {
     @EnvironmentObject var store: RayonStore
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: RX.Space.s6) {
-                QuickConnectHero()
-                    .padding(.top, 72)
-                    .padding(.bottom, RX.Space.s6)
-                serversSection
+        GeometryReader { proxy in
+            ScrollView {
+                VStack(spacing: 0) {
+                    Spacer(minLength: RX.Space.s6)
+                    QuickConnectHero()
+                    Spacer(minLength: RX.Space.s6)
+                    Text(RXAppVersion.text)
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.rxInkTertiary)
+                        .textSelection(.enabled)
+                }
+                .padding(RX.Space.s6)
+                .frame(maxWidth: .infinity, minHeight: proxy.size.height)
             }
-            .padding(.horizontal, RX.Space.s6)
-            .padding(.bottom, RX.Space.s6)
-            .frame(maxWidth: .infinity)
-            .animation(.easeInOut(duration: 0.25), value: store.machineGroup.machines.map(\.id))
+        }
+        .background {
+            if !store.reducedViewEffects {
+                RXStarfield().ignoresSafeArea()
+            }
         }
         .pageChrome()
-        // No toolbar "+": the grid ends in the New Server tile (and the empty
-        // state offers it), so a second button would do the same thing.
-    }
-
-    @ViewBuilder var serversSection: some View {
-        if store.machineGroup.machines.isEmpty {
-            EmptyStateView(
-                "Save a server to reach it in one click",
-                systemImage: "server.rack",
-                message: "Saved servers keep their address, port and identity, and open a terminal, files or a monitor.",
-                actionTitle: "New Server"
-            ) {
-                AppRouter.shared.presentNewServer = true
-            }
-            .frame(maxWidth: 640)
-            .rxCard()
-        } else {
-            VStack(alignment: .leading, spacing: RX.Space.s3) {
-                // Every server is in the grid; the sidebar's Servers has the
-                // count and the table.
-                SectionTitle("Servers")
-                LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 310), spacing: RX.Space.s4)],
-                    spacing: RX.Space.s4
-                ) {
-                    ForEach(Array(store.machineGroup.machines.enumerated()), id: \.element.id) { index, machine in
-                        ServerTile(machine: machine.id)
-                            .rxRise(index)
-                            .transition(.scale(scale: 0.96).combined(with: .opacity))
-                    }
-                    NewServerTile()
-                }
-            }
-        }
     }
 }
 
 // MARK: - Quick Connect
 
-/// The big, fast way in: type `user@host` and press Return. Focused on open.
-/// What was typed is read back as separate User, Host and Port tokens, so it is
-/// clear what Return will connect to before pressing it. A saved server's
-/// name, alone or after "ssh ", connects to that server, the way
-/// `ssh myserver` reads a Host from ~/.ssh/config.
+/// The fast way in: type `user@host` or an ssh command and press Return.
+/// Focused on open. What was typed is read back as separate User, Host and
+/// Port tokens, so it is clear what Return will connect to before pressing
+/// it. A saved server's name, alone or after "ssh ", connects to that server,
+/// the way `ssh myserver` reads a Host from ~/.ssh/config.
 struct QuickConnectHero: View {
     @EnvironmentObject var store: RayonStore
     @State private var command = ""
@@ -91,49 +65,79 @@ struct QuickConnectHero: View {
         let parsed = parsed
         let savedServer = savedServer
         let canConnect = parsed != nil || savedServer != nil
-        VStack(spacing: RX.Space.s4) {
-            HStack(spacing: RX.Space.s3) {
-                Image(systemName: "terminal")
-                    .font(.system(size: 22, weight: .regular))
-                    .foregroundStyle(.rxInkSecondary)
-                    .accessibilityHidden(true)
-                TextField("user@host:22", text: $command)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: 22, weight: .regular, design: .monospaced))
-                    .disableAutocorrection(true)
-                    .focused($focused)
-                    .onSubmit(connect)
-                    .onChange(of: command) { newValue in
-                        if newValue.hasPrefix("ssh ssh ") { command.removeFirst("ssh ".count) }
-                        refreshSuggestion()
+        VStack(spacing: RX.Space.s3) {
+            RXAppIcon(size: 128)
+                .padding(.bottom, RX.Space.s1)
+
+            Text("Quick Connect")
+                .font(.system(.headline, design: .rounded))
+                .foregroundStyle(.rxInk)
+
+            VStack(alignment: .leading, spacing: RX.Space.s2) {
+                HStack(spacing: RX.Space.s2) {
+                    TextField("ssh root@www.example.com -p 22 ↵", text: $command)
+                        .textFieldStyle(.plain)
+                        .font(.system(.headline, design: .rounded))
+                        .disableAutocorrection(true)
+                        .focused($focused)
+                        .onSubmit(connect)
+                        .onChange(of: command) { newValue in
+                            if newValue.hasPrefix("ssh ssh ") { command.removeFirst("ssh ".count) }
+                            refreshSuggestion()
+                        }
+                        .accessibilityLabel("Quick Connect")
+                        .padding(.horizontal, 10)
+                        .frame(height: 34)
+                        .background(
+                            RoundedRectangle(cornerRadius: RX.Radius.lg, style: .continuous)
+                                .fill(Color.primary.opacity(0.06))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: RX.Radius.lg, style: .continuous)
+                                        .strokeBorder(focused ? Color.rxAccent.opacity(0.6) : Color.rxHairline, lineWidth: focused ? 1.5 : 0.5)
+                                )
+                        )
+                        .animation(.easeOut(duration: 0.2), value: focused)
+                    Button(action: connect) {
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 14, weight: .semibold, design: .rounded))
+                            .foregroundStyle(canConnect ? Color.white : Color.rxInkTertiary)
+                            .frame(width: 32, height: 32)
+                            .background(Circle().fill(canConnect ? Color.rxAccent : Color.primary.opacity(0.08)))
                     }
-                    .accessibilityLabel("Quick Connect")
-                Button(action: connect) {
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(canConnect ? Color.white : Color.rxInkTertiary)
-                        .frame(width: 40, height: 40)
-                        .background(Circle().fill(canConnect ? Color.rxAccent : Color.primary.opacity(0.08)))
+                    .buttonStyle(.plain)
+                    .disabled(!canConnect)
+                    .scaleEffect(canConnect ? 1 : 0.94)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: canConnect)
+                    .help("Connect (↩)")
+                    .accessibilityLabel("Connect")
                 }
-                .buttonStyle(.plain)
-                .disabled(!canConnect)
-                .scaleEffect(canConnect ? 1 : 0.94)
-                .animation(.spring(response: 0.3, dampingFraction: 0.7), value: canConnect)
-                .help("Connect (↩)")
-                .accessibilityLabel("Connect")
+
+                if let suggestion {
+                    Button {
+                        command = suggestion
+                        connect()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Text("Did you mean “\(suggestion)”?")
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                            KeyHint("⌘↩")
+                        }
+                        .font(.system(.footnote, design: .rounded))
+                        .foregroundStyle(.rxInkSecondary)
+                        .padding(.leading, 8)
+                        .padding(.trailing, 4)
+                        .frame(height: 24)
+                        .background(RoundedRectangle(cornerRadius: RX.Radius.md, style: .continuous).fill(Color.primary.opacity(0.06)))
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .keyboardShortcut(.return, modifiers: .command)
+                    .help("Connect with this recent command")
+                    .transition(.offset(y: -6).combined(with: .opacity))
+                }
             }
-            .padding(.leading, RX.Space.s5)
-            .padding(.trailing, RX.Space.s2)
-            .frame(height: 64)
-            .background(
-                Capsule()
-                    .fill(Color.rxSurface)
-                    .overlay(Capsule().strokeBorder(focused ? Color.clear : Color.rxHairline, lineWidth: 0.5))
-                    .overlay(Capsule().strokeBorder(Color.rxAccent.opacity(focused ? 0.5 : 0), lineWidth: 1.5))
-                    .shadow(color: .black.opacity(focused ? 0.12 : 0.06), radius: focused ? 14 : 10, y: 4)
-            )
-            .animation(.easeOut(duration: 0.2), value: focused)
-            .frame(maxWidth: 640)
+            .frame(maxWidth: 440)
 
             Group {
                 if let parsed {
@@ -151,6 +155,27 @@ struct QuickConnectHero: View {
             }
             .animation(.easeOut(duration: 0.2), value: parsed)
             .animation(.easeOut(duration: 0.2), value: savedServer?.id)
+
+            Toggle("Record Command", isOn: $store.saveTemporarySession)
+                .toggleStyle(.checkbox)
+                .font(.system(.body, design: .rounded))
+                .disabled(!store.storeRecent)
+                .help(store.storeRecent
+                    ? "Keep the commands typed here under Recent"
+                    : "Turn on “Remember recent servers” in Settings to keep commands")
+
+            if store.identityGroupForAutoAuth.isEmpty {
+                HStack(spacing: RX.Space.s2) {
+                    Image(systemName: "exclamationmark.triangle")
+                    Text("Quick Connect signs in with identities set to “Authenticate automatically”. You have none yet.")
+                    Button("Open Identities") { AppRouter.shared.route = .identities }
+                        .rxLinkButton()
+                }
+                .font(.rxHelp)
+                .foregroundStyle(.rxWarning)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 560)
+            }
 
             Button {
                 AppRouter.shared.openLocalTerminal()
@@ -170,48 +195,21 @@ struct QuickConnectHero: View {
             }
             .buttonStyle(.plain)
             .help("Open a local shell on this Mac (⌥⌘T)")
-
-            if let suggestion {
-                Button {
-                    command = suggestion
-                    connect()
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "arrow.turn.down.right")
-                        Text(suggestion).font(.system(size: 13, design: .monospaced))
-                        KeyHint("⌘↩")
-                    }
-                    .foregroundStyle(.rxInkSecondary)
-                }
-                .buttonStyle(.plain)
-                .keyboardShortcut(.return, modifiers: .command)
-                .help("Connect with this recent command")
-                .transition(.opacity)
-            }
-
-            if store.identityGroupForAutoAuth.isEmpty {
-                HStack(spacing: RX.Space.s2) {
-                    Image(systemName: "exclamationmark.triangle")
-                    Text("Quick Connect signs in with identities set to “Authenticate automatically”. You have none yet.")
-                    Button("Open Identities") { AppRouter.shared.route = .identities }
-                        .rxLinkButton()
-                }
-                .font(.rxHelp)
-                .foregroundStyle(.rxWarning)
-            }
+            .padding(.top, RX.Space.s2)
 
             if store.storeRecent, store.recentRecord.contains(where: \.isCommand) {
                 VStack(spacing: RX.Space.s2) {
                     CapsLabel("Recent")
                     RXFlowLayout(spacing: RX.Space.s2, alignment: .center) {
-                        // Saved servers are in the grid below; Recent keeps the
+                        // Saved servers are on Dashboard; Recent keeps the
                         // Quick Connect commands, which have nowhere else.
                         ForEach(store.recentRecord.filter(\.isCommand)) { record in
                             RecentChip(record: record)
                         }
                     }
                 }
-                .frame(maxWidth: 640)
+                .frame(maxWidth: 560)
+                .padding(.top, RX.Space.s2)
             }
         }
         .frame(maxWidth: .infinity)
@@ -358,221 +356,6 @@ struct RecentChip: View {
         case let .command(command): AppRouter.shared.openTerminal(command: command)
         case let .machine(machine): AppRouter.shared.openTerminal(machine: machine)
         }
-    }
-}
-
-// MARK: - Tiles
-
-/// Every tile in the grid, the New Server tile included, has this height, so rows
-/// line up whether or not a server is being monitored.
-private let serverTileHeight: CGFloat = 168
-
-/// A server at a glance: name, address, state, CPU and memory while monitored,
-/// and its actions by name. Clicking the tile connects; right-click for more.
-struct ServerTile: View {
-    let machine: RDMachine.ID
-    @EnvironmentObject var store: RayonStore
-    // Observed so the dot follows a terminal opening or closing, the same
-    // subscription SessionTabs makes.
-    @ObservedObject var terminals = TerminalManager.shared
-    /// For a UU device's online state.
-    @ObservedObject private var account = UURemoteAccountStore.shared
-    @State private var hovered = false
-
-    var body: some View {
-        let read = store.machineGroup[machine]
-        ServerLiveReader(machine: machine) { state in
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .top, spacing: RX.Space.s2) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        RedactableText(read.name, redacted: store.machineRedacted == .all)
-                            .font(.rxBodyStrong)
-                            .foregroundStyle(.rxInk)
-                            .lineLimit(1)
-                        if read.isUURemoteDevice {
-                            // Its address would be the device id.
-                            Text(uuStatus(read))
-                                .font(.rxBody)
-                                .foregroundStyle(.rxInkSecondary)
-                                .lineLimit(1)
-                        } else {
-                            RedactableText(read.remoteAddress, redacted: store.machineRedacted != .none)
-                                .font(.rxCode)
-                                .foregroundStyle(.rxInkSecondary)
-                                .lineLimit(1)
-                        }
-                    }
-                    Spacer(minLength: RX.Space.s2)
-                    if connected {
-                        StatusDot(.success, size: .small)
-                            .padding(.top, 6)
-                            .help("A terminal is open")
-                            .transition(.scale.combined(with: .opacity))
-                    }
-                }
-                Spacer(minLength: RX.Space.s2)
-                Group {
-                    if let cpu = state.cpu, let memory = state.memory {
-                        VStack(spacing: 6) {
-                            tileBar("CPU", percent: cpu, color: .rxAccent)
-                            tileBar("Memory", percent: memory, color: .rxSeries2)
-                        }
-                        .transition(.opacity)
-                    } else {
-                        VStack(spacing: 6) {
-                            infoRow("Last used", RXFormat.relative(read.lastConnection))
-                            infoRow("Identity", identityName(read))
-                        }
-                        .transition(.opacity)
-                    }
-                }
-                .animation(.easeOut(duration: 0.25), value: state.cpu == nil)
-                Spacer(minLength: RX.Space.s3)
-                actions
-            }
-            .frame(height: serverTileHeight - RX.Space.s4 * 2)
-        }
-        .rxCard()
-        .overlay(
-            RoundedRectangle(cornerRadius: RX.Radius.card, style: .continuous)
-                .strokeBorder(Color.rxAccent.opacity(hovered ? 0.35 : 0), lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(hovered ? 0.12 : 0), radius: 16, y: 8)
-        .scaleEffect(hovered ? 1.01 : 1)
-        .animation(.spring(response: 0.25, dampingFraction: 0.8), value: hovered)
-        .contentShape(RoundedRectangle(cornerRadius: RX.Radius.card, style: .continuous))
-        .onHover { hovered = $0 }
-        .onTapGesture { if !offline { connect() } }
-        .contextMenu { ServerContextMenu(machine: machine) }
-        .accessibilityElement(children: .contain)
-        .accessibilityAddTraits(.isButton)
-    }
-
-    var connected: Bool {
-        terminals.sessionContexts.contains { $0.remoteType == .machine && $0.machine.id == machine && !$0.closed }
-    }
-
-    var actions: some View {
-        HStack(spacing: RX.Space.s1) {
-            // Named like the page switcher: Terminal, Files, Monitor.
-            Button(action: connect) {
-                Label(ServerTool.terminal.title, systemImage: ServerTool.terminal.systemImage)
-            }
-            .buttonStyle(.rx(.primary, size: .small))
-            .help(offline ? "The device is offline in UU Remote" : ServerTool.terminal.help(for: store.machineGroup[machine]))
-            .disabled(offline)
-            // What the server can show (a UU device: its desktop); past two,
-            // as icons, so none is cut short.
-            let others = ServerTool.available(for: store.machineGroup[machine]).filter { $0 != .terminal && $0 != .editor }
-            ForEach(others) { tool in
-                toolButton(tool, iconOnly: others.count > 2)
-            }
-            Spacer(minLength: 0)
-            RXMenuButton("More", systemImage: "ellipsis", kind: .plain, size: .small, iconOnly: true) {
-                ServerContextMenu(machine: machine, includesTools: false)
-            }
-        }
-    }
-
-    func toolButton(_ tool: ServerTool, iconOnly: Bool = false) -> some View {
-        Button {
-            tool.show(machine)
-        } label: {
-            Label(tool.title, systemImage: tool.systemImage)
-        }
-        .buttonStyle(.rx(size: .small, iconOnly: iconOnly))
-        .help(offline ? "The device is offline in UU Remote" : tool.help(for: store.machineGroup[machine]))
-        .disabled(offline)
-    }
-
-    /// A UU device the account lists as offline: nothing on it can open.
-    var offline: Bool {
-        let read = store.machineGroup[machine]
-        guard read.isUURemoteDevice else { return false }
-        return account.devices.first { $0.deviceID == read.uuDeviceID }?.isOnline == false
-    }
-
-    /// "UU Remote · Online", from the account's last refresh.
-    func uuStatus(_ machine: RDMachine) -> String {
-        guard let device = account.devices.first(where: { $0.deviceID == machine.uuDeviceID }) else {
-            return "UU Remote"
-        }
-        return device.isOnline ? "UU Remote · Online" : "UU Remote · Offline"
-    }
-
-    /// Shows the server's terminal, opening one if none is open.
-    func connect() {
-        ServerTool.terminal.show(machine)
-    }
-
-    func identityName(_ machine: RDMachine) -> String {
-        guard let aid = machine.associatedIdentity, let uid = UUID(uuidString: aid) else {
-            // The server's own user name, tried with each automatic identity.
-            return machine.sshUsernameOverride.map { "\($0) · Automatic" } ?? "Automatic"
-        }
-        let identity = store.identityGroup[uid]
-        return identity.username.isEmpty ? "Missing" : machine.sshLoginUsername(identity: identity)
-    }
-
-    func infoRow(_ title: String, _ value: String) -> some View {
-        HStack {
-            CapsLabel(title)
-            Spacer()
-            Text(value)
-                .font(.system(size: 12))
-                .foregroundStyle(.rxInkSecondary)
-                .lineLimit(1)
-        }
-        .frame(height: 16)
-    }
-
-    func tileBar(_ title: String, percent: Double, color: Color) -> some View {
-        HStack(spacing: RX.Space.s2) {
-            CapsLabel(title)
-                .frame(width: 56, alignment: .leading)
-            UsageBar(fraction: percent / 100, color: color)
-            Text("\(RXFormat.percent(percent))%")
-                .font(.system(size: 12, weight: .semibold).monospacedDigit())
-                .contentTransition(.numericText())
-                .frame(width: 36, alignment: .trailing)
-        }
-        .frame(height: 16)
-    }
-}
-
-/// The dashed tile that ends the server grid, the same size as a server tile.
-struct NewServerTile: View {
-    @State private var hovered = false
-
-    var body: some View {
-        Button {
-            AppRouter.shared.presentNewServer = true
-        } label: {
-            VStack(spacing: RX.Space.s2) {
-                Image(systemName: "plus")
-                    .font(.system(size: 18, weight: .medium))
-                    .scaleEffect(hovered ? 1.15 : 1)
-                Text("New Server")
-                    .font(.rxBody)
-            }
-            .foregroundStyle(hovered ? Color.rxAccent : Color.rxInkSecondary)
-            .frame(maxWidth: .infinity)
-            .frame(height: serverTileHeight)
-            .background(
-                RoundedRectangle(cornerRadius: RX.Radius.card, style: .continuous)
-                    .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [5, 4]))
-                    .foregroundStyle(hovered ? Color.rxAccent : Color.rxControlBorder)
-            )
-            .background(
-                RoundedRectangle(cornerRadius: RX.Radius.card, style: .continuous)
-                    .fill(Color.rxAccent.opacity(hovered ? 0.06 : 0))
-            )
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .onHover { hovered = $0 }
-        .animation(.spring(response: 0.25, dampingFraction: 0.7), value: hovered)
-        .help("Add a server")
     }
 }
 

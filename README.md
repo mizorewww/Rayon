@@ -16,7 +16,7 @@ monitor, side by side for every server.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="./Resources/Screenshots/home-dark.jpg">
-  <img alt="Rayon's Home page: Quick Connect at the top and a grid of saved servers, each with Connect, Files and Monitor buttons." src="./Resources/Screenshots/home-light.jpg">
+  <img alt="Rayon with Quick Connect above a grid of saved servers, each with Connect, Files and Monitor buttons." src="./Resources/Screenshots/home-light.jpg">
 </picture>
 
 ## Install
@@ -77,10 +77,11 @@ download the disk image from [Releases](https://github.com/mizorewww/Rayon/relea
 
 ## Using Rayon
 
-1. **Add a server**: **New Server** on Home (⇧⌘N).
-2. **Connect**: click a server's tile. **Files** opens SFTP and **Monitor** opens live
+1. **Add a server**: **New Server** on Dashboard (⇧⌘N).
+2. **Connect**: click a server's tile on Dashboard. **Files** opens SFTP and **Monitor** opens live
    usage; the toolbar switcher moves between the three.
-3. **Quick Connect**: type `user@host`, `user@host:2222` or a full `ssh` command on Home.
+3. **Quick Connect**: type `user@host`, `user@host:2222`, a saved server's name or a full
+   `ssh` command on Home.
 4. **Settings** (⌘,) cover the app and the terminal. Ghostty coverage is described in
    [CONFIGURATION.md](Foundation/RayonTerminal/CONFIGURATION.md).
 
