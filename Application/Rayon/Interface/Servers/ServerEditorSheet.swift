@@ -74,6 +74,12 @@ struct ServerEditorSheet: View {
             }
             .frame(maxHeight: 420)
             .fixedSize(horizontal: false, vertical: true)
+            // Next to the buttons, not at the end of the scrolled fields,
+            // where a failed Add and Connect would go unseen.
+            if let error {
+                HelpText(error, isError: true)
+                    .padding(.top, RX.Space.s3)
+            }
         } footer: {
             Button("Cancel", action: finish)
                 .buttonStyle(.rx)
@@ -211,9 +217,6 @@ struct ServerEditorSheet: View {
                 RXField("Last banner") {
                     RXValueField(banner, placeholder: "None", monospaced: true)
                 }
-            }
-            if let error {
-                HelpText(error, isError: true)
             }
         }
     }
