@@ -55,18 +55,8 @@ public extension UURemoteAccount {
         store.deleteMachines(changes.delete)
     }
 
-    /// The account's folder the first time: a "UU Remote" folder not linked
-    /// to an account becomes it, so its servers are not left beside an
-    /// empty one.
     @MainActor private func adoptOrCreateFolder(store: RayonStore) -> RDFolder {
-        let source = RDFolder.Source.uuRemote(userID: userID)
-        let name = "UU Remote"
-        if var existing = store.folder(named: name), !existing.isLinked {
-            existing.source = source
-            store.save(existing)
-            return existing
-        }
-        return store.createFolder(named: name, source: source)
+        UURemoteFolderSync.makeFolder(userID: userID, store: store)
     }
 
     /// A server for a device, in the account's folder.

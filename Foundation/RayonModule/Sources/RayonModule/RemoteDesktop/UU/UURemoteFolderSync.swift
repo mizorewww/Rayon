@@ -20,6 +20,26 @@ public enum UURemoteFolderSync {
         UUID(derivedFrom: "me.mizorewww.rayon.uu-device.\(deviceID)")
     }
 
+    /// The account's folder the first time, under an id worked out from the
+    /// account, so every device signed in to it makes the same folder and
+    /// sync keeps one. A "UU Remote" folder not linked to an account gives
+    /// it its servers, so they are not left beside an empty one.
+    @MainActor static func makeFolder(userID: String, store: RayonStore) -> RDFolder {
+        let name = "UU Remote"
+        let adopted = store.folder(named: name).flatMap { $0.isLinked ? nil : $0 }
+        let folder = RDFolder(
+            id: RDFolder.id(uuUserID: userID),
+            name: adopted == nil ? store.availableFolderName(name) : name,
+            source: .uuRemote(userID: userID)
+        )
+        store.save(folder)
+        if let adopted {
+            store.moveServers(store.machines(inFolder: adopted.id).map(\.id), toFolder: folder.id)
+            store.deleteFolder(adopted.id)
+        }
+        return store.folder(folder.id) ?? folder
+    }
+
     /// A server for a device, in `folder`.
     public static func makeMachine(for device: UUDeviceInfo, folder: RDFolder.ID?) -> RDMachine {
         var machine = RDMachine(

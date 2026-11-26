@@ -90,4 +90,24 @@ final class UURemoteFolderSyncTests: XCTestCase {
         XCTAssertEqual(mac.map(\.id), pad.map(\.id))
         XCTAssertEqual(mac.first?.id, UURemoteFolderSync.machineID(for: "d1"))
     }
+
+    /// Every device signed in to the account makes the same folder, taking
+    /// over the servers of an unlinked "UU Remote" folder.
+    @MainActor
+    func testTheAccountsFolderIsTheSameOnEveryDevice() throws {
+        let test = try TestStorage()
+        let store = test.store()
+        let old = store.createFolder(named: "UU Remote")
+        let server = RDMachine(remoteAddress: "a", remotePort: "22", name: "a", folderId: old.id)
+        store.save(server)
+
+        let folder = UURemoteFolderSync.makeFolder(userID: "42", store: store)
+        XCTAssertEqual(folder.id, RDFolder.id(uuUserID: "42"))
+        XCTAssertEqual(folder.source, .uuRemote(userID: "42"))
+        XCTAssertEqual(store.folders.map(\.id), [folder.id])
+        XCTAssertEqual(store.machine(server.id)?.folderId, folder.id)
+
+        let other = try TestStorage()
+        XCTAssertEqual(UURemoteFolderSync.makeFolder(userID: "42", store: other.store()).id, folder.id)
+    }
 }
