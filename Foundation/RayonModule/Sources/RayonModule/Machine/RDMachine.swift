@@ -242,6 +242,28 @@ public extension RDMachine {
         }
     }
 
+    /// The servers with every proxy-jump loop among them cut where it closes:
+    /// the server whose jump closes it is reached directly.
+    static func breakingProxyJumpLoops(_ machines: [RDMachine]) -> [RDMachine] {
+        var byID = Dictionary(machines.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        for machine in machines {
+            guard let current = byID[machine.id],
+                  (try? current.proxyJumpChain(lookup: { byID[$0] })) == nil
+            else { continue }
+            // Walk the loop to the server whose jump leads back.
+            var seen: Set<RDMachine.ID> = [current.id]
+            var hop = current
+            while let next = hop.proxyJumpMachineID.flatMap({ byID[$0] }), !seen.contains(next.id) {
+                seen.insert(next.id)
+                hop = next
+            }
+            hop.transport = .direct
+            hop.proxyJumpMachineID = nil
+            byID[hop.id] = hop
+        }
+        return machines.map { byID[$0.id] ?? $0 }
+    }
+
     /// The servers a connection goes through, the first hop first; empty when
     /// the server is reached directly. Throws when the chain loops, which
     /// would otherwise never end.

@@ -214,4 +214,52 @@ final class StorageTests: XCTestCase {
         XCTAssertFalse(store.save(RDPortForward(forwardOrientation: .listenLocal, bindPort: 80)))
         XCTAssertTrue(store.portForwards.isEmpty)
     }
+
+    /// The jump servers offered are those that do not lead back; a server
+    /// whose jumps loop already (from another device, or a backup) still
+    /// saves what it records of its connections.
+    @MainActor
+    func testJumpServersThatWouldLoopAreNotOffered() throws {
+        let store = test.store()
+        let a = RDMachine(remoteAddress: "a", remotePort: "22", name: "a")
+        var b = RDMachine(remoteAddress: "b", remotePort: "22", name: "b")
+        b.transport = .proxyJump
+        b.proxyJumpMachineID = a.id
+        XCTAssertTrue(store.save(a))
+        XCTAssertTrue(store.save(b))
+        XCTAssertEqual(store.jumpServerCandidates(for: a.id).map(\.name), [], "b jumps through a")
+        XCTAssertEqual(store.jumpServerCandidates(for: b.id).map(\.name), ["a"])
+        XCTAssertEqual(Set(store.jumpServerCandidates(for: nil).map(\.name)), ["a", "b"])
+
+        var looping = a
+        looping.transport = .proxyJump
+        looping.proxyJumpMachineID = b.id
+        XCTAssertFalse(store.save(looping))
+        XCTAssertNotNil(store.problem(saving: looping))
+
+        // The loop arrives from elsewhere.
+        try storage.save(looping)
+        store.reload()
+        var used = try XCTUnwrap(store.machine(a.id))
+        used.lastBanner = "hello"
+        XCTAssertTrue(store.save(used))
+        XCTAssertEqual(store.machine(a.id)?.lastBanner, "hello")
+    }
+
+    func testLoopsAreCutWhereTheyClose() {
+        var a = RDMachine(remoteAddress: "a", remotePort: "22", name: "a")
+        var b = RDMachine(remoteAddress: "b", remotePort: "22", name: "b")
+        var c = RDMachine(remoteAddress: "c", remotePort: "22", name: "c")
+        a.transport = .proxyJump
+        a.proxyJumpMachineID = b.id
+        b.transport = .proxyJump
+        b.proxyJumpMachineID = a.id
+        c.transport = .proxyJump
+        c.proxyJumpMachineID = a.id
+        let fixed = RDMachine.breakingProxyJumpLoops([a, b, c])
+        for machine in fixed {
+            XCTAssertNoThrow(try machine.proxyJumpChain { id in fixed.first { $0.id == id } })
+        }
+        XCTAssertEqual(fixed.filter { $0.transport == .proxyJump }.count, 2, "one link is cut")
+    }
 }

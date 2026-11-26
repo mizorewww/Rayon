@@ -149,7 +149,9 @@ enum LegacyStoreImport {
             }
             try folders.forEach(insert)
             try identities.map(\.identity).forEach(insert)
-            try machines.map { $0.machine(folderId: folderIDs[$0.group]) }.forEach(insert)
+            // An old store could hold jumps that loop; such a server could
+            // never be saved again.
+            try RDMachine.breakingProxyJumpLoops(machines.map { $0.machine(folderId: folderIDs[$0.group]) }).forEach(insert)
             try snippets.map(\.snippet).forEach(insert)
             try forwards.map(\.forward).forEach(insert)
             let handle = inserter.handle

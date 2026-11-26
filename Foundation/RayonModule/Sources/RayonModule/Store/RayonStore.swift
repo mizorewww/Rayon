@@ -254,14 +254,34 @@ public extension RayonStore {
         }
     }
 
-    /// Saves the server; a server whose proxy jumps would loop is refused.
+    /// Saves the server; a change of its proxy jump that would make the
+    /// jumps loop is refused (`problem(saving:)` says why). A server whose
+    /// jumps loop already, as another device or a backup made them, is
+    /// still saved when its jump does not change, so what it records of its
+    /// connections is kept.
     @discardableResult
     func save(_ machine: RDMachine) -> Bool {
         if let problem = problem(saving: machine) {
-            Self.logger.error("refusing to save \(machine.id): \(problem.localizedDescription)")
-            return false
+            let existing = self.machine(machine.id)
+            if existing?.transport != machine.transport || existing?.proxyJumpMachineID != machine.proxyJumpMachineID {
+                Self.logger.error("refusing to save \(machine.id): \(problem.localizedDescription)")
+                return false
+            }
         }
         return persist(machine, into: \.machines)
+    }
+
+    /// The servers the server `id` (nil: a new one) can jump through:
+    /// not itself, not a UU Remote device, and none whose own jumps lead
+    /// back to it.
+    func jumpServerCandidates(for id: RDMachine.ID?) -> [RDMachine] {
+        var probe = id.flatMap(machine) ?? RDMachine(id: id ?? UUID())
+        probe.transport = .proxyJump
+        return machines.filter { candidate in
+            guard candidate.id != probe.id, !candidate.isUURemoteDevice else { return false }
+            probe.proxyJumpMachineID = candidate.id
+            return problem(saving: probe) == nil
+        }
     }
 
     @discardableResult

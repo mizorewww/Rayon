@@ -58,7 +58,7 @@ struct ServerEditorSheet: View {
     }
 
     var jumpServerCandidates: [RDMachine] {
-        store.machines.filter { $0.id != machine && !$0.isUURemoteDevice }
+        store.jumpServerCandidates(for: machine)
     }
 
     var existingGroups: [String] {
@@ -383,8 +383,9 @@ struct ServerEditorSheet: View {
         if let close { close() } else { dismiss() }
     }
 
+    /// Saves the server; nil, with `error` saying why, when it is refused.
     @discardableResult
-    func save(banner capturedBanner: String? = nil, identity resolvedIdentity: RDIdentity.ID? = nil) -> RDMachine {
+    func save(banner capturedBanner: String? = nil, identity resolvedIdentity: RDIdentity.ID? = nil) -> RDMachine? {
         // A new server has never been connected to; RXFormat shows the epoch as "Never".
         var target = machine.flatMap { store.machine($0) } ?? RDMachine(lastConnection: Date(timeIntervalSince1970: 0))
         let trimmedAddress = address.trimmingCharacters(in: .whitespaces)
@@ -400,12 +401,15 @@ struct ServerEditorSheet: View {
             target.lastBanner = capturedBanner
             target.lastConnection = Date()
         }
-        store.save(target)
+        guard store.save(target) else {
+            error = store.problem(saving: target)?.localizedDescription ?? "The server could not be saved."
+            return nil
+        }
         return target
     }
 
     func saveWithoutConnecting() {
-        save()
+        guard save() != nil else { return }
         finish()
     }
 
@@ -440,7 +444,7 @@ struct ServerEditorSheet: View {
     }
 
     func finishCreation(banner: String, identity: RDIdentity.ID) {
-        let created = save(banner: banner, identity: identity)
+        guard let created = save(banner: banner, identity: identity) else { return }
         finish()
         onMainThread(delay: 0.2) {
             AppRouter.shared.openTerminal(machine: created.id)

@@ -92,8 +92,7 @@ struct EditMachineView: View {
     }
 
     var jumpServerCandidates: [RDMachine] {
-        RayonStore.shared.machines
-            .filter { $0.id != inEditWith && !$0.isUURemoteDevice }
+        RayonStore.shared.jumpServerCandidates(for: inEditWith)
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
@@ -423,9 +422,17 @@ struct EditMachineView: View {
         return true
     }
 
+    /// Saves the server; false, with the reason shown, when it is refused.
+    func save(_ machine: RDMachine) -> Bool {
+        guard RayonStore.shared.save(machine) else {
+            UIBridge.presentAlert(with: RayonStore.shared.problem(saving: machine)?.localizedDescription ?? "The server could not be saved.")
+            return false
+        }
+        return true
+    }
+
     func completeSheet() {
-        guard validate() else { return }
-        RayonStore.shared.save(makeMachine())
+        guard validate(), save(makeMachine()) else { return }
         dismiss()
     }
 
@@ -451,7 +458,7 @@ struct EditMachineView: View {
                 created.associatedIdentity = identity
                 created.lastBanner = banner
                 created.lastConnection = Date()
-                RayonStore.shared.save(created)
+                guard save(created) else { return }
                 dismiss()
                 // The terminal waits for this sheet to go.
                 try? await Task.sleep(for: .milliseconds(500))
