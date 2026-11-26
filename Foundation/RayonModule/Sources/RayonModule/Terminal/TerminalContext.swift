@@ -267,7 +267,8 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
 
         let result = shell.connectAndAuthenticate(
             identity: identity,
-            autoIdentities: RayonStore.shared.workerIdentitiesForAutoAuth
+            autoIdentities: RayonStore.shared.workerIdentitiesForAutoAuth,
+            username: machine.sshUsernameOverride
         ) { [self] hintText in
             putInformation(hintText)
         }

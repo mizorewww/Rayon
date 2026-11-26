@@ -24,6 +24,7 @@ struct EditMachineView: View {
     @State var group: String
     @State var comment: String
     @State var associatedIdentity: UUID?
+    @State var sshUsername: String
     @State var transport: RDMachine.Transport
     @State var proxyJumpMachineID: RDMachine.ID?
     @State var serviceTokenID: String
@@ -58,6 +59,7 @@ struct EditMachineView: View {
         _group = State(initialValue: read.group)
         _comment = State(initialValue: read.comment)
         _associatedIdentity = State(initialValue: read.associatedIdentity.flatMap(UUID.init(uuidString:)))
+        _sshUsername = State(initialValue: read.sshUsername)
         _transport = State(initialValue: read.transport)
         _proxyJumpMachineID = State(initialValue: read.proxyJumpMachineID.flatMap(UUID.init(uuidString:)))
         _serviceTokenID = State(initialValue: read.cloudflareServiceTokenID)
@@ -240,13 +242,16 @@ struct EditMachineView: View {
                             .tag(RDIdentity.ID?.some(item.id))
                     }
                 }
+                TextField(sshUsernamePlaceholder, text: $sshUsername)
+                    .disableAutocorrection(true)
+                    .textInputAutocapitalization(.never)
             } header: {
                 RXSectionHeader("Identity")
             } footer: {
                 if let aid = associatedIdentity {
-                    Text(RayonStore.shared.identityGroup[aid].shortDescription())
+                    Text(RayonStore.shared.identityGroup[aid].shortDescription() + "\nA user name here overrides the identity's for this server.")
                 } else {
-                    Text("Tries each identity that authenticates automatically.")
+                    Text("Tries each identity that authenticates automatically. A user name here overrides the identity's for this server.")
                 }
             }
 
@@ -364,6 +369,13 @@ struct EditMachineView: View {
         }
     }
 
+    /// The identity's user name, which applies while the field is empty.
+    var sshUsernamePlaceholder: String {
+        guard let associatedIdentity else { return "User Name (empty = identity user)" }
+        let username = RayonStore.shared.identityGroup[associatedIdentity].username
+        return username.isEmpty ? "User Name (empty = identity user)" : "User Name (empty = \(username))"
+    }
+
     /// The server as the form describes it, on top of what is saved, so
     /// fields this form does not show are kept.
     func makeMachine() -> RDMachine {
@@ -376,6 +388,7 @@ struct EditMachineView: View {
         target.group = group.trimmingCharacters(in: .whitespacesAndNewlines)
         target.comment = comment
         target.associatedIdentity = associatedIdentity?.uuidString
+        target.sshUsername = sshUsername.trimmingCharacters(in: .whitespaces)
         target.fileTransferLoginPath = fileTransferLoginPath.isEmpty ? "/" : fileTransferLoginPath
         target.transport = transport
         target.proxyJumpMachineID = transport == .proxyJump ? proxyJumpMachineID?.uuidString : nil

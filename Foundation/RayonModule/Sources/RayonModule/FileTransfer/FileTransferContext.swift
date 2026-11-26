@@ -145,7 +145,8 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
         debugPrint("\(self) \(#function) \(machine.id)")
         let result = shell.connectAndAuthenticate(
             identity: identity,
-            autoIdentities: RayonStore.shared.workerIdentitiesForAutoAuth
+            autoIdentities: RayonStore.shared.workerIdentitiesForAutoAuth,
+            username: machine.sshUsernameOverride
         ) { [self] hintText in
             putInformation(hintText)
         }

@@ -34,11 +34,12 @@ public extension RayonStore {
                 guard let associatedIdentity = machine.associatedIdentity else {
                     return ""
                 }
-                guard let username = RayonStore.shared.identityGroup.identities.filter({ identity in
+                guard let identity = RayonStore.shared.identityGroup.identities.first(where: { identity in
                     identity.id.uuidString == associatedIdentity
-                }).first?.username else {
+                }) else {
                     return ""
                 }
+                let username = machine.sshLoginUsername(identity: identity)
                 let proxy = machine.transport == .cloudflareAccess ? SSHCommandReader.cloudflareProxyOption + " " : ""
                 return "ssh \(proxy)\(username)@\(machine.remoteAddress) -p \(machine.remotePort)"
             }

@@ -40,7 +40,8 @@ public enum PublicKeyDeployment {
             let shell = NSRemoteShell.configured(for: machine, timeout: RayonStore.shared.workerTimeoutNumber)
             let auth = shell.connectAndAuthenticate(
                 identity: RayonStore.shared.workerAssociatedIdentity(for: machine),
-                autoIdentities: RayonStore.shared.workerIdentitiesForAutoAuth
+                autoIdentities: RayonStore.shared.workerIdentitiesForAutoAuth,
+                username: machine.sshUsernameOverride
             )
             guard auth == .success else {
                 outcome.failed.append(machine.name)

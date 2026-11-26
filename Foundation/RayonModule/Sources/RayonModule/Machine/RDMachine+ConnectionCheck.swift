@@ -35,13 +35,13 @@ public enum ServerConnectionCheck {
         }
         var authenticatedWith: RDIdentity.ID?
         if let chosen {
-            chosen.callAuthenticationWith(remote: shell)
+            chosen.callAuthenticationWith(remote: shell, username: draft.sshUsernameOverride)
             if shell.isAuthenticated { authenticatedWith = chosen.id }
         } else {
             for candidate in candidates {
                 if shell.isAuthenticated { break }
                 if !shell.isConnected { shell.requestConnectAndWait() }
-                candidate.callAuthenticationWith(remote: shell)
+                candidate.callAuthenticationWith(remote: shell, username: draft.sshUsernameOverride)
                 if shell.isAuthenticated { authenticatedWith = candidate.id }
             }
         }
