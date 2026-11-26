@@ -61,17 +61,19 @@ public extension RDMachine {
         }
         var reasons: [String] = []
         for candidate in candidates {
+            // The name sshd sees: the server's override wins over the identity's.
+            let username = candidate.loginUsername(override: sshUsernameOverride)
             let credentials: [SSHCredential]
             do {
                 credentials = try candidate.sshCredentials()
             } catch {
-                reasons.append("\(candidate.shortDescription()): \(error.localizedDescription)")
+                reasons.append("\(username) with \(candidate.signInDescription): \(error.localizedDescription)")
                 continue
             }
-            hint?("[i] trying to authenticate with \(candidate.shortDescription())")
+            hint?("[i] Signing in as \(username) with \(candidate.signInDescription)")
             do {
                 let connection = try await connect(
-                    username: candidate.loginUsername(override: sshUsernameOverride),
+                    username: username,
                     credentials: credentials,
                     timeout: timeout,
                     visited: visited
@@ -79,7 +81,7 @@ public extension RDMachine {
                 candidate.recordUse()
                 return (connection, candidate)
             } catch SSHError.authenticationFailed {
-                reasons.append("\(candidate.shortDescription()) was not accepted.")
+                reasons.append("\(username) with \(candidate.signInDescription) was not accepted.")
             }
         }
         throw SSHFailure(message: (["Could not sign in to \(name.isEmpty ? remoteAddress : name)."] + reasons).joined(separator: "\n"), unreachable: false)
@@ -218,6 +220,15 @@ extension RDIdentity {
             return [.password(password)]
         }
         throw SSHFailure(message: "The identity has neither a password nor a private key.", unreachable: false)
+    }
+
+    /// What the identity signs in with, for a status line: its key type
+    /// and, when it has them, its group and comment.
+    var signInDescription: String {
+        var text = getKeyType()
+        if !group.isEmpty { text += " from \(group)" }
+        if !comment.isEmpty { text += " (\(comment))" }
+        return text
     }
 
     /// Stamps the identity as used, at most once a minute.
