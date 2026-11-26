@@ -28,7 +28,7 @@ struct SettingView: View {
                 ConfigHostSettingsSection(id: "general.recent", keywords: "recent servers history quick connect commands record remember") {
                     RecentSettings()
                 },
-                ConfigHostSettingsSection(id: "general.sync", keywords: "icloud sync cloud servers identities snippets port forwards credentials devices") {
+                ConfigHostSettingsSection(id: "general.sync", keywords: "icloud sync cloud servers identities snippets port forwards terminal settings credentials devices") {
                     CloudSyncSettings()
                 },
                 ConfigHostSettingsSection(id: "general.data", keywords: "data container files log diagnostics backup export import restore ssh config openssh archive") {
@@ -341,6 +341,7 @@ private struct CloudSyncSettings: View {
                 SwitchRow("Identities", description: "Including passwords and private keys.", isOn: $sync.preferences.identities)
                 SwitchRow("Snippets", isOn: $sync.preferences.snippets)
                 SwitchRow("Port forwards", isOn: $sync.preferences.portForwards)
+                SwitchRow("Terminal settings", description: "Theme, colors, fonts and shortcuts. Font size and padding stay on each device.", isOn: $sync.preferences.terminalSettings)
             }
             .disabled(!sync.preferences.isOn)
         }
