@@ -26,15 +26,15 @@ enum VNCAppleAuth {
     }
 
     /// Reads generator(u16) keyLength(u16) prime(keyLength) publicKey(keyLength).
-    static func readParameters(over channel: VNCByteChannel) throws -> ServerParameters {
-        let header = try channel.read(exactly: 4)
+    static func readParameters(from reader: VNCReader) async throws -> ServerParameters {
+        let header = try await reader.read(exactly: 4)
         let generator = header.readU16BE(at: 0)
         let keyLength = Int(header.readU16BE(at: 2))
         guard keyLength > 0, keyLength <= 1024 else {
             throw RemoteDesktopFailure("The server sent an unusable Apple authentication key length (\(keyLength)).")
         }
-        let prime = Array(try channel.read(exactly: keyLength))
-        let publicKey = Array(try channel.read(exactly: keyLength))
+        let prime = Array(try await reader.read(exactly: keyLength))
+        let publicKey = Array(try await reader.read(exactly: keyLength))
         return ServerParameters(
             generator: [UInt8(generator >> 8), UInt8(generator & 0xFF)],
             prime: prime,

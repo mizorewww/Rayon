@@ -15,7 +15,7 @@ final class VNCRFBDriver: RemoteDesktopDriver, @unchecked Sendable {
     private weak var session: RemoteDesktopSession?
     private var client: VNCRFBClient?
     private var tunnel: VNCSSHTunnel?
-    private var worker: Thread?
+    private var worker: Task<Void, Never>?
     private let stateLock = NSLock()
     private var stopped = false
     /// Cursor + framebuffer state, touched by both the input calls (main
@@ -38,41 +38,51 @@ final class VNCRFBDriver: RemoteDesktopDriver, @unchecked Sendable {
     // MARK: - RemoteDesktopDriver
 
     func start(session: RemoteDesktopSession) {
-        stateLock.withLock { stopped = false }
-        let thread = Thread { [self] in
-            bootstrap()
+        let worker = Task { await bootstrap() }
+        stateLock.withLock {
+            stopped = false
+            self.worker = worker
         }
-        thread.name = "me.mizorewww.vnc-driver.\(machine.remoteAddress)"
-        thread.start()
-        worker = thread
     }
 
     func stop() {
-        stateLock.withLock { stopped = true }
+        let (worker, tunnel, client) = stateLock.withLock {
+            stopped = true
+            return (self.worker, self.tunnel, self.client)
+        }
+        worker?.cancel()
         tunnel?.stop()
         client?.stop()
+    }
+
+    private var currentClient: VNCRFBClient? {
+        stateLock.withLock { client }
     }
 
     private func isStopped() -> Bool {
         stateLock.withLock { stopped }
     }
 
-    private func bootstrap() {
-        var channel: VNCByteChannel?
+    private func bootstrap() async {
+        var transport: VNCTransport?
         if machine.vncOverSSH {
             reportPhase(.connecting("Opening the SSH tunnel"), hint: "Opening SSH tunnel…")
             let tunnel = VNCSSHTunnel(
                 machine: machine,
                 targetPort: UInt16(machine.vncPort) ?? 5900
             )
-            self.tunnel = tunnel
-            switch tunnel.start() {
+            stateLock.withLock { self.tunnel = tunnel }
+            // Opening the SSH session blocks; keep it off the cooperative pool.
+            let opened = await withCheckedContinuation { continuation in
+                DispatchQueue.global().async { continuation.resume(returning: tunnel.start()) }
+            }
+            switch opened {
             case let .failure(error):
                 reportPhase(.failed(error.message))
                 return
             case let .success(localPort):
                 do {
-                    channel = try VNCSocket.connect(host: "127.0.0.1", port: localPort, timeout: 10)
+                    transport = try await VNCConnection.connect(host: "127.0.0.1", port: localPort, timeout: 10)
                 } catch {
                     reportPhase(.failed("The SSH tunnel opened but the VNC port could not be dialed."))
                     return
@@ -90,11 +100,19 @@ final class VNCRFBDriver: RemoteDesktopDriver, @unchecked Sendable {
                 username: machine.resolvedVNCUsername(identity: identity),
                 shared: machine.vncShared,
                 timeout: max(TimeInterval(RayonStore.shared.workerTimeoutNumber.intValue), 10),
-                channel: channel
+                transport: transport
             ),
             delegate: self
         )
-        self.client = client
+        let proceed = stateLock.withLock { () -> Bool in
+            guard !stopped else { return false }
+            self.client = client
+            return true
+        }
+        guard proceed else {
+            transport?.close()
+            return
+        }
         client.start()
     }
 
@@ -105,30 +123,30 @@ final class VNCRFBDriver: RemoteDesktopDriver, @unchecked Sendable {
     // MARK: - Input
 
     func sendPointerMove(normalizedX: Double, normalizedY: Double) {
-        client?.pointerMoved(normalizedX: normalizedX, normalizedY: normalizedY)
+        currentClient?.pointerMoved(normalizedX: normalizedX, normalizedY: normalizedY)
         updateCursorPosition(normalizedX: normalizedX, normalizedY: normalizedY)
     }
 
     func sendPointerButton(_ button: MouseButton, isDown: Bool, normalizedX: Double, normalizedY: Double) {
         updateCursorPosition(normalizedX: normalizedX, normalizedY: normalizedY)
-        client?.pointerButton(button, isDown: isDown, normalizedX: normalizedX, normalizedY: normalizedY)
+        currentClient?.pointerButton(button, isDown: isDown, normalizedX: normalizedX, normalizedY: normalizedY)
     }
 
     func sendScroll(deltaX: Double, deltaY: Double, normalizedX: Double, normalizedY: Double) {
         updateCursorPosition(normalizedX: normalizedX, normalizedY: normalizedY)
-        client?.scrolled(deltaX: deltaX, deltaY: deltaY, normalizedX: normalizedX, normalizedY: normalizedY)
+        currentClient?.scrolled(deltaX: deltaX, deltaY: deltaY, normalizedX: normalizedX, normalizedY: normalizedY)
     }
 
     func sendKey(keyCode: UInt16, keySym: UInt32?, characters: String, isDown: Bool) {
-        client?.keyEvent(keyCode: keyCode, keySym: keySym, characters: characters, isDown: isDown)
+        currentClient?.keyEvent(keyCode: keyCode, keySym: keySym, characters: characters, isDown: isDown)
     }
 
     func sendText(_ text: String) {
-        client?.typeText(text)
+        currentClient?.typeText(text)
     }
 
     func sendClipboard(_ text: String) {
-        client?.setClipboard(text)
+        currentClient?.setClipboard(text)
     }
 
     func selectDisplay(_: Int) {
@@ -142,7 +160,7 @@ final class VNCRFBDriver: RemoteDesktopDriver, @unchecked Sendable {
 
     func requestKeyframeOrRefresh() {
         // A non-incremental update request asks for the whole framebuffer.
-        client?.requestUpdate(incremental: false)
+        currentClient?.requestUpdate(incremental: false)
     }
 
     /// Records the pointer position and re-emits the cursor overlay at

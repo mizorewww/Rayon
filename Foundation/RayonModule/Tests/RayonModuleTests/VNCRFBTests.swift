@@ -14,21 +14,22 @@ import CryptoKit
 import XCTest
 import zlib
 
-/// A byte channel that replays a fixed buffer — the decoders read through
-/// the same `VNCByteChannel` API as the socket.
-private final class MemoryChannel: VNCByteChannel, @unchecked Sendable {
+/// A transport that replays a fixed buffer and records what is sent; the
+/// decoders read through the same `VNCReader` as over the network.
+private final class MemoryChannel: VNCTransport, @unchecked Sendable {
     var buffer: [UInt8]
     var written: [UInt8] = []
 
     init(_ buffer: [UInt8] = []) { self.buffer = buffer }
 
-    func read(exactly count: Int) throws -> Data {
-        guard buffer.count >= count else { throw VNCStreamError.endOfStream }
+    func receive(maximumLength: Int) async throws -> Data {
+        guard !buffer.isEmpty else { throw VNCStreamError.endOfStream }
+        let count = min(maximumLength, buffer.count)
         defer { buffer.removeFirst(count) }
         return Data(buffer.prefix(count))
     }
 
-    func write(_ data: Data) throws {
+    func send(_ data: Data) {
         written.append(contentsOf: data)
     }
 
@@ -276,7 +277,7 @@ final class VNCRFBTests: XCTestCase {
 
     // MARK: Rectangle decoders
 
-    func testRawDecode() throws {
+    func testRawDecode() async throws {
         let framebuffer = VNCFramebuffer()
         framebuffer.resize(width: 4, height: 4)
         let context = makeContext(framebuffer: framebuffer)
@@ -289,7 +290,7 @@ final class VNCRFBTests: XCTestCase {
         ]
         let channel = MemoryChannel(pixels)
         let header = rectHeader(x: 1, y: 1, w: 2, h: 2, encoding: 0)
-        try VNCDecoders.raw(header, from: channel, context: context)
+        try await VNCDecoders.raw(header, from: VNCReader(channel), context: context)
 
         XCTAssertEqual(framebuffer.pixel(x: 1, y: 1), 0xFF_FF_00_00)
         XCTAssertEqual(framebuffer.pixel(x: 2, y: 1), 0xFF_00_FF_00)
@@ -297,7 +298,7 @@ final class VNCRFBTests: XCTestCase {
         XCTAssertEqual(framebuffer.pixel(x: 2, y: 2), 0xFF_FF_FF_FF)
     }
 
-    func testCopyRectDecode() throws {
+    func testCopyRectDecode() async throws {
         let framebuffer = VNCFramebuffer()
         framebuffer.resize(width: 8, height: 8)
         framebuffer.fill(x: 0, y: 0, width: 4, height: 4, pixel: 0xFF_AA_BB_CC)
@@ -305,11 +306,11 @@ final class VNCRFBTests: XCTestCase {
         payload.appendU16BE(0) // src x
         payload.appendU16BE(0) // src y
         let channel = MemoryChannel(Array(payload))
-        try VNCDecoders.copyRect(rectHeader(x: 4, y: 4, w: 4, h: 4, encoding: 1), from: channel, context: makeContext(framebuffer: framebuffer))
+        try await VNCDecoders.copyRect(rectHeader(x: 4, y: 4, w: 4, h: 4, encoding: 1), from: VNCReader(channel), context: makeContext(framebuffer: framebuffer))
         XCTAssertEqual(framebuffer.pixel(x: 7, y: 7), 0xFF_AA_BB_CC)
     }
 
-    func testRREDecode() throws {
+    func testRREDecode() async throws {
         let framebuffer = VNCFramebuffer()
         framebuffer.resize(width: 16, height: 16)
         let context = makeContext(framebuffer: framebuffer)
@@ -326,7 +327,7 @@ final class VNCRFBTests: XCTestCase {
         payload.appendU16BE(8); payload.appendU16BE(8); payload.appendU16BE(2); payload.appendU16BE(2)
 
         let channel = MemoryChannel(Array(payload))
-        try VNCDecoders.rre(rectHeader(x: 0, y: 0, w: 16, h: 16, encoding: 2), from: channel, context: context)
+        try await VNCDecoders.rre(rectHeader(x: 0, y: 0, w: 16, h: 16, encoding: 2), from: VNCReader(channel), context: context)
 
         XCTAssertEqual(framebuffer.pixel(x: 0, y: 0), 0xFF_00_FF_00)
         XCTAssertEqual(framebuffer.pixel(x: 8, y: 8), 0xFF_00_00_FF)
@@ -334,7 +335,7 @@ final class VNCRFBTests: XCTestCase {
         XCTAssertEqual(framebuffer.pixel(x: 4, y: 0), 0xFF_FF_00_00) // background outside subrects
     }
 
-    func testHextileDecode() throws {
+    func testHextileDecode() async throws {
         let framebuffer = VNCFramebuffer()
         framebuffer.resize(width: 32, height: 32)
         let context = makeContext(framebuffer: framebuffer)
@@ -364,7 +365,7 @@ final class VNCRFBTests: XCTestCase {
         payload.append(0x00)
 
         let channel = MemoryChannel(Array(payload))
-        try VNCDecoders.hextile(rectHeader(x: 0, y: 0, w: 32, h: 32, encoding: 5), from: channel, context: context)
+        try await VNCDecoders.hextile(rectHeader(x: 0, y: 0, w: 32, h: 32, encoding: 5), from: VNCReader(channel), context: context)
 
         // Tile (0,0): white bg + red subrect at (2,3)..(6,6).
         XCTAssertEqual(framebuffer.pixel(x: 0, y: 0), 0xFF_FF_FF_FF)
@@ -448,14 +449,19 @@ final class VNCRFBTests: XCTestCase {
         ))
     }
 
-    func testRectangleOutsideFramebufferIsMalformed() {
+    func testRectangleOutsideFramebufferIsMalformed() async {
         let framebuffer = VNCFramebuffer()
         framebuffer.resize(width: 4, height: 4)
-        XCTAssertThrowsError(try VNCDecoders.decode(
-            rectHeader(x: 2, y: 0, w: 4, h: 1, encoding: 0),
-            from: MemoryChannel(Array(repeating: 0, count: 64)),
-            context: makeContext(framebuffer: framebuffer)
-        ))
+        do {
+            try await VNCDecoders.decode(
+                rectHeader(x: 2, y: 0, w: 4, h: 1, encoding: 0),
+                from: VNCReader(MemoryChannel(Array(repeating: 0, count: 64))),
+                context: makeContext(framebuffer: framebuffer)
+            )
+            XCTFail("decoded a rectangle outside the framebuffer")
+        } catch {
+            XCTAssertTrue(error is VNCDecodeError)
+        }
     }
 
     func testZRLESolidAndRawTiles() throws {
@@ -589,7 +595,7 @@ final class VNCRFBTests: XCTestCase {
         return data
     }
 
-    func testHandshake38WithVncAuth() throws {
+    func testHandshake38WithVncAuth() async throws {
         // A scripted 3.8 server that asks for VNC auth and then delivers a
         // ServerInit plus one raw FramebufferUpdate and a cut text.
         var server = Data()
@@ -616,12 +622,12 @@ final class VNCRFBTests: XCTestCase {
         let channel = MemoryChannel(Array(server))
         let delegate = RecordingDelegate()
         let client = VNCRFBClient(
-            configuration: .init(host: "ignored", port: 0, password: "password", shared: true, channel: channel),
+            configuration: .init(host: "ignored", port: 0, password: "password", shared: true, transport: channel),
             delegate: delegate
         )
-        // Synchronous run: the channel replays the script, then hits
+        // The run: the channel replays the script, then hits
         // end-of-stream and reports the connection closed.
-        client.run()
+        await client.run()
 
         XCTAssertTrue(delegate.phases.contains(.connected))
         XCTAssertEqual(delegate.size, CGSize(width: 4, height: 4))
@@ -634,10 +640,11 @@ final class VNCRFBTests: XCTestCase {
         // The client wrote: version banner (12), security-type selection
         // (1), DES response (16), ClientInit (1), SetPixelFormat (20),
         // SetEncodings (4 + 7x4), and two FramebufferUpdateRequests (10+10).
-        XCTAssertEqual(channel.written.count, 12 + 1 + 16 + 1 + 20 + (4 + 7 * 4) + 10 + 10)
+        let expected: Int = 12 + 1 + 16 + 1 + 20 + (4 + 7 * 4) + 10 + 10
+        XCTAssertEqual(channel.written.count, expected)
     }
 
-    func testHandshakeServerRejectsPassword() throws {
+    func testHandshakeServerRejectsPassword() async throws {
         var server = Data()
         server.append(VNCWire.banner(major: 3, minor: 8))
         server.append(1)
@@ -650,17 +657,17 @@ final class VNCRFBTests: XCTestCase {
         let delegate = RecordingDelegate()
         let client = VNCRFBClient(
             configuration: .init(host: "ignored", port: 0, password: "wrong", shared: true,
-                                 channel: MemoryChannel(Array(server))),
+                                 transport: MemoryChannel(Array(server))),
             delegate: delegate
         )
-        client.run()
+        await client.run()
         XCTAssertTrue(delegate.phases.contains { phase in
             if case let .failed(reason) = phase { return reason.contains("bad password") }
             return false
         })
     }
 
-    func testHandshakeNoSupportedSecurity() throws {
+    func testHandshakeNoSupportedSecurity() async throws {
         var server = Data()
         server.append(VNCWire.banner(major: 3, minor: 8))
         server.append(1)
@@ -668,10 +675,10 @@ final class VNCRFBTests: XCTestCase {
         let delegate = RecordingDelegate()
         let client = VNCRFBClient(
             configuration: .init(host: "ignored", port: 0, password: "", shared: true,
-                                 channel: MemoryChannel(Array(server))),
+                                 transport: MemoryChannel(Array(server))),
             delegate: delegate
         )
-        client.run()
+        await client.run()
         XCTAssertTrue(delegate.phases.contains { phase in
             if case .failed = phase { return true }
             return false
@@ -707,7 +714,7 @@ final class VNCRFBTests: XCTestCase {
         return bytes
     }()
 
-    func testHandshake38WithAppleRemoteDesktopAuth() throws {
+    func testHandshake38WithAppleRemoteDesktopAuth() async throws {
         let prime = BigUInt(Data(Self.oakleyPrime))
         let serverSecret = BigUInt(Data(VNCAppleAuth.randomBytes(128)))
         let serverPublic = BigUInt(2).power(serverSecret, modulus: prime)
@@ -726,10 +733,10 @@ final class VNCRFBTests: XCTestCase {
         let channel = MemoryChannel(Array(server))
         let delegate = RecordingDelegate()
         let client = VNCRFBClient(
-            configuration: .init(host: "ignored", port: 0, password: "secret", username: "alice", shared: true, channel: channel),
+            configuration: .init(host: "ignored", port: 0, password: "secret", username: "alice", shared: true, transport: channel),
             delegate: delegate
         )
-        client.run()
+        await client.run()
         XCTAssertTrue(delegate.phases.contains(.connected))
         XCTAssertEqual(delegate.desktopName, "mac")
 
@@ -745,17 +752,17 @@ final class VNCRFBTests: XCTestCase {
         XCTAssertEqual(Array(plain[64 ..< 71]), Array("secret".utf8) + [0])
     }
 
-    func testAppleAuthPrefersVNCPasswordWithoutUser() throws {
+    func testAppleAuthPrefersVNCPasswordWithoutUser() async throws {
         var server = Data()
         server.append(VNCWire.banner(major: 3, minor: 8))
         server.append(2)
         server.append(contentsOf: [VNCWire.SecurityType.appleRemoteDesktop.rawValue, VNCWire.SecurityType.vncAuth.rawValue])
         let channel = MemoryChannel(Array(server))
         let client = VNCRFBClient(
-            configuration: .init(host: "ignored", port: 0, password: "pw", shared: true, channel: channel),
+            configuration: .init(host: "ignored", port: 0, password: "pw", shared: true, transport: channel),
             delegate: RecordingDelegate()
         )
-        client.run()
+        await client.run()
         XCTAssertEqual(channel.written[12], VNCWire.SecurityType.vncAuth.rawValue)
     }
 

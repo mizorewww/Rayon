@@ -4,16 +4,16 @@
 //
 //  The RFB session state machine: banner → security → init → encodings →
 //  the read loop that turns rectangles into framebuffer updates and
-//  clipboard/cursor events. Runs on one reader thread; outbound messages
-//  are written under a lock so input calls from the UI thread interleave
-//  safely with the update loop.
+//  clipboard/cursor events. The session runs in one task; input calls from
+//  the main actor only queue messages on the transport, never wait on it.
 //
 
 import CoreGraphics
 import Foundation
+import os
 
-/// The events a session reports back, delivered on the client's reader
-/// thread — the driver forwards them into the main-actor session.
+/// The events a session reports back, delivered from the client's session
+/// task — the driver forwards them into the main-actor session.
 protocol VNCRFBClientDelegate: AnyObject, Sendable {
     func client(_ client: VNCRFBClient, didChangePhase phase: RemoteDesktopPhase, hint: String?)
     func client(_ client: VNCRFBClient, didUpdateFrame image: CGImage?, size: CGSize, desktopName: String?)
@@ -21,8 +21,8 @@ protocol VNCRFBClientDelegate: AnyObject, Sendable {
     func client(_ client: VNCRFBClient, didReceiveClipboard text: String)
 }
 
-final class VNCRFBClient: @unchecked Sendable {
-    struct Configuration {
+final class VNCRFBClient: Sendable {
+    struct Configuration: Sendable {
         var host: String
         var port: UInt16
         var password: String
@@ -31,41 +31,23 @@ final class VNCRFBClient: @unchecked Sendable {
         var username: String = ""
         var shared: Bool
         var timeout: TimeInterval = 15
-        /// Overrides the socket the client talks on — the SSH-tunnel path
-        /// hands in a socket to the local forward endpoint.
-        var channel: VNCByteChannel?
+        /// Overrides the transport the client talks on — the SSH-tunnel
+        /// path and tests hand one in.
+        var transport: VNCTransport?
+    }
+
+    /// What the session task and the input calls share.
+    private struct State {
+        var transport: VNCTransport?
+        var task: Task<Void, Never>?
+        var stopped = false
+        var buttonMask: UInt8 = 0
     }
 
     private let configuration: Configuration
-    weak var delegate: VNCRFBClientDelegate?
-
+    private weak let delegate: VNCRFBClientDelegate?
     private let framebuffer = VNCFramebuffer()
-    private var inflater: VNCInflateStream?
-    private var channel: VNCByteChannel?
-    private var reader: Thread?
-    private let writeLock = NSLock()
-    private let stateLock = NSLock()
-    private var stopped = false
-    private var buttonMask: UInt8 = 0
-    private var pointerX: UInt16 = 0
-    private var pointerY: UInt16 = 0
-    private var desktopName = ""
-    /// The pixel format rects are decoded with. Starts as the server's
-    /// advertised format, becomes `clientRequested` once SetPixelFormat
-    /// is on the wire (a conforming server then emits that format).
-    private var pixelFormat = VNCPixelFormat.clientRequested
-    private var pixelTranslator: ((Data, Int) -> UInt32)?
-
-    private var decodeContext: VNCDecoders.Context {
-        VNCDecoders.Context(
-            framebuffer: framebuffer,
-            pixelTranslator: pixelTranslator ?? { _, _ in 0xFFFF_00FF },
-            bytesPerPixel: pixelFormat.bytesPerPixel,
-            cpixelByteCount: pixelFormat.cpixelByteCount,
-            cpixelPadsAtEnd: !pixelFormat.bigEndian,
-            zlib: inflater
-        )
-    }
+    private let state = OSAllocatedUnfairLock(initialState: State())
 
     init(configuration: Configuration, delegate: VNCRFBClientDelegate) {
         self.configuration = configuration
@@ -74,29 +56,25 @@ final class VNCRFBClient: @unchecked Sendable {
 
     // MARK: - Lifecycle
 
-    /// Starts the handshake on a background reader thread.
+    /// Starts the session in the background.
     func start() {
-        let thread = Thread { [self] in
-            run()
-        }
-        thread.name = "me.mizorewww.vnc.\(configuration.host):\(configuration.port)"
-        thread.start()
-        reader = thread
+        let task = Task { await run() }
+        state.withLock { $0.task = task }
     }
 
-    /// Ends the session: the socket is interrupted so a blocked read wakes,
-    /// and the reader exits.
+    /// Ends the session: the task is cancelled and the transport closed, so
+    /// a pending receive wakes and the task exits.
     func stop() {
-        let currentChannel = stateLock.withLock { () -> VNCByteChannel? in
-            stopped = true
-            return channel
+        let (task, transport) = state.withLock { state in
+            state.stopped = true
+            return (state.task, state.transport)
         }
-        (currentChannel as? VNCSocket)?.interrupt()
-        currentChannel?.close()
+        task?.cancel()
+        transport?.close()
     }
 
-    private func isStopped() -> Bool {
-        stateLock.withLock { stopped }
+    private var isStopped: Bool {
+        state.withLock { $0.stopped }
     }
 
     private func report(phase: RemoteDesktopPhase, hint: String? = nil) {
@@ -105,31 +83,36 @@ final class VNCRFBClient: @unchecked Sendable {
 
     // MARK: - The session
 
-    /// The reader-thread entry point; `internal` so tests can drive it
-    /// synchronously over a scripted memory channel.
-    func run() {
+    /// The session; `internal` so tests can await it over a scripted
+    /// memory transport.
+    func run() async {
         report(phase: .connecting("Reaching \(configuration.host)"), hint: "Connecting…")
         do {
-            let channel: VNCByteChannel = try configuration.channel
-                ?? VNCSocket.connect(host: configuration.host, port: configuration.port, timeout: configuration.timeout)
-            let alreadyStopped = stateLock.withLock { () -> Bool in
-                self.channel = channel
-                return stopped
+            let transport: VNCTransport = if let transport = configuration.transport {
+                transport
+            } else {
+                try await VNCConnection.connect(host: configuration.host, port: configuration.port, timeout: configuration.timeout)
+            }
+            let alreadyStopped = state.withLock { state in
+                state.transport = transport
+                return state.stopped
             }
             if alreadyStopped {
-                channel.close()
+                transport.close()
                 return
             }
-            try handshake(over: channel)
+            let reader = VNCReader(transport)
+            let inflater = try VNCInflateStream()
+            let desktopName = try await handshake(reader: reader, transport: transport)
             report(phase: .connected, hint: nil)
-            try readLoop(over: channel)
-            if !isStopped() {
+            try await readLoop(reader: reader, inflater: inflater, desktopName: desktopName)
+            if !isStopped {
                 report(phase: .closed("The server closed the connection."))
             }
         } catch let error as RemoteDesktopFailure {
             report(phase: .failed(error.message))
         } catch let error as VNCStreamError {
-            if isStopped() { return }
+            if isStopped { return }
             switch error {
             case .endOfStream:
                 report(phase: .closed("The server closed the connection."))
@@ -139,7 +122,7 @@ final class VNCRFBClient: @unchecked Sendable {
         } catch let error as VNCDecodeError {
             report(phase: .failed("The server sent data this client cannot read (\(describe(error)))."))
         } catch {
-            if !isStopped() {
+            if !isStopped {
                 report(phase: .failed(error.localizedDescription))
             }
         }
@@ -147,16 +130,17 @@ final class VNCRFBClient: @unchecked Sendable {
 
     private func describe(_ error: VNCDecodeError) -> String {
         switch error {
-        case let .unsupportedEncoding(encoding): return "encoding \(encoding)"
-        case let .malformed(reason): return reason
+        case let .unsupportedEncoding(encoding): "encoding \(encoding)"
+        case let .malformed(reason): reason
         }
     }
 
     // MARK: Handshake
 
-    private func handshake(over channel: VNCByteChannel) throws {
+    /// Runs the handshake through ServerInit; returns the desktop name.
+    private func handshake(reader: VNCReader, transport: VNCTransport) async throws -> String {
         // Version banner.
-        let banner = try channel.read(exactly: 12)
+        let banner = try await reader.read(exactly: 12)
         guard let version = VNCWire.parseBanner(banner) else {
             throw RemoteDesktopFailure("The server is not speaking RFB.")
         }
@@ -164,7 +148,7 @@ final class VNCRFBClient: @unchecked Sendable {
         // that old; otherwise 3.8 (the failure-reason string exists only
         // on 3.8).
         let answerMinor = version.minor < 8 ? version.minor : 8
-        try send(VNCWire.banner(major: 3, minor: answerMinor), over: channel)
+        transport.send(VNCWire.banner(major: 3, minor: answerMinor))
         let protocol38 = answerMinor >= 8
 
         // Security negotiation.
@@ -173,19 +157,19 @@ final class VNCRFBClient: @unchecked Sendable {
         if version.minor == 3 {
             // 3.3 sends one u32 type directly; 0 means the connection is
             // refused outright and a reason string follows.
-            let type = try channel.read(exactly: 4).readU32BE(at: 0).clampedToUInt8()
+            let type = try await reader.read(exactly: 4).readU32BE(at: 0).clampedToUInt8()
             if type == 0 {
-                let reason = try readReasonString(over: channel)
+                let reason = try await readReasonString(reader)
                 throw RemoteDesktopFailure(reason ?? "The server refused the connection.")
             }
             offered = [type]
         } else {
-            let count = Int(try channel.read(exactly: 1)[0])
+            let count = Int(try await reader.read(exactly: 1)[0])
             guard count > 0 else {
-                let reason = try readReasonString(over: channel)
+                let reason = try await readReasonString(reader)
                 throw RemoteDesktopFailure(reason ?? "The server refused the connection.")
             }
-            offered = Array(try channel.read(exactly: count))
+            offered = Array(try await reader.read(exactly: count))
         }
 
         let selected = try Self.chooseSecurityType(
@@ -195,62 +179,60 @@ final class VNCRFBClient: @unchecked Sendable {
         )
 
         if version.minor != 3 {
-            try send(Data([selected]), over: channel)
+            transport.send(Data([selected]))
         }
 
         switch selected {
         case VNCWire.SecurityType.vncAuth.rawValue:
-            let challenge = Array(try channel.read(exactly: 16))
+            let challenge = Array(try await reader.read(exactly: 16))
             guard let response = VNCDES.encryptChallenge(challenge, password: configuration.password) else {
                 throw RemoteDesktopFailure("Could not answer the VNC authentication challenge.")
             }
-            try send(Data(response), over: channel)
+            transport.send(Data(response))
         case VNCWire.SecurityType.appleRemoteDesktop.rawValue:
-            let parameters = try VNCAppleAuth.readParameters(over: channel)
+            let parameters = try await VNCAppleAuth.readParameters(from: reader)
             let response = try VNCAppleAuth.response(
                 to: parameters,
                 username: configuration.username,
                 password: configuration.password
             )
-            try send(response, over: channel)
+            transport.send(response)
         default:
             break
         }
 
         // SecurityResult: u32, 0 on success. For 3.8 a failure carries a
         // reason string; for 3.3 and 3.7 it does not.
-        let result = try channel.read(exactly: 4).readU32BE(at: 0)
+        let result = try await reader.read(exactly: 4).readU32BE(at: 0)
         if result != 0 {
-            let reason = protocol38 ? try readReasonString(over: channel) : nil
+            let reason = protocol38 ? try await readReasonString(reader) : nil
             throw RemoteDesktopFailure(reason ?? "The VNC server rejected the credentials.")
         }
 
         // ClientInit / ServerInit.
-        try send(VNCWire.clientInit(shared: configuration.shared), over: channel)
+        transport.send(VNCWire.clientInit(shared: configuration.shared))
         report(phase: .connecting("Negotiating the framebuffer"), hint: "Negotiating…")
         // width(2) height(2) pixelformat(16) nameLen(4) + name
-        var initData = try channel.read(exactly: 24)
+        var initData = try await reader.read(exactly: 24)
         let nameLength = Int(initData.readU32BE(at: 20))
-        if nameLength > 0 {
-            initData.append(try channel.read(exactly: nameLength))
+        guard nameLength <= 64 * 1024 else {
+            throw RemoteDesktopFailure("The server sent a malformed init message.")
         }
+        initData.append(try await reader.read(exactly: nameLength))
         guard let serverInit = VNCWire.parseServerInit(data: initData) else {
             throw RemoteDesktopFailure("The server sent a malformed init message.")
         }
-        desktopName = serverInit.desktopName
-        inflater = try VNCInflateStream()
         guard serverInit.pixelFormat.translator() != nil else {
             throw RemoteDesktopFailure("The server's pixel format (\(serverInit.pixelFormat.bitsPerPixel)bpp, depth \(serverInit.pixelFormat.depth)) is unsupported.")
         }
         try resizeFramebuffer(width: serverInit.width, height: serverInit.height)
 
         // From here on the server emits `clientRequested` pixels.
-        pixelFormat = .clientRequested
-        pixelTranslator = VNCPixelFormat.clientRequested.translator()
-        try send(VNCWire.setPixelFormat(.clientRequested), over: channel)
-        try send(VNCWire.setEncodings(VNCWire.clientEncodings), over: channel)
+        transport.send(VNCWire.setPixelFormat(.clientRequested))
+        transport.send(VNCWire.setEncodings(VNCWire.clientEncodings))
         requestUpdate(incremental: false)
-        delegate?.client(self, didUpdateFrame: nil, size: framebuffer.size, desktopName: desktopName)
+        delegate?.client(self, didUpdateFrame: nil, size: framebuffer.size, desktopName: serverInit.desktopName)
+        return serverInit.desktopName
     }
 
     /// The strongest security type both sides support. With credentials
@@ -287,33 +269,43 @@ final class VNCRFBClient: @unchecked Sendable {
     }
 
     /// A 3.8 reason string: u32 length + UTF-8 text; 3.3/3.7 send nothing.
-    private func readReasonString(over channel: VNCByteChannel) throws -> String? {
-        let length = Int(try channel.read(exactly: 4).readU32BE(at: 0))
+    private func readReasonString(_ reader: VNCReader) async throws -> String? {
+        let length = Int(try await reader.read(exactly: 4).readU32BE(at: 0))
         guard length > 0, length < 64 * 1024 else { return nil }
-        return String(data: try channel.read(exactly: length), encoding: .utf8)
+        return String(data: try await reader.read(exactly: length), encoding: .utf8)
     }
 
     // MARK: Read loop
 
-    private func readLoop(over channel: VNCByteChannel) throws {
-        while true {
-            if isStopped() { return }
-            let type = try channel.read(exactly: 1)[0]
+    private func readLoop(reader: VNCReader, inflater: VNCInflateStream, desktopName: String) async throws {
+        let format = VNCPixelFormat.clientRequested
+        let context = VNCDecoders.Context(
+            framebuffer: framebuffer,
+            pixelTranslator: format.translator() ?? { _, _ in 0xFFFF_00FF },
+            bytesPerPixel: format.bytesPerPixel,
+            cpixelByteCount: format.cpixelByteCount,
+            cpixelPadsAtEnd: !format.bigEndian,
+            zlib: inflater
+        )
+        while !isStopped {
+            let type = try await reader.read(exactly: 1)[0]
             switch VNCWire.ServerMessageType(rawValue: type) {
             case .framebufferUpdate:
-                try handleUpdate(over: channel)
+                try await handleUpdate(reader: reader, context: context, desktopName: desktopName)
             case .setColourMapEntries:
                 // pad(1) firstColor(2) count(2) + count * 6 bytes
-                let header = try channel.read(exactly: 5)
+                let header = try await reader.read(exactly: 5)
                 let count = Int(header.readU16BE(at: 3))
-                _ = try channel.read(exactly: count * 6)
+                _ = try await reader.read(exactly: count * 6)
             case .bell:
                 break
             case .serverCutText:
-                _ = try channel.read(exactly: 3) // padding
-                let length = Int(try channel.read(exactly: 4).readU32BE(at: 0))
-                guard length < 16 * 1024 * 1024 else { return }
-                let text = String(data: try channel.read(exactly: length), encoding: .isoLatin1) ?? ""
+                _ = try await reader.read(exactly: 3) // padding
+                let length = Int(try await reader.read(exactly: 4).readU32BE(at: 0))
+                guard length < 16 * 1024 * 1024 else {
+                    throw VNCDecodeError.malformed("clipboard of \(length) bytes")
+                }
+                let text = String(data: try await reader.read(exactly: length), encoding: .isoLatin1) ?? ""
                 delegate?.client(self, didReceiveClipboard: text)
             case nil:
                 // Unknown message: there is no way to know its length, so
@@ -330,13 +322,12 @@ final class VNCRFBClient: @unchecked Sendable {
         framebuffer.resize(width: width, height: height)
     }
 
-    private func handleUpdate(over channel: VNCByteChannel) throws {
-        _ = try channel.read(exactly: 1) // padding
-        let count = Int(try channel.read(exactly: 2).readU16BE(at: 0))
-        let context = decodeContext
+    private func handleUpdate(reader: VNCReader, context: VNCDecoders.Context, desktopName: String) async throws {
+        _ = try await reader.read(exactly: 1) // padding
+        let count = Int(try await reader.read(exactly: 2).readU16BE(at: 0))
         var sizeChanged = false
         for _ in 0 ..< count {
-            let headerData = try channel.read(exactly: VNCWire.RectangleHeader.wireLength)
+            let headerData = try await reader.read(exactly: VNCWire.RectangleHeader.wireLength)
             guard let header = VNCWire.RectangleHeader(wire: headerData) else {
                 throw RemoteDesktopFailure("The server sent a malformed rectangle.")
             }
@@ -345,10 +336,10 @@ final class VNCRFBClient: @unchecked Sendable {
                 try resizeFramebuffer(width: header.width, height: header.height)
                 sizeChanged = true
             case .cursor:
-                let cursor = try VNCDecoders.decodeCursor(header, from: channel, context: context)
+                let cursor = try await VNCDecoders.decodeCursor(header, from: reader, context: context)
                 delegate?.client(self, didUpdateCursor: cursor)
             default:
-                try VNCDecoders.decode(header, from: channel, context: context)
+                try await VNCDecoders.decode(header, from: reader, context: context)
             }
         }
         let image = framebuffer.makeImage()
@@ -356,21 +347,17 @@ final class VNCRFBClient: @unchecked Sendable {
         requestUpdate(incremental: true)
     }
 
-    // MARK: - Outbound messages (called from the UI thread)
+    // MARK: - Outbound messages (called from the main actor)
 
-    private func send(_ data: Data, over channel: VNCByteChannel) throws {
-        try writeLock.withLock { try channel.write(data) }
-    }
-
-    private func send(_ data: Data) throws {
-        guard let currentChannel = stateLock.withLock({ channel }) else { return }
-        try send(data, over: currentChannel)
+    /// Queues `data` once connected; dropped before that.
+    private func send(_ data: Data) {
+        state.withLock { $0.transport }?.send(data)
     }
 
     func requestUpdate(incremental: Bool) {
         let size = framebuffer.size
         guard size.width > 0, size.height > 0 else { return }
-        try? send(VNCWire.framebufferUpdateRequest(
+        send(VNCWire.framebufferUpdateRequest(
             incremental: incremental, x: 0, y: 0,
             width: UInt16(min(Int(size.width), Int(UInt16.max))),
             height: UInt16(min(Int(size.height), Int(UInt16.max)))
@@ -398,34 +385,24 @@ final class VNCRFBClient: @unchecked Sendable {
 
     func pointerMoved(normalizedX: Double, normalizedY: Double) {
         let point = pixelPoint(normalizedX: normalizedX, normalizedY: normalizedY)
-        let mask = stateLock.withLock { () -> UInt8 in
-            pointerX = point.x
-            pointerY = point.y
-            return buttonMask
-        }
-        try? send(VNCWire.pointerEvent(buttonMask: mask, x: point.x, y: point.y))
+        let mask = state.withLock { $0.buttonMask }
+        send(VNCWire.pointerEvent(buttonMask: mask, x: point.x, y: point.y))
     }
 
     func pointerButton(_ button: MouseButton, isDown: Bool, normalizedX: Double, normalizedY: Double) {
         let point = pixelPoint(normalizedX: normalizedX, normalizedY: normalizedY)
         let bit = buttonBit(button)
-        let mask = stateLock.withLock { () -> UInt8 in
-            pointerX = point.x
-            pointerY = point.y
-            if isDown { buttonMask |= bit } else { buttonMask &= ~bit }
-            return buttonMask
+        let mask = state.withLock { state in
+            if isDown { state.buttonMask |= bit } else { state.buttonMask &= ~bit }
+            return state.buttonMask
         }
-        try? send(VNCWire.pointerEvent(buttonMask: mask, x: point.x, y: point.y))
+        send(VNCWire.pointerEvent(buttonMask: mask, x: point.x, y: point.y))
     }
 
     /// A wheel event is a button press-release pair per tick, coalesced into a single write.
     func scrolled(deltaX: Double, deltaY: Double, normalizedX: Double, normalizedY: Double) {
         let point = pixelPoint(normalizedX: normalizedX, normalizedY: normalizedY)
-        let mask = stateLock.withLock { () -> UInt8 in
-            pointerX = point.x
-            pointerY = point.y
-            return buttonMask
-        }
+        let mask = state.withLock { $0.buttonMask }
 
         var batch = Data()
         func appendWheelTicks(_ delta: Double, upBit: UInt8, downBit: UInt8) {
@@ -440,26 +417,26 @@ final class VNCRFBClient: @unchecked Sendable {
         appendWheelTicks(deltaY, upBit: 1 << 3, downBit: 1 << 4)
         appendWheelTicks(deltaX, upBit: 1 << 6, downBit: 1 << 5)
         if !batch.isEmpty {
-            try? send(batch)
+            send(batch)
         }
     }
 
     func keyEvent(keyCode: UInt16, keySym: UInt32?, characters: String, isDown: Bool) {
         let sym = keySym ?? VNCKeySyms.keySym(forKeyCode: keyCode, characters: characters)
         guard let sym else { return }
-        try? send(VNCWire.keyEvent(down: isDown, keySym: sym))
+        send(VNCWire.keyEvent(down: isDown, keySym: sym))
     }
 
     func typeText(_ text: String) {
         for scalar in text.unicodeScalars {
             guard let sym = VNCKeySyms.keySym(forCharacter: String(scalar)) else { continue }
-            try? send(VNCWire.keyEvent(down: true, keySym: sym))
-            try? send(VNCWire.keyEvent(down: false, keySym: sym))
+            send(VNCWire.keyEvent(down: true, keySym: sym))
+            send(VNCWire.keyEvent(down: false, keySym: sym))
         }
     }
 
     func setClipboard(_ text: String) {
-        try? send(VNCWire.clientCutText(text))
+        send(VNCWire.clientCutText(text))
     }
 }
 

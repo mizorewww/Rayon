@@ -25,12 +25,12 @@ enum VNCDecoders {
         var zlib: VNCInflateStream?
     }
 
-    private static func readFullPixel(from source: VNCByteChannel, using context: Context) throws -> UInt32 {
-        let data = try source.read(exactly: context.bytesPerPixel)
+    private static func readFullPixel(from source: VNCReader, using context: Context) async throws -> UInt32 {
+        let data = try await source.read(exactly: context.bytesPerPixel)
         return context.pixelTranslator(data, 0)
     }
 
-    static func decode(_ header: VNCWire.RectangleHeader, from source: VNCByteChannel, context: Context) throws {
+    static func decode(_ header: VNCWire.RectangleHeader, from source: VNCReader, context: Context) async throws {
         // A rectangle must lie inside the framebuffer: its size drives every
         // read and allocation below, and the server picks it.
         let size = context.framebuffer.size
@@ -39,15 +39,15 @@ enum VNCDecoders {
         }
         switch VNCWire.Encoding(rawValue: header.encoding) {
         case .raw:
-            try raw(header, from: source, context: context)
+            try await raw(header, from: source, context: context)
         case .copyRect:
-            try copyRect(header, from: source, context: context)
+            try await copyRect(header, from: source, context: context)
         case .rre:
-            try rre(header, from: source, context: context)
+            try await rre(header, from: source, context: context)
         case .hextile:
-            try hextile(header, from: source, context: context)
+            try await hextile(header, from: source, context: context)
         case .zrle:
-            try zrle(header, from: source, context: context)
+            try await zrle(header, from: source, context: context)
         case .cursor, .desktopSize, nil:
             throw VNCDecodeError.unsupportedEncoding(header.encoding)
         }
@@ -55,9 +55,9 @@ enum VNCDecoders {
 
     // MARK: - Raw (encoding 0)
 
-    static func raw(_ header: VNCWire.RectangleHeader, from source: VNCByteChannel, context: Context) throws {
+    static func raw(_ header: VNCWire.RectangleHeader, from source: VNCReader, context: Context) async throws {
         let bytes = header.width * header.height * context.bytesPerPixel
-        let data = try source.read(exactly: bytes)
+        let data = try await source.read(exactly: bytes)
         var line: [UInt32] = []
         line.reserveCapacity(header.width * header.height)
         for index in stride(from: 0, to: data.count, by: context.bytesPerPixel) {
@@ -68,8 +68,8 @@ enum VNCDecoders {
 
     // MARK: - CopyRect (encoding 1)
 
-    static func copyRect(_ header: VNCWire.RectangleHeader, from source: VNCByteChannel, context: Context) throws {
-        let position = try source.read(exactly: 4)
+    static func copyRect(_ header: VNCWire.RectangleHeader, from source: VNCReader, context: Context) async throws {
+        let position = try await source.read(exactly: 4)
         context.framebuffer.copy(
             fromX: Int(position.readU16BE(at: 0)),
             fromY: Int(position.readU16BE(at: 2)),
@@ -80,13 +80,13 @@ enum VNCDecoders {
 
     // MARK: - RRE (encoding 2)
 
-    static func rre(_ header: VNCWire.RectangleHeader, from source: VNCByteChannel, context: Context) throws {
-        let count = Int(try source.read(exactly: 4).readU32BE(at: 0))
-        let background = try readFullPixel(from: source, using: context)
+    static func rre(_ header: VNCWire.RectangleHeader, from source: VNCReader, context: Context) async throws {
+        let count = Int(try await source.read(exactly: 4).readU32BE(at: 0))
+        let background = try await readFullPixel(from: source, using: context)
         context.framebuffer.fill(x: header.x, y: header.y, width: header.width, height: header.height, pixel: background)
         for _ in 0 ..< count {
-            let pixel = try readFullPixel(from: source, using: context)
-            let subrect = try source.read(exactly: 8)
+            let pixel = try await readFullPixel(from: source, using: context)
+            let subrect = try await source.read(exactly: 8)
             context.framebuffer.fill(
                 x: header.x + Int(subrect.readU16BE(at: 0)),
                 y: header.y + Int(subrect.readU16BE(at: 2)),
@@ -107,7 +107,7 @@ enum VNCDecoders {
         static let subrectsColoured: UInt8 = 16
     }
 
-    static func hextile(_ header: VNCWire.RectangleHeader, from source: VNCByteChannel, context: Context) throws {
+    static func hextile(_ header: VNCWire.RectangleHeader, from source: VNCReader, context: Context) async throws {
         var background: UInt32?
         var foreground: UInt32 = 0
         var tileY = header.y
@@ -116,12 +116,12 @@ enum VNCDecoders {
             let tileHeight = min(16, header.y + header.height - tileY)
             while tileX < header.x + header.width {
                 let tileWidth = min(16, header.x + header.width - tileX)
-                let subencoding = try source.read(exactly: 1)[0]
+                let subencoding = try await source.read(exactly: 1)[0]
 
                 if subencoding & HextileSubencoding.raw != 0 {
                     var line: [UInt32] = []
                     line.reserveCapacity(tileWidth * tileHeight)
-                    let data = try source.read(exactly: tileWidth * tileHeight * context.bytesPerPixel)
+                    let data = try await source.read(exactly: tileWidth * tileHeight * context.bytesPerPixel)
                     for index in stride(from: 0, to: data.count, by: context.bytesPerPixel) {
                         line.append(context.pixelTranslator(data, index))
                     }
@@ -131,7 +131,7 @@ enum VNCDecoders {
                 }
 
                 if subencoding & HextileSubencoding.backgroundSpecified != 0 {
-                    background = try readFullPixel(from: source, using: context)
+                    background = try await readFullPixel(from: source, using: context)
                 }
                 guard let background else {
                     throw VNCDecodeError.malformed("Hextile tile with no background specified")
@@ -139,13 +139,13 @@ enum VNCDecoders {
                 context.framebuffer.fill(x: tileX, y: tileY, width: tileWidth, height: tileHeight, pixel: background)
 
                 if subencoding & HextileSubencoding.foregroundSpecified != 0 {
-                    foreground = try readFullPixel(from: source, using: context)
+                    foreground = try await readFullPixel(from: source, using: context)
                 }
                 if subencoding & HextileSubencoding.anySubrects != 0 {
-                    let count = Int(try source.read(exactly: 1)[0])
+                    let count = Int(try await source.read(exactly: 1)[0])
                     let coloured = (subencoding & HextileSubencoding.subrectsColoured) != 0
                     let subrectStride = (coloured ? context.bytesPerPixel : 0) + 2
-                    let subrectsData = try source.read(exactly: count * subrectStride)
+                    let subrectsData = try await source.read(exactly: count * subrectStride)
                     for idx in 0 ..< count {
                         let base = idx * subrectStride
                         let pixel = coloured ? context.pixelTranslator(subrectsData, base) : foreground
@@ -169,15 +169,15 @@ enum VNCDecoders {
 
     // MARK: - ZRLE (encoding 16)
 
-    static func zrle(_ header: VNCWire.RectangleHeader, from source: VNCByteChannel, context: Context) throws {
+    static func zrle(_ header: VNCWire.RectangleHeader, from source: VNCReader, context: Context) async throws {
         guard let zlib = context.zlib else {
             throw VNCDecodeError.malformed("ZRLE without an inflate stream")
         }
-        let length = Int(try source.read(exactly: 4).readU32BE(at: 0))
+        let length = Int(try await source.read(exactly: 4).readU32BE(at: 0))
         guard length > 0, length <= 8 * 1024 * 1024 else {
             throw VNCDecodeError.malformed("ZRLE payload length \(length)")
         }
-        let compressed = try source.read(exactly: length)
+        let compressed = try await source.read(exactly: length)
         let inflated: Data
         do {
             inflated = try zlib.inflate(compressed, maximumOutput: zrleMaximumLength(header, cpixelByteCount: context.cpixelByteCount))
@@ -366,15 +366,15 @@ enum VNCDecoders {
 
     // MARK: - Cursor pseudo-encoding (-239)
 
-    static func decodeCursor(_ header: VNCWire.RectangleHeader, from source: VNCByteChannel, context: Context) throws -> RemoteCursorInfo? {
+    static func decodeCursor(_ header: VNCWire.RectangleHeader, from source: VNCReader, context: Context) async throws -> RemoteCursorInfo? {
         let pixelCount = header.width * header.height
         guard pixelCount > 0 else { return nil }
         guard header.width <= 512, header.height <= 512 else {
             throw VNCDecodeError.malformed("cursor \(header.width)x\(header.height)")
         }
-        let pixelData = try source.read(exactly: pixelCount * context.bytesPerPixel)
+        let pixelData = try await source.read(exactly: pixelCount * context.bytesPerPixel)
         let maskRowBytes = (header.width + 7) / 8
-        let mask = try source.read(exactly: maskRowBytes * header.height)
+        let mask = try await source.read(exactly: maskRowBytes * header.height)
 
         var rgba = Data(count: pixelCount * 4)
         rgba.withUnsafeMutableBytes { buffer in
