@@ -76,7 +76,19 @@ public actor SSHConnection {
     /// Connects and signs in, offering each credential in turn. Citadel
     /// asks a custom authentication delegate only once per connection, so
     /// every offer the server turns down costs a new connection.
+    ///
+    /// A jump host is given over: it closes with the connection, or right
+    /// away when connecting fails or is cancelled.
     public static func connect(_ configuration: Configuration) async throws -> SSHConnection {
+        do {
+            return try await signIn(configuration)
+        } catch {
+            if case let .jump(bastion) = configuration.transport { await bastion.close() }
+            throw error
+        }
+    }
+
+    private static func signIn(_ configuration: Configuration) async throws -> SSHConnection {
         let offers = try configuration.credentials.flatMap { try $0.offers() }
         guard !offers.isEmpty else { throw SSHError.authenticationFailed }
         var lastError: Error = SSHError.authenticationFailed

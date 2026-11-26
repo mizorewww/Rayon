@@ -108,7 +108,6 @@ public extension RDMachine {
             do {
                 return try await SSHConnection.connect(configuration)
             } catch let error as SSHError {
-                if case let .jump(bastion) = transport { await bastion.close() }
                 switch error {
                 case let .unknownHostKey(key):
                     guard await HostKeyTrust.confirm(HostKeyQuestion(host: host, port: port, offered: key, saved: nil)) else {

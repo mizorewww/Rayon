@@ -581,6 +581,15 @@ final class SSHLiveTests: XCTestCase {
         try await bastion.closed.get()
     }
 
+    func testAFailedJumpClosesTheBastion() async throws {
+        let refused = try await connect([.password(password)])
+        do {
+            _ = try await connect([.password("wrong")], host: "target", port: 22, transport: .jump(refused))
+            XCTFail("signed in with a wrong password")
+        } catch SSHError.authenticationFailed {}
+        try await refused.closed.get()
+    }
+
     // MARK: Helpers
 
     private actor Screen {
