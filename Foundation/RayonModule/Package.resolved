@@ -1,5 +1,5 @@
 {
-  "originHash" : "2e875e9c1a2c865d4da226394a6b6b40db3c6825da09fdbf3250c182269f6027",
+  "originHash" : "6e85d89771c8b8f8abf74961a7b190d003a2ee029676a31d817a94730fe00a38",
   "pins" : [
     {
       "identity" : "bettercodable",
@@ -257,8 +257,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/mizorewww/UURemoteKit.git",
       "state" : {
-        "revision" : "fa26ff50ad2d4e8bb13c5e1d741e50fc81dab6bd",
-        "version" : "0.1.3"
+        "revision" : "1f4f001a642a8e3caa6ff992e496207650bd14e9",
+        "version" : "0.2.0"
       }
     },
     {
