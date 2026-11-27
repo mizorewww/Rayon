@@ -145,10 +145,10 @@ enum RemoteDesktopKeymap {
     ]
 
     /// What a hardware key sends as a key: its physical key in Carbon terms
-    /// (what UU takes) and the KeySym of the text it types without
-    /// modifiers (what VNC takes). Nil for a key outside the table, which
+    /// (what UU takes) and the KeySym of `characters`, the text it types
+    /// under Shift alone (what VNC takes). Nil for a key outside the table, which
     /// can only be typed as text.
-    static func stroke(hidUsage: Int, charactersIgnoringModifiers characters: String, isDown: Bool) -> RemoteDesktopKeyStroke? {
+    static func stroke(hidUsage: Int, typing characters: String, isDown: Bool) -> RemoteDesktopKeyStroke? {
         guard let keyCode = carbonForHID[hidUsage] else { return nil }
         let keySym = VNCKeySyms.keySym(forKeyCode: keyCode, characters: characters)
         return RemoteDesktopKeyStroke(keyCode: keyCode, keySym: keySym, characters: characters, isDown: isDown)

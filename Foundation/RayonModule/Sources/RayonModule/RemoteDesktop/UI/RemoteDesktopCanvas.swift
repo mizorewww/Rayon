@@ -109,6 +109,14 @@ public final class RemoteDesktopCanvasView: UIView {
     private let keyboardProxy = RemoteDesktopKeyboardProxy()
     /// The held hardware key being repeated.
     private var keyRepeat: (press: UIPress, task: Task<Void, Never>)?
+    /// Hardware keys down now, by HID usage.
+    private var heldUsages: Set<Int> = []
+    /// Keys a press or a key command sent this run-loop turn (whichever
+    /// came first claims the key), and the presses that came after their
+    /// command.
+    private var keysFromPresses: Set<Int> = []
+    private var keysFromCommands: Set<Int> = []
+    private var pressesFromCommands: Set<UIPress> = []
     #if os(iOS) && !targetEnvironment(macCatalyst)
         private var pointerInteraction: UIPointerInteraction?
         private let dragFeedback = UIImpactFeedbackGenerator(style: .light)
@@ -538,11 +546,25 @@ public final class RemoteDesktopCanvasView: UIView {
         guard let key = press.key else { return false }
         let usage = Int(key.keyCode.rawValue)
         let isModifier = usage == 0x39 || (0xE0 ... 0xE7).contains(usage)
+        // A press its key command already sent: neither its down nor its up
+        // goes again.
+        if isDown, keysFromCommands.contains(usage) {
+            pressesFromCommands.insert(press)
+            return true
+        }
+        if !isDown, pressesFromCommands.remove(press) != nil { return true }
+        if isDown {
+            heldUsages.insert(usage)
+            keysFromPresses.insert(usage)
+            DispatchQueue.main.async { [weak self] in self?.keysFromPresses.remove(usage) }
+        } else {
+            heldUsages.remove(usage)
+        }
         // Only the last key repeats, as on every desktop; a modifier going
         // down leaves the repeat alone.
         if isDown, !isModifier { stopKeyRepeat() }
         if !isDown, press === keyRepeat?.press { stopKeyRepeat() }
-        guard let stroke = RemoteDesktopKeymap.stroke(hidUsage: usage, charactersIgnoringModifiers: key.charactersIgnoringModifiers, isDown: isDown) else {
+        guard let stroke = RemoteDesktopKeymap.stroke(hidUsage: usage, typing: Self.keySymText(key), isDown: isDown) else {
             if isDown, VNCKeySyms.keySym(forCharacter: key.characters) != nil { session?.typeText(key.characters) }
             return true
         }
@@ -552,6 +574,65 @@ public final class RemoteDesktopCanvasView: UIView {
     }
 
     /// UIKit reports a held key once; the repeat is the text system's,
+    /// Keys iPadOS keeps for itself (Tab and the arrows move focus, Escape
+    /// dismisses, Home and End scroll, Backspace goes back) unless a key
+    /// command claims them first; such a command may come instead of the
+    /// press or with it, depending on the iPadOS version. While the
+    /// software keyboard is up, Backspace and Return are the input
+    /// method's.
+    public override var keyCommands: [UIKeyCommand]? {
+        if keyboardProxy.markedTextRange != nil { return nil }
+        let typing = keyboardProxy.isFirstResponder
+        let modifiers: [UIKeyModifierFlags] = [[], .shift, .control, .alternate, .command, [.control, .alternate], [.control, .shift]]
+        return Self.systemKeys.filter { !typing || !$0.typed }.flatMap { key in
+            modifiers.map { flags in
+                let command = UIKeyCommand(input: key.input, modifierFlags: flags, action: #selector(systemKeyCommand(_:)))
+                command.wantsPriorityOverSystemBehavior = true
+                return command
+            }
+        }
+    }
+
+    private static let systemKeys: [(input: String, usage: Int, typed: Bool)] = [
+        (UIKeyCommand.inputEscape, 0x29, false),
+        ("\t", 0x2B, false),
+        ("\u{8}", 0x2A, true),
+        ("\r", 0x28, true),
+        (UIKeyCommand.inputHome, 0x4A, false),
+        (UIKeyCommand.inputEnd, 0x4D, false),
+        (UIKeyCommand.inputPageUp, 0x4B, false),
+        (UIKeyCommand.inputPageDown, 0x4E, false),
+        (UIKeyCommand.inputDelete, 0x4C, false),
+        (UIKeyCommand.inputUpArrow, 0x52, false),
+        (UIKeyCommand.inputDownArrow, 0x51, false),
+        (UIKeyCommand.inputLeftArrow, 0x50, false),
+        (UIKeyCommand.inputRightArrow, 0x4F, false),
+    ]
+
+    /// A claimed key, unless its press already went down: sent as a click,
+    /// and its press, if one follows this turn, sends nothing more.
+    @objc private func systemKeyCommand(_ command: UIKeyCommand) {
+        guard let usage = Self.systemKeys.first(where: { $0.input == command.input })?.usage,
+              !heldUsages.contains(usage), !keysFromPresses.contains(usage),
+              let stroke = RemoteDesktopKeymap.stroke(hidUsage: usage, typing: "", isDown: true)
+        else { return }
+        keysFromCommands.insert(usage)
+        DispatchQueue.main.async { [weak self] in self?.keysFromCommands.remove(usage) }
+        session?.sendKeys(RemoteDesktopSpecialKeys.click(stroke))
+    }
+
+    /// The text a key's KeySym names: what it types with Shift but without
+    /// Ctrl, Option or Command. UIKit's `charactersIgnoringModifiers` drops
+    /// Shift too, and a VNC server types the KeySym it gets exactly, letting
+    /// go of a held Shift to make Shift+A an a.
+    private static func keySymText(_ key: UIKey) -> String {
+        guard key.modifierFlags.isDisjoint(with: [.control, .alternate, .command]) else {
+            let text = key.charactersIgnoringModifiers
+            return key.modifierFlags.contains(.shift) && text.count == 1 ? text.uppercased() : text
+        }
+        return key.characters
+    }
+
     /// which these keys never reach. The host repeats a key whose down
     /// comes again (RFB leaves the repeat to the client), so a held key
     /// sends its down again, at AppKit's default rate: iPadOS shows no

@@ -12,7 +12,7 @@ import XCTest
 
 final class RemoteDesktopKeymapTests: XCTestCase {
     private func stroke(_ usage: Int, _ characters: String = "") -> RemoteDesktopKeyStroke? {
-        RemoteDesktopKeymap.stroke(hidUsage: usage, charactersIgnoringModifiers: characters, isDown: true)
+        RemoteDesktopKeymap.stroke(hidUsage: usage, typing: characters, isDown: true)
     }
 
     private func windowsKey(_ stroke: RemoteDesktopKeyStroke?) -> Int32? {
