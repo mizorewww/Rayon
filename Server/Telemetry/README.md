@@ -5,7 +5,7 @@ The ingest for Rayon's anonymous telemetry, as specified in [`docs/telemetry.md`
 - `POST /v1/reports` takes `{"reports": [...]}`, one to ten reports the app built (`Foundation/Telemetry`). Each report is checked against the client's schema snapshot (`Foundation/Telemetry/Tests/TelemetryTests/Fixtures/report-enums.json`). Unknown keys, unknown values and free strings are rejected with 422.
 - Accepted reports are folded into `aggregates` (day × app version × OS version × metric × bucket → count) and dropped. Zero counts and `false` flags are not written; they follow from the `reports` totals. Crash and hang items go to `crashes`, which keeps them 90 days for symbolication.
 - A report's `nonce` is kept three days so that a retried report is counted once. It is the only per-report value stored, and it is random.
-- The Worker never reads `CF-Connecting-IP`, `X-Forwarded-For` or `User-Agent`. Workers Logs, invocation logs, Logpush and `workers.dev` are off in `wrangler.toml`.
+- The Worker never reads `CF-Connecting-IP`, `X-Forwarded-For` or `User-Agent`. Workers Logs, traces, Logpush and `workers.dev` are off in `cloudflare.config.ts` (deploy) and `wrangler.toml` (local).
 - `GET /v1/aggregates?from=YYYY-MM-DD&to=YYYY-MM-DD` and `GET /v1/crashes?from=YYYY-MM-DD` need `Authorization: Bearer <READ_SECRET>`. Aggregates fold app and OS versions with fewer than ten reports in the range into `other`, and leave out every cell under ten.
 - A daily cron deletes crash items older than 90 days and nonces older than three days.
 
@@ -35,33 +35,55 @@ bunx wrangler d1 execute rayon-telemetry --local --command "SELECT * FROM aggreg
 
 ## Deploy
 
-Cloudflare's free plan covers the volume in `docs/telemetry.md` §4.8. Serve the Worker only on a domain of your own: `workers.dev` is unreliable from mainland China.
+The Worker runs at `https://telemetry.kfcv50.today`, a custom domain on the `kfcv50.today` zone, with database `rayon-telemetry` (`90d72dcf-b4c1-4bb8-8322-5ee7ae53757a`, APAC). It is not on `workers.dev`, which is unreliable from mainland China. Cloudflare's free plan covers the volume in `docs/telemetry.md` §4.8.
 
-1. Sign in: `bunx wrangler login`.
-2. Create the database next to most users. `apac` suits mainland China and the rest of Asia; `weur` or `enam` suit others:
+Everything that touches the account goes through the Cloudflare CLI `cf`, pinned in `package.json` (`bunx cf` runs it). `cf deploy` reads `cloudflare.config.ts`; `wrangler.toml` only serves `wrangler dev` and the tests. Set `CF_SEND_TELEMETRY=false` to keep cf's own usage reporting off.
+
+How it was first deployed (2026-11-27):
+
+1. Sign in once: `bunx cf auth login`. Check with `bunx cf auth whoami`.
+2. Create the database next to most users:
    ```sh
-   bunx wrangler d1 create rayon-telemetry --location apac
+   bunx cf d1 create --name rayon-telemetry --primary-location-hint apac
    ```
-   Put the `database_id` it prints into `wrangler.toml`.
-3. Create the tables: `bun run migrate:remote`.
-4. Set the read secret. Keep it in a password manager; it opens the aggregates and crash items:
+   Its id goes into `cloudflare.config.ts`, `wrangler.toml` and the `migrate:remote` script.
+3. Create the tables: `bun run migrate:remote` (`cf d1 migrations apply <id> --dir migrations`).
+4. Deploy the first time with the read secret, which a Worker that does not exist yet cannot get any other way. The secret file is temporary and outside the repository; keep the secret in a password manager (it opens the aggregates and crash items):
    ```sh
-   openssl rand -base64 32 | bunx wrangler secret put READ_SECRET
+   umask 077
+   printf 'READ_SECRET=%s\n' "$(openssl rand -hex 32)" > /tmp/rayon-telemetry.env
+   bunx cf deploy --secrets-file /tmp/rayon-telemetry.env
+   rm /tmp/rayon-telemetry.env
    ```
-5. Route the Worker on your domain. The zone must be on Cloudflare with a proxied DNS record for the host (for example an `AAAA` record to `100::`). In `wrangler.toml`, uncomment `routes` and fill in your host and zone:
-   ```toml
-   routes = [{ pattern = "telemetry.example.com/v1/*", zone_name = "example.com" }]
+   `cf deploy` builds the Worker, uploads it with the D1 binding, attaches the custom domain `telemetry.kfcv50.today` (Cloudflare creates its DNS record and certificate), turns `workers.dev` and preview URLs off and installs the daily cron.
+5. Check the result:
+   ```sh
+   bunx cf workers get rayon-telemetry      # observability.enabled, logs.enabled, traces.enabled, logpush: false; subdomain.enabled: false; domains: telemetry.kfcv50.today
+   bunx cf workers secrets list --worker rayon-telemetry   # READ_SECRET, secret_text
+   curl -i https://telemetry.kfcv50.today/v1/reports        # 405
+   curl -i https://telemetry.kfcv50.today/v1/aggregates     # 401
    ```
-6. Deploy: `bun run deploy`.
-7. In the Cloudflare dashboard, check that the zone has no Logpush job for this host. Also check that Web Analytics and the Workers Observability log views are off for it.
-8. Check that the Worker answers: `curl -i https://telemetry.example.com/v1/reports` should return `405`.
-9. Point the app at it. In `Foundation/Telemetry/Sources/Telemetry/TelemetryEndpoint.swift`, set `url` to `https://telemetry.example.com/v1/reports`. Sending turns on in Release builds once the host is no longer the placeholder.
-10. Before the release that ships this, update the App Store privacy label in App Store Connect from `docs/telemetry.md`, and publish the privacy policy (`Resources/AppStore/PrivacyPolicy`).
+6. In the Cloudflare dashboard, check that the zone has no Logpush job for this host and that Web Analytics is off for it.
+7. Before the release that ships this, update the App Store privacy label in App Store Connect from `docs/telemetry.md` §5.3, and publish the privacy policy (`Resources/AppStore/PrivacyPolicy`).
+
+Later deploys are `bun run test && bun run deploy`. To replace the read secret: `bunx cf workers secrets update --worker rayon-telemetry --type secret_text` (see `--help`).
+
+To check the live Worker end to end, post one sample report (app version `0.0.0`, which no release has; its nonce row expires on its own after three days) with the app's sender, read it back, and delete it:
+
+```sh
+TELEMETRY_LIVE_ENDPOINT=https://telemetry.kfcv50.today/v1/reports \
+  swift test --package-path Foundation/Telemetry --filter LiveEndpoint
+curl -H "Authorization: Bearer $READ_SECRET" "https://telemetry.kfcv50.today/v1/crashes?from=$(date -u +%F)"
+bunx cf d1 query 90d72dcf-b4c1-4bb8-8322-5ee7ae53757a --sql "SELECT * FROM aggregates WHERE app_version = '0.0.0'"
+bunx cf d1 query 90d72dcf-b4c1-4bb8-8322-5ee7ae53757a --sql "DELETE FROM aggregates WHERE app_version = '0.0.0'; DELETE FROM crashes WHERE app_version = '0.0.0'"
+```
+
+The aggregates endpoint hides cells under ten, so a single report shows only in `/v1/crashes` and in D1.
 
 Read the counts:
 
 ```sh
-curl -H "Authorization: Bearer $READ_SECRET" "https://telemetry.example.com/v1/aggregates?from=2026-12-01&to=2026-12-31"
+curl -H "Authorization: Bearer $READ_SECRET" "https://telemetry.kfcv50.today/v1/aggregates?from=2026-12-01&to=2026-12-31"
 ```
 
 The `reports` metric with bucket `usage` counts daily reports, which approximates daily active devices at level 2 and up. Every other metric is a count of reports per bucket. For example, `usage.counts.terminalSessionsOpened` with bucket `6` is the number of devices that opened 6–20 terminal sessions that day.

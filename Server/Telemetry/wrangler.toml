@@ -1,13 +1,14 @@
-# Rayon telemetry ingest. Deploy steps: README.md.
+# Rayon telemetry ingest, for `wrangler dev` and the tests. `cf deploy`
+# reads cloudflare.config.ts; keep the two in step. Deploy steps: README.md.
 name = "rayon-telemetry"
 main = "src/index.ts"
 compatibility_date = "2026-11-01"
 
-# Served only on a route of your own domain: workers.dev is unreliable from
+# Served only on its own custom domain: workers.dev is unreliable from
 # mainland China and would give the endpoint a second address.
 workers_dev = false
 preview_urls = false
-# routes = [{ pattern = "telemetry.example.com/v1/*", zone_name = "example.com" }]
+routes = [{ pattern = "telemetry.kfcv50.today", custom_domain = true }]
 
 # No request logs anywhere: they would hold the IP addresses this Worker never reads.
 logpush = false
@@ -20,8 +21,8 @@ invocation_logs = false
 [[d1_databases]]
 binding = "DB"
 database_name = "rayon-telemetry"
-# Replace with the id `wrangler d1 create rayon-telemetry` prints.
-database_id = "00000000-0000-0000-0000-000000000000"
+# Created with `cf d1 create --name rayon-telemetry --primary-location-hint apac`.
+database_id = "90d72dcf-b4c1-4bb8-8322-5ee7ae53757a"
 migrations_dir = "migrations"
 
 [triggers]
