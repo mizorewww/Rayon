@@ -103,9 +103,9 @@ public final class RemoteDesktopCanvasView: UIView {
     private var gestures = RemoteDesktopTouchGestures()
     /// The picture's pinch zoom.
     private var viewport = RemoteDesktopViewport()
-    /// The text input the software keyboard comes up for. The canvas takes
-    /// hardware keys itself and is no text input, so focusing it never
-    /// shows a keyboard.
+    /// The text input the software keyboard comes up for, and the input
+    /// methods compose in. The canvas takes hardware keys itself and is no
+    /// text input, so focusing it never shows a keyboard.
     private let keyboardProxy = RemoteDesktopKeyboardProxy()
     /// The held hardware key being repeated.
     private var keyRepeat: (press: UIPress, task: Task<Void, Never>)?
@@ -136,7 +136,7 @@ public final class RemoteDesktopCanvasView: UIView {
         addSubview(cursorView)
         addSubview(localPointerView)
         keyboardProxy.canvas = self
-        keyboardProxy.frame = CGRect(x: 0, y: 0, width: 1, height: 1)
+        keyboardProxy.inputAccessoryView = keyboardAccessory
         keyboardProxy.isUserInteractionEnabled = false
         addSubview(keyboardProxy)
 
@@ -509,20 +509,24 @@ public final class RemoteDesktopCanvasView: UIView {
         _ = becomeFirstResponder()
     }
 
+    // Presses the keyboard proxy passed on come up the responder chain
+    // here: the proxy already sent what is the host's, the rest is the
+    // text system's.
+
     public override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-        let unhandled = presses.filter { !hardwareKey($0, isDown: true) }
+        let unhandled = keyboardProxy.isFirstResponder ? presses : presses.filter { !hardwareKey($0, isDown: true) }
         if !unhandled.isEmpty { super.pressesBegan(unhandled, with: event) }
     }
 
     public override func pressesEnded(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-        let unhandled = presses.filter { !hardwareKey($0, isDown: false) }
+        let unhandled = keyboardProxy.isFirstResponder ? presses : presses.filter { !hardwareKey($0, isDown: false) }
         if !unhandled.isEmpty { super.pressesEnded(unhandled, with: event) }
     }
 
     /// A press the system took back (the app went away, a gesture won)
     /// still lets go of its key on the host.
     public override func pressesCancelled(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-        let unhandled = presses.filter { !hardwareKey($0, isDown: false) }
+        let unhandled = keyboardProxy.isFirstResponder ? presses : presses.filter { !hardwareKey($0, isDown: false) }
         if !unhandled.isEmpty { super.pressesCancelled(unhandled, with: event) }
     }
 
@@ -596,7 +600,7 @@ public final class RemoteDesktopCanvasView: UIView {
     }
 
     /// Esc, Tab, the arrows and Done over the software keyboard.
-    fileprivate lazy var keyboardAccessory: UIView = {
+    lazy var keyboardAccessory: UIView = {
         let bar = UIToolbar()
         bar.sizeToFit()
         let space = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
@@ -641,7 +645,7 @@ public final class RemoteDesktopCanvasView: UIView {
     }
 
     /// Text from the software keyboard.
-    fileprivate func insertTyped(_ text: String) {
+    func insertTyped(_ text: String) {
         if text == "\n" || text == "\r" {
             session?.keyPressed(keyCode: 36, keySym: 0xFF0D, characters: "\r", isDown: true)
             session?.keyPressed(keyCode: 36, keySym: 0xFF0D, characters: "\r", isDown: false)
@@ -650,7 +654,7 @@ public final class RemoteDesktopCanvasView: UIView {
         session?.typeText(text)
     }
 
-    fileprivate func deleteTypedBackward() {
+    func deleteTypedBackward() {
         session?.keyPressed(keyCode: 51, keySym: 0xFF08, characters: "\u{7F}", isDown: true)
         session?.keyPressed(keyCode: 51, keySym: 0xFF08, characters: "\u{7F}", isDown: false)
     }
@@ -668,78 +672,6 @@ public final class RemoteDesktopCanvasView: UIView {
         }
     }
 #endif
-
-/// The text input the software keyboard comes up for, a point in the
-/// canvas's corner. It hands what is typed (and hardware keys, while it has
-/// focus) to the canvas.
-private final class RemoteDesktopKeyboardProxy: UIView, UIKeyInput, UITextInputTraits {
-    weak var canvas: RemoteDesktopCanvasView?
-
-    override var canBecomeFirstResponder: Bool { true }
-
-    override var inputAccessoryView: UIView? {
-        canvas?.keyboardAccessory
-    }
-
-    #if os(iOS) && !targetEnvironment(macCatalyst)
-        override var editingInteractionConfiguration: UIEditingInteractionConfiguration { .none }
-    #endif
-
-    override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-        let unhandled = presses.filter { canvas?.hardwareKey($0, isDown: true) != true }
-        if !unhandled.isEmpty { super.pressesBegan(unhandled, with: event) }
-    }
-
-    override func pressesEnded(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-        let unhandled = presses.filter { canvas?.hardwareKey($0, isDown: false) != true }
-        if !unhandled.isEmpty { super.pressesEnded(unhandled, with: event) }
-    }
-
-    override func pressesCancelled(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-        let unhandled = presses.filter { canvas?.hardwareKey($0, isDown: false) != true }
-        if !unhandled.isEmpty { super.pressesCancelled(unhandled, with: event) }
-    }
-
-    var hasText: Bool { true }
-
-    func insertText(_ text: String) {
-        canvas?.insertTyped(text)
-    }
-
-    func deleteBackward() {
-        canvas?.deleteTypedBackward()
-    }
-
-    var keyboardType: UIKeyboardType {
-        get { .default }
-        set {}
-    }
-
-    var autocorrectionType: UITextAutocorrectionType {
-        get { .no }
-        set {}
-    }
-
-    var autocapitalizationType: UITextAutocapitalizationType {
-        get { .none }
-        set {}
-    }
-
-    var spellCheckingType: UITextSpellCheckingType {
-        get { .no }
-        set {}
-    }
-
-    var smartQuotesType: UITextSmartQuotesType {
-        get { .no }
-        set {}
-    }
-
-    var smartDashesType: UITextSmartDashesType {
-        get { .no }
-        set {}
-    }
-}
 
 #elseif canImport(AppKit)
 import AppKit
