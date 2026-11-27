@@ -11,6 +11,7 @@
 import Foundation
 import os
 import RayonSSH
+import Logger
 
 public class PortForwardContext: ObservableObject, Identifiable, @unchecked Sendable {
     public var id = UUID()
@@ -124,7 +125,7 @@ public class PortForwardContext: ObservableObject, Identifiable, @unchecked Send
                 try await connection.runDynamicForward(bindPort: info.bindPort, onListening: running)
             }
         } catch {
-            debugPrint("port forward \(info.id) ended: \(error.localizedDescription)")
+            Logger.network.infoFile("port forward \(info.id) ended: \(error.localizedDescription)")
         }
         putLifecycle(.forwardStopped)
     }

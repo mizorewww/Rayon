@@ -10,6 +10,7 @@
 
 import Combine
 import Foundation
+import Logger
 
 @MainActor
 public final class RemoteDesktopManager: ObservableObject {
@@ -55,7 +56,7 @@ public final class RemoteDesktopManager: ObservableObject {
     /// Ends a session: disconnects it and drops it from the list.
     public func end(_ id: UUID) {
         guard let session = sessions.first(where: { $0.id == id }) else { return }
-        RemoteDesktopSession.log.info("end \(session.machine.name, privacy: .public)")
+        Logger.remoteDesktop.infoFile("end \(session.machine.name)")
         session.disconnect()
         sessions.removeAll { $0.id == id }
     }

@@ -11,6 +11,7 @@
 
 import Foundation
 import RayonSSH
+import Logger
 
 public final class KnownHosts: Sendable {
     public typealias HostKey = SSHHostKey
@@ -38,7 +39,7 @@ public final class KnownHosts: Sendable {
             do {
                 try storage.saveKnownHost(record)
             } catch {
-                RayonStorage.logger.error("updating the host key of \(name) failed: \(error.localizedDescription)")
+                Logger.database.errorFile("updating the host key of \(name) failed: \(error.localizedDescription)")
             }
         }
         return .trusted
@@ -51,7 +52,7 @@ public final class KnownHosts: Sendable {
         do {
             try storage.saveKnownHost(KnownHostRecord(name: name, type: key.type, key: key.key, added: Date()))
         } catch {
-            RayonStorage.logger.error("saving the host key of \(name) failed: \(error.localizedDescription)")
+            Logger.database.errorFile("saving the host key of \(name) failed: \(error.localizedDescription)")
         }
     }
 

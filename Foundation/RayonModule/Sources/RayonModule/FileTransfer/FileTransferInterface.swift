@@ -8,6 +8,7 @@
 
 import Foundation
 import os
+import Logger
 
 public protocol FileTransferUIHandler: AnyObject, Sendable {
     /// Present an error message to the user.
@@ -26,7 +27,7 @@ public protocol FileTransferUIHandler: AnyObject, Sendable {
 
 public extension FileTransferUIHandler {
     func presentError(_ message: String) {
-        debugPrint("<FileTransferError> \(message)")
+        Logger.network.errorFile("file transfer: \(message)")
     }
 
     func requiresConfirmation(_: String, completion: @escaping (Bool) -> Void) {

@@ -11,7 +11,7 @@
 import Combine
 import CoreGraphics
 import Foundation
-import os
+import Logger
 #if canImport(UIKit)
     import UIKit
 #elseif canImport(AppKit)
@@ -124,7 +124,6 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
 
     /// Phase changes and who ended a session, to tell a dropped connection
     /// from a closed page in the device's log.
-    nonisolated static let log = Logger(subsystem: "me.mizorewww.rayon", category: "remote-desktop")
 
     /// Where the server's saved details are read and written.
     private let store: RayonStore
@@ -163,7 +162,7 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
     /// Tears the session down; called when the page closes or the user taps
     /// disconnect.
     public func disconnect() {
-        Self.log.info("disconnect \(self.machine.name, privacy: .public) in \(String(describing: self.phase), privacy: .public)")
+        Logger.remoteDesktop.infoFile("disconnect \(self.machine.name) in \(String(describing: self.phase))")
         stopClipboardWatch()
         driver?.stop()
         driver = nil
@@ -331,7 +330,7 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
         Task { @MainActor [weak self] in
             guard let self else { return }
             if self.phase != phase {
-                Self.log.info("\(self.machine.name, privacy: .public): \(String(describing: phase), privacy: .public) \(hint ?? "", privacy: .public)")
+                Logger.remoteDesktop.infoFile("\(self.machine.name): \(String(describing: phase)) \(hint ?? "")")
                 self.phase = phase
                 if phase == .connected {
                     startClipboardWatch()

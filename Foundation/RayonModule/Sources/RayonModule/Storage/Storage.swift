@@ -9,8 +9,8 @@
 //
 
 import Foundation
-import os
 import Synchronization
+import Logger
 @preconcurrency import WCDBSwift
 
 public final class RayonStorage: Sendable {
@@ -19,7 +19,6 @@ public final class RayonStorage: Sendable {
     /// record back.
     static let tombstoneLifetime: TimeInterval = 60 * 60 * 24 * 30
 
-    static let logger = Logger(subsystem: "me.mizorewww.rayon", category: "storage")
 
     public static let shared: RayonStorage = open(at: defaultDatabaseURL)
 
@@ -68,7 +67,7 @@ public final class RayonStorage: Sendable {
         do {
             return try RayonStorage(databaseURL: url, secrets: secrets)
         } catch let error as DBMigration.NewerSchema {
-            logger.error("the database at \(url.path) is newer: \(error.localizedDescription)")
+            Logger.database.errorFile("the database at \(url.path) is newer: \(error.localizedDescription)")
             let scratch = FileManager.default.temporaryDirectory
                 .appending(path: "rayon-\(UUID().uuidString)", directoryHint: .isDirectory)
                 .appending(path: "database.db")
@@ -82,7 +81,7 @@ public final class RayonStorage: Sendable {
                 fatalError("unable to create a database at \(scratch.path): \(error)")
             }
         } catch {
-            logger.error("unable to open the database at \(url.path): \(error.localizedDescription)")
+            Logger.database.errorFile("unable to open the database at \(url.path): \(error.localizedDescription)")
             let aside = url.deletingPathExtension()
                 .appendingPathExtension("unreadable-\(Int(Date().timeIntervalSince1970)).db")
             try? FileManager.default.moveItem(at: url, to: aside)
@@ -113,7 +112,7 @@ public extension RayonStorage {
             let rows: [T] = try db.getObjects(fromTable: T.tableName, where: removedColumn == false)
             return rows.map(withSecrets)
         } catch {
-            Self.logger.error("reading \(T.tableName) failed: \(error.localizedDescription)")
+            Logger.database.errorFile("reading \(T.tableName) failed: \(error.localizedDescription)")
             return []
         }
     }
@@ -303,11 +302,11 @@ extension RayonStorage {
                 // Rows saved before the database noted this learn it here.
                 if !hasSecrets(row) { try? db.insertOrReplace([SecretPresence(account: row.secretAccount)], intoTable: SecretPresence.tableName) }
             } else if hasSecrets(row) {
-                Self.logger.error("the secrets of \(row.secretAccount) are missing from the keychain")
+                Logger.database.errorFile("the secrets of \(row.secretAccount) are missing from the keychain")
                 row.secretsUnread = true
             }
         } catch {
-            Self.logger.error("reading the secrets of \(row.secretAccount) failed: \(error.localizedDescription)")
+            Logger.database.errorFile("reading the secrets of \(row.secretAccount) failed: \(error.localizedDescription)")
             row.secretsUnread = true
         }
         return row

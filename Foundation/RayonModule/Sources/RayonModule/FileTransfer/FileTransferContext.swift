@@ -10,6 +10,7 @@
 import os
 import RayonSSH
 import SwiftUI
+import Logger
 
 public class FileTransferContext: ObservableObject, Identifiable, Equatable, @unchecked Sendable {
     public var id: UUID = .init()
@@ -63,11 +64,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
         URL(fileURLWithPath: currentDir)
     }
 
-    @Published public var isProgressRunning: Bool = true {
-        didSet {
-            debugPrint("sftp session progress setting \(isProgressRunning)")
-        }
-    }
+    @Published public var isProgressRunning: Bool = true
 
     @Published public var totalProgress: Progress = .init()
     @Published public var currentProcessingFile: String = ""
@@ -145,7 +142,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
         }
         defer { onMainThread { self.processConnection = false } }
 
-        debugPrint("\(self) \(#function) \(machine.id)")
+        Logger.network.infoFile("sftp session \(id) connecting to \(machine.id)")
         let lease: SSHLease
         let sftp: SFTPSession
         do {
@@ -172,7 +169,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
         await replaced.1?.close()
         replaced.0?.release()
 
-        debugPrint("sftp session for \(machine.name) is now connected")
+        Logger.network.infoFile("sftp session \(id) connected")
         onMainThread {
             self.connected = true
             self.connectionPhase = .connected
@@ -252,7 +249,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
         onMainThread {
             FileTransferInterface.uiHandler.presentError(message)
         }
-        print("SFTP \(machine.name) Error: \(message)")
+        Logger.network.errorFile("sftp session \(id): \(message)")
     }
 
     static func describe(_ error: Error, _ fallback: String) -> String {

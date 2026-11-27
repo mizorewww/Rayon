@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Logger
 
 public extension RayonStore {
     enum RecentConnection: Codable, Equatable, Identifiable, Sendable {
@@ -64,7 +65,7 @@ public extension RayonStore {
         do {
             try storage.saveRecentConnections(recentRecord.enumerated().map { $1.record(at: $0) })
         } catch {
-            Self.logger.error("saving the recent connections failed: \(error.localizedDescription)")
+            Logger.database.errorFile("saving the recent connections failed: \(error.localizedDescription)")
         }
     }
 

@@ -11,8 +11,8 @@
 
 import Combine
 import Foundation
-import os
 import Synchronization
+import Logger
 #if canImport(UIKit)
     import UIKit
 #endif
@@ -284,7 +284,7 @@ public extension RayonStore {
         if let problem = problem(saving: machine) {
             let existing = self.machine(machine.id)
             if existing?.transport != machine.transport || existing?.proxyJumpMachineID != machine.proxyJumpMachineID {
-                Self.logger.error("refusing to save \(machine.id): \(problem.localizedDescription)")
+                Logger.database.errorFile("refusing to save \(machine.id): \(problem.localizedDescription)")
                 return false
             }
         }
@@ -337,7 +337,7 @@ public extension RayonStore {
     @discardableResult
     func save(_ forward: RDPortForward) -> Bool {
         guard forward.isComplete else {
-            Self.logger.error("refusing to save the incomplete forward \(forward.id)")
+            Logger.database.errorFile("refusing to save the incomplete forward \(forward.id)")
             return false
         }
         return persist(forward, into: \.portForwards)
@@ -375,7 +375,6 @@ public extension RayonStore {
 }
 
 extension RayonStore {
-    static let logger = Logger(subsystem: "me.mizorewww.rayon", category: "store")
 
     func persist<T: StoredRecord>(_ record: T, into path: ReferenceWritableKeyPath<RayonStore, [T]>) -> Bool {
         do {
@@ -387,7 +386,7 @@ extension RayonStore {
             }
             return true
         } catch {
-            Self.logger.error("saving \(T.tableName) \(record.id) failed: \(error.localizedDescription)")
+            Logger.database.errorFile("saving \(T.tableName) \(record.id) failed: \(error.localizedDescription)")
             return false
         }
     }
@@ -398,7 +397,7 @@ extension RayonStore {
             try storage.delete(T.self, ids: ids)
             self[keyPath: path].removeAll { ids.contains($0.id) }
         } catch {
-            Self.logger.error("deleting from \(T.tableName) failed: \(error.localizedDescription)")
+            Logger.database.errorFile("deleting from \(T.tableName) failed: \(error.localizedDescription)")
         }
     }
 

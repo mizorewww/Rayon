@@ -10,6 +10,7 @@
 //
 
 import Foundation
+import Logger
 
 /// A record holding settings as values by key.
 protocol SettingsRecord: StoredRecord {
@@ -94,7 +95,7 @@ final class SettingsRecordSync<Record: SettingsRecord> {
         do {
             try storage.save(Record(entries: values), changed: changed)
         } catch {
-            RayonStorage.logger.error("saving \(Record.tableName) for sync failed: \(error.localizedDescription)")
+            Logger.database.errorFile("saving \(Record.tableName) for sync failed: \(error.localizedDescription)")
         }
     }
 }

@@ -11,13 +11,12 @@
 
 import CloudKit
 import Foundation
-import os
+import Logger
 
 public actor CloudSync {
     public static let containerIdentifier = "iCloud.me.mizorewww.rayon"
     public static let shared = CloudSync(storage: .shared)
 
-    static let logger = Logger(subsystem: "me.mizorewww.rayon", category: "sync")
 
     public enum Status: Equatable, Sendable {
         case off
@@ -103,7 +102,7 @@ public actor CloudSync {
             // left out came and was dropped, and the engine's change token
             // is past it. Everything is fetched again, and what is here
             // goes out on top of it.
-            Self.logger.info("sync scopes widened; fetching everything again")
+            Logger.syncEngine.infoFile("sync scopes widened; fetching everything again")
             stop()
             saveState(nil)
             storage.removeAllSystemFields()
@@ -143,7 +142,7 @@ public actor CloudSync {
             Task { await self?.scheduleUploads() }
         }
         scheduleUploads()
-        Self.logger.info("sync started")
+        Logger.syncEngine.infoFile("sync started")
     }
 
     private func stop() {
@@ -186,7 +185,7 @@ public actor CloudSync {
             lastSync = Date()
             publish(.idle(lastSync: lastSync))
         } catch {
-            Self.logger.error("sync failed: \(error.localizedDescription)")
+            Logger.syncEngine.errorFile("sync failed: \(error.localizedDescription)")
             publish(.failed(error.localizedDescription))
         }
     }
@@ -244,14 +243,14 @@ public actor CloudSync {
         // Sending it would send its secrets as empty, and every device
         // would clear its own. It stays queued until they can be read.
         guard !record.secretsUnread else {
-            Self.logger.error("not sending \(id.recordName): its secrets cannot be read now")
+            Logger.syncEngine.errorFile("not sending \(id.recordName): its secrets cannot be read now")
             return nil
         }
         func encode<T: StoredRecord>(_ record: T) -> CKRecord? {
             do {
                 return try CloudRecordCoding.ckRecord(for: record, systemFields: storage.systemFields(for: id.recordName))
             } catch {
-                Self.logger.error("not sending \(id.recordName): \(error.localizedDescription)")
+                Logger.syncEngine.errorFile("not sending \(id.recordName): \(error.localizedDescription)")
                 return nil
             }
         }
@@ -273,7 +272,7 @@ public actor CloudSync {
             }
             return try merge(record)
         } catch {
-            Self.logger.error("could not take \(ck.recordID.recordName): \(error.localizedDescription)")
+            Logger.syncEngine.errorFile("could not take \(ck.recordID.recordName): \(error.localizedDescription)")
             return false
         }
     }
@@ -360,7 +359,7 @@ public actor CloudSync {
                      .notAuthenticated, .operationCancelled, .requestRateLimited:
                     break
                 default:
-                    Self.logger.error("iCloud refused \(id.recordName): \(failure.error.localizedDescription)")
+                    Logger.syncEngine.errorFile("iCloud refused \(id.recordName): \(failure.error.localizedDescription)")
                 }
             }
             if zoneMissing {

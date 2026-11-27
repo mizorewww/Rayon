@@ -21,7 +21,6 @@ public class FileTransferManager: ObservableObject {
     @Published public var transfers: [FileTransferContext] = []
 
     public func begin(for machineId: RDMachine.ID, force: Bool = false) {
-        debugPrint("\(self) \(#function) \(machineId)")
         if !force {
             for transfer in transfers where transfer.machine.id == machineId {
                 FileTransferInterface.uiHandler.requiresConfirmation(
@@ -45,7 +44,6 @@ public class FileTransferManager: ObservableObject {
 
     public func end(for contextId: UUID) {
         onMainThread { [self] in
-            debugPrint("\(self) \(#function) \(contextId)")
             let index = transfers.firstIndex { $0.id == contextId }
             guard let index = index else { return }
             let sftp = transfers.remove(at: index)

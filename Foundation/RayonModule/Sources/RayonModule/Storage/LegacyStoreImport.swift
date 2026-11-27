@@ -17,6 +17,7 @@ import CommonCrypto
 import CryptoKit
 import Foundation
 import Security
+import Logger
 @preconcurrency import WCDBSwift
 
 enum LegacyStoreImport {
@@ -76,7 +77,7 @@ enum LegacyStoreImport {
         let lead = "The servers, identities and snippets saved by the previous version of Rayon could not be opened"
         let kept = "They are kept as they are, and Rayon tries again on its next launch."
         guard let master = masterKey(), !master.isEmpty else {
-            RayonStorage.logger.error("legacy import: the master key is not readable; trying again on the next launch")
+            Logger.database.errorFile("legacy import: the master key is not readable; trying again on the next launch")
             return .blocked("\(lead): the key that protects them could not be read from the keychain. \(kept)")
         }
         let opener = Opener(masterKey: master)
@@ -84,7 +85,7 @@ enum LegacyStoreImport {
         do {
             copies = try importRecords(from: defaults, opener: opener, into: storage)
         } catch {
-            RayonStorage.logger.error("legacy import failed: \(error.localizedDescription)")
+            Logger.database.errorFile("legacy import failed: \(error.localizedDescription)")
             return .blocked("\(lead) (\(error.localizedDescription)). \(kept)")
         }
         for key in Key.sealed + Key.obsolete + copies {

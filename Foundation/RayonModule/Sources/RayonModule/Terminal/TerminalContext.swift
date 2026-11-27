@@ -13,6 +13,7 @@ import NIOCore
 import os
 import RayonSSH
 import SwiftUI
+import Logger
 
 /// The terminal renderer a session drives, implemented in the apps over
 /// RayonTerminalView so RayonModule never links the renderer.
@@ -235,15 +236,12 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
 
         discardPendingInput()
 
-        debugPrint("\(self) \(#function) \(machine.id)")
+        Logger.terminal.infoFile("terminal \(id) opening for \(machine.id)")
         if remoteType != .local {
             putInformation("[*] Creating Connection")
         }
         continueDecision = true
 
-        surface.setupBellChain {
-            debugPrint("terminal bell")
-        }
         surface.setupBufferChain { [weak self] buffer in
             self?.insertBuffer(buffer)
         }
@@ -338,7 +336,7 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
             }
         }
         ssh.withLock { $0.shell = nil; $0.input = nil }
-        debugPrint("\(self) \(#function) ended \(machine.id)")
+        Logger.terminal.infoFile("terminal \(id) for \(machine.id) ended")
     }
 
     /// Why the shell ended, worded for the person. A dropped connection

@@ -12,6 +12,7 @@ import Combine
 import Foundation
 import NIOCore
 import RayonSSH
+import Logger
 
 public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendable {
     public let snippet: RDSnippet
@@ -27,17 +28,13 @@ public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendabl
         var buildNames: [RDMachine.ID: String] = [:]
         for machine in machines {
             guard let object = RayonStore.workerMachine(for: machine) else {
-                debugPrint("garbage machine found")
+                Logger.app.errorFile("snippet run: machine \(machine) is malformed")
                 receivedBuffer[machine] = Data("\r\n[*] Malformed Machine Info\r\n".utf8)
                 continue
             }
             buildNames[machine] = object.name
         }
         names = buildNames
-    }
-
-    deinit {
-        debugPrint("\(self) \(#function)")
     }
 
     private var didStart = false
@@ -226,7 +223,6 @@ public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendabl
         onMainThread { [weak self] in self?.objectWillChange.send() }
 
         let failed: String? = await execute(on: machine)
-        debugPrint("execution subroutine completed for machine: \(machine)")
         let doneCount: Int = accessLock.withLock {
             if let failed {
                 lockedAppendToBuffer("\r\n[E] \(failed)\r\n", for: machine)
@@ -251,7 +247,7 @@ public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendabl
     /// Runs the snippet; returns why it failed, or nil when it exited 0.
     private func execute(on machine: RDMachine.ID) async -> String? {
         guard let remote = RayonStore.workerMachine(for: machine) else {
-            debugPrint("machine vanished mid-run: \(machine)")
+            Logger.app.errorFile("snippet run: machine \(machine) vanished mid-run")
             return "The server no longer exists"
         }
         let lease: SSHLease
