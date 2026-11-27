@@ -3,7 +3,8 @@
 //  Rayon
 //
 //  Forwards in a native Table: orientation, bind, through server, target,
-//  status and an on/off switch.
+//  status and an on/off switch. The first four sort; several forwards can be
+//  chosen to start, stop or delete together.
 //
 
 #if os(macOS)
@@ -16,7 +17,9 @@
         @ObservedObject var backend = PortForwardBackend.shared
 
         @State private var searchText = ""
-        @State private var selection: RDPortForward.ID?
+        @State private var selection = Set<RDPortForward.ID>()
+        /// Empty keeps the order the forwards were made in.
+        @State private var sortOrder: [KeyPathComparator<RDPortForward>] = []
         @State private var editor: EditorTarget?
 
         struct EditorTarget: Identifiable {
@@ -25,7 +28,7 @@
         }
 
         var filtered: [RDPortForward] {
-            let all = store.portForwards
+            let all = store.portForwards.sorted(using: sortOrder)
             guard !searchText.isEmpty else { return all }
             let key = searchText.lowercased()
             return all.filter {
@@ -76,27 +79,27 @@
                 PortForwardEditorSheet(forward: target.forward) { editor = nil }
                     .environmentObject(RayonStore.shared)
             }
-            // Edit › Delete… (⌘⌫) deletes the selected row.
-            .focusedSceneValue(\.deleteSelection, selection.map { selection in { PortForwardActions.delete(selection) } })
+            // Edit › Delete… (⌘⌫) deletes the chosen forwards.
+            .focusedSceneValue(\.deleteSelection, selection.isEmpty ? nil : { [selection] in PortForwardActions.delete(Array(selection)) })
         }
 
         var table: some View {
-            Table(filtered, selection: $selection) {
-                TableColumn("Orientation") { forward in
+            Table(filtered, selection: $selection, sortOrder: $sortOrder) {
+                TableColumn("Orientation", value: \.forwardOrientation.label, comparator: .localizedStandard) { forward in
                     RXTag("\(forward.forwardOrientation.label)")
                 }
                 .width(min: 90, ideal: 115)
-                TableColumn("Bind") { forward in
+                TableColumn("Bind", value: \.bindPort) { forward in
                     Text(verbatim: ":\(forward.bindPort)")
                         .font(.rxCode)
                 }
                 .width(min: 60, ideal: 80)
-                TableColumn("Through") { forward in
+                TableColumn("Through", value: \.machineName, comparator: .localizedStandard) { forward in
                     RedactableText(forward.getMachineName() ?? String(localized: "No server"), redacted: redaction == .all)
                         .foregroundStyle(forward.usingMachine == nil ? Color.rxInkSecondary : Color.rxInk)
                         .lineLimit(1)
                 }
-                TableColumn("Target") { forward in
+                TableColumn("Target", value: \.targetLabel, comparator: .localizedStandard) { forward in
                     Text(verbatim: forward.targetLabel)
                         .font(.rxCode)
                         .foregroundStyle(forward.forwardOrientation == .dynamicSOCKS ? Color.rxInkSecondary : Color.rxInk)
@@ -119,9 +122,10 @@
                 .width(52)
             }
             .contextMenu(forSelectionType: RDPortForward.ID.self) { chosen in
-                if let forward = chosen.first.flatMap({ store.portForward($0) }) { menu(for: forward) }
+                let forwards = filtered.filter { chosen.contains($0.id) }
+                if forwards.count == 1 { menu(for: forwards[0]) } else if !forwards.isEmpty { menu(for: forwards) }
             } primaryAction: { chosen in
-                if let id = chosen.first, !backend.sessionExists(withPortForwardID: id) {
+                if chosen.count == 1, let id = chosen.first, !backend.sessionExists(withPortForwardID: id) {
                     editor = EditorTarget(forward: id)
                 }
             }
@@ -148,6 +152,22 @@
             .help(forward.isValid() ? (running ? "Stop" : "Start") : "Incomplete")
         }
 
+        /// Start and Stop for several forwards, each where it applies.
+        @ViewBuilder func menu(for forwards: [RDPortForward]) -> some View {
+            let stopped = forwards.filter { $0.isValid() && !backend.sessionExists(withPortForwardID: $0.id) }
+            let running = forwards.filter { backend.sessionExists(withPortForwardID: $0.id) }
+            Button("Start") {
+                for forward in stopped { backend.createSession(withPortForwardID: forward.id) }
+            }
+            .disabled(stopped.isEmpty)
+            Button("Stop") {
+                for forward in running { backend.endSession(withPortForwardID: forward.id) }
+            }
+            .disabled(running.isEmpty)
+            Divider()
+            Button("Delete…", role: .destructive) { PortForwardActions.delete(forwards.map(\.id)) }
+        }
+
         @ViewBuilder func menu(for forward: RDPortForward) -> some View {
             Button("Edit…") { editor = EditorTarget(forward: forward.id) }
                 .disabled(backend.sessionExists(withPortForwardID: forward.id))
@@ -155,8 +175,13 @@
             Button("Copy SSH Command") { Pasteboard.copy(forward.getCommand() ?? "") }
                 .disabled(forward.getCommand() == nil)
             Divider()
-            Button("Delete…", role: .destructive) { PortForwardActions.delete(forward.id) }
+            Button("Delete…", role: .destructive) { PortForwardActions.delete([forward.id]) }
         }
+    }
+
+    private extension RDPortForward {
+        /// The server's name, for sorting by the Through column.
+        var machineName: String { getMachineName() ?? "" }
     }
 
     @MainActor
@@ -167,17 +192,17 @@
             RayonStore.shared.save(copy)
         }
 
-        @MainActor
-        static func delete(_ id: RDPortForward.ID) {
-            guard let forward = RayonStore.shared.portForward(id) else { return }
+        static func delete(_ ids: [RDPortForward.ID]) {
+            let forwards = ids.compactMap { RayonStore.shared.portForward($0) }
+            guard let first = forwards.first else { return }
             Indicator.confirm(
-                message: "Delete the forward on port \(forward.bindPort)?",
+                message: forwards.count == 1 ? "Delete the forward on port \(first.bindPort)?" : "Delete \(forwards.count) forwards?",
                 confirmTitle: "Delete",
                 destructive: true
             ) { confirmed in
                 guard confirmed else { return }
-                PortForwardBackend.shared.endSession(withPortForwardID: id)
-                RayonStore.shared.deletePortForwards([id])
+                for forward in forwards { PortForwardBackend.shared.endSession(withPortForwardID: forward.id) }
+                RayonStore.shared.deletePortForwards(forwards.map(\.id))
             }
         }
     }
