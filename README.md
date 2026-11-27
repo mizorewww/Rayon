@@ -95,7 +95,7 @@ cd Rayon
 bash Workflow/Scripts/install-macos.sh   # Release build, installed to /Applications
 ```
 
-Or open `App.xcworkspace` and run the **Rayon** scheme (macOS) or **mRayon** (iOS 16+).
+Or open `App.xcworkspace` and run the **Rayon** scheme on a Mac or an iOS 18+ destination.
 
 ## Contributing
 

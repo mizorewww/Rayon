@@ -160,7 +160,7 @@ release_ios() {
     local ios_data="$DERIVED_DATA_PATH/iOS"
     if ! xcodebuild \
         -workspace "$ROOT_DIR/App.xcworkspace" \
-        -scheme mRayon \
+        -scheme Rayon \
         -configuration Release \
         -destination 'generic/platform=iOS' \
         -derivedDataPath "$ios_data" \
@@ -172,7 +172,7 @@ release_ios() {
     fi
 
     step "iOS: packaging"
-    local built="$ios_data/Build/Products/Release-iphoneos/mRayon.app"
+    local built="$ios_data/Build/Products/Release-iphoneos/Rayon.app"
     local version stage archive
     version="$(version_of "$built/Info.plist")"
     stage="$OUTPUT_DIR/ios"

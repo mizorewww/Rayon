@@ -52,7 +52,7 @@ step "Archiving build $BUILD_NUMBER"
 rm -rf "$ARCHIVE"
 if ! xcodebuild \
     -workspace "$ROOT_DIR/App.xcworkspace" \
-    -scheme mRayon \
+    -scheme Rayon \
     -configuration Release \
     -destination 'generic/platform=iOS' \
     -derivedDataPath "$OUTPUT_DIR/DerivedData" \

@@ -1,0 +1,5 @@
+#include "Base.xcconfig"
+
+// A Debug Mac build keeps its own preferences and sandbox container apart
+// from the installed app's. On iOS each build replaces the installed one.
+PRODUCT_BUNDLE_IDENTIFIER[sdk=macosx*] = me.mizorewww.rayon.debug

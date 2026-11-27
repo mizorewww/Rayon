@@ -1,4 +1,4 @@
-# The Mac app (Rayon) and the iOS app (mRayon).
+# Rayon: one SwiftUI target for macOS and iOS (iPhone and iPad).
 # Regenerate the project with: xcodegen generate
 name: Rayon
 options:
@@ -15,21 +15,24 @@ packages:
   MachineStatusView: { path: ../../Foundation/MachineStatusView }
   SymbolPicker: { path: ../../Foundation/SymbolPicker }
 configFiles:
-  Debug: ../../Configuration/Version.xcconfig
-  Release: ../../Configuration/Version.xcconfig
+  Debug: ../../Configuration/Debug.xcconfig
+  Release: ../../Configuration/Release.xcconfig
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    DEVELOPMENT_TEAM: ""
 targets:
   Rayon:
     type: application
-    platform: macOS
+    supportedDestinations: [macOS, iOS]
     sources:
       - path: macOS
+        destinationFilters: [macOS]
+      - path: iOS
+        destinationFilters: [iOS]
+      - path: Resources
         excludes:
-          - Info.plist
-          - "*.entitlements"
+          - InfoPlist
+          - Entitlements
       - path: ../../Resources/EULA
         buildPhase: resources
       - path: ../../Resources/LICENSE
@@ -40,22 +43,33 @@ targets:
     settings:
       base:
         PRODUCT_NAME: Rayon
-        CODE_SIGN_IDENTITY: "-"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: Rayon
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
-        CODE_SIGN_ENTITLEMENTS: macOS/macOS.entitlements
-        ENABLE_HARDENED_RUNTIME: YES
+        CODE_SIGN_ENTITLEMENTS: Resources/Entitlements/Entitlements-iOS.entitlements
+        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": Resources/Entitlements/Entitlements-macOS.entitlements
+        "ENABLE_HARDENED_RUNTIME[sdk=macosx*]": YES
+        ENABLE_PREVIEWS: YES
         GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_FILE: macOS/Info.plist
-        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
+        INFOPLIST_FILE: Resources/InfoPlist/Info-iOS.plist
+        "INFOPLIST_FILE[sdk=macosx*]": Resources/InfoPlist/Info-macOS.plist
         INFOPLIST_KEY_CFBundleDisplayName: Rayon
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
         INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2022 Lakr Aream. Copyright © 2026 mizorewww and Rayon contributors."
+        # iOS only.
+        "INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace[sdk=iphone*]": YES
+        "INFOPLIST_KEY_NSFaceIDUsageDescription[sdk=iphone*]": We are using Face ID to check your ownership of your devices before performing sensitive operation.
+        "INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphone*]": YES
+        "INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphone*]": YES
+        "INFOPLIST_KEY_UILaunchScreen_Generation[sdk=iphone*]": YES
+        "INFOPLIST_KEY_UISupportedInterfaceOrientations[sdk=iphone*]": UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+        "INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad[sdk=iphone*]": UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+        "INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone[sdk=iphone*]": UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
+        "INFOPLIST_KEY_UISupportsDocumentBrowser[sdk=iphone*]": YES
         SWIFT_EMIT_LOC_STRINGS: YES
-      configs:
-        Debug:
-          PRODUCT_BUNDLE_IDENTIFIER: me.mizorewww.rayon.debug
-        Release:
-          PRODUCT_BUNDLE_IDENTIFIER: me.mizorewww.rayon
     postCompileScripts:
       - name: Record Git Commit
         basedOnDependencyAnalysis: false
@@ -74,65 +88,7 @@ targets:
       - package: MachineStatus
       - package: MachineStatusView
       - package: SymbolPicker
-  mRayon:
-    type: application
-    platform: iOS
-    sources:
-      - path: iOS
-        excludes:
-          - "*.entitlements"
-          - Info.plist
-      - path: ../../Resources/EULA
-        buildPhase: resources
-      - path: ../../Resources/LICENSE
-        buildPhase: resources
-      - path: ../../Resources/Rayon.icon
-        buildPhase: resources
-        type: folder.iconcomposer
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: me.mizorewww.rayon
-        DEVELOPMENT_TEAM: LT98S43NKA
-        CODE_SIGN_STYLE: Automatic
-        CODE_SIGN_IDENTITY: Apple Development
-        CODE_SIGN_ENTITLEMENTS: iOS/mRayon.entitlements
-        "CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]": iOS/mRayon-iOS.entitlements
-        SUPPORTS_MACCATALYST: YES
-        TARGETED_DEVICE_FAMILY: "1,2"
-        ENABLE_PREVIEWS: YES
-        ASSETCATALOG_COMPILER_APPICON_NAME: Rayon
-        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
-        GENERATE_INFOPLIST_FILE: YES
-        INFOPLIST_FILE: iOS/Info.plist
-        INFOPLIST_KEY_CFBundleDisplayName: Rayon
-        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
-        INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace: YES
-        INFOPLIST_KEY_NSFaceIDUsageDescription: We are using Face ID to check your ownership of your devices before performing sensitive operation.
-        INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2022 Lakr Aream. Copyright © 2026 mizorewww and Rayon contributors."
-        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
-        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
-        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
-        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight
-        INFOPLIST_KEY_UISupportsDocumentBrowser: YES
-        SWIFT_EMIT_LOC_STRINGS: YES
-    dependencies:
-      - package: RayonModule
-      - package: RayonTerminal
-      - package: RayonEditor
-      - package: MachineStatus
-      - package: MachineStatusView
-      - package: SymbolPicker
 schemes:
-  mRayon:
-    build:
-      targets:
-        mRayon: all
-    run:
-      config: Debug
-    archive:
-      config: Release
   Rayon:
     build:
       targets:

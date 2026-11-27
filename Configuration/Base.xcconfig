@@ -1,0 +1,18 @@
+// Settings both apps share, for every configuration. The version is in
+// Version.xcconfig.
+
+#include "Version.xcconfig"
+
+PRODUCT_BUNDLE_IDENTIFIER = me.mizorewww.rayon
+
+// Both apps sign automatically with the team when built from Xcode.
+// build-macos.sh passes its own identity (ad hoc when there is no Apple
+// Development certificate), and CI builds without signing.
+DEVELOPMENT_TEAM = LT98S43NKA
+CODE_SIGN_STYLE = Automatic
+CODE_SIGN_IDENTITY = Apple Development
+
+// A Mac app keeps its frameworks in Contents/Frameworks, not next to the
+// executable as on iOS.
+LD_RUNPATH_SEARCH_PATHS[sdk=macosx*] = $(inherited) @executable_path/../Frameworks
+COMBINE_HIDPI_IMAGES[sdk=macosx*] = YES

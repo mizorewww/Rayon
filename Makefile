@@ -35,7 +35,7 @@ build-macos:
 build-ios:
 	xcodebuild -quiet \
 		-workspace $(WORKSPACE) \
-		-scheme mRayon \
+		-scheme Rayon \
 		-configuration $(CONFIGURATION) \
 		-destination 'generic/platform=iOS Simulator' \
 		-derivedDataPath "$(DERIVED_DATA)" \
@@ -51,7 +51,6 @@ test:
 
 resolve:
 	xcodebuild -resolvePackageDependencies -workspace $(WORKSPACE) -scheme Rayon
-	xcodebuild -resolvePackageDependencies -workspace $(WORKSPACE) -scheme mRayon
 	for package in $(RESOLVED_PACKAGES); do swift package --package-path "$$package" resolve || exit 1; done
 
 scan-license:

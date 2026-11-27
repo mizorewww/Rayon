@@ -115,7 +115,7 @@ install_ios() {
     local ios_data="$DERIVED_DATA_PATH/iOS"
     if ! xcodebuild \
         -workspace "$ROOT_DIR/App.xcworkspace" \
-        -scheme mRayon \
+        -scheme Rayon \
         -configuration Release \
         -destination 'generic/platform=iOS' \
         -derivedDataPath "$ios_data" \
@@ -131,7 +131,7 @@ install_ios() {
     local app="$ios_data/Signed/Rayon.app"
     rm -rf "$ios_data/Signed"
     mkdir -p "$ios_data/Signed"
-    ditto "$ios_data/Build/Products/Release-iphoneos/mRayon.app" "$app"
+    ditto "$ios_data/Build/Products/Release-iphoneos/Rayon.app" "$app"
     cp "$profile" "$app/embedded.mobileprovision"
     local entitlements="$ios_data/Signed/entitlements.plist"
     cat > "$entitlements" <<EOF
