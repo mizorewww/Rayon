@@ -22,28 +22,8 @@
         @EnvironmentObject var store: RayonStore
         @Environment(\.dismiss) private var dismiss
 
-        @State private var name = ""
-        @State private var address = ""
-        @State private var port = "22"
-        @State private var transport: RDMachine.Transport = .direct
-        @State private var proxyJumpMachineID: RDMachine.ID?
-        @State private var serviceTokenID = ""
-        @State private var serviceTokenSecret = ""
-        @State private var identity: RDIdentity.ID?
-        @State private var sshUsername = ""
-        @State private var group = ""
-        @State private var startFolder = "/"
-        @State private var comment = ""
+        @State private var draft = ServerDraft()
         @State private var banner = ""
-        @State private var remoteDesktopProtocol: RDMachine.RemoteDesktopProtocolType = .none
-        @State private var vncPort = "5900"
-        @State private var vncPassword = ""
-        @State private var vncUsername = ""
-        @State private var vncOverSSH = false
-        @State private var vncShared = true
-        @State private var uuDeviceID = ""
-        @State private var uuAssistID = ""
-        @State private var uuAssistCode = ""
 
         @ObservedObject private var uuAccount = UURemoteAccount.shared
 
@@ -53,12 +33,7 @@
         @State private var picksIdentity = false
 
         var isNew: Bool { machine == nil }
-        var portIsValid: Bool { UInt16(port) != nil }
-        var canSave: Bool {
-            guard !address.trimmingCharacters(in: .whitespaces).isEmpty, portIsValid else { return false }
-            if transport == .proxyJump { return proxyJumpMachineID != nil }
-            return true
-        }
+        var canSave: Bool { draft.isValid }
 
         var jumpServerChoices: [RayonStore.JumpServerChoice] {
             store.jumpServerChoices(for: machine)
@@ -124,7 +99,7 @@
                 IdentityPickerSheet { picked in
                     picksIdentity = false
                     guard let picked else { return }
-                    identity = picked
+                    draft.identity = picked
                     createAndConnect()
                 }
             }
@@ -133,11 +108,11 @@
         private var fields: some View {
             VStack(alignment: .leading, spacing: 14) {
                 RXField("Name") {
-                    TextField(address.isEmpty ? "prod-web-01" : address, text: $name)
+                    TextField(draft.address.isEmpty ? "prod-web-01" : draft.address, text: $draft.name)
                         .textFieldStyle(.roundedBorder)
                 }
                 RXField("Connect through") {
-                    Picker("Connect through", selection: $transport) {
+                    Picker("Connect through", selection: $draft.transport) {
                         Text("Direct (TCP)").tag(RDMachine.Transport.direct)
                         Text("ProxyJump (Bastion)").tag(RDMachine.Transport.proxyJump)
                         Text("Cloudflare Access").tag(RDMachine.Transport.cloudflareAccess)
@@ -145,7 +120,7 @@
                     }
                     .labelsHidden()
                 }
-                if transport == .proxyJump {
+                if draft.transport == .proxyJump {
                     RXField("Jump server (Bastion)", help: "Reaches this server through an SSH tunnel opened on the jump server (ssh -J).") {
                         // A menu rather than a Picker: a Picker's items cannot be
                         // disabled on macOS, and the unavailable ones are shown.
@@ -153,53 +128,53 @@
                         Menu {
                             ForEach(choices) { choice in
                                 Toggle(choice.title, isOn: Binding(
-                                    get: { proxyJumpMachineID == choice.id },
-                                    set: { _ in proxyJumpMachineID = choice.id }
+                                    get: { draft.proxyJumpMachineID == choice.id },
+                                    set: { _ in draft.proxyJumpMachineID = choice.id }
                                 ))
                                 .disabled(choice.unavailableReason != nil)
                             }
                         } label: {
-                            Text(choices.first { $0.id == proxyJumpMachineID }?.title
+                            Text(choices.first { $0.id == draft.proxyJumpMachineID }?.title
                                 ?? (choices.isEmpty ? "No other SSH servers saved" : "Choose a jump server…"))
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
                 HStack(alignment: .top, spacing: RX.Space.s4) {
-                    RXField(transport == .cloudflareAccess ? "Access hostname" : transport == .uuRemote ? "Device ID" : "Address") {
-                        TextField(transport == .cloudflareAccess ? "ssh.example.com" : transport == .uuRemote ? "UU Remote device id" : "Host name or IP address", text: $address)
+                    RXField(draft.transport == .cloudflareAccess ? "Access hostname" : draft.transport == .uuRemote ? "Device ID" : "Address") {
+                        TextField(draft.transport == .cloudflareAccess ? "ssh.example.com" : draft.transport == .uuRemote ? "UU Remote device id" : "Host name or IP address", text: $draft.address)
                             .textFieldStyle(.roundedBorder)
                             .font(.rxCode)
                             .disableAutocorrection(true)
                     }
-                    RXField("Port", error: portIsValid ? nil : "1–65535") {
-                        TextField("22", text: $port)
+                    RXField("Port", error: draft.portIsValid ? nil : "1–65535") {
+                        TextField("22", text: $draft.port)
                             .textFieldStyle(.roundedBorder)
                             .font(.rxCode)
                     }
                     .frame(width: 96)
                 }
-                if transport == .cloudflareAccess {
+                if draft.transport == .cloudflareAccess {
                     cloudflareFields
-                } else if transport == .uuRemote {
+                } else if draft.transport == .uuRemote {
                     HelpText("Files, Monitor and the editor reach the device's own SSH server through UU Remote, signed in with the identity below; on a Mac, turn on System Settings › General › Sharing › Remote Login. The terminal is UU Remote's own and needs neither.")
                 }
                 RXField("Remote Desktop") {
-                    Picker("Remote Desktop", selection: $remoteDesktopProtocol) {
+                    Picker("Remote Desktop", selection: $draft.remoteDesktopProtocol) {
                         Text("None").tag(RDMachine.RemoteDesktopProtocolType.none)
                         Text("VNC").tag(RDMachine.RemoteDesktopProtocolType.vnc)
                         Text("NetEase UU Remote").tag(RDMachine.RemoteDesktopProtocolType.uuRemote)
                     }
                     .labelsHidden()
                 }
-                if remoteDesktopProtocol == .vnc {
+                if draft.remoteDesktopProtocol == .vnc {
                     vncFields
-                } else if remoteDesktopProtocol == .uuRemote {
+                } else if draft.remoteDesktopProtocol == .uuRemote {
                     uuFields
                 }
                 HStack(alignment: .top, spacing: RX.Space.s4) {
                     RXField("Identity") {
-                        Picker("Identity", selection: $identity) {
+                        Picker("Identity", selection: $draft.identity) {
                             Text("Automatic").tag(RDIdentity.ID?.none)
                             ForEach(store.identities) { item in
                                 Text(item.group.isEmpty ? item.username : "\(item.username) · \(item.group)")
@@ -209,7 +184,7 @@
                         .labelsHidden()
                     }
                     RXField("User name") {
-                        TextField(sshUsernamePlaceholder, text: $sshUsername)
+                        TextField(sshUsernamePlaceholder, text: $draft.sshUsername)
                             .textFieldStyle(.roundedBorder)
                             .font(.rxCode)
                             .disableAutocorrection(true)
@@ -219,12 +194,12 @@
                 HStack(alignment: .top, spacing: RX.Space.s4) {
                     RXField("Group") {
                         HStack(spacing: RX.Space.s1) {
-                            TextField("Default", text: $group)
+                            TextField("Default", text: $draft.folder)
                                 .textFieldStyle(.roundedBorder)
                             if !existingGroups.isEmpty {
                                 Menu {
                                     ForEach(existingGroups, id: \.self) { item in
-                                        Button(item) { group = item }
+                                        Button(item) { draft.folder = item }
                                     }
                                 } label: {
                                     Label("Existing Groups", systemImage: "chevron.down")
@@ -238,13 +213,13 @@
                     }
                 }
                 RXField("SFTP start folder") {
-                    TextField("/", text: $startFolder)
+                    TextField("/", text: $draft.startFolder)
                         .textFieldStyle(.roundedBorder)
                         .font(.rxCode)
                         .disableAutocorrection(true)
                 }
                 RXField("Comment") {
-                    TextField("Optional", text: $comment)
+                    TextField("Optional", text: $draft.comment)
                         .textFieldStyle(.roundedBorder)
                 }
                 if !isNew {
@@ -259,25 +234,25 @@
         /// the port only listens on the remote loopback.
         @ViewBuilder var vncFields: some View {
             HStack(alignment: .top, spacing: RX.Space.s4) {
-                RXField("VNC port") {
-                    TextField("5900", text: $vncPort)
+                RXField("VNC port", error: draft.vncPortIsValid ? nil : "1–65535") {
+                    TextField("5900", text: $draft.vncPort)
                         .textFieldStyle(.roundedBorder)
                         .font(.rxCode)
                 }
                 RXField("VNC password") {
-                    SecureField("Use identity password", text: $vncPassword)
+                    SecureField("Use identity password", text: $draft.vncPassword)
                         .textFieldStyle(.roundedBorder)
                 }
             }
             RXField("Mac user name") {
-                TextField("Use identity user name", text: $vncUsername)
+                TextField("Use identity user name", text: $draft.vncUsername)
                     .textFieldStyle(.roundedBorder)
                     .disableAutocorrection(true)
             }
             HelpText("macOS Screen Sharing signs in with a Mac user name and password. Leave the VNC password empty to use the identity's; a VNC password alone uses VNC authentication.")
             HStack(spacing: RX.Space.s5) {
-                Toggle("Tunnel over SSH", isOn: $vncOverSSH)
-                Toggle("Shared session", isOn: $vncShared)
+                Toggle("Tunnel over SSH", isOn: $draft.vncOverSSH)
+                Toggle("Shared session", isOn: $draft.vncShared)
             }
             .toggleStyle(.switch)
         }
@@ -290,7 +265,7 @@
             }
             if !uuAccount.desktopDevices.isEmpty {
                 RXField("UU Remote device") {
-                    Picker("UU Remote device", selection: $uuDeviceID) {
+                    Picker("UU Remote device", selection: $draft.uuDeviceID) {
                         Text("Manual / assist").tag("")
                         ForEach(uuAccount.desktopDevices, id: \.deviceID) { device in
                             Text("\(device.alias.isEmpty ? device.deviceID : device.alias) · \(UUDeviceInfo.platformName(device.platform))")
@@ -300,10 +275,10 @@
                     .labelsHidden()
                 }
             }
-            if uuDeviceID.isEmpty {
+            if draft.uuDeviceID.isEmpty {
                 HStack(alignment: .top, spacing: RX.Space.s4) {
                     RXField("Device ID") {
-                        TextField("From the account's device list", text: $uuDeviceID)
+                        TextField("From the account's device list", text: $draft.uuDeviceID)
                             .textFieldStyle(.roundedBorder)
                             .font(.rxCode)
                             .disableAutocorrection(true)
@@ -311,13 +286,13 @@
                 }
                 HStack(alignment: .top, spacing: RX.Space.s4) {
                     RXField("Assist connect ID") {
-                        TextField("Optional", text: $uuAssistID)
+                        TextField("Optional", text: $draft.uuAssistID)
                             .textFieldStyle(.roundedBorder)
                             .font(.rxCode)
                             .disableAutocorrection(true)
                     }
                     RXField("Assist code") {
-                        SecureField("Optional", text: $uuAssistCode)
+                        SecureField("Optional", text: $draft.uuAssistCode)
                             .textFieldStyle(.roundedBorder)
                             .font(.rxCode)
                     }
@@ -341,13 +316,13 @@
         @ViewBuilder var cloudflareFields: some View {
             HStack(alignment: .top, spacing: RX.Space.s4) {
                 RXField("Service token Client ID") {
-                    TextField("Optional", text: $serviceTokenID)
+                    TextField("Optional", text: $draft.serviceTokenID)
                         .textFieldStyle(.roundedBorder)
                         .font(.rxCode)
                         .disableAutocorrection(true)
                 }
                 RXField("Client Secret") {
-                    SecureField("Optional", text: $serviceTokenSecret)
+                    SecureField("Optional", text: $draft.serviceTokenSecret)
                         .textFieldStyle(.roundedBorder)
                         .font(.rxCode)
                 }
@@ -357,62 +332,15 @@
 
         /// The identity's user name, which applies while the field is empty.
         var sshUsernamePlaceholder: String {
-            guard let identity else { return "Use identity user name" }
+            guard let identity = draft.identity else { return "Use identity user name" }
             let username = (store.identity(identity) ?? RDIdentity()).username
             return username.isEmpty ? "Use identity user name" : "\(username) (from identity)"
         }
 
-        /// The server as the form describes it, for checking the connection.
-        var draft: RDMachine {
-            var draft = RDMachine(remoteAddress: address.trimmingCharacters(in: .whitespaces), remotePort: port)
-            apply(to: &draft)
-            return draft
-        }
-
-        func apply(to target: inout RDMachine) {
-            target.sshUsername = sshUsername.trimmingCharacters(in: .whitespaces)
-            target.transport = transport
-            target.proxyJumpMachineID = transport == .proxyJump ? proxyJumpMachineID : nil
-            let cloudflare = transport == .cloudflareAccess
-            target.cloudflareServiceTokenID = cloudflare ? serviceTokenID.trimmingCharacters(in: .whitespaces) : ""
-            target.cloudflareServiceTokenSecret = cloudflare ? serviceTokenSecret.trimmingCharacters(in: .whitespaces) : ""
-            target.remoteDesktopProtocol = remoteDesktopProtocol
-            target.vncPort = vncPort
-            target.vncPassword = vncPassword
-            target.vncUsername = vncUsername.trimmingCharacters(in: .whitespaces)
-            target.vncOverSSH = vncOverSSH
-            target.vncShared = vncShared
-            target.uuDeviceID = uuDeviceID.trimmingCharacters(in: .whitespaces)
-            target.uuAssistID = uuAssistID.trimmingCharacters(in: .whitespaces)
-            target.uuAssistCode = uuAssistCode
-        }
-
         func load() {
             guard let read = machine.flatMap({ store.machine($0) }) ?? template else { return }
-            name = read.name
-            address = read.remoteAddress
-            port = read.remotePort
-            group = store.folderName(of: read)
-            comment = read.comment
-            startFolder = read.fileTransferLoginPath
+            draft = ServerDraft(read, folder: store.folderName(of: read))
             banner = read.lastBanner
-            transport = read.transport
-            proxyJumpMachineID = read.proxyJumpMachineID
-            serviceTokenID = read.cloudflareServiceTokenID
-            serviceTokenSecret = read.cloudflareServiceTokenSecret
-            remoteDesktopProtocol = read.remoteDesktopProtocol
-            vncPort = read.vncPort
-            vncPassword = read.vncPassword
-            vncUsername = read.vncUsername
-            sshUsername = read.sshUsername
-            vncOverSSH = read.vncOverSSH
-            vncShared = read.vncShared
-            uuDeviceID = read.uuDeviceID
-            uuAssistID = read.uuAssistID
-            uuAssistCode = read.uuAssistCode
-            if let uid = read.associatedIdentity {
-                identity = uid
-            }
         }
 
         func finish() {
@@ -423,16 +351,10 @@
         @discardableResult
         func save(banner capturedBanner: String? = nil, identity resolvedIdentity: RDIdentity.ID? = nil) -> RDMachine? {
             // A new server has never been connected to; RXFormat shows the epoch as "Never".
-            var target = machine.flatMap { store.machine($0) } ?? RDMachine(lastConnection: Date(timeIntervalSince1970: 0))
-            let trimmedAddress = address.trimmingCharacters(in: .whitespaces)
-            target.remoteAddress = trimmedAddress
-            target.remotePort = port
-            target.name = name.isEmpty ? trimmedAddress : name
-            target.folderId = store.folderId(forName: group)
-            target.comment = comment
-            target.fileTransferLoginPath = startFolder.isEmpty ? "/" : startFolder
-            target.associatedIdentity = (resolvedIdentity ?? identity)
-            apply(to: &target)
+            let saved = machine.flatMap { store.machine($0) } ?? RDMachine(lastConnection: Date(timeIntervalSince1970: 0))
+            var edited = draft
+            if let resolvedIdentity { edited.identity = resolvedIdentity }
+            var target = edited.apply(to: saved, folderId: store.folderId(forName: draft.folder))
             if let capturedBanner {
                 target.lastBanner = capturedBanner
                 target.lastConnection = Date()
@@ -453,14 +375,14 @@
         func createAndConnect() {
             error = nil
             connecting = true
-            let host = address.trimmingCharacters(in: .whitespaces)
-            let port = port
-            let draft = draft
-            let chosen = identity.flatMap { store.identity($0) }
+            let host = draft.trimmedAddress
+            let port = draft.port
+            let checked = draft.apply(to: RDMachine(), folderId: nil)
+            let chosen = draft.identity.flatMap { store.identity($0) }
             let candidates = store.identitiesForAutoAuth
             let timeout = NSNumber(value: AppSettings.connectionTimeout.value)
             Task {
-                let outcome = await ServerConnectionCheck.run(draft, identity: chosen, candidates: candidates, timeout: timeout)
+                let outcome = await ServerConnectionCheck.run(checked, identity: chosen, candidates: candidates, timeout: timeout)
                 connecting = false
                 if case let .unreachable(refusal) = outcome {
                     error = refusal ?? "Could not reach \(host) on port \(port)."
