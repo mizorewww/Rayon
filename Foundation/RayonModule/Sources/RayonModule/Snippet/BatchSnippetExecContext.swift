@@ -4,7 +4,9 @@
 //
 //  Shared batch snippet execution context used by macOS and iOS. Runs on a
 //  few servers at a time, each over the server's pooled connection; a run
-//  that exits non-zero, or without an exit status, counts as failed.
+//  that exits non-zero, or without an exit status, counts as failed. Runs
+//  get a pseudo-terminal, so a stopped run's remote process is hung up on
+//  even where the server ignores the signal sent first.
 //  Uses O(1) UTF-8 byte-ring buffers and publishes state transitions on @MainActor.
 //
 
@@ -259,7 +261,7 @@ public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendabl
         defer { lease.release() }
         appendToBuffer("[*] Execute Begin\r\n", for: machine)
         do {
-            let status = try await lease.connection.execute(snippet.code) { [weak self] chunk, _ in
+            let status = try await lease.connection.execute(snippet.code, pseudoTerminal: true) { [weak self] chunk, _ in
                 self?.appendOutput(chunk, for: machine)
             }
             return status == 0 ? nil : "Exited with status \(status)"
