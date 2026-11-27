@@ -59,20 +59,30 @@ public actor SSHConnection {
     public nonisolated let serverVersion: String
     /// Kept open while this connection runs over it.
     private let bastion: SSHConnection?
+    /// The event loop this connection has to itself, if any, shut down
+    /// when nothing holds the connection any more: until then a close or
+    /// a wait on the channel still needs it to run.
+    private let ownGroup: EventLoopGroup?
     /// How long the server has to confirm a channel. Generous: on a link
     /// busy with output the confirmation queues behind it, and a link that
     /// is down is noticed by the keepalive sooner.
     private static let channelTimeout = TimeAmount.seconds(60)
 
-    private init(client: SSHClient, channel: Channel, serverVersion: String, bastion: SSHConnection?) {
+    private init(client: SSHClient, channel: Channel, serverVersion: String, bastion: SSHConnection?, ownGroup: EventLoopGroup?) {
         self.client = client
         self.channel = channel
         self.serverVersion = serverVersion
         self.bastion = bastion
+        self.ownGroup = ownGroup
         // A jump host carries this connection alone, and ends with it.
         if let bastion {
             channel.closeFuture.whenComplete { _ in Task { await bastion.close() } }
         }
+    }
+
+    deinit {
+        // Shutting the loop down closes the channel if it is still open.
+        ownGroup?.shutdownGracefully { _ in }
     }
 
     /// Connects and signs in, offering each credential in turn. Citadel
@@ -161,16 +171,20 @@ public actor SSHConnection {
         serverVersion: inout String?
     ) async throws -> SSHConnection {
         let timeout = TimeAmount(configuration.timeout)
-        let channel = try await configuration.transport.makeChannel(
+        let (channel, ownGroup) = try await configuration.transport.makeChannel(
             host: configuration.host, port: configuration.port, timeout: timeout, ownEventLoop: agentWait != nil
         )
+        let abandon = {
+            channel.close(promise: nil)
+            ownGroup?.shutdownGracefully { _ in }
+        }
         let gate: NIOLoopBound<SSHBannerGate>
         do {
             gate = try await channel.eventLoop.submit {
                 try NIOLoopBound(channel.pipeline.syncOperations.handler(type: SSHBannerGate.self), eventLoop: channel.eventLoop)
             }.get()
         } catch {
-            channel.close(promise: nil)
+            abandon()
             throw SSHError.connectionFailed("The connection to \(configuration.host) closed (\(SSHTransport.describe(error))).")
         }
         let authenticator = SSHCredentialAuthenticator(username: configuration.username, offer: offer)
@@ -219,7 +233,7 @@ public actor SSHConnection {
             }
         } catch {
             if let version = try? await channel.eventLoop.submit({ gate.value.serverVersion }).get() { serverVersion = version }
-            channel.close(promise: nil)
+            abandon()
             if error is CancellationError || error is AgentSignedAnotherAlgorithm { throw error }
             throw Self.translate(error, host: configuration.host)
         }
@@ -229,7 +243,7 @@ public actor SSHConnection {
             return gate.value.serverVersion
         }.get()
         let bastion: SSHConnection? = if case let .jump(connection) = configuration.transport { connection } else { nil }
-        return SSHConnection(client: client, channel: channel, serverVersion: version ?? "", bastion: bastion)
+        return SSHConnection(client: client, channel: channel, serverVersion: version ?? "", bastion: bastion, ownGroup: ownGroup)
     }
 
     /// AES-GCM (built in) first, AES-CTR with non-EtM MACs for older
