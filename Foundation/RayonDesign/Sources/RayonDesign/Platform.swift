@@ -28,15 +28,6 @@ public extension View {
         controlSize(.regular)
     }
 
-    /// A menu drawn as a button.
-    func rxButtonMenu(indicator: Bool = true) -> some View {
-        #if os(macOS)
-            menuStyle(.button).menuIndicator(indicator ? .automatic : .hidden)
-        #else
-            menuIndicator(indicator ? .automatic : .hidden)
-        #endif
-    }
-
     /// An inline text link.
     func rxLinkButton() -> some View {
         buttonStyle(.plain).foregroundStyle(Color.rxAccent)

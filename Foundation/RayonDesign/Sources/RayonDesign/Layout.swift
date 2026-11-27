@@ -23,26 +23,6 @@ import SwiftUI
         public func updateNSView(_: NSVisualEffectView, context _: Context) {}
     }
 
-    /// Lets the user move a hidden-title-bar window by dragging empty chrome,
-    /// and zoom it on double-click.
-    public struct RXWindowDragArea: NSViewRepresentable {
-        public init() {}
-
-        public final class DragView: NSView {
-            override public var mouseDownCanMoveWindow: Bool { true }
-
-            override public func mouseDown(with event: NSEvent) {
-                if event.clickCount == 2 {
-                    window?.performZoom(nil)
-                    return
-                }
-                window?.performDrag(with: event)
-            }
-        }
-
-        public func makeNSView(context _: Context) -> NSView { DragView() }
-        public func updateNSView(_: NSView, context _: Context) {}
-    }
 #endif
 
 /// Wraps children onto new lines (toggle chips, tags).
@@ -102,40 +82,6 @@ public struct RXFlowLayout: Layout {
         }
         if !current.indices.isEmpty { rows.append(current) }
         return rows
-    }
-}
-
-/// Toggle chip used by feature lists.
-public struct RXChip: View {
-    let title: String
-    let isOn: Bool
-    let action: () -> Void
-
-    public init(_ title: String, isOn: Bool, action: @escaping () -> Void) {
-        self.title = title
-        self.isOn = isOn
-        self.action = action
-    }
-
-    public var body: some View {
-        Button(action: action) {
-            HStack(spacing: 4) {
-                Image(systemName: isOn ? "checkmark" : "plus")
-                    .font(.system(size: 9, weight: .bold))
-                Text(title)
-                    .font(.system(size: 12))
-            }
-            .foregroundStyle(isOn ? Color.rxAccent : Color.rxInk)
-            .padding(.leading, 7)
-            .padding(.trailing, 9)
-            .frame(height: 24)
-            .background(
-                Capsule().fill(isOn ? Color.rxAccentFill : Color.primary.opacity(0.06))
-            )
-            .contentShape(Capsule())
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 }
 

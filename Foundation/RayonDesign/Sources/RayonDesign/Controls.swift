@@ -284,33 +284,6 @@ public struct RXSearchField: View {
     }
 }
 
-// MARK: - Button groups
-
-public struct RXGroupedButtonStyle: ButtonStyle {
-    public init() {}
-
-    public func makeBody(configuration: Configuration) -> some View {
-        RXGroupedButtonBody(configuration: configuration)
-    }
-}
-
-private struct RXGroupedButtonBody: View {
-    let configuration: ButtonStyleConfiguration
-    @Environment(\.isEnabled) private var isEnabled
-
-    var body: some View {
-        configuration.label
-            .labelStyle(.iconOnly)
-            .font(.system(size: 13))
-            .foregroundStyle(.rxInk)
-            .frame(minWidth: RX.controlHeight + 4, maxHeight: .infinity)
-            .padding(.horizontal, 2)
-            .background(configuration.isPressed ? Color.rxSurfaceSunken : Color.clear)
-            .contentShape(Rectangle())
-            .opacity(isEnabled ? 1 : 0.45)
-    }
-}
-
 // MARK: - Liquid Glass actions
 
 public extension View {

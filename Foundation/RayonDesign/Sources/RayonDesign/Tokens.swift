@@ -38,7 +38,6 @@ public enum RX {
     public static let smallControlHeight: CGFloat = 22
     public static let sidebarWidth: CGFloat = 216
     public static let tableRowHeight: CGFloat = 40
-    public static let denseRowHeight: CGFloat = 32
     public static let tableHeaderHeight: CGFloat = 28
     public static let formRowMinHeight: CGFloat = 56
 }
@@ -119,8 +118,6 @@ public extension ShapeStyle where Self == Color {
     static var rxSeries2Fill: Color { RXPalette.series2Fill }
     static var rxAccentFill: Color { RXPalette.accentFill }
     /// Selected segment of a segmented control.
-    static var rxSegmentSelected: Color { RXPalette.segmentSelected }
-    static var rxOnSegment: Color { RXPalette.onSegment }
     static var rxSuccess: Color { RXPalette.success }
     static var rxSuccessHalo: Color { RXPalette.successHalo }
     static var rxWarning: Color { RXPalette.warning }
@@ -156,8 +153,6 @@ enum RXPalette {
     static let series2 = Color(rxLight: 0x3B94_D6FF, dark: 0x6CBC_F2FF)
     static let series2Fill = Color(rxLight: 0x3B94_D633, dark: 0x6CBC_F229)
     static let accentFill = Color(rxLight: 0x4B49_C826, dark: 0x8583_FF2E)
-    static let segmentSelected = Color(rxLight: 0x6E70_79FF, dark: 0x5F61_69FF)
-    static let onSegment = Color(rxLight: 0xFFFF_FFFF, dark: 0xFFFF_FFFF)
     static let success = Color(rxLight: 0x24A1_48FF, dark: 0x34D1_58FF)
     static let successHalo = Color(rxLight: 0x24A1_4826, dark: 0x34D1_5833)
     static let warning = Color(rxLight: 0xA864_00FF, dark: 0xFFB3_40FF)

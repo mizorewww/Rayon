@@ -7,11 +7,6 @@
 
 import SwiftUI
 
-public enum RXToolbar {
-    public static let height: CGFloat = 32
-    public static let spacing: CGFloat = 8
-}
-
 /// A choice in an `RXToolbarMenu`.
 public struct RXToolbarMenuItem {
     public let title: String
@@ -55,9 +50,4 @@ public struct RXToolbarMenu: View {
         }
         .accessibilityLabel(title)
     }
-}
-
-public extension Notification.Name {
-    /// Focuses the toolbar search of the frontmost page: post it from a Find command (⌘F).
-    static let rxFocusToolbarSearch = Notification.Name("RXFocusToolbarSearch")
 }

@@ -62,11 +62,3 @@ public extension View {
         modifier(RXPop())
     }
 }
-
-/// Where the selection of a toolbar's segmented control was last drawn, by its
-/// options. A page's toolbar replaces the last page's, and the selection then
-/// slides from where it was instead of jumping.
-@MainActor
-enum RXSegmentedMemory {
-    static var last: [AnyHashable: AnyHashable] = [:]
-}
