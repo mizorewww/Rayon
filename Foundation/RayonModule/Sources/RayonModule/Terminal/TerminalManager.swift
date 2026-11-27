@@ -99,6 +99,7 @@ public final class TerminalManager: ObservableObject {
     ) {
         let context = Context(machine: machine, resuming: uuSession)
         sessionContexts.append(context)
+        Telemetry.record(.feature(.terminalSessionsOpened))
         RayonStore.shared.storeRecentIfNeeded(from: machine.id)
         completion(context)
     }
@@ -107,6 +108,7 @@ public final class TerminalManager: ObservableObject {
     public func createSession(withCommand command: SSHCommandReader) -> Context {
         let context = Context(command: command)
         sessionContexts.append(context)
+        Telemetry.record(.feature(.terminalSessionsOpened))
         RayonStore.shared.storeRecentIfNeeded(from: command)
         return context
     }
@@ -115,6 +117,7 @@ public final class TerminalManager: ObservableObject {
     public func createLocalSession() -> Context {
         let context = Context(localShell: true)
         sessionContexts.append(context)
+        Telemetry.record(.feature(.terminalSessionsOpened))
         return context
     }
 

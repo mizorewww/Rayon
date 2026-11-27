@@ -41,6 +41,8 @@ public final class ServerStatusSampler {
     /// Off once the server has shown it has no `nvidia-smi` (or is a Mac),
     /// so most servers stop paying for a second channel every round.
     private(set) var probesGraphics = true
+    /// What `uname -s` said in the last round, such as "Linux" or "Darwin".
+    public private(set) var kernelName: String?
 
     public init() {}
 
@@ -83,6 +85,7 @@ public final class ServerStatusSampler {
         else {
             return .empty
         }
+        kernelName = platform
         let isDarwin = platform == "Darwin"
         if isDarwin || graphicsOutput?.contains(ServerStatus.noGraphicsMarker) == true {
             probesGraphics = false

@@ -155,6 +155,7 @@ public final class EditorWorkspace: ObservableObject, Identifiable {
             return
         }
         add(EditorDocument(path: path, context: context))
+        Telemetry.record(.feature(.editorOpened))
     }
 
     public func add(_ document: EditorDocument) {

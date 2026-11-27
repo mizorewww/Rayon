@@ -40,6 +40,7 @@ public class FileTransferManager: ObservableObject {
         }
         let object = FileTransferContext(machine: machine, identity: RayonStore.shared.associatedIdentity(for: machine))
         transfers.append(object)
+        Telemetry.record(.feature(.sftpBrowsed))
     }
 
     public func end(for contextId: UUID) {

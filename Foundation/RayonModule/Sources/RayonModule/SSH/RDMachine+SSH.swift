@@ -18,6 +18,8 @@ public extension RDMachine {
         public let message: String
         /// The server could not be reached, as opposed to refusing the identities.
         public let unreachable: Bool
+        /// The cause, for the day's telemetry count.
+        var outcome: TelemetryReport.ConnectionOutcome = .other
 
         public var errorDescription: String? { message }
     }
@@ -35,7 +37,16 @@ public extension RDMachine {
         background: Bool = false,
         hint: (@Sendable (String) -> Void)? = nil
     ) async throws -> (SSHConnection, RDIdentity) {
-        try await connectSSH(identity: identity, autoIdentities: autoIdentities, timeout: timeout, background: background, hint: hint, visited: [])
+        do {
+            let (connection, identity) = try await connectSSH(identity: identity, autoIdentities: autoIdentities, timeout: timeout, background: background, hint: hint, visited: [])
+            Telemetry.record(.connection(.success, auth: identity.telemetryAuthMethod))
+            return (connection, identity)
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            Telemetry.record(.connection((error as? SSHFailure)?.outcome ?? .other, auth: nil))
+            throw error
+        }
     }
 
     /// The machine's own identity when it has one, else the automatic ones;
@@ -107,7 +118,11 @@ public extension RDMachine {
         guard !candidates.isEmpty else {
             throw SSHFailure(message: "No identity to sign in with. Choose one for the server, or let an identity authenticate automatically.", unreachable: false)
         }
-        throw SSHFailure(message: (["Could not sign in to \(name.isEmpty ? remoteAddress : name)."] + reasons).joined(separator: "\n"), unreachable: false)
+        throw SSHFailure(
+            message: (["Could not sign in to \(name.isEmpty ? remoteAddress : name)."] + reasons).joined(separator: "\n"),
+            unreachable: false,
+            outcome: reachedServer ? .authFailed : .other
+        )
     }
 
     /// Opens the server's transport without signing in; throws an
@@ -117,11 +132,12 @@ public extension RDMachine {
         do {
             try await transport.reach(host: remoteAddress, port: sshPort, timeout: timeout)
         } catch let SSHError.connectionFailed(reason) {
-            throw SSHFailure(message: transport.isWebSocket ? cloudflareReason(reason) : reason, unreachable: true)
+            throw SSHFailure(message: transport.isWebSocket ? cloudflareReason(reason) : reason, unreachable: true, outcome: .init(reason: reason))
         } catch let refusal as SSHWebSocketEndpoint.Refusal {
             throw SSHFailure(message: cloudflareReason(refusal), unreachable: true)
         } catch {
-            throw SSHFailure(message: SSHTransport.describe(error), unreachable: true)
+            let reason = SSHTransport.describe(error)
+            throw SSHFailure(message: reason, unreachable: true, outcome: .init(reason: reason))
         }
     }
 
@@ -154,25 +170,28 @@ public extension RDMachine {
                 hostKeyStatus: { KnownHosts.shared.status(of: $0, host: host, port: port) }
             )
             do {
-                return try await SSHConnection.connect(configuration)
+                let start = ContinuousClock.now
+                let connection = try await SSHConnection.connect(configuration)
+                Telemetry.record(.connectLatency(.now - start))
+                return connection
             } catch let error as SSHError {
                 switch error {
                 case let .unknownHostKey(key):
                     guard await HostKeyTrust.confirm(KnownHosts.shared.question(offering: key, host: host, port: port), background: background) else {
-                        throw SSHFailure(message: "The host key of \(host) was not trusted.", unreachable: true)
+                        throw SSHFailure(message: "The host key of \(host) was not trusted.", unreachable: true, outcome: .hostKeyMismatch)
                     }
                     KnownHosts.shared.trust(key, host: host, port: port)
                 case let .hostKeyChanged(offered, _):
                     guard await HostKeyTrust.confirm(KnownHosts.shared.question(offering: offered, host: host, port: port), background: background) else {
-                        throw SSHFailure(message: error.localizedDescription, unreachable: true)
+                        throw SSHFailure(message: error.localizedDescription, unreachable: true, outcome: .hostKeyMismatch)
                     }
                     KnownHosts.shared.trust(offered, host: host, port: port)
                 case .authenticationFailed, .agentUnavailable:
                     throw error
                 case let .connectionFailed(reason):
-                    throw SSHFailure(message: transport.isWebSocket ? cloudflareReason(reason) : reason, unreachable: true)
+                    throw SSHFailure(message: transport.isWebSocket ? cloudflareReason(reason) : reason, unreachable: true, outcome: .init(reason: reason))
                 default:
-                    throw SSHFailure(message: error.localizedDescription, unreachable: true)
+                    throw SSHFailure(message: error.localizedDescription, unreachable: true, outcome: error == .timedOut ? .timeout : .other)
                 }
             } catch let refusal as SSHWebSocketEndpoint.Refusal {
                 throw SSHFailure(message: cloudflareReason(refusal), unreachable: true)

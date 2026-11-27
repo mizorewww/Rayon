@@ -47,6 +47,7 @@ public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendabl
         didStart = true
         accessLock.unlock()
         guard shouldStart else { return }
+        Telemetry.record(.feature(.snippetsRun))
         onMainThread { [weak self] in
             self?.isRunning = true
         }

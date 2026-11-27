@@ -45,6 +45,7 @@ public final class PortForwardBackend: ObservableObject {
         }
         container.append(context)
         context.begin()
+        Telemetry.record(.portForwardStarted(portFwd.forwardOrientation.telemetryKind))
         onCreated?()
     }
 

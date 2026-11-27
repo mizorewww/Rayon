@@ -39,6 +39,11 @@ public final class RemoteDesktopManager: ObservableObject {
         let session = RemoteDesktopSession(machine: machine, protocolType: type)
         sessions.append(session)
         session.connect()
+        switch type {
+        case .vnc: Telemetry.record(.feature(.vncSessions))
+        case .uuRemote: Telemetry.record(.feature(.uuRemoteSessions))
+        case .none: break
+        }
         store.updateMachine(machineID) { $0.lastConnection = Date() }
         return session
     }

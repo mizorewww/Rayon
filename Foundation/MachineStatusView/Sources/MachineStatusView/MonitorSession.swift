@@ -192,6 +192,7 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
         var failures = 0
         /// Whether this connection produced a reading yet.
         var hasReading = false
+        var countedRemoteOS = false
         var lease: SSHLease?
         defer { lease?.release() }
         /// Whether a lease was asked for already: the next is a reconnect.
@@ -231,6 +232,10 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
                 // A loop replaced by reconnect() or ended by shutdown()
                 // must not publish over its successor.
                 if Task.isCancelled { break }
+                if !countedRemoteOS, let kernel = sampler.kernelName {
+                    countedRemoteOS = true
+                    Telemetry.record(.remoteOS(.init(unameKernel: kernel)))
+                }
                 switch round {
                 case let .status(status):
                     failures = 0
@@ -365,6 +370,7 @@ public final class MonitorCenter: ObservableObject {
         let session = try runningSession(for: machineID)
         if !sessions.contains(session) { sessions.append(session) }
         RayonStore.shared.storeRecentIfNeeded(from: machineID)
+        Telemetry.record(.feature(.monitorOpened))
         return session
     }
 

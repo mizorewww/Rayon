@@ -366,6 +366,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
 
     public func upload(urls: [URL]) {
         guard connectionAvailableCheckPassed() else { return }
+        Telemetry.record(.feature(.fileTransfers))
         let base = currentUrl
         continueCurrentProgress = true
         enqueue { [self] sftp in
@@ -430,6 +431,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
     }
 
     public func download(from: URL, toDir: URL) {
+        Telemetry.record(.feature(.fileTransfers))
         let fromPath = from.path
         var to = toDir.path
         if !to.hasSuffix("/") { to += "/" }
