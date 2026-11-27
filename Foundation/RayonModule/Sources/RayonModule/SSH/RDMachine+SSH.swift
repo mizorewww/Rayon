@@ -177,7 +177,8 @@ public extension RDMachine {
                 switch error {
                 case let .unknownHostKey(key):
                     guard await HostKeyTrust.confirm(KnownHosts.shared.question(offering: key, host: host, port: port), background: background) else {
-                        throw SSHFailure(message: "The host key of \(host) was not trusted.", unreachable: true, outcome: .hostKeyMismatch)
+                        // Nothing mismatched: the person turned down a key never seen before.
+                        throw SSHFailure(message: "The host key of \(host) was not trusted.", unreachable: true)
                     }
                     KnownHosts.shared.trust(key, host: host, port: port)
                 case let .hostKeyChanged(offered, _):
