@@ -73,16 +73,40 @@ public final class RayonStore: ObservableObject {
     public nonisolated let storage: RayonStorage
 
     @Published public internal(set) var machines: [RDMachine] {
-        didSet { updateWorkerSnapshot() }
+        didSet {
+            machinePositions = Self.positions(of: machines)
+            identityUsage = Self.usage(of: machines)
+            updateWorkerSnapshot()
+        }
     }
 
     @Published public internal(set) var identities: [RDIdentity] {
-        didSet { updateWorkerSnapshot() }
+        didSet {
+            identityPositions = Self.positions(of: identities)
+            updateWorkerSnapshot()
+        }
     }
     /// Sorted by name.
-    @Published public internal(set) var folders: [RDFolder]
-    @Published public internal(set) var snippets: [RDSnippet]
-    @Published public internal(set) var portForwards: [RDPortForward]
+    @Published public internal(set) var folders: [RDFolder] {
+        didSet { folderPositions = Self.positions(of: folders) }
+    }
+    @Published public internal(set) var snippets: [RDSnippet] {
+        didSet { snippetPositions = Self.positions(of: snippets) }
+    }
+    @Published public internal(set) var portForwards: [RDPortForward] {
+        didSet { portForwardPositions = Self.positions(of: portForwards) }
+    }
+
+    // Where each record is in its list, so a lookup by id (made from view
+    // bodies, once per row or tile) is not a scan of the list.
+    private var machinePositions: [RDMachine.ID: Int] = [:]
+    private var identityPositions: [RDIdentity.ID: Int] = [:]
+    private var folderPositions: [RDFolder.ID: Int] = [:]
+    private var snippetPositions: [RDSnippet.ID: Int] = [:]
+    private var portForwardPositions: [RDPortForward.ID: Int] = [:]
+    /// How many servers sign in with each identity, for a count on every
+    /// identity's row.
+    private var identityUsage: [RDIdentity.ID: Int] = [:]
     @Published public var recentRecord: [RecentConnection] {
         didSet { persistRecent() }
     }
@@ -99,6 +123,13 @@ public final class RayonStore: ObservableObject {
         snippets = storage.records(RDSnippet.self)
         portForwards = storage.records(RDPortForward.self)
         recentRecord = storage.recentConnections().compactMap(RecentConnection.init(record:))
+        // Property observers do not run in an initializer.
+        machinePositions = Self.positions(of: machines)
+        identityUsage = Self.usage(of: machines)
+        identityPositions = Self.positions(of: identities)
+        folderPositions = Self.positions(of: folders)
+        snippetPositions = Self.positions(of: snippets)
+        portForwardPositions = Self.positions(of: portForwards)
         // The recent list follows its settings, wherever they are changed.
         AppSettings.remembersRecent.publisher
             .sink { [weak self] remembers in
@@ -156,24 +187,29 @@ public final class RayonStore: ObservableObject {
 
 public extension RayonStore {
     func machine(_ id: RDMachine.ID) -> RDMachine? {
-        machines.first { $0.id == id }
+        machinePositions[id].map { machines[$0] }
     }
 
     func identity(_ id: RDIdentity.ID) -> RDIdentity? {
-        identities.first { $0.id == id }
+        identityPositions[id].map { identities[$0] }
     }
 
     func snippet(_ id: RDSnippet.ID) -> RDSnippet? {
-        snippets.first { $0.id == id }
+        snippetPositions[id].map { snippets[$0] }
     }
 
     func portForward(_ id: RDPortForward.ID) -> RDPortForward? {
-        portForwards.first { $0.id == id }
+        portForwardPositions[id].map { portForwards[$0] }
     }
 
     func folder(_ id: RDFolder.ID?) -> RDFolder? {
         guard let id else { return nil }
-        return folders.first { $0.id == id }
+        return folderPositions[id].map { folders[$0] }
+    }
+
+    /// How many servers sign in with the identity.
+    func serverCount(using identity: RDIdentity.ID) -> Int {
+        identityUsage[identity] ?? 0
     }
 
     /// The identity the server signs in with; nil when it has none or the
@@ -386,6 +422,23 @@ extension RayonStore {
         } catch {
             Logger.database.errorFile("deleting from \(public: T.tableName) failed: \(error)")
         }
+    }
+
+    /// The first position of each id, as `first(where:)` would find it.
+    nonisolated static func positions<T: Identifiable>(of records: [T]) -> [T.ID: Int] {
+        var positions = [T.ID: Int](minimumCapacity: records.count)
+        for (index, record) in records.enumerated() where positions[record.id] == nil {
+            positions[record.id] = index
+        }
+        return positions
+    }
+
+    nonisolated static func usage(of machines: [RDMachine]) -> [RDIdentity.ID: Int] {
+        var usage: [RDIdentity.ID: Int] = [:]
+        for case let identity? in machines.lazy.map(\.associatedIdentity) {
+            usage[identity, default: 0] += 1
+        }
+        return usage
     }
 
     nonisolated static func sorted(_ folders: [RDFolder]) -> [RDFolder] {

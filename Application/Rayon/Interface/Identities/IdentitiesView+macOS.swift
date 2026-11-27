@@ -74,7 +74,7 @@
                 }
                 .width(min: 60, ideal: 80)
                 TableColumn("Servers") { identity in
-                    Text("\(store.servers(using: identity.id).count)")
+                    Text("\(store.serverCount(using: identity.id))")
                         .monospacedDigit()
                         .foregroundStyle(.rxInkSecondary)
                 }

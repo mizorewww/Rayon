@@ -33,9 +33,4 @@ extension RayonStore {
             return ServerGroup(name: name, machines: inside)
         }
     }
-
-    /// The servers that sign in with `identity`.
-    func servers(using identity: RDIdentity.ID) -> [RDMachine] {
-        machines.filter { $0.associatedIdentity == identity }
-    }
 }

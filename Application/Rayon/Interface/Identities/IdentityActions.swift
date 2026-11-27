@@ -120,7 +120,7 @@ struct IdentityRow: View {
                     .foregroundStyle(.rxInkSecondary)
             }
             Spacer()
-            Text("\(store.servers(using: identity.id).count) servers")
+            Text("\(store.serverCount(using: identity.id)) servers")
                 .font(.footnote.monospacedDigit())
                 .foregroundStyle(.rxInkSecondary)
         }
