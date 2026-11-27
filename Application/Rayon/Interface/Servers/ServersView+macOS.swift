@@ -6,409 +6,409 @@
 //
 
 #if os(macOS)
-import MachineStatusView
-import RayonDesign
-import RayonModule
-import SwiftUI
+    import MachineStatusView
+    import RayonDesign
+    import RayonModule
+    import SwiftUI
 
-struct ServersView: View {
-    @EnvironmentObject var store: RayonStore
-    @ObservedObject var router = AppRouter.shared
-    /// The toolbar names the account item by whether one is signed in.
-    @ObservedObject private var account = UURemoteAccount.shared
+    struct ServersView: View {
+        @EnvironmentObject var store: RayonStore
+        @ObservedObject var router = AppRouter.shared
+        /// The toolbar names the account item by whether one is signed in.
+        @ObservedObject private var account = UURemoteAccount.shared
 
-    @State private var searchText = ""
-    @State private var selection: RDMachine.ID?
+        @State private var searchText = ""
+        @State private var selection: RDMachine.ID?
 
-    var filtered: [RDMachine] {
-        let machines = store.machines
-        guard !searchText.isEmpty else { return machines }
-        return machines.filter { $0.isQualifiedForSearch(text: searchText) }
-    }
-
-    /// The folders in order, Default last; empty folders only while not
-    /// searching.
-    var groups: [(name: String, machines: [RDMachine])] {
-        let machines = filtered
-        // One group per name: folders of the same name from two devices
-        // would list their servers twice.
-        var names: [String] = []
-        for folder in store.folders where !names.contains(folder.name) { names.append(folder.name) }
-        // A server whose folder is gone is with the default ones.
-        if machines.contains(where: { store.folder($0.folderId) == nil }) { names.append("") }
-        return names.compactMap { name in
-            let inside = machines.filter { store.folderName(of: $0) == name }
-                .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-            if inside.isEmpty, !searchText.isEmpty { return nil }
-            return (name, inside)
+        var filtered: [RDMachine] {
+            let machines = store.machines
+            guard !searchText.isEmpty else { return machines }
+            return machines.filter { $0.isQualifiedForSearch(text: searchText) }
         }
-    }
 
-    var body: some View {
-        PageScaffold(
-            search: $searchText,
-            searchPrompt: "Search servers",
-            primary: ToolbarAction("New Server", systemImage: "plus", primary: true) {
-                router.presentNewServer = true
+        /// The folders in order, Default last; empty folders only while not
+        /// searching.
+        var groups: [(name: String, machines: [RDMachine])] {
+            let machines = filtered
+            // One group per name: folders of the same name from two devices
+            // would list their servers twice.
+            var names: [String] = []
+            for folder in store.folders where !names.contains(folder.name) { names.append(folder.name) }
+            // A server whose folder is gone is with the default ones.
+            if machines.contains(where: { store.folder($0.folderId) == nil }) { names.append("") }
+            return names.compactMap { name in
+                let inside = machines.filter { store.folderName(of: $0) == name }
+                    .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+                if inside.isEmpty, !searchText.isEmpty { return nil }
+                return (name, inside)
             }
-        ) {
-        } trailing: {
-            RXToolbarMenu(
-                "New Folder",
-                systemImage: "folder.badge.plus",
-                items: [
-                    RXToolbarMenuItem("New Folder…", systemImage: "folder.badge.plus", isOn: false) { FolderActions.newFolder() },
-                    RXToolbarMenuItem("Import ~/.ssh/config…", systemImage: "square.and.arrow.down", isOn: false) { importSSHConfigFromToolbar() },
-                    RXToolbarMenuItem(account.isLoggedIn ? "UU Remote Account…" : "Link UU Remote Account…", systemImage: "link", isOn: false) { FolderActions.linkUURemote() },
-                ]
-            )
-            .help("Make a folder, or fill one from a UU Remote account")
-            RedactionMenu()
-            Button { router.openTerminals() } label: {
-                Label("Open Terminals…", systemImage: "rectangle.stack.badge.plus")
-            }
-            .help("Pick several servers and open a terminal on each")
-            .disabled(store.machines.isEmpty)
-        } header: {
-            VStack(alignment: .leading, spacing: RX.Space.s3) {
-                PageTitle("Servers")
-                if store.machineRedacted != .none {
-                    RedactionBanner()
-                }
-            }
-        } content: {
-            if store.machines.isEmpty, store.folders.isEmpty {
-                EmptyStateView(
-                    "No servers yet",
-                    systemImage: "server.rack",
-                    actionTitle: "New Server"
-                ) {
+        }
+
+        var body: some View {
+            PageScaffold(
+                search: $searchText,
+                searchPrompt: "Search servers",
+                primary: ToolbarAction("New Server", systemImage: "plus", primary: true) {
                     router.presentNewServer = true
                 }
-                .rxCard()
-            } else if filtered.isEmpty {
-                EmptyStateView("No matches", systemImage: "magnifyingglass")
-                .rxCard()
-            } else {
-                ServersTable(groups: groups, selection: $selection)
-            }
-        }
-        .background {
-            // ⌘⌫ deletes the selected row.
-            Button("Delete") {
-                if let selection { ServerActions.delete([selection]) }
-            }
-            .keyboardShortcut(.delete, modifiers: .command)
-            .disabled(selection == nil)
-            .opacity(0)
-            .accessibilityHidden(true)
-        }
-    }
-
-    private func importSSHConfigFromToolbar() {
-        let sshDir = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(".ssh")
-        UIBridge.openPanel(
-            message: "Choose an OpenSSH config file (e.g. ~/.ssh/config)",
-            prompt: "Import",
-            directory: sshDir,
-            canChooseFiles: true,
-            canChooseDirectories: false,
-            allowsMultipleSelection: false,
-            canCreateDirectories: false,
-            showsHiddenFiles: true
-        ) { urls in
-            guard let url = urls.first else { return }
-            guard let text = try? String(contentsOf: url, encoding: .utf8) else {
-                UIBridge.presentError(with: "Could not read \(url.lastPathComponent) as UTF-8 text.")
-                return
-            }
-            _ = store.importOpenSSHConfig(text, baseDirectory: url.deletingLastPathComponent())
-        }
-    }
-}
-
-/// None → Sensitive hides addresses → All hides names too.
-struct RedactionMenu: View {
-    @EnvironmentObject var store: RayonStore
-
-    var body: some View {
-        RXToolbarMenu(
-            "Privacy",
-            systemImage: store.machineRedacted == .none ? "eye" : "eye.slash",
-            items: [
-                item("Show Everything", systemImage: "eye", level: .none),
-                item("Hide Addresses", systemImage: "eye.slash", level: .sensitive),
-                item("Hide Names and Addresses", systemImage: "eye.slash.fill", level: .all),
-            ]
-        )
-        .help(store.machineRedacted.tooltip)
-    }
-
-    private func item(_ title: String, systemImage: String, level: RDMachine.RedactedLevel) -> RXToolbarMenuItem {
-        RXToolbarMenuItem(title, systemImage: systemImage, isOn: store.machineRedacted == level) {
-            store.machineRedacted = level
-        }
-    }
-}
-
-/// States that details are hidden and offers the way back.
-struct RedactionBanner: View {
-    @EnvironmentObject var store: RayonStore
-
-    var body: some View {
-        HStack(spacing: RX.Space.s2) {
-            Image(systemName: "eye.slash")
-                .foregroundStyle(.rxInkSecondary)
-            Text(store.machineRedacted == .all ? "Names and addresses hidden" : "Addresses hidden")
-                .font(.rxBody)
-                .foregroundStyle(.rxInkSecondary)
-            Button("Show") { store.machineRedacted = .none }
-                .buttonStyle(.rx(size: .small))
-        }
-        .padding(.horizontal, 12)
-        .frame(height: RX.controlHeight)
-        .background(Capsule().fill(Color.rxPill))
-    }
-}
-
-// MARK: - Table
-
-private struct ServersTable: View {
-    let groups: [(name: String, machines: [RDMachine])]
-    @Binding var selection: RDMachine.ID?
-    @EnvironmentObject var store: RayonStore
-    @State private var width: CGFloat = 900
-
-    var body: some View {
-        let columns = ServerColumns(width: width)
-        VStack(spacing: 0) {
-            header(columns)
-            Hairline()
-            ForEach(groups, id: \.name) { group in
-                FolderHeaderRow(name: group.name, count: group.machines.count)
-                    .transition(.opacity)
-                if group.machines.isEmpty {
-                    Text(store.folder(named: group.name)?.isLinked == true ? "No desktop devices on the account" : "Empty — move servers here from their menu")
-                        .font(.rxHelp)
-                        .foregroundStyle(.rxInkSecondary)
-                        .padding(.horizontal, RX.Space.s3)
-                        .frame(maxWidth: .infinity, minHeight: RX.tableRowHeight, alignment: .leading)
+            ) {
+            } trailing: {
+                RXToolbarMenu(
+                    "New Folder",
+                    systemImage: "folder.badge.plus",
+                    items: [
+                        RXToolbarMenuItem("New Folder…", systemImage: "folder.badge.plus", isOn: false) { FolderActions.newFolder() },
+                        RXToolbarMenuItem("Import ~/.ssh/config…", systemImage: "square.and.arrow.down", isOn: false) { importSSHConfigFromToolbar() },
+                        RXToolbarMenuItem(account.isLoggedIn ? "UU Remote Account…" : "Link UU Remote Account…", systemImage: "link", isOn: false) { FolderActions.linkUURemote() },
+                    ]
+                )
+                .help("Make a folder, or fill one from a UU Remote account")
+                RedactionMenu()
+                Button { router.openTerminals() } label: {
+                    Label("Open Terminals…", systemImage: "rectangle.stack.badge.plus")
                 }
-                ForEach(Array(group.machines.enumerated()), id: \.element.id) { index, machine in
-                    ServerRow(machine: machine.id, columns: columns, selection: $selection)
-                        .rxRise(index)
+                .help("Pick several servers and open a terminal on each")
+                .disabled(store.machines.isEmpty)
+            } header: {
+                VStack(alignment: .leading, spacing: RX.Space.s3) {
+                    PageTitle("Servers")
+                    if store.machineRedacted != .none {
+                        RedactionBanner()
+                    }
+                }
+            } content: {
+                if store.machines.isEmpty, store.folders.isEmpty {
+                    EmptyStateView(
+                        "No servers yet",
+                        systemImage: "server.rack",
+                        actionTitle: "New Server"
+                    ) {
+                        router.presentNewServer = true
+                    }
+                    .rxCard()
+                } else if filtered.isEmpty {
+                    EmptyStateView("No matches", systemImage: "magnifyingglass")
+                        .rxCard()
+                } else {
+                    ServersTable(groups: groups, selection: $selection)
+                }
+            }
+            .background {
+                // ⌘⌫ deletes the selected row.
+                Button("Delete") {
+                    if let selection { ServerActions.delete([selection]) }
+                }
+                .keyboardShortcut(.delete, modifiers: .command)
+                .disabled(selection == nil)
+                .opacity(0)
+                .accessibilityHidden(true)
+            }
+        }
+
+        private func importSSHConfigFromToolbar() {
+            let sshDir = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(".ssh")
+            UIBridge.openPanel(
+                message: "Choose an OpenSSH config file (e.g. ~/.ssh/config)",
+                prompt: "Import",
+                directory: sshDir,
+                canChooseFiles: true,
+                canChooseDirectories: false,
+                allowsMultipleSelection: false,
+                canCreateDirectories: false,
+                showsHiddenFiles: true
+            ) { urls in
+                guard let url = urls.first else { return }
+                guard let text = try? String(contentsOf: url, encoding: .utf8) else {
+                    UIBridge.presentError(with: "Could not read \(url.lastPathComponent) as UTF-8 text.")
+                    return
+                }
+                _ = store.importOpenSSHConfig(text, baseDirectory: url.deletingLastPathComponent())
+            }
+        }
+    }
+
+    /// None → Sensitive hides addresses → All hides names too.
+    struct RedactionMenu: View {
+        @EnvironmentObject var store: RayonStore
+
+        var body: some View {
+            RXToolbarMenu(
+                "Privacy",
+                systemImage: store.machineRedacted == .none ? "eye" : "eye.slash",
+                items: [
+                    item("Show Everything", systemImage: "eye", level: .none),
+                    item("Hide Addresses", systemImage: "eye.slash", level: .sensitive),
+                    item("Hide Names and Addresses", systemImage: "eye.slash.fill", level: .all),
+                ]
+            )
+            .help(store.machineRedacted.tooltip)
+        }
+
+        private func item(_ title: String, systemImage: String, level: RDMachine.RedactedLevel) -> RXToolbarMenuItem {
+            RXToolbarMenuItem(title, systemImage: systemImage, isOn: store.machineRedacted == level) {
+                store.machineRedacted = level
+            }
+        }
+    }
+
+    /// States that details are hidden and offers the way back.
+    struct RedactionBanner: View {
+        @EnvironmentObject var store: RayonStore
+
+        var body: some View {
+            HStack(spacing: RX.Space.s2) {
+                Image(systemName: "eye.slash")
+                    .foregroundStyle(.rxInkSecondary)
+                Text(store.machineRedacted == .all ? "Names and addresses hidden" : "Addresses hidden")
+                    .font(.rxBody)
+                    .foregroundStyle(.rxInkSecondary)
+                Button("Show") { store.machineRedacted = .none }
+                    .buttonStyle(.rx(size: .small))
+            }
+            .padding(.horizontal, 12)
+            .frame(height: RX.controlHeight)
+            .background(Capsule().fill(Color.rxPill))
+        }
+    }
+
+    // MARK: - Table
+
+    private struct ServersTable: View {
+        let groups: [(name: String, machines: [RDMachine])]
+        @Binding var selection: RDMachine.ID?
+        @EnvironmentObject var store: RayonStore
+        @State private var width: CGFloat = 900
+
+        var body: some View {
+            let columns = ServerColumns(width: width)
+            VStack(spacing: 0) {
+                header(columns)
+                Hairline()
+                ForEach(groups, id: \.name) { group in
+                    FolderHeaderRow(name: group.name, count: group.machines.count)
                         .transition(.opacity)
-                }
-            }
-        }
-        // Rows make room for a new server and close up after a deleted one.
-        .animation(.rxMove, value: groups.flatMap { $0.machines.map(\.id) })
-        .readWidth($width)
-        .rxCard(padding: RX.Space.s2)
-    }
-
-    func header(_ columns: ServerColumns) -> some View {
-        HStack(spacing: 0) {
-            TableHeaderLabel("Name").frame(maxWidth: .infinity, alignment: .leading)
-            TableHeaderLabel("Address").frame(width: columns.address)
-            if columns.showIdentity { TableHeaderLabel("Identity").frame(width: columns.identity) }
-            if columns.showCPU { TableHeaderLabel("CPU").frame(width: columns.cpu) }
-            if columns.showLastUsed { TableHeaderLabel("Last used").frame(width: columns.lastUsed) }
-            Color.clear.frame(width: columns.actions, height: 1)
-        }
-        .padding(.horizontal, RX.Space.s3)
-        .frame(height: RX.tableHeaderHeight)
-    }
-}
-
-struct ServerColumns {
-    let address: CGFloat = 150
-    let identity: CGFloat = 110
-    let cpu: CGFloat = 110
-    let lastUsed: CGFloat = 120
-    /// Room for Files, Monitor, Desktop and Terminal as words when the
-    /// table is wide enough; narrower, the extra tools fall back to icons.
-    let actions: CGFloat
-    let showIdentity: Bool
-    let showCPU: Bool
-    let showLastUsed: Bool
-
-    init(width: CGFloat) {
-        let narrow: CGFloat = 180 + 150 + 220 + 24
-        actions = width > narrow + 110 + 80 ? 300 : 220
-        let base = narrow + actions - 220
-        showCPU = width > base + 110
-        showIdentity = width > base + 110 + 110
-        showLastUsed = width > base + 110 + 110 + 120
-    }
-}
-
-private struct ServerRow: View {
-    let machine: RDMachine.ID
-    let columns: ServerColumns
-    @Binding var selection: RDMachine.ID?
-
-    @EnvironmentObject var store: RayonStore
-    @State private var hovered = false
-
-    var body: some View {
-        let read = (store.machine(machine) ?? RDMachine())
-        ServerLiveReader(machine: machine) { state in
-            HStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 1) {
-                    RedactableText(read.name, redacted: store.machineRedacted == .all)
-                        .font(.rxBody)
-                        .foregroundStyle(.rxInk)
-                        .lineLimit(1)
-                    if !read.comment.isEmpty, store.machineRedacted == .none {
-                        Text(read.comment)
+                    if group.machines.isEmpty {
+                        Text(store.folder(named: group.name)?.isLinked == true ? "No desktop devices on the account" : "Empty — move servers here from their menu")
                             .font(.rxHelp)
                             .foregroundStyle(.rxInkSecondary)
-                            .lineLimit(1)
+                            .padding(.horizontal, RX.Space.s3)
+                            .frame(maxWidth: .infinity, minHeight: RX.tableRowHeight, alignment: .leading)
+                    }
+                    ForEach(Array(group.machines.enumerated()), id: \.element.id) { index, machine in
+                        ServerRow(machine: machine.id, columns: columns, selection: $selection)
+                            .rxRise(index)
+                            .transition(.opacity)
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                Group {
-                    if read.isUURemoteDevice {
-                        UUDeviceStatus(machine: read)
-                    } else {
-                        let displayAddress = (read.remotePort.isEmpty || read.remotePort == "22")
-                            ? read.remoteAddress
-                            : "\(read.remoteAddress):\(read.remotePort)"
-                        RedactableText(displayAddress, redacted: store.machineRedacted != .none)
-                            .font(.rxCode)
+            }
+            // Rows make room for a new server and close up after a deleted one.
+            .animation(.rxMove, value: groups.flatMap { $0.machines.map(\.id) })
+            .readWidth($width)
+            .rxCard(padding: RX.Space.s2)
+        }
+
+        func header(_ columns: ServerColumns) -> some View {
+            HStack(spacing: 0) {
+                TableHeaderLabel("Name").frame(maxWidth: .infinity, alignment: .leading)
+                TableHeaderLabel("Address").frame(width: columns.address)
+                if columns.showIdentity { TableHeaderLabel("Identity").frame(width: columns.identity) }
+                if columns.showCPU { TableHeaderLabel("CPU").frame(width: columns.cpu) }
+                if columns.showLastUsed { TableHeaderLabel("Last used").frame(width: columns.lastUsed) }
+                Color.clear.frame(width: columns.actions, height: 1)
+            }
+            .padding(.horizontal, RX.Space.s3)
+            .frame(height: RX.tableHeaderHeight)
+        }
+    }
+
+    struct ServerColumns {
+        let address: CGFloat = 150
+        let identity: CGFloat = 110
+        let cpu: CGFloat = 110
+        let lastUsed: CGFloat = 120
+        /// Room for Files, Monitor, Desktop and Terminal as words when the
+        /// table is wide enough; narrower, the extra tools fall back to icons.
+        let actions: CGFloat
+        let showIdentity: Bool
+        let showCPU: Bool
+        let showLastUsed: Bool
+
+        init(width: CGFloat) {
+            let narrow: CGFloat = 180 + 150 + 220 + 24
+            actions = width > narrow + 110 + 80 ? 300 : 220
+            let base = narrow + actions - 220
+            showCPU = width > base + 110
+            showIdentity = width > base + 110 + 110
+            showLastUsed = width > base + 110 + 110 + 120
+        }
+    }
+
+    private struct ServerRow: View {
+        let machine: RDMachine.ID
+        let columns: ServerColumns
+        @Binding var selection: RDMachine.ID?
+
+        @EnvironmentObject var store: RayonStore
+        @State private var hovered = false
+
+        var body: some View {
+            let read = (store.machine(machine) ?? RDMachine())
+            ServerLiveReader(machine: machine) { state in
+                HStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 1) {
+                        RedactableText(read.name, redacted: store.machineRedacted == .all)
+                            .font(.rxBody)
                             .foregroundStyle(.rxInk)
                             .lineLimit(1)
-                            .truncationMode(.middle)
-                    }
-                }
-                // A long address stops short of the next column.
-                .frame(width: columns.address - RX.Space.s3, alignment: .leading)
-                .padding(.trailing, RX.Space.s3)
-                if columns.showIdentity {
-                    Text(identityName(read))
-                        .font(.rxBody)
-                        .foregroundStyle(read.associatedIdentity == nil ? Color.rxInkSecondary : Color.rxInk)
-                        .lineLimit(1)
-                        .frame(width: columns.identity, alignment: .leading)
-                }
-                if columns.showCPU {
-                    Group {
-                        if let cpu = state.cpu {
-                            HStack(spacing: RX.Space.s2) {
-                                UsageBar(fraction: cpu / 100, height: 4)
-                                    .frame(width: 48)
-                                Text("\(RXFormat.percent(cpu))%")
-                                    .font(.rxBody.monospacedDigit())
-                            }
-                        } else {
-                            Text("—").foregroundStyle(.rxInkSecondary)
+                        if !read.comment.isEmpty, store.machineRedacted == .none {
+                            Text(read.comment)
+                                .font(.rxHelp)
+                                .foregroundStyle(.rxInkSecondary)
+                                .lineLimit(1)
                         }
                     }
-                    .frame(width: columns.cpu, alignment: .leading)
-                }
-                if columns.showLastUsed {
-                    Text(RXFormat.relative(read.lastConnection))
-                        .font(.rxBody)
-                        .foregroundStyle(.rxInkSecondary)
-                        .lineLimit(1)
-                        .frame(width: columns.lastUsed, alignment: .leading)
-                }
-                // Words where they fit beside Terminal, icons where not.
-                UUReachable(machine: read) {
-                    ViewThatFits(in: .horizontal) {
-                        toolButtons(read, iconOnly: false)
-                        toolButtons(read, iconOnly: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    Group {
+                        if read.isUURemoteDevice {
+                            UUDeviceStatus(machine: read)
+                        } else {
+                            let displayAddress = (read.remotePort.isEmpty || read.remotePort == "22")
+                                ? read.remoteAddress
+                                : "\(read.remoteAddress):\(read.remotePort)"
+                            RedactableText(displayAddress, redacted: store.machineRedacted != .none)
+                                .font(.rxCode)
+                                .foregroundStyle(.rxInk)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
                     }
+                    // A long address stops short of the next column.
+                    .frame(width: columns.address - RX.Space.s3, alignment: .leading)
+                    .padding(.trailing, RX.Space.s3)
+                    if columns.showIdentity {
+                        Text(identityName(read))
+                            .font(.rxBody)
+                            .foregroundStyle(read.associatedIdentity == nil ? Color.rxInkSecondary : Color.rxInk)
+                            .lineLimit(1)
+                            .frame(width: columns.identity, alignment: .leading)
+                    }
+                    if columns.showCPU {
+                        Group {
+                            if let cpu = state.cpu {
+                                HStack(spacing: RX.Space.s2) {
+                                    UsageBar(fraction: cpu / 100, height: 4)
+                                        .frame(width: 48)
+                                    Text("\(RXFormat.percent(cpu))%")
+                                        .font(.rxBody.monospacedDigit())
+                                }
+                            } else {
+                                Text("—").foregroundStyle(.rxInkSecondary)
+                            }
+                        }
+                        .frame(width: columns.cpu, alignment: .leading)
+                    }
+                    if columns.showLastUsed {
+                        Text(RXFormat.relative(read.lastConnection))
+                            .font(.rxBody)
+                            .foregroundStyle(.rxInkSecondary)
+                            .lineLimit(1)
+                            .frame(width: columns.lastUsed, alignment: .leading)
+                    }
+                    // Words where they fit beside Terminal, icons where not.
+                    UUReachable(machine: read) {
+                        ViewThatFits(in: .horizontal) {
+                            toolButtons(read, iconOnly: false)
+                            toolButtons(read, iconOnly: true)
+                        }
+                    }
+                    .frame(width: columns.actions, alignment: .trailing)
                 }
-                .frame(width: columns.actions, alignment: .trailing)
             }
+            .padding(.horizontal, RX.Space.s3)
+            .frame(height: RX.tableRowHeight)
+            .rxRowBackground(selected: selection == machine, hovered: hovered)
+            .contentShape(Rectangle())
+            .onHover { hovered = $0 }
+            .gesture(TapGesture(count: 2).onEnded {
+                AppRouter.shared.openTerminal(machine: machine)
+            })
+            .simultaneousGesture(TapGesture(count: 1).onEnded { selection = machine })
+            .contextMenu { ServerContextMenu(machine: machine) }
         }
-        .padding(.horizontal, RX.Space.s3)
-        .frame(height: RX.tableRowHeight)
-        .rxRowBackground(selected: selection == machine, hovered: hovered)
-        .contentShape(Rectangle())
-        .onHover { hovered = $0 }
-        .gesture(TapGesture(count: 2).onEnded {
-            AppRouter.shared.openTerminal(machine: machine)
-        })
-        .simultaneousGesture(TapGesture(count: 1).onEnded { selection = machine })
-        .contextMenu { ServerContextMenu(machine: machine) }
-    }
 
-    func toolButtons(_ read: RDMachine, iconOnly: Bool) -> some View {
-        HStack(spacing: RX.Space.s1) {
-            Button(ServerTool.terminal.title) { ServerTool.terminal.show(machine) }
-                .buttonStyle(.rx(size: .small))
-                .help(ServerTool.terminal.help(for: read))
-            let others: [ServerTool] = read.hasRemoteDesktop ? [.files, .monitor, .desktop] : [.files, .monitor]
-            ForEach(others) { tool in
-                Button { tool.show(machine) } label: {
-                    Label(tool.title, systemImage: tool.systemImage)
-                        .labelStyle(TitleOrIcon(iconOnly: iconOnly))
+        func toolButtons(_ read: RDMachine, iconOnly: Bool) -> some View {
+            HStack(spacing: RX.Space.s1) {
+                Button(ServerTool.terminal.title) { ServerTool.terminal.show(machine) }
+                    .buttonStyle(.rx(size: .small))
+                    .help(ServerTool.terminal.help(for: read))
+                let others: [ServerTool] = read.hasRemoteDesktop ? [.files, .monitor, .desktop] : [.files, .monitor]
+                ForEach(others) { tool in
+                    Button { tool.show(machine) } label: {
+                        Label(tool.title, systemImage: tool.systemImage)
+                            .labelStyle(TitleOrIcon(iconOnly: iconOnly))
+                    }
+                    .buttonStyle(.rx(.plain, size: .small, iconOnly: iconOnly))
+                    .help(tool.help(for: read))
+                    .accessibilityLabel(tool.title)
                 }
-                .buttonStyle(.rx(.plain, size: .small, iconOnly: iconOnly))
-                .help(tool.help(for: read))
-                .accessibilityLabel(tool.title)
             }
+            .fixedSize()
         }
-        .fixedSize()
-    }
 
-    func identityName(_ machine: RDMachine) -> String {
-        guard let uid = machine.associatedIdentity else {
-            // The server's own user name, tried with each automatic identity.
-            return machine.sshUsernameOverride.map { "\($0) · Automatic" } ?? "Automatic"
-        }
-        let identity = (store.identity(uid) ?? RDIdentity())
-        return identity.username.isEmpty ? "Missing" : machine.sshLoginUsername(identity: identity)
-    }
-}
-
-/// Where a UU device is, in the Address column: on UU Remote, and whether
-/// it was online at the last refresh.
-private struct UUDeviceStatus: View {
-    let machine: RDMachine
-    @ObservedObject private var account = UURemoteAccount.shared
-
-    var body: some View {
-        let device = account.devices.first { $0.deviceID == machine.uuDeviceID }
-        HStack(spacing: RX.Space.s2) {
-            StatusDot(device.map { $0.isOnline ? .success : .off } ?? .off, size: .small)
-            Text(device.map { $0.isOnline ? "UU Remote · Online" : "UU Remote · Offline" } ?? "UU Remote")
-                .font(.rxBody)
-                .foregroundStyle(device?.isOnline == true ? Color.rxInk : Color.rxInkSecondary)
-                .lineLimit(1)
+        func identityName(_ machine: RDMachine) -> String {
+            guard let uid = machine.associatedIdentity else {
+                // The server's own user name, tried with each automatic identity.
+                return machine.sshUsernameOverride.map { "\($0) · Automatic" } ?? "Automatic"
+            }
+            let identity = (store.identity(uid) ?? RDIdentity())
+            return identity.username.isEmpty ? "Missing" : machine.sshLoginUsername(identity: identity)
         }
     }
-}
 
-/// A UU Remote device's row actions: a view of its screen, its desktop and
-/// its terminal.
-/// A UU device's tools, off while it cannot be reached: signed out of the
-/// account, or offline in it. Any other server's, as they are.
-private struct UUReachable<Content: View>: View {
-    let machine: RDMachine
-    @ViewBuilder let content: Content
-    @ObservedObject private var account = UURemoteAccount.shared
+    /// Where a UU device is, in the Address column: on UU Remote, and whether
+    /// it was online at the last refresh.
+    private struct UUDeviceStatus: View {
+        let machine: RDMachine
+        @ObservedObject private var account = UURemoteAccount.shared
 
-    var body: some View {
-        if machine.isUURemoteDevice {
+        var body: some View {
             let device = account.devices.first { $0.deviceID == machine.uuDeviceID }
-            content.disabled(!account.isLoggedIn || device?.isOnline == false)
-        } else {
-            content
+            HStack(spacing: RX.Space.s2) {
+                StatusDot(device.map { $0.isOnline ? .success : .off } ?? .off, size: .small)
+                Text(device.map { $0.isOnline ? "UU Remote · Online" : "UU Remote · Offline" } ?? "UU Remote")
+                    .font(.rxBody)
+                    .foregroundStyle(device?.isOnline == true ? Color.rxInk : Color.rxInkSecondary)
+                    .lineLimit(1)
+            }
         }
     }
-}
 
-/// A label as words, or as its icon where room is short.
-private struct TitleOrIcon: LabelStyle {
-    let iconOnly: Bool
+    /// A UU Remote device's row actions: a view of its screen, its desktop and
+    /// its terminal.
+    /// A UU device's tools, off while it cannot be reached: signed out of the
+    /// account, or offline in it. Any other server's, as they are.
+    private struct UUReachable<Content: View>: View {
+        let machine: RDMachine
+        @ViewBuilder let content: Content
+        @ObservedObject private var account = UURemoteAccount.shared
 
-    func makeBody(configuration: Configuration) -> some View {
-        if iconOnly { configuration.icon } else { configuration.title }
+        var body: some View {
+            if machine.isUURemoteDevice {
+                let device = account.devices.first { $0.deviceID == machine.uuDeviceID }
+                content.disabled(!account.isLoggedIn || device?.isOnline == false)
+            } else {
+                content
+            }
+        }
     }
-}
+
+    /// A label as words, or as its icon where room is short.
+    private struct TitleOrIcon: LabelStyle {
+        let iconOnly: Bool
+
+        func makeBody(configuration: Configuration) -> some View {
+            if iconOnly { configuration.icon } else { configuration.title }
+        }
+    }
 
 #endif

@@ -7,28 +7,28 @@
 //
 
 #if os(macOS)
-import RayonDesign
-import RayonModule
-import SwiftUI
+    import RayonDesign
+    import RayonModule
+    import SwiftUI
 
-struct UURemoteAccountSheet: View {
-    /// Route "Connect" into the app's session navigation; nil just opens the
-    /// session inside `RemoteDesktopManager`.
-    var onConnectDesktop: ((RDMachine.ID) -> Void)?
-    var onOpenTerminal: ((RDMachine.ID) -> Void)?
-    var close: (() -> Void)?
+    struct UURemoteAccountSheet: View {
+        /// Route "Connect" into the app's session navigation; nil just opens the
+        /// session inside `RemoteDesktopManager`.
+        var onConnectDesktop: ((RDMachine.ID) -> Void)?
+        var onOpenTerminal: ((RDMachine.ID) -> Void)?
+        var close: (() -> Void)?
 
-    var body: some View {
-        SheetScaffold("UU Remote") {
-            UURemoteAccountView(onConnectDesktop: onConnectDesktop, onOpenTerminal: onOpenTerminal)
-        } footer: {
-            Spacer()
-            Button("Done") { close?() }
-                .buttonStyle(.rx)
-                .keyboardShortcut(.defaultAction)
+        var body: some View {
+            SheetScaffold("UU Remote") {
+                UURemoteAccountView(onConnectDesktop: onConnectDesktop, onOpenTerminal: onOpenTerminal)
+            } footer: {
+                Spacer()
+                Button("Done") { close?() }
+                    .buttonStyle(.rx)
+                    .keyboardShortcut(.defaultAction)
+            }
+            .frame(width: 560)
         }
-        .frame(width: 560)
     }
-}
 
 #endif

@@ -6,82 +6,82 @@
 //
 
 #if os(iOS)
-import RayonModule
-import SwiftUI
+    import RayonModule
+    import SwiftUI
 
-struct SnippetView: View {
-    @EnvironmentObject var store: RayonStore
-    @State private var searchKey = ""
-    @State private var openCreate = false
-    @State private var groupFilter: String?
+    struct SnippetView: View {
+        @EnvironmentObject var store: RayonStore
+        @State private var searchKey = ""
+        @State private var openCreate = false
+        @State private var groupFilter: String?
 
-    var groupNames: [String] {
-        Set(store.snippets.map(\.group)).filter { !$0.isEmpty }.sorted()
-    }
-
-    var filtered: [RDSnippet] {
-        var all = store.snippets.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-        if let groupFilter {
-            all = all.filter { $0.group == groupFilter }
+        var groupNames: [String] {
+            Set(store.snippets.map(\.group)).filter { !$0.isEmpty }.sorted()
         }
-        guard !searchKey.isEmpty else { return all }
-        return all.filter { $0.isQualifiedForSearch(text: searchKey.lowercased()) }
-    }
 
-    var body: some View {
-        Group {
-            if store.snippets.isEmpty {
-                EmptyStateView(
-                    "No snippets yet",
-                    systemImage: "chevron.left.forwardslash.chevron.right",
-                    actionTitle: "New Snippet"
-                ) {
-                    openCreate = true
+        var filtered: [RDSnippet] {
+            var all = store.snippets.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+            if let groupFilter {
+                all = all.filter { $0.group == groupFilter }
+            }
+            guard !searchKey.isEmpty else { return all }
+            return all.filter { $0.isQualifiedForSearch(text: searchKey.lowercased()) }
+        }
+
+        var body: some View {
+            Group {
+                if store.snippets.isEmpty {
+                    EmptyStateView(
+                        "No snippets yet",
+                        systemImage: "chevron.left.forwardslash.chevron.right",
+                        actionTitle: "New Snippet"
+                    ) {
+                        openCreate = true
+                    }
+                    .frame(maxHeight: .infinity)
+                    .background(RXBackdrop().ignoresSafeArea())
+                } else {
+                    ScrollView {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 280), spacing: RX.Space.s3, alignment: .top)], spacing: RX.Space.s3) {
+                            ForEach(filtered) { snippet in
+                                SnippetElementView(identity: snippet.id)
+                            }
+                        }
+                        .padding(RX.Space.s4)
+                    }
+                    .background(RXBackdrop().ignoresSafeArea())
+                    .searchable(text: $searchKey, prompt: "Search snippets")
                 }
-                .frame(maxHeight: .infinity)
-                .background(RXBackdrop().ignoresSafeArea())
-            } else {
-                ScrollView {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 280), spacing: RX.Space.s3, alignment: .top)], spacing: RX.Space.s3) {
-                        ForEach(filtered) { snippet in
-                            SnippetElementView(identity: snippet.id)
+            }
+            .navigationTitle("Snippets")
+            .toolbar {
+                ToolbarItemGroup {
+                    if !groupNames.isEmpty {
+                        Menu {
+                            Picker("Group", selection: $groupFilter) {
+                                Text("All Groups").tag(String?.none)
+                                ForEach(groupNames, id: \.self) { Text($0).tag(String?.some($0)) }
+                            }
+                        } label: {
+                            Label("Filter by Group", systemImage: groupFilter == nil
+                                ? "line.3.horizontal.decrease.circle"
+                                : "line.3.horizontal.decrease.circle.fill")
                         }
                     }
-                    .padding(RX.Space.s4)
-                }
-                .background(RXBackdrop().ignoresSafeArea())
-                .searchable(text: $searchKey, prompt: "Search snippets")
-            }
-        }
-        .navigationTitle("Snippets")
-        .toolbar {
-            ToolbarItemGroup {
-                if !groupNames.isEmpty {
-                    Menu {
-                        Picker("Group", selection: $groupFilter) {
-                            Text("All Groups").tag(String?.none)
-                            ForEach(groupNames, id: \.self) { Text($0).tag(String?.some($0)) }
-                        }
+                    Button {
+                        openCreate = true
                     } label: {
-                        Label("Filter by Group", systemImage: groupFilter == nil
-                            ? "line.3.horizontal.decrease.circle"
-                            : "line.3.horizontal.decrease.circle.fill")
+                        Label("New Snippet", systemImage: "plus")
                     }
                 }
-                Button {
-                    openCreate = true
-                } label: {
-                    Label("New Snippet", systemImage: "plus")
-                }
+            }
+            .onChange(of: groupNames) { names in
+                if let groupFilter, !names.contains(groupFilter) { self.groupFilter = nil }
+            }
+            .sheet(isPresented: $openCreate) {
+                NavigationStack { EditSnippetView() }
             }
         }
-        .onChange(of: groupNames) { names in
-            if let groupFilter, !names.contains(groupFilter) { self.groupFilter = nil }
-        }
-        .sheet(isPresented: $openCreate) {
-            NavigationStack { EditSnippetView() }
-        }
     }
-}
 
 #endif
