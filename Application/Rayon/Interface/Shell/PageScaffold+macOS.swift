@@ -13,7 +13,6 @@
         let search: Binding<String>?
         let searchPrompt: LocalizedStringResource
         let primary: ToolbarAction?
-        let trailingMetrics: ToolbarCapsuleMetrics
         let leading: Leading
         let trailing: Trailing
         let header: Header
@@ -24,7 +23,6 @@
             search: Binding<String>? = nil,
             searchPrompt: LocalizedStringResource = "Search",
             primary: ToolbarAction? = nil,
-            trailingMetrics: ToolbarCapsuleMetrics = .group,
             @ViewBuilder leading: () -> Leading,
             @ViewBuilder trailing: () -> Trailing,
             @ViewBuilder header: () -> Header,
@@ -34,7 +32,6 @@
             self.search = search
             self.searchPrompt = searchPrompt
             self.primary = primary
-            self.trailingMetrics = trailingMetrics
             self.leading = leading()
             self.trailing = trailing()
             self.header = header()
@@ -69,7 +66,7 @@
                 }
             }
             .pageChrome()
-            .pageToolbar(primary: primary, trailingMetrics: trailingMetrics) { leading } trailing: { trailing }
+            .pageToolbar(primary: primary) { leading } trailing: { trailing }
             .modifier(OptionalSearch(text: search, prompt: searchPrompt))
         }
     }
@@ -80,12 +77,11 @@
             search: Binding<String>? = nil,
             searchPrompt: LocalizedStringResource = "Search",
             primary: ToolbarAction? = nil,
-            trailingMetrics: ToolbarCapsuleMetrics = .group,
             @ViewBuilder leading: () -> Leading,
             @ViewBuilder trailing: () -> Trailing,
             @ViewBuilder content: () -> Content
         ) {
-            self.init(scrolls: scrolls, search: search, searchPrompt: searchPrompt, primary: primary, trailingMetrics: trailingMetrics, leading: leading, trailing: trailing, header: { EmptyView() }, content: content)
+            self.init(scrolls: scrolls, search: search, searchPrompt: searchPrompt, primary: primary, leading: leading, trailing: trailing, header: { EmptyView() }, content: content)
         }
     }
 
@@ -98,11 +94,10 @@
     extension View {
         func pageToolbar<Leading: View, Trailing: View>(
             primary: ToolbarAction? = nil,
-            trailingMetrics: ToolbarCapsuleMetrics = .group,
             @ViewBuilder leading: () -> Leading,
             @ViewBuilder trailing: () -> Trailing
         ) -> some View {
-            modifier(PageToolbar(leading: leading(), trailing: trailing(), primary: primary, trailingMetrics: trailingMetrics))
+            modifier(PageToolbar(leading: leading(), trailing: trailing(), primary: primary))
         }
     }
 
@@ -110,7 +105,6 @@
         let leading: Leading
         let trailing: Trailing
         let primary: ToolbarAction?
-        let trailingMetrics: ToolbarCapsuleMetrics
         @Environment(\.serverToolSwitch) private var toolSwitch
 
         private var hasTrailing: Bool { Trailing.self != EmptyView.self }
@@ -163,16 +157,6 @@
                 }
             }
         }
-    }
-
-    struct ToolbarCapsuleMetrics {
-        var spacing: CGFloat = 0
-        var minSlot: CGFloat = 35
-        var inset: CGFloat = 4
-
-        static let group = ToolbarCapsuleMetrics()
-        static let single = ToolbarCapsuleMetrics(minSlot: 0)
-        static let controlGroup = ToolbarCapsuleMetrics(spacing: 9, minSlot: 34.5, inset: 0)
     }
 
     private struct OptionalSearch: ViewModifier {

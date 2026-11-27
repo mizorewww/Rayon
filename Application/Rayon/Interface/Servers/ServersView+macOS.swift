@@ -35,15 +35,19 @@
                 }
             ) {
             } trailing: {
-                RXToolbarMenu(
-                    "New Folder",
-                    systemImage: "folder.badge.plus",
-                    items: [
-                        RXToolbarMenuItem("New Folder…", systemImage: "folder.badge.plus", isOn: false) { FolderActions.newFolder() },
-                        RXToolbarMenuItem("Import ~/.ssh/config…", systemImage: "square.and.arrow.down", isOn: false) { importSSHConfigFromToolbar() },
-                        RXToolbarMenuItem(account.isLoggedIn ? "UU Remote Account…" : "Link UU Remote Account…", systemImage: "link", isOn: false) { FolderActions.linkUURemote() },
-                    ]
-                )
+                Menu {
+                    Button { FolderActions.newFolder() } label: {
+                        Label("New Folder…", systemImage: "folder.badge.plus")
+                    }
+                    Button { importSSHConfigFromToolbar() } label: {
+                        Label("Import ~/.ssh/config…", systemImage: "square.and.arrow.down")
+                    }
+                    Button { FolderActions.linkUURemote() } label: {
+                        Label(account.isLoggedIn ? "UU Remote Account…" : "Link UU Remote Account…", systemImage: "link")
+                    }
+                } label: {
+                    Label("New Folder", systemImage: "folder.badge.plus")
+                }
                 .help("Make a folder, or fill one from a UU Remote account")
                 RedactionMenu()
                 Button { router.openTerminals() } label: {
@@ -109,22 +113,18 @@
         @AppSetting(AppSettings.serverRedaction) private var redaction
 
         var body: some View {
-            RXToolbarMenu(
-                "Privacy",
-                systemImage: redaction == .none ? "eye" : "eye.slash",
-                items: [
-                    item("Show Everything", systemImage: "eye", level: .none),
-                    item("Hide Addresses", systemImage: "eye.slash", level: .sensitive),
-                    item("Hide Names and Addresses", systemImage: "eye.slash.fill", level: .all),
-                ]
-            )
-            .help(redaction.tooltip)
-        }
-
-        private func item(_ title: LocalizedStringResource, systemImage: String, level: RDMachine.RedactedLevel) -> RXToolbarMenuItem {
-            RXToolbarMenuItem(title, systemImage: systemImage, isOn: redaction == level) {
-                redaction = level
+            Menu {
+                Picker("Privacy", selection: $redaction) {
+                    Label("Show Everything", systemImage: "eye").tag(RDMachine.RedactedLevel.none)
+                    Label("Hide Addresses", systemImage: "eye.slash").tag(RDMachine.RedactedLevel.sensitive)
+                    Label("Hide Names and Addresses", systemImage: "eye.slash.fill").tag(RDMachine.RedactedLevel.all)
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+            } label: {
+                Label("Privacy", systemImage: redaction == .none ? "eye" : "eye.slash")
             }
+            .help(redaction.tooltip)
         }
     }
 

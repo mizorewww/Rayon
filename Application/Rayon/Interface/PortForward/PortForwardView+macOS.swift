@@ -46,8 +46,7 @@
                 searchPrompt: "Search forwards",
                 primary: ToolbarAction("New Port Forward", systemImage: "plus", primary: true) {
                     editor = EditorTarget(forward: nil)
-                },
-                trailingMetrics: .single
+                }
             ) {
             } trailing: {
                 ToolbarAction("Stop All", systemImage: "stop.circle") {

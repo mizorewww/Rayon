@@ -115,8 +115,7 @@
             .pageToolbar(
                 primary: context.closed
                     ? ToolbarAction("Reconnect", systemImage: "arrow.clockwise", primary: true) { context.reconnect() }
-                    : nil,
-                trailingMetrics: .controlGroup
+                    : nil
             ) {
                 ToolbarAction("New Terminal Tab", systemImage: "plus") {
                     openAnotherTab()

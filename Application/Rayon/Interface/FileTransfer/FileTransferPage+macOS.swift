@@ -44,10 +44,12 @@
                     browser.download(browser.selectedFiles)
                 }
             ) {
-                ToolbarAction("Back", systemImage: "chevron.left") { context.goBack() }
-                    .disabled(!context.canGoBack || busy || !context.connected)
-                ToolbarAction("Forward", systemImage: "chevron.right") { context.goForward() }
-                    .disabled(!context.canGoForward || busy || !context.connected)
+                ControlGroup {
+                    ToolbarAction("Back", systemImage: "chevron.left") { context.goBack() }
+                        .disabled(!context.canGoBack || busy || !context.connected)
+                    ToolbarAction("Forward", systemImage: "chevron.right") { context.goForward() }
+                        .disabled(!context.canGoForward || busy || !context.connected)
+                }
                 ToolbarAction("Enclosing Folder", systemImage: "arrow.up") { browser.goUp() }
                     .disabled(!browser.canGoUp || busy || !context.connected)
                 ToolbarAction("Go to Folder", systemImage: "arrow.turn.down.right") { browser.ask(.goTo) }
