@@ -2,8 +2,8 @@
 //  Telemetry.swift
 //  Telemetry
 //
-//  The level this device chose, and what follows from it. The level is
-//  stored in this device's defaults only, never synced or backed up:
+//  The level this device chose, and what follows from it. The app keeps
+//  the choice with its device-local settings, never synced or backed up:
 //  consent belongs to the device and the storefront it was given in.
 //
 
@@ -15,29 +15,26 @@ import Observation
 public final class Telemetry {
     public static let shared = Telemetry()
 
-    static let levelKey = "telemetry.level"
-    static let noticeKey = "telemetry.noticeShown"
-
     /// Counting happens wherever an event does; the collector is not tied to the main actor.
     nonisolated static let collector = TelemetryCollector(root: TelemetryCollector.defaultRoot, sender: TelemetrySender())
 
     /// What the person picked; nil until they do.
-    public private(set) var choice: TelemetryLevel?
+    public private(set) var choice: TelemetryLevel? {
+        didSet { save(choice, noticeShown) }
+    }
     /// Nil until the storefront is known.
     public private(set) var region: TelemetryEnvironment.Region?
-    public private(set) var noticeShown: Bool
+    public private(set) var noticeShown = false {
+        didSet { save(choice, noticeShown) }
+    }
     /// The app's own state for the daily report; set once at launch.
     public var snapshot: @MainActor () -> TelemetrySnapshot = { .empty }
 
-    @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private var save: (TelemetryLevel?, Bool) -> Void = { _, _ in }
     @ObservationIgnored private var subscriber: TelemetrySubscriber?
     @ObservationIgnored private var dayObserver: NSObjectProtocol?
 
-    init(defaults: UserDefaults = .standard) {
-        self.defaults = defaults
-        choice = (defaults.object(forKey: Self.levelKey) as? Int).flatMap(TelemetryLevel.init(rawValue:))
-        noticeShown = defaults.bool(forKey: Self.noticeKey)
-    }
+    init() {}
 
     /// The level in force. Without a choice: off in the EEA, the UK,
     /// Switzerland or an unknown region; off in China until the notice is
@@ -67,7 +64,11 @@ public final class Telemetry {
         #endif
     }
 
-    public func start() {
+    /// Starts with the stored choice; `save` keeps every later change.
+    public func start(choice: TelemetryLevel?, noticeShown: Bool, save: @escaping (TelemetryLevel?, Bool) -> Void) {
+        self.choice = choice
+        self.noticeShown = noticeShown
+        self.save = save
         dayObserver = NotificationCenter.default.addObserver(forName: .NSCalendarDayChanged, object: nil, queue: .main) { _ in
             MainActor.assumeIsolated { Telemetry.shared.wake() }
         }
@@ -94,7 +95,6 @@ public final class Telemetry {
 
     public func setLevel(_ newLevel: TelemetryLevel) {
         choice = newLevel
-        defaults.set(newLevel.rawValue, forKey: Self.levelKey)
         markNoticeShown()
         applySubscription()
         Task {
@@ -107,7 +107,6 @@ public final class Telemetry {
     public func markNoticeShown() {
         guard !noticeShown else { return }
         noticeShown = true
-        defaults.set(true, forKey: Self.noticeKey)
         if choice == nil { setCollectorLevel() }
     }
 

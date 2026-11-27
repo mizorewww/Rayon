@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import Telemetry
 
 public enum AppSettings {
     // MARK: Appearance
@@ -77,6 +78,14 @@ public enum AppSettings {
     public static let syncsTerminalSettings = SettingKey("sync.terminalSettings", default: true, scope: .deviceLocal)
     public static let syncsAppSettings = SettingKey("sync.appSettings", default: true, scope: .deviceLocal)
 
+    // MARK: Diagnostics & usage
+
+    /// The telemetry level this device chose; nil until a choice. Consent
+    /// belongs to the device and the storefront it was given in.
+    public static let telemetryLevel = SettingKey("telemetry.level", default: TelemetryLevel?.none, scope: .deviceLocal)
+    /// The one-time notice on Home was answered.
+    public static let telemetryNoticeShown = SettingKey("telemetry.noticeShown", default: false, scope: .deviceLocal)
+
     public static let all: [any AnySettingKey] = [
         appearance, animatesHome,
         showsSessionOnConnect, confirmsClosingSession,
@@ -88,6 +97,7 @@ public enum AppSettings {
         remoteDesktopTouchMode, remoteDesktopGestureHintsShown,
         menuBarServers,
         syncEnabled, syncsServers, syncsIdentities, syncsSnippets, syncsPortForwards, syncsTerminalSettings, syncsAppSettings,
+        telemetryLevel, telemetryNoticeShown,
     ]
 
     /// The keys iCloud carries.

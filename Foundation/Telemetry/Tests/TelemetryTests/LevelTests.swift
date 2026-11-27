@@ -23,8 +23,7 @@ final class LevelTests: XCTestCase {
     }
 
     @MainActor func testWithoutAChoiceOnlyOtherRegionsDefaultToUsage() {
-        let defaults = UserDefaults(suiteName: "TelemetryTests-\(UUID().uuidString)")!
-        let telemetry = Telemetry(defaults: defaults)
+        let telemetry = Telemetry()
         XCTAssertEqual(telemetry.level, .off, "nothing before the region is known")
         XCTAssertFalse(telemetry.showsNotice)
     }

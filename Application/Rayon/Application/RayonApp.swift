@@ -26,7 +26,13 @@ struct RayonApp: App {
         _ = RayonStore.shared
         CloudSyncModel.shared.start()
         Telemetry.shared.snapshot = { .rayon }
-        Telemetry.shared.start()
+        Telemetry.shared.start(
+            choice: AppSettings.telemetryLevel.value,
+            noticeShown: AppSettings.telemetryNoticeShown.value
+        ) { choice, noticeShown in
+            AppSettings.telemetryLevel.set(choice)
+            AppSettings.telemetryNoticeShown.set(noticeShown)
+        }
         Logger.app.infoFile("launched")
     }
 
