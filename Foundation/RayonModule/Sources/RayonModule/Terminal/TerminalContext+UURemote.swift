@@ -7,13 +7,14 @@
 //  session's worker queue like the SSH loop, and ends the same way.
 //
 
+import Combine
 import Foundation
 import Synchronization
 import UURemoteKit
 
 extension TerminalContext {
-    /// Event-driven UU Remote terminal loop: wakes immediately on keystrokes,
-    /// resize, or connection close, with a 1s liveness check instead of 66Hz polling.
+    /// Wakes on typing, a resize, closing the tab, and the link ending or
+    /// its connection closing; nothing else needs a look.
     func runUURemoteTerminal() {
         putInformation("[*] Connecting through UU Remote")
         let finished = DispatchSemaphore(value: 0)
@@ -31,7 +32,7 @@ extension TerminalContext {
 
         while !closed {
             if finished.wait(timeout: .now()) == .success { break }
-            _ = uuWakeSemaphore.wait(timeout: .now() + 1.0)
+            uuWakeSemaphore.wait()
             if finished.wait(timeout: .now()) == .success || closed { break }
             let typed = getBuffer()
             let size = terminalSize
@@ -57,7 +58,13 @@ final class UUTerminalLink {
     let machine: RDMachine
     let finished: DispatchSemaphore
     let wake: DispatchSemaphore
-    private var connection: UURemoteConnection?
+    private var connection: UURemoteConnection? {
+        didSet {
+            // A dropped connection wakes the loop, whose pump resumes the session.
+            closing = connection?.$isClosed.filter { $0 }.sink { [wake] _ in wake.signal() }
+        }
+    }
+    private var closing: AnyCancellable?
     private var terminalID: UInt32?
     private var sentSize: CGSize = .zero
     private var openedAt = Date.distantFuture
