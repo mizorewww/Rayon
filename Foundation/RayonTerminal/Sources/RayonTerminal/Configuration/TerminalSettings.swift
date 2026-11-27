@@ -113,7 +113,7 @@ public final class TerminalSettings {
     /// The value of a single-valued key (Ghostty takes the last one).
     func value(_ key: String) -> String { values(key).last ?? "" }
 
-    func isSet(_ key: String) -> Bool { !config.values(key).isEmpty }
+    func isSet(_ key: String) -> Bool { config.keys.contains(key) }
 
     /// Rayon's terminal defaults where they differ from Ghostty's (font size,
     /// thickening, cursor), then Ghostty's own.

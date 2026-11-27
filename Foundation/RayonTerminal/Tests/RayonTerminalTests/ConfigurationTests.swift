@@ -73,6 +73,14 @@ final class ConfigurationTests: XCTestCase {
         XCTAssertThrowsError(try GhosttyConfigText("palette broken").entries())
     }
 
+    func testConfigTextKeysFollowItsLines() {
+        var text = GhosttyConfigText("# font-size = 1\nfont-size = 12\nbroken line\n")
+        XCTAssertEqual(text.keys, ["font-size"])
+        text.set("background", ["#123456"])
+        text.set("font-size", [])
+        XCTAssertEqual(text.keys, ["background"])
+    }
+
     func testShortcutsReadAsKeyCaps() {
         XCTAssertEqual(KeybindingNames.step("super+shift+k"), "⇧⌘K")
         XCTAssertEqual(KeybindingNames.step("super+physical:four"), "⌘4")

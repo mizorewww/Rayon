@@ -4,10 +4,21 @@ import Foundation
 /// change does not touch (comments, blank lines, other keys and their order)
 /// stays exactly as written, so the file remains the user's to edit.
 struct GhosttyConfigText: Equatable, Sendable {
-    private(set) var lines: [String]
+    private(set) var lines: [String] {
+        didSet { keys = Self.keys(in: lines) }
+    }
+
+    /// The keys that have a line, so Settings can count the changed settings
+    /// of every category on each redraw without reading the file again.
+    private(set) var keys: Set<String>
 
     init(_ text: String = "") {
         lines = text.isEmpty ? [] : text.components(separatedBy: "\n")
+        keys = Self.keys(in: lines)
+    }
+
+    private static func keys(in lines: [String]) -> Set<String> {
+        Set(lines.compactMap { entry($0.trimmingCharacters(in: .whitespaces))?.key })
     }
 
     var text: String { lines.joined(separator: "\n") }
