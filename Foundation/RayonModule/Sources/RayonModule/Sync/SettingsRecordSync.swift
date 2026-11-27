@@ -95,7 +95,7 @@ final class SettingsRecordSync<Record: SettingsRecord> {
         do {
             try storage.save(Record(entries: values), changed: changed)
         } catch {
-            Logger.database.errorFile("saving \(Record.tableName) for sync failed: \(error.localizedDescription)")
+            Logger.database.errorFile("saving \(public: Record.tableName) for sync failed: \(error)")
         }
     }
 }

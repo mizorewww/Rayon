@@ -19,7 +19,7 @@ struct RayonApp: App {
 
     init() {
         #if DEBUG
-            Logger.app.debugFile("command arguments: \(CommandLine.arguments.joined(separator: " "))")
+            Logger.app.debugFile("command arguments: \(private: CommandLine.arguments.joined(separator: " "))")
         #endif
         Self.installPlatformHandlers()
         _ = RayonStore.shared

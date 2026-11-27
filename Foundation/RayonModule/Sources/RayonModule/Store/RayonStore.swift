@@ -288,7 +288,7 @@ public extension RayonStore {
         if let problem = problem(saving: machine) {
             let existing = self.machine(machine.id)
             if existing?.transport != machine.transport || existing?.proxyJumpMachineID != machine.proxyJumpMachineID {
-                Logger.database.errorFile("refusing to save \(machine.id): \(problem.localizedDescription)")
+                Logger.database.errorFile("refusing to save \(machine.id): \(problem)")
                 return false
             }
         }
@@ -413,7 +413,7 @@ extension RayonStore {
             }
             return true
         } catch {
-            Logger.database.errorFile("saving \(T.tableName) \(record.id) failed: \(error.localizedDescription)")
+            Logger.database.errorFile("saving \(public: T.tableName) \(record.id) failed: \(error)")
             return false
         }
     }
@@ -431,7 +431,7 @@ extension RayonStore {
             }
             return saved
         } catch {
-            Logger.database.errorFile("updating \(T.tableName) \(id) failed: \(error.localizedDescription)")
+            Logger.database.errorFile("updating \(public: T.tableName) \(id) failed: \(error)")
             return nil
         }
     }
@@ -442,7 +442,7 @@ extension RayonStore {
             try storage.delete(T.self, ids: ids)
             self[keyPath: path].removeAll { ids.contains($0.id) }
         } catch {
-            Logger.database.errorFile("deleting from \(T.tableName) failed: \(error.localizedDescription)")
+            Logger.database.errorFile("deleting from \(public: T.tableName) failed: \(error)")
         }
     }
 

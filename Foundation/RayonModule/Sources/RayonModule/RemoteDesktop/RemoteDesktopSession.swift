@@ -163,7 +163,7 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
     /// Tears the session down; called when the page closes or the user taps
     /// disconnect.
     public func disconnect() {
-        Logger.remoteDesktop.infoFile("disconnect \(self.machine.name) in \(String(describing: self.phase))")
+        Logger.remoteDesktop.infoFile("disconnect \(self.machine.id) in \(case: self.phase)")
         stopClipboardWatch()
         driver?.stop()
         driver = nil
@@ -331,7 +331,7 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
         Task { @MainActor [weak self] in
             guard let self else { return }
             if self.phase != phase {
-                Logger.remoteDesktop.infoFile("\(self.machine.name): \(String(describing: phase)) \(hint ?? "")")
+                Logger.remoteDesktop.infoFile("\(self.machine.id): \(case: phase) \(private: "\(phase) \(hint ?? "")")")
                 self.phase = phase
                 if phase == .connected {
                     startClipboardWatch()

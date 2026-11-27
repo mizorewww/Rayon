@@ -39,7 +39,7 @@ public final class KnownHosts: Sendable {
             do {
                 try storage.saveKnownHost(record)
             } catch {
-                Logger.database.errorFile("updating the host key of \(name) failed: \(error.localizedDescription)")
+                Logger.database.errorFile("updating the host key of \(private: name) failed: \(error)")
             }
         }
         return .trusted
@@ -52,7 +52,7 @@ public final class KnownHosts: Sendable {
         do {
             try storage.saveKnownHost(KnownHostRecord(name: name, type: key.type, key: key.key, added: Date()))
         } catch {
-            Logger.database.errorFile("saving the host key of \(name) failed: \(error.localizedDescription)")
+            Logger.database.errorFile("saving the host key of \(private: name) failed: \(error)")
         }
     }
 

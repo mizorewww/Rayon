@@ -27,7 +27,7 @@ public protocol FileTransferUIHandler: AnyObject, Sendable {
 
 public extension FileTransferUIHandler {
     func presentError(_ message: String) {
-        Logger.network.errorFile("file transfer: \(message)")
+        Logger.network.errorFile("file transfer: \(private: message)")
     }
 
     func requiresConfirmation(_: String, completion: @escaping (Bool) -> Void) {

@@ -85,7 +85,7 @@ enum LegacyStoreImport {
         do {
             copies = try importRecords(from: defaults, opener: opener, into: storage)
         } catch {
-            Logger.database.errorFile("legacy import failed: \(error.localizedDescription)")
+            Logger.database.errorFile("legacy import failed: \(error)")
             return .blocked("\(lead) (\(error.localizedDescription)). \(kept)")
         }
         for key in Key.sealed + Key.obsolete + copies {

@@ -55,7 +55,7 @@ public final class RemoteDesktopManager: ObservableObject {
     /// Ends a session: disconnects it and drops it from the list.
     public func end(_ id: UUID) {
         guard let session = sessions.first(where: { $0.id == id }) else { return }
-        Logger.remoteDesktop.infoFile("end \(session.machine.name)")
+        Logger.remoteDesktop.infoFile("end \(session.machine.id)")
         session.disconnect()
         sessions.removeAll { $0.id == id }
     }

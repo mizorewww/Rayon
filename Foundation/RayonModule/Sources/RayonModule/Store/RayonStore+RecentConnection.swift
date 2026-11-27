@@ -65,7 +65,7 @@ public extension RayonStore {
         do {
             try storage.saveRecentConnections(recentRecord.enumerated().map { $1.record(at: $0) })
         } catch {
-            Logger.database.errorFile("saving the recent connections failed: \(error.localizedDescription)")
+            Logger.database.errorFile("saving the recent connections failed: \(error)")
         }
     }
 

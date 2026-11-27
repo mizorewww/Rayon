@@ -199,7 +199,7 @@ public actor CloudSync {
             lastSync = Date()
             publish(.idle(lastSync: lastSync))
         } catch {
-            Logger.syncEngine.errorFile("sync failed: \(error.localizedDescription)")
+            Logger.syncEngine.errorFile("sync failed: \(error)")
             publish(.failed(error.localizedDescription))
         }
     }
@@ -287,14 +287,14 @@ public actor CloudSync {
         // Sending it would send its secrets as empty, and every device
         // would clear its own. It stays queued until they can be read.
         guard !record.secretsUnread else {
-            Logger.syncEngine.errorFile("not sending \(id.recordName): its secrets cannot be read now")
+            Logger.syncEngine.errorFile("not sending \(public: id.recordName): its secrets cannot be read now")
             return nil
         }
         func encode<T: StoredRecord>(_ record: T) -> CKRecord? {
             do {
                 return try CloudRecordCoding.ckRecord(for: record, systemFields: storage.systemFields(for: id.recordName))
             } catch {
-                Logger.syncEngine.errorFile("not sending \(id.recordName): \(error.localizedDescription)")
+                Logger.syncEngine.errorFile("not sending \(public: id.recordName): \(error)")
                 return nil
             }
         }
@@ -325,7 +325,7 @@ public actor CloudSync {
             setFailedMerges(failedMerges.subtracting([name]))
             return took
         } catch {
-            Logger.syncEngine.errorFile("could not take \(name), retrying after the next fetch: \(error.localizedDescription)")
+            Logger.syncEngine.errorFile("could not take \(public: name), retrying after the next fetch: \(error)")
             setFailedMerges(failedMerges.union([name]))
             return false
         }
@@ -344,7 +344,7 @@ public actor CloudSync {
             do {
                 results = try await fetch(ids)
             } catch {
-                Logger.syncEngine.errorFile("fetching records to merge again failed: \(error.localizedDescription)")
+                Logger.syncEngine.errorFile("fetching records to merge again failed: \(error)")
                 break
             }
             for (id, result) in results {
@@ -450,7 +450,7 @@ public actor CloudSync {
                      .notAuthenticated, .operationCancelled, .requestRateLimited:
                     break
                 default:
-                    Logger.syncEngine.errorFile("iCloud refused \(id.recordName): \(failure.error.localizedDescription)")
+                    Logger.syncEngine.errorFile("iCloud refused \(public: id.recordName): \(failure.error)")
                 }
             }
             if zoneMissing {

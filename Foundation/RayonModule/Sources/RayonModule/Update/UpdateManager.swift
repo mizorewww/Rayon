@@ -67,10 +67,10 @@ public struct UpdateManager: Sendable {
     /// GitHub when called, so nothing runs unless the user asks.
     public func availableUpdate() async throws -> RemotePackage? {
         guard canCheckForUpdates else { return nil }
-        Logger.app.infoFile("checking for updates from \(currentVersion)")
+        Logger.app.infoFile("checking for updates from \(public: currentVersion)")
         let release = try await latestRelease()
         let package = Self.update(from: release, over: currentVersion)
-        Logger.app.infoFile("latest release \(release.tagName); update: \(package?.version ?? "none")")
+        Logger.app.infoFile("latest release \(public: release.tagName); update: \(public: package?.version ?? "none")")
         return package
     }
 

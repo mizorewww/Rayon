@@ -84,7 +84,7 @@ public final class RayonStorage: Sendable {
         }
         guard let opened else { return true }
         if opened {
-            Logger.database.infoFile("opened the database at \(databaseURL.path)")
+            Logger.database.infoFile("opened the database at \(private: databaseURL.path)")
             NotificationCenter.default.post(name: Self.didOpen, object: self)
         }
         return opened
@@ -127,7 +127,7 @@ public final class RayonStorage: Sendable {
         do {
             return try RayonStorage(databaseURL: url, secrets: secrets)
         } catch let error as DBMigration.NewerSchema {
-            Logger.database.errorFile("the database at \(url.path) is newer: \(error.localizedDescription)")
+            Logger.database.errorFile("the database at \(private: url.path) is newer: \(error)")
             let scratch = FileManager.default.temporaryDirectory
                 .appending(path: "rayon-\(UUID().uuidString)", directoryHint: .isDirectory)
                 .appending(path: "database.db")
@@ -141,7 +141,7 @@ public final class RayonStorage: Sendable {
                 fatalError("unable to create a database at \(scratch.path): \(error)")
             }
         } catch where isDamage(error) {
-            Logger.database.errorFile("the database at \(url.path) is damaged: \(error.localizedDescription)")
+            Logger.database.errorFile("the database at \(private: url.path) is damaged: \(error)")
             let aside = url.deletingPathExtension()
                 .appendingPathExtension("unreadable-\(Int(Date().timeIntervalSince1970)).db")
             try? FileManager.default.moveItem(at: url, to: aside)
@@ -151,7 +151,7 @@ public final class RayonStorage: Sendable {
                 fatalError("unable to create a database at \(url.path): \(error)")
             }
         } catch {
-            Logger.database.errorFile("unable to open the database at \(url.path) for now: \(error.localizedDescription)")
+            Logger.database.errorFile("unable to open the database at \(private: url.path) for now: \(error)")
             return RayonStorage(unopenedAt: url, secrets: secrets, replacedProblem: nil, closed: true)
         }
     }
@@ -176,7 +176,7 @@ public extension RayonStorage {
             let rows: [T] = try db.getObjects(fromTable: T.tableName, where: removedColumn == false)
             return rows.map(withSecrets)
         } catch {
-            Logger.database.errorFile("reading \(T.tableName) failed: \(error.localizedDescription)")
+            Logger.database.errorFile("reading \(public: T.tableName) failed: \(error)")
             return []
         }
     }
@@ -407,11 +407,11 @@ extension RayonStorage {
                 // Rows saved before the database noted this learn it here.
                 if !hasSecrets(row) { try? db.insertOrReplace([SecretPresence(account: row.secretAccount)], intoTable: SecretPresence.tableName) }
             } else if hasSecrets(row) {
-                Logger.database.errorFile("the secrets of \(row.secretAccount) are missing from the keychain")
+                Logger.database.errorFile("the secrets of \(public: row.secretAccount) are missing from the keychain")
                 row.secretsUnread = true
             }
         } catch {
-            Logger.database.errorFile("reading the secrets of \(row.secretAccount) failed: \(error.localizedDescription)")
+            Logger.database.errorFile("reading the secrets of \(public: row.secretAccount) failed: \(error)")
             row.secretsUnread = true
         }
         return row

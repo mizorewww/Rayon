@@ -112,7 +112,7 @@ public class PortForwardContext: ObservableObject, Identifiable, @unchecked Send
             putLifecycle(.portInUse)
             return
         } catch {
-            Logger.network.infoFile("port forward \(info.id) could not listen: \(error.localizedDescription)")
+            Logger.network.infoFile("port forward \(info.id) could not listen: \(error)")
             putLifecycle(.forwardStopped)
             return
         }
@@ -140,7 +140,7 @@ public class PortForwardContext: ObservableObject, Identifiable, @unchecked Send
                 ) { [weak self] in self?.putLifecycle(.forwardRunning) }
             }
         } catch {
-            Logger.network.infoFile("port forward \(info.id) ended: \(error.localizedDescription)")
+            Logger.network.infoFile("port forward \(info.id) ended: \(error)")
         }
         putLifecycle(.forwardStopped)
     }

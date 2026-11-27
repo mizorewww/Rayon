@@ -257,7 +257,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
         onMainThread {
             FileTransferInterface.uiHandler.presentError(message)
         }
-        Logger.network.errorFile("sftp session \(id): \(message)")
+        Logger.network.errorFile("sftp session \(id): \(error) \(private: message)")
     }
 
     static func describe(_ error: Error, _ fallback: String) -> String {

@@ -76,7 +76,7 @@
                     if index == 0 { UIBridge.open(url: package.downloadURL) }
                 }
             } catch {
-                Logger.app.errorFile("update check failed: \(error.localizedDescription)")
+                Logger.app.errorFile("update check failed: \(error)")
                 UIBridge.alert(message: "Unable to check for updates", informative: error.localizedDescription)
             }
         }

@@ -12,21 +12,21 @@ enum LogCategoryResolver {
 }
 
 public extension Logger {
-    func debugFile(_ message: String, fileID: String = #fileID) {
+    func debugFile(_ message: FileLogMessage, fileID: String = #fileID) {
         logToFile(.debug, message, fileID: fileID)
     }
 
-    func infoFile(_ message: String, fileID: String = #fileID) {
+    func infoFile(_ message: FileLogMessage, fileID: String = #fileID) {
         logToFile(.info, message, fileID: fileID)
     }
 
-    func errorFile(_ message: String, fileID: String = #fileID) {
+    func errorFile(_ message: FileLogMessage, fileID: String = #fileID) {
         logToFile(.error, message, fileID: fileID)
     }
 
-    private func logToFile(_ level: LogLevel, _ message: String, fileID: String) {
-        log(level: level.osLogType, "\(message)")
-        LogStore.shared.append(level: level, category: LogCategoryResolver.resolve(fileID: fileID), message: message)
+    private func logToFile(_ level: LogLevel, _ message: FileLogMessage, fileID: String) {
+        log(level: level.osLogType, "\(message.detail, privacy: .private)")
+        LogStore.shared.append(level: level, category: LogCategoryResolver.resolve(fileID: fileID), message: message.file)
     }
 }
 
