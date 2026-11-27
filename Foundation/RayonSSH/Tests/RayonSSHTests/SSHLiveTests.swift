@@ -900,7 +900,9 @@ final class SSHLiveTests: XCTestCase {
     func testRemoteForwardReachesThisSide() async throws {
         let connection = try await connect([.password(password)])
         // A one-shot service on this side that answers with a greeting.
+        // It greets whether or not the client's EOF came first.
         let service = try await ServerBootstrap(group: MultiThreadedEventLoopGroup.singleton)
+            .childChannelOption(ChannelOptions.allowRemoteHalfClosure, value: true)
             .bind(host: "127.0.0.1", port: 0) { channel in
                 channel.eventLoop.makeCompletedFuture {
                     try NIOAsyncChannel<ByteBuffer, ByteBuffer>(wrappingChannelSynchronously: channel)
