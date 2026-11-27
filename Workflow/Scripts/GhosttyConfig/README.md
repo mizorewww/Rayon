@@ -11,9 +11,11 @@ The current snapshot is `zerebos/ghostty-config@fa7489fdb50015571d15375c2a3806f2
    name per line) into `ghosttytheme-names.txt`.
 3. Run
    `python3 derive-settings.py catalog.json ghosttytheme-names.txt Foundation/RayonTerminal/Sources/RayonTerminal/Configuration/Resources`.
-   It writes `settings.json` (every option, in the upstream category order, with
-   web-only widget fields removed) and `themes.json` (the themes GhosttyTheme
-   does not ship).
+   It rewrites `settings.json` with the options it already holds (the ones that
+   take effect in Rayon's terminal), in the upstream category order and with
+   web-only widget fields removed, and writes `themes.json` (the themes
+   GhosttyTheme does not ship). To add an option, name its key after the output
+   directory, then place it in `SettingsLayout.swift`.
 4. `export-keybinds.ts` produces `keybindings.json` the same way.
 
 Review the schema and licenses before updating, then run the RayonTerminal

@@ -2490,22 +2490,6 @@
         }
       }
     },
-    "Ghostty App" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ghostty App"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ghostty App"
-          }
-        }
-      }
-    },
     "Ghostty Syntax" : {
       "localizations" : {
         "zh-Hans" : {
@@ -4550,22 +4534,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "標點符號"
-          }
-        }
-      }
-    },
-    "Rayon's terminal does not use these: they belong to the Ghostty app, or Rayon sets them itself. They are kept in config.ghostty, so the file also works in Ghostty." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rayon 的终端不使用这些设置：它们属于 Ghostty App，或由 Rayon 自行设置。它们仍保留在 config.ghostty 中，因此该文件在 Ghostty 中同样可用。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rayon 的終端不使用這些設定：它們屬於 Ghostty App，或由 Rayon 自行設定。它們仍保留在 config.ghostty 中，因此該檔案在 Ghostty 中同樣可用。"
           }
         }
       }

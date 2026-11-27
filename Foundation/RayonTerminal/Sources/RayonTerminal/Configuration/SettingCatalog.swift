@@ -1,8 +1,8 @@
 import Foundation
 
-/// What Settings knows of every Ghostty option: its name, documentation,
-/// default and the kind of value it takes. libghostty has no API that lists
-/// its options, so this is data (`settings.json`, adapted from
+/// What Settings knows of every Ghostty option Rayon's terminal uses: its
+/// name, documentation, default and the kind of value it takes. libghostty
+/// has no API that lists its options, so this is data (`settings.json`, adapted from
 /// zerebos/ghostty-config; see NOTICE.txt), and adding an option to it needs
 /// no new view.
 struct SettingCatalog: Sendable {
@@ -41,11 +41,9 @@ struct Setting: Decodable, Identifiable, Sendable {
     let repeatable: Bool?
     let defaultValue: SettingValue
     let widget: Widget?
-    /// Where Ghostty's documentation lists it ("Window · Appearance").
-    let section: String
 
     enum CodingKeys: String, CodingKey {
-        case key, name, description, note, platform, since, deprecated, repeatable, widget, section
+        case key, name, description, note, platform, since, deprecated, repeatable, widget
         case defaultValue = "default"
     }
 

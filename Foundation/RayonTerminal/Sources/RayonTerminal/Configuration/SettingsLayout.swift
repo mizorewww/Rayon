@@ -2,10 +2,9 @@ import Foundation
 
 /// How the terminal's settings are organised: categories ordered from what
 /// people change most (the text and colours) to what they rarely touch
-/// (Advanced). Each category holds titled groups of catalog keys. Settings
-/// that take no effect inside Rayon close the list, grouped as Ghostty's
-/// documentation groups them, so every option stays reachable. The app
-/// places the categories in its own Settings.
+/// (Advanced). Each category holds titled groups of catalog keys; the
+/// catalog holds only options that take effect inside Rayon. The app places
+/// the categories in its own Settings.
 enum SettingsLayout {
     struct Group: Identifiable {
         let id: String
@@ -26,8 +25,6 @@ enum SettingsLayout {
         let title: String
         let icon: String
         let groups: [Group]
-        /// Said above the category's settings.
-        var note: String?
 
         /// Ghostty keys in this category.
         var keys: [String] {
@@ -36,32 +33,11 @@ enum SettingsLayout {
 
         /// Shows the live terminal preview with it.
         var previews: Bool {
-            id != "keyboard" && id != Self.ghosttyID
+            id != "keyboard"
         }
-
-        static let ghosttyID = "ghostty"
     }
 
-    static let categories: [Category] = rayonCategories + [ghosttyCategory]
-
-    /// Every option Rayon's terminal does not use, in Ghostty's documentation order.
-    private static let ghosttyCategory: Category = {
-        let shown = Set(rayonCategories.flatMap(\.keys))
-        var groups: [Group] = []
-        for setting in SettingCatalog.shared.settings where !shown.contains(setting.key) {
-            if let index = groups.firstIndex(where: { $0.id == setting.section }) {
-                groups[index] = Group(setting.section, setting.section, keys: groups[index].keys + [setting.key])
-            } else {
-                groups.append(Group(setting.section, setting.section, keys: [setting.key]))
-            }
-        }
-        return Category(
-            id: Category.ghosttyID, title: String(localized: "Ghostty App", bundle: .module), icon: "app.dashed", groups: groups,
-            note: String(localized: "Rayon's terminal does not use these: they belong to the Ghostty app, or Rayon sets them itself. They are kept in config.ghostty, so the file also works in Ghostty.", bundle: .module)
-        )
-    }()
-
-    private static let rayonCategories: [Category] = [
+    static let categories: [Category] = [
         Category(id: "text", title: String(localized: "Text", bundle: .module), icon: "textformat", groups: [
             Group("font", String(localized: "Font", bundle: .module), keys: ["font-family", "font-style", "font-size", "font-thicken", "font-thicken-strength"]),
             Group("styles", String(localized: "Bold and Italic", bundle: .module), keys: [

@@ -6,22 +6,14 @@ final class ConfigurationTests: XCTestCase {
     /// Settings, so none can be lost from it.
     func testEverySettingIsReachableExactlyOnce() {
         let catalog = SettingCatalog.shared
-        XCTAssertEqual(catalog.settings.count, 200)
+        XCTAssertEqual(catalog.settings.count, 86)
         let keys = SettingsLayout.categories.flatMap(\.keys)
         XCTAssertEqual(keys.count, Set(keys).count, "a setting appears in two places")
         XCTAssertEqual(Set(keys), Set(catalog.settings.map(\.key)), "Settings and the catalog disagree")
         for key in keys { XCTAssertNotNil(catalog.setting(key), "\(key) is not in the catalog") }
         XCTAssertEqual(SettingsLayout.categories.map(\.id).count, Set(SettingsLayout.categories.map(\.id)).count)
-        XCTAssertEqual(catalog.setting("quit-after-last-window-closed")?.defaultValue, .scalar("false"))
-    }
-
-    /// The categories Rayon's terminal reads hold exactly the keys it applies;
-    /// the others are under Ghostty App.
-    func testAppliedSettingsAreOutsideGhosttyApp() throws {
-        let ghostty = try XCTUnwrap(SettingsLayout.category(SettingsLayout.Category.ghosttyID))
-        let applied = Set(SettingsLayout.categories.filter { $0.id != ghostty.id }.flatMap(\.keys))
-        XCTAssertEqual(applied, RayonTerminalConfiguration.supportedKeys.union(["theme"]))
-        XCTAssertTrue(Set(ghostty.keys).isDisjoint(with: RayonTerminalConfiguration.supportedKeys))
+        XCTAssertEqual(catalog.setting("title-report")?.defaultValue, .scalar("false"))
+        XCTAssertEqual(RayonTerminalConfiguration.supportedKeys.union(["theme"]), Set(keys))
     }
 
     /// Each setting gets a control from its catalog entry.

@@ -201,9 +201,6 @@ struct CategoryPage: View {
                     .transition(.opacity)
             }
             Form {
-                if let note = category.note {
-                    Section { Text(note).foregroundStyle(.secondary) }
-                }
                 header
                 ForEach(category.groups) { group in
                     GroupSection(group: group, keys: group.keys)

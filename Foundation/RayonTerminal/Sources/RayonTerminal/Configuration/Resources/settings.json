@@ -5,49 +5,7 @@
    "default": "",
    "description": "The title Ghostty will use for the window. Forces the title at all times; Ghostty will ignore set title escape sequences from programs. For a blank title, set to one or more spaces (quoted).",
    "key": "title",
-   "name": "Static title for all windows",
-   "section": "Application"
-  },
-  {
-   "default": "true",
-   "description": "If true (default), applications running in the terminal can show desktop notifications using certain escape sequences such as OSC 9 or OSC 777.",
-   "key": "desktop-notifications",
-   "name": "Allow desktop notifications",
-   "widget": {
-    "type": "switch"
-   },
-   "section": "Application"
-  },
-  {
-   "default": [],
-   "description": "Additional configuration files to read. Can be repeated. Paths are relative to the config file containing the directive. Prepend `?` to suppress errors if the file doesn't exist. Cycles are not allowed. Config files are loaded after the config they're defined within.",
-   "key": "config-file",
-   "name": "Additional config file",
-   "repeatable": true,
-   "widget": {
-    "type": "repeatable-text",
-    "placeholder": "path/to/config"
-   },
-   "section": "Application"
-  },
-  {
-   "default": "true",
-   "description": "When true, the default configuration file paths will be loaded (e.g. `$XDG_CONFIG_HOME/ghostty/config`). Setting this to false targets using Ghostty from CLI minimizing external effects. CLI-only configuration; setting in a config file has no effect.",
-   "key": "config-default-files",
-   "name": "Load default config file",
-   "widget": {
-    "type": "switch"
-   },
-   "section": "Application"
-  },
-  {
-   "default": "",
-   "description": "Match a regular expression against the terminal text and associate clicking it with an action. Links configured earlier take precedence. A default link that matches URLs and opens them in the system opener always exists (disable with `link-url`).",
-   "disabled": true,
-   "key": "link",
-   "name": "Link handling",
-   "note": "Regex for making clickable links, currently disabled.",
-   "section": "Application"
+   "name": "Static title for all windows"
   },
   {
    "default": "true",
@@ -57,464 +15,7 @@
    "note": "Matching occurs while holding the control (Linux) or command (macOS) key.",
    "widget": {
     "type": "switch"
-   },
-   "section": "Application"
-  },
-  {
-   "default": "true",
-   "description": "Show link previews for a matched URL.\n\n- `true` - Show previews for all matched URLs\n- `false` - Never show link previews\n- `osc8` - Only show previews for OSC 8 hyperlinks (where link text can differ from destination)",
-   "key": "link-previews",
-   "name": "Show link previews",
-   "note": "When set to <code>osc8</code>, previews are only shown for hyperlinks created with the OSC 8 sequence.",
-   "since": "1.2.0",
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "true",
-      "label": "On"
-     },
-     {
-      "value": "false",
-      "label": "Off"
-     },
-     {
-      "value": "osc8",
-      "label": "OSC 8"
-     }
-    ]
-   },
-   "section": "Application"
-  },
-  {
-   "default": "5s",
-   "description": "The duration that undo operations remain available. Default is 5 seconds. Duration format: numbers followed by time units (y, d, h, m, s, ms, us, ns).\n\nA timeout of zero effectively disables undo. Only supported on macOS.",
-   "key": "undo-timeout",
-   "name": "Undo timeout",
-   "note": "Timeout for undo operations. Format like <code>1h30m</code>, <code>5s</code>, <code>500ms</code>.",
-   "platform": [
-    "macos"
-   ],
-   "since": "1.2.0",
-   "widget": {
-    "type": "duration",
-    "allowEmpty": false
-   },
-   "section": "Application"
-  },
-  {
-   "default": "",
-   "description": "Bell features to enable. Comma-separated list. Prefix with `no-` to disable.\n\nFeatures:\n- `system` - Use built-in system functions (plays system alert sound on macOS)\n- `audio` - Play a custom sound (GTK only)\n- `attention` - Request user's attention when unfocused (default: on)\n- `title` - Prepend a bell emoji (🔔) to the title until re-focused (default: on)\n- `border` - Display a border around the alerted surface until re-focused (since 1.2.0 on GTK, 1.2.1 on macOS)",
-   "key": "bell-features",
-   "name": "Bell features",
-   "note": "Comma-separated list of features. Available: system, audio, attention, title, border. Prefix with <code>no-</code> to disable.",
-   "since": "1.2.0",
-   "widget": {
-    "type": "feature-list",
-    "features": [
-     {
-      "id": "system",
-      "label": "System",
-      "default": false
-     },
-     {
-      "id": "audio",
-      "label": "Audio",
-      "default": false
-     },
-     {
-      "id": "attention",
-      "label": "Attention",
-      "default": true
-     },
-     {
-      "id": "title",
-      "label": "Title",
-      "default": true
-     },
-     {
-      "id": "border",
-      "label": "Border",
-      "default": false
-     }
-    ]
-   },
-   "section": "Application · Bell"
-  },
-  {
-   "default": "",
-   "description": "If `audio` is an enabled bell feature, this is a path to an audio file. Supports `~/` prefix. Relative paths are relative to the config file directory or CWD if used as CLI flag. GTK only.",
-   "key": "bell-audio-path",
-   "name": "Bell audio file",
-   "note": "Path to an audio file to play when the bell rings. Requires <code>audio</code> in bell features. GTK only.",
-   "platform": [
-    "gtk"
-   ],
-   "since": "1.2.0",
-   "section": "Application · Bell"
-  },
-  {
-   "default": "0.5",
-   "description": "If `audio` is an enabled bell feature, the volume to play the audio file at (relative to system volume). Range 0.0 (silence) to 1.0 (as loud as possible). GTK only.",
-   "key": "bell-audio-volume",
-   "name": "Bell audio volume",
-   "note": "Volume for the bell audio, from 0 (silent) to 1 (full). GTK only.",
-   "platform": [
-    "gtk"
-   ],
-   "since": "1.2.0",
-   "widget": {
-    "type": "range",
-    "min": 0,
-    "max": 1,
-    "step": 0.05,
-    "showLabels": false
-   },
-   "section": "Application · Bell"
-  },
-  {
-   "default": "",
-   "description": "The command to run, usually a shell. If not an absolute path, looked up in PATH. If not set, the shell is determined from SHELL env var or passwd entry.\n\nPrefix with `direct:` to avoid shell expansion. Prefix with `shell:` to always wrap in a shell. Additional arguments are supported.\n\nUsed for all new terminal surfaces.",
-   "key": "command",
-   "name": "Command to run on launch",
-   "section": "Application · Startup"
-  },
-  {
-   "default": "",
-   "description": "Same as `command`, but only applies to the first terminal surface created when Ghostty starts. Can also be set with the `-e` CLI flag (e.g. `ghostty -e fish --with --custom --args`).",
-   "key": "initial-command",
-   "name": "Command to run on first launch",
-   "note": "Unlike the previous setting, this will only run once in the lifetime of the app.",
-   "section": "Application · Startup"
-  },
-  {
-   "default": [],
-   "description": "Extra environment variables to pass to commands launched in a terminal surface. Format: `KEY=VALUE`. Setting a key to an empty string removes it. Setting `env` to an empty string resets the entire map.",
-   "key": "env",
-   "name": "Environment variables",
-   "repeatable": true,
-   "since": "1.2.0",
-   "widget": {
-    "type": "repeatable-text",
-    "placeholder": "KEY=VALUE"
-   },
-   "section": "Application · Startup"
-  },
-  {
-   "default": [],
-   "description": "Data to send as input to the command on startup. Formats:\n- `raw:<string>` - Send raw text (Zig string literal syntax)\n- `path:<path>` - Read a file and send its contents (max 10MB)\n- Bare value is treated as `raw:`\n\nCan be repeated; data is concatenated directly.",
-   "key": "input",
-   "name": "Initial input",
-   "note": "Input for tty launch. Can be raw text, zig string literal, or path:/to/file.",
-   "repeatable": true,
-   "since": "1.2.0",
-   "widget": {
-    "type": "repeatable-text",
-    "placeholder": "raw:text or path:/to/file"
-   },
-   "section": "Application · Startup"
-  },
-  {
-   "default": "false",
-   "description": "Whether to start the window in a maximized state. Applies to new windows only, not tabs or splits.",
-   "key": "maximize",
-   "name": "Launch as maximized window",
-   "since": "1.1.0",
-   "widget": {
-    "type": "switch"
-   },
-   "section": "Application · Startup"
-  },
-  {
-   "default": "false",
-   "description": "Start new windows in fullscreen.\n\n- `false` - Don't start in fullscreen (default)\n- `true` - Start in native fullscreen\n- `non-native` - (macOS only) Non-native fullscreen without animations, hides menu bar\n- `non-native-visible-menu` - (macOS only) Non-native fullscreen, keeps menu bar visible\n- `non-native-padded-notch` - (macOS only) Non-native fullscreen, hides menu bar but pads for notch\n\nIMPORTANT: Tabs do NOT work with non-native fullscreen modes.",
-   "key": "fullscreen",
-   "name": "Launch in fullscreen mode",
-   "widget": {
-    "type": "switch"
-   },
-   "section": "Application · Startup"
-  },
-  {
-   "default": "true",
-   "description": "Controls whether an initial window is created when Ghostty is run. Only implemented on Linux and macOS.",
-   "key": "initial-window",
-   "name": "Show a window on startup",
-   "widget": {
-    "type": "switch"
-   },
-   "section": "Application · Startup"
-  },
-  {
-   "default": "",
-   "description": "The directory to change to after starting the command. Secondary to `window-inherit-working-directory`. Special values:\n- `home` - The home directory\n- `inherit` - The working directory of the launching process\n\nOn macOS, if launched from launchd/open, defaults to `home`. On GTK, if launched from a desktop launcher, defaults to `home`.",
-   "key": "working-directory",
-   "name": "Directory to use after startup",
-   "note": "Special values of <code>home</code> and <code>inherit</code> are also allowed here.",
-   "section": "Application · Startup"
-  },
-  {
-   "default": "false",
-   "description": "If true, keep the terminal open after the command exits until any keypress is received. Primarily useful for scripts or debugging.",
-   "key": "wait-after-command",
-   "name": "Wait for input after command",
-   "widget": {
-    "type": "switch"
-   },
-   "section": "Application · Shutdown"
-  },
-  {
-   "default": "250",
-   "description": "The number of milliseconds of runtime below which a process exit is considered abnormal. Used to show an error message when the process exits too quickly.",
-   "key": "abnormal-command-exit-runtime",
-   "name": "Abnormal command exit runtime",
-   "widget": {
-    "type": "number",
-    "min": 0,
-    "size": 5
-   },
-   "section": "Application · Shutdown"
-  },
-  {
-   "default": "true",
-   "description": "Confirms that a surface should be closed before closing it.\n\n- `true` - Confirm if shell integration detects a running process (default)\n- `false` - Close without confirmation\n- `always` - Always confirm, even if shell integration says no process is running",
-   "key": "confirm-close-surface",
-   "name": "Confirm when closing a surface",
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "true",
-      "label": "On"
-     },
-     {
-      "value": "false",
-      "label": "Off"
-     },
-     {
-      "value": "always",
-      "label": "Always"
-     }
-    ]
-   },
-   "section": "Application · Shutdown"
-  },
-  {
-   "default": "false",
-   "description": "Whether to quit after the last surface is closed. Defaults to false on macOS (standard macOS behavior) and true on Linux. On Linux with this set to true, Ghostty can delay quitting using `quit-after-last-window-closed-delay`.",
-   "key": "quit-after-last-window-closed",
-   "name": "Quit after closing last window",
-   "widget": {
-    "type": "switch"
-   },
-   "section": "Application · Shutdown"
-  },
-  {
-   "default": "",
-   "description": "Controls how long Ghostty stays running after the last surface is closed. Only has an effect if `quit-after-last-window-closed` is true. Minimum value is 1s. Duration format: numbers followed by time units (y, d, h, m, s, ms, us, ns).\n\nOnly implemented on Linux.",
-   "key": "quit-after-last-window-closed-delay",
-   "name": "Delay before auto quitting",
-   "note": "How long Ghostty keeps running after the last window closes. Leave empty to quit immediately. Format like <code>5s</code>, <code>500ms</code>.",
-   "platform": [
-    "linux"
-   ],
-   "widget": {
-    "type": "duration",
-    "allowEmpty": true
-   },
-   "section": "Application · Shutdown"
-  },
-  {
-   "default": "top",
-   "description": "The position of the quick terminal window.\n\n- `top` - Terminal appears at the top of the screen\n- `bottom` - Terminal appears at the bottom\n- `left` - Terminal appears at the left\n- `right` - Terminal appears at the right\n- `center` - Terminal appears at the center\n\nOn macOS, changing this requires restarting Ghostty.",
-   "key": "quick-terminal-position",
-   "name": "Terminal position",
-   "widget": {
-    "type": "dropdown",
-    "options": [
-     "top",
-     "right",
-     "bottom",
-     "left",
-     "center"
-    ]
-   },
-   "section": "Application · Quick Terminal"
-  },
-  {
-   "default": "main",
-   "description": "The screen where the quick terminal should show up.\n\n- `main` - The screen recommended by the OS as the main screen (default)\n- `mouse` - The screen the mouse is currently over\n- `macos-menu-bar` - The screen containing the macOS menu bar\n\nOnly implemented on macOS.",
-   "key": "quick-terminal-screen",
-   "name": "Screen location",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "dropdown",
-    "options": [
-     "main",
-     "mouse",
-     "macos-menu-bar"
-    ]
-   },
-   "section": "Application · Quick Terminal"
-  },
-  {
-   "default": "",
-   "description": "The size of the quick terminal. Can be a percentage (e.g. `50%`) or pixels (e.g. `300px`). A bare value without suffix is a config error.\n\nWhen one size is specified, it affects the primary axis (height for top/bottom, width for left/right). Specify two values comma-separated for both dimensions.\n\nExample: `50%,500px` for a top-positioned terminal = half-screen tall, 500px wide.",
-   "key": "quick-terminal-size",
-   "name": "Quick terminal size",
-   "note": "Specify the size as a percentage (e.g. <code>50%</code>) or in pixels (e.g. <code>800</code>). You can specify two values separated by a comma for width and height.",
-   "since": "1.2.0",
-   "section": "Application · Quick Terminal"
-  },
-  {
-   "default": "0.2",
-   "description": "Duration (in seconds) of the quick terminal enter and exit animation. Set to 0 to disable animation completely. Can be changed at runtime. Only implemented on macOS.",
-   "key": "quick-terminal-animation-duration",
-   "name": "Animation duration",
-   "note": "Duration of the quick terminal animation in seconds from 0 to 10.",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "range",
-    "min": 0,
-    "max": 10,
-    "step": 0.1,
-    "showLabels": false
-   },
-   "section": "Application · Quick Terminal"
-  },
-  {
-   "default": "true",
-   "description": "Automatically hide the quick terminal when focus shifts to another window. Defaults to true on macOS and false on Linux/BSD.\n\nOn Linux, global shortcuts require system configuration and are less accessible, so it's preferable to keep the terminal open.",
-   "key": "quick-terminal-autohide",
-   "name": "Autohide",
-   "note": "This autohides the quick terminal when focus shifts away.",
-   "widget": {
-    "type": "switch"
-   },
-   "section": "Application · Quick Terminal"
-  },
-  {
-   "default": "move",
-   "description": "Behavior of the quick terminal when switching between macOS spaces.\n\n- `move` - Quick terminal moves to the current space (default)\n- `remain` - Quick terminal stays in its original space\n\nOnly implemented on macOS. On Linux, behavior is always equivalent to `move`.",
-   "key": "quick-terminal-space-behavior",
-   "name": "macOS space behavior",
-   "since": "1.1.0",
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "move",
-      "label": "Move"
-     },
-     {
-      "value": "remain",
-      "label": "Remain"
-     }
-    ]
-   },
-   "section": "Application · Quick Terminal"
-  },
-  {
-   "default": "on-demand",
-   "description": "Determines when the quick terminal receives keyboard input.\n\n- `none` - Will not receive any keyboard input\n- `on-demand` - Only receives keyboard input when focused (default)\n- `exclusive` - Always receives keyboard input, even when another window is focused\n\nOnly has an effect on Linux Wayland. On macOS, behavior is always equivalent to `on-demand`.",
-   "key": "quick-terminal-keyboard-interactivity",
-   "name": "Keyboard input",
-   "note": "Controls when the quick terminal receives keyboard input. GTK Wayland only.",
-   "platform": [
-    "gtk-wayland"
-   ],
-   "since": "1.2.0",
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "none",
-      "label": "None"
-     },
-     {
-      "value": "on-demand",
-      "label": "On demand"
-     },
-     {
-      "value": "exclusive",
-      "label": "Exclusive"
-     }
-    ]
-   },
-   "section": "Application · Quick Terminal"
-  },
-  {
-   "default": "detect",
-   "description": "Whether to enable shell integration auto-injection.\n\n- `none` - Disable shell integration\n- `detect` - Auto-detect the shell and inject if supported (default)\n- `bash`, `elvish`, `fish`, `nushell`, `zsh` - Use a specific shell integration scheme",
-   "key": "shell-integration",
-   "name": "Shell integration style",
-   "widget": {
-    "type": "dropdown",
-    "options": [
-     "none",
-     "detect",
-     "bash",
-     "elvish",
-     "fish",
-     "nushell",
-     "zsh"
-    ]
-   },
-   "section": "Terminal"
-  },
-  {
-   "default": "",
-   "description": "Shell integration features to enable. Comma-separated list. Prefix with `no-` to disable. Use `true`/`false` to turn all features on or off.\n\nFeatures:\n- `cursor` - Set cursor to bar at prompt (default: on)\n- `sudo` - Set sudo wrapper to preserve terminfo (default: off)\n- `title` - Set window title via shell integration (default: on)\n- `ssh-env` - SSH environment variable compatibility: converts TERM to xterm-256color and propagates COLORTERM (default: off, since 1.2.0)\n- `ssh-terminfo` - Automatic terminfo installation on remote hosts (default: off, since 1.2.0)\n- `path` - Add Ghostty's binary directory to PATH (default: on)",
-   "key": "shell-integration-features",
-   "name": "Shell integration features",
-   "note": "Available features: cursor, sudo, title, ssh-env, ssh-terminfo, path. Including one force enables it, prefixing it with <code>no-</code> force disables it, omitting it falls back to default.",
-   "widget": {
-    "type": "feature-list",
-    "features": [
-     {
-      "id": "cursor",
-      "label": "Cursor",
-      "default": true
-     },
-     {
-      "id": "sudo",
-      "label": "Sudo",
-      "default": false
-     },
-     {
-      "id": "title",
-      "label": "Title",
-      "default": true
-     },
-     {
-      "id": "ssh-env",
-      "label": "SSH environment",
-      "default": false
-     },
-     {
-      "id": "ssh-terminfo",
-      "label": "SSH terminfo",
-      "default": false
-     },
-     {
-      "id": "path",
-      "label": "Path",
-      "default": true
-     }
-    ]
-   },
-   "section": "Terminal"
-  },
-  {
-   "default": "xterm-ghostty",
-   "description": "The value to set for the TERM environment variable.",
-   "key": "term",
-   "name": "TERM environment variable",
-   "section": "Terminal"
+   }
   },
   {
    "default": "false",
@@ -525,70 +26,7 @@
    "since": "1.0.1",
    "widget": {
     "type": "switch"
-   },
-   "section": "Terminal"
-  },
-  {
-   "default": "never",
-   "description": "Controls when command finished notifications are sent. Requires shell integration or OSC 133 escape sequences.\n\n- `never` - Never send notifications (default)\n- `unfocused` - Only when the surface is not focused\n- `always` - Always send notifications",
-   "key": "notify-on-command-finish",
-   "name": "Notify on command finish",
-   "note": "Requires shell integration or OSC 133 escape sequences.",
-   "since": "1.3.0",
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "never",
-      "label": "Never"
-     },
-     {
-      "value": "unfocused",
-      "label": "Unfocused"
-     },
-     {
-      "value": "always",
-      "label": "Always"
-     }
-    ]
-   },
-   "section": "Terminal · Command Notifications"
-  },
-  {
-   "default": "",
-   "description": "How the user is notified when command finished notifications are enabled. Comma-separated list. Prefix with `no-` to disable.\n\nOptions:\n- `bell` - enabled by default\n- `notify` - disabled by default",
-   "key": "notify-on-command-finish-action",
-   "name": "Notification action",
-   "since": "1.3.0",
-   "widget": {
-    "type": "feature-list",
-    "features": [
-     {
-      "id": "bell",
-      "label": "Bell",
-      "default": true
-     },
-     {
-      "id": "notify",
-      "label": "Notification",
-      "default": false
-     }
-    ]
-   },
-   "section": "Terminal · Command Notifications"
-  },
-  {
-   "default": "5s",
-   "description": "How long a command must have been running before a notification will be sent. Default is 5 seconds. Duration format: numbers followed by time units (y, d, h, m, s, ms, us, ns).",
-   "key": "notify-on-command-finish-after",
-   "name": "Minimum runtime before notifying",
-   "note": "How long a command must run before a notification is sent. Format like <code>5s</code>, <code>500ms</code>.",
-   "since": "1.3.0",
-   "widget": {
-    "type": "duration",
-    "allowEmpty": false
-   },
-   "section": "Terminal · Command Notifications"
+   }
   },
   {
    "default": "10000000",
@@ -600,8 +38,7 @@
     "type": "number",
     "min": 0,
     "size": 10
-   },
-   "section": "Terminal · Display"
+   }
   },
   {
    "default": "",
@@ -623,8 +60,7 @@
       "default": false
      }
     ]
-   },
-   "section": "Terminal · Display"
+   }
   },
   {
    "default": "320000000",
@@ -636,56 +72,7 @@
     "min": 0,
     "max": 4294967295,
     "size": 12
-   },
-   "section": "Terminal · Display"
-  },
-  {
-   "default": "true",
-   "description": "If true (default), applications running in the terminal can show graphical progress bars using the ConEmu OSC 9;4 escape sequence. If false, progress bar sequences are silently ignored.",
-   "key": "progress-style",
-   "name": "Show progress bars (OSC 9;4)",
-   "note": "Allows applications to show graphical progress bars via the ConEmu OSC 9;4 escape sequence.",
-   "widget": {
-    "type": "switch"
-   },
-   "section": "Terminal · Display"
-  },
-  {
-   "default": [],
-   "description": "Custom shaders to run after the default shaders. Path to a GLSL-syntax shader compatible with the Shadertoy API. Shaders should specify a `mainImage` function.\n\nWARNING: Invalid shaders can cause Ghostty to become unusable (completely black window).\n\nCan be repeated to load multiple shaders run in order.",
-   "key": "custom-shader",
-   "name": "Custom shader",
-   "note": "This matches the API of Shadertoy.",
-   "repeatable": true,
-   "widget": {
-    "type": "repeatable-text",
-    "placeholder": "path/to/shader.glsl"
-   },
-   "section": "Terminal · Display"
-  },
-  {
-   "default": "true",
-   "description": "If `true` (default), the focused terminal surface will run an animation loop when custom shaders are used.\n\n- `false` - Shader only renders when the terminal is updated\n- `true` - Run animation loop when terminal is focused\n- `always` - Always run the animation loop regardless of focus (uses more CPU)",
-   "key": "custom-shader-animation",
-   "name": "Allow shaders to animate",
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "false",
-      "label": "Off"
-     },
-     {
-      "value": "true",
-      "label": "On"
-     },
-     {
-      "value": "always",
-      "label": "Always"
-     }
-    ]
-   },
-   "section": "Terminal · Display"
+   }
   },
   {
    "default": "16-bit",
@@ -708,15 +95,13 @@
       "label": "16-bit"
      }
     ]
-   },
-   "section": "Terminal · Protocol & Compatibility"
+   }
   },
   {
    "default": "",
    "description": "String to send when ENQ (0x05) is received from the running command. Defaults to an empty string.",
    "key": "enquiry-response",
-   "name": "Response to ENQ",
-   "section": "Terminal · Protocol & Compatibility"
+   "name": "Response to ENQ"
   },
   {
    "default": "false",
@@ -726,80 +111,7 @@
    "note": "If you don't know what this is, don't touch it!",
    "widget": {
     "type": "switch"
-   },
-   "section": "Terminal · Protocol & Compatibility"
-  },
-  {
-   "default": "ask",
-   "description": "Whether to allow programs running in the terminal to read from the system clipboard (OSC 52).\n\n- `ask` - Ask the user before allowing (default)\n- `allow` - Always allow\n- `deny` - Always deny",
-   "key": "clipboard-read",
-   "name": "Allow terminal to read clipboard",
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "ask",
-      "label": "Ask"
-     },
-     {
-      "value": "allow",
-      "label": "Allow"
-     },
-     {
-      "value": "deny",
-      "label": "Deny"
-     }
-    ]
-   },
-   "section": "Clipboard"
-  },
-  {
-   "default": "allow",
-   "description": "Whether to allow programs running in the terminal to write to the system clipboard (OSC 52).\n\n- `ask` - Ask the user before allowing\n- `allow` - Always allow (default)\n- `deny` - Always deny",
-   "key": "clipboard-write",
-   "name": "Allow terminal to write clipboard",
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "ask",
-      "label": "Ask"
-     },
-     {
-      "value": "allow",
-      "label": "Allow"
-     },
-     {
-      "value": "deny",
-      "label": "Deny"
-     }
-    ]
-   },
-   "section": "Clipboard"
-  },
-  {
-   "default": "true",
-   "description": "Whether to automatically copy selected text to the clipboard.\n\n- `true` - Copy to the selection clipboard (default on Linux and macOS)\n- `false` - Disable copy on select\n- `clipboard` - Copy to both the selection clipboard and system clipboard\n\nMiddle-click paste always uses the selection clipboard.",
-   "key": "copy-on-select",
-   "name": "Copy on select",
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "true",
-      "label": "On"
-     },
-     {
-      "value": "false",
-      "label": "Off"
-     },
-     {
-      "value": "clipboard",
-      "label": "Clipboard"
-     }
-    ]
-   },
-   "section": "Clipboard"
+   }
   },
   {
    "default": "true",
@@ -808,8 +120,7 @@
    "name": "Trim trailing space on copy",
    "widget": {
     "type": "switch"
-   },
-   "section": "Clipboard"
+   }
   },
   {
    "default": "true",
@@ -818,8 +129,7 @@
    "name": "Confirm when pasting unsafely",
    "widget": {
     "type": "switch"
-   },
-   "section": "Clipboard"
+   }
   },
   {
    "default": "true",
@@ -828,87 +138,7 @@
    "name": "Mark bracketed paste as safe",
    "widget": {
     "type": "switch"
-   },
-   "section": "Clipboard"
-  },
-  {
-   "default": "",
-   "description": "The font that will be used for the application's window and tab titles. If unset, the system default font is used. Does not need to be a fixed-width font.",
-   "key": "window-title-font-family",
-   "name": "Window title font",
-   "since": "1.0.0",
-   "section": "Window"
-  },
-  {
-   "default": "false",
-   "description": "The text displayed in the subtitle of the window.\n\n- `false` - Disable the subtitle\n- `working-directory` - Set the subtitle to the working directory\n\nOnly supported on GTK.",
-   "key": "window-subtitle",
-   "name": "Window subtitle",
-   "platform": [
-    "gtk"
-   ],
-   "since": "1.1.0",
-   "widget": {
-    "type": "dropdown",
-    "options": [
-     "false",
-     "working-directory"
-    ]
-   },
-   "section": "Window"
-  },
-  {
-   "default": "true",
-   "description": "Synchronize rendering with the screen refresh rate. If true, minimizes tearing and aligns redraws with the screen but may cause input latency. Defaults to true because out-of-sync rendering on macOS can cause kernel panics (macOS 14.4+). Currently only supported on macOS.",
-   "key": "window-vsync",
-   "name": "Enable vsync",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "switch"
-   },
-   "section": "Window"
-  },
-  {
-   "default": "true",
-   "description": "If true, new windows will inherit the working directory of the previously focused window. If no window was previously focused, the `working-directory` option is used.",
-   "key": "window-inherit-working-directory",
-   "name": "Inherit working directory",
-   "widget": {
-    "type": "switch"
-   },
-   "section": "Window"
-  },
-  {
-   "default": "true",
-   "description": "If true, new tabs will inherit the working directory of the previously focused tab. If no tab was previously focused, the `working-directory` option is used.",
-   "key": "tab-inherit-working-directory",
-   "name": "Tabs inherit working directory",
-   "widget": {
-    "type": "switch"
-   },
-   "section": "Window"
-  },
-  {
-   "default": "true",
-   "description": "If true, new split panes will inherit the working directory of the previously focused split. If no split was previously focused, the `working-directory` option is used.",
-   "key": "split-inherit-working-directory",
-   "name": "Splits inherit working directory",
-   "widget": {
-    "type": "switch"
-   },
-   "section": "Window"
-  },
-  {
-   "default": "true",
-   "description": "If true, new windows and tabs will inherit the font size of the previously focused window. If false, the default font size from `font-size` is used.",
-   "key": "window-inherit-font-size",
-   "name": "Inherit font size",
-   "widget": {
-    "type": "switch"
-   },
-   "section": "Window"
+   }
   },
   {
    "default": "srgb",
@@ -930,115 +160,7 @@
       "label": "Display P3"
      }
     ]
-   },
-   "section": "Window"
-  },
-  {
-   "default": "default",
-   "description": "Whether to enable saving and restoring window state (position, size, tabs, splits, etc.).\n\n- `default` - Use the default system behavior (macOS: only if forcibly terminated or configured system-wide).\n- `never` - Never save window state.\n- `always` - Always save window state on exit.\n\nCurrently only supported on macOS.",
-   "key": "window-save-state",
-   "name": "Save window state",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "default",
-      "label": "Default"
-     },
-     {
-      "value": "never",
-      "label": "Never"
-     },
-     {
-      "value": "always",
-      "label": "Always"
-     }
-    ]
-   },
-   "section": "Window"
-  },
-  {
-   "default": "auto",
-   "description": "Whether to show the tab bar.\n\n- `always` - Always display the tab bar, even with only one tab. (since 1.2.0)\n- `auto` - Show the tab bar only when there are two or more tabs.\n- `never` - Never show the tab bar. Tabs accessible via tab overview or keybinds.\n\nCurrently only supported on Linux (GTK).",
-   "key": "window-show-tab-bar",
-   "name": "Show tab bar",
-   "platform": [
-    "gtk"
-   ],
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "always",
-      "label": "Always"
-     },
-     {
-      "value": "auto",
-      "label": "Auto"
-     },
-     {
-      "value": "never",
-      "label": "Never"
-     }
-    ]
-   },
-   "section": "Window"
-  },
-  {
-   "default": "current",
-   "description": "The position where new tabs are created.\n\n- `current` - Insert after the currently focused tab, or at the end if no focused tabs.\n- `end` - Insert at the end of the tab list.",
-   "key": "window-new-tab-position",
-   "name": "New tab position",
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "current",
-      "label": "Current"
-     },
-     {
-      "value": "end",
-      "label": "End"
-     }
-    ]
-   },
-   "section": "Window"
-  },
-  {
-   "default": "auto",
-   "description": "The theme to use for the windows.\n\n- `auto` - Determine based on terminal background color. If theme has separate light/dark themes, behaves as `system`.\n- `system` - Use the system theme.\n- `light` - Use the light theme regardless of system theme.\n- `dark` - Use the dark theme regardless of system theme.\n- `ghostty` - Use the background/foreground colors from Ghostty configuration (Linux builds only).\n\nCurrently only supported on macOS and Linux.",
-   "key": "window-theme",
-   "name": "Window theme",
-   "widget": {
-    "type": "dropdown",
-    "options": [
-     "auto",
-     "system",
-     "light",
-     "dark",
-     "ghostty"
-    ]
-   },
-   "section": "Window · Appearance"
-  },
-  {
-   "default": "auto",
-   "description": "Configure a preference for window decorations.\n\n- `none` - Disable all window decorations (titlebar, borders). On macOS, disables tabs.\n- `auto` - Automatically use client-side or server-side decorations based on OS/DE.\n- `client` - Prefer client-side decorations. (since 1.1.0)\n- `server` - Prefer server-side decorations (Linux GTK only). (since 1.1.0)\n\nAlso accepts boolean `true` (= auto) and `false` (= none).",
-   "key": "window-decoration",
-   "name": "Window decorations",
-   "widget": {
-    "type": "dropdown",
-    "options": [
-     "auto",
-     "none",
-     "client",
-     "server"
-    ]
-   },
-   "section": "Window · Appearance"
+   }
   },
   {
    "default": "2",
@@ -1052,8 +174,7 @@
      "Right"
     ],
     "min": 0
-   },
-   "section": "Window · Appearance"
+   }
   },
   {
    "default": "2",
@@ -1067,8 +188,7 @@
      "Bottom"
     ],
     "min": 0
-   },
-   "section": "Window · Appearance"
+   }
   },
   {
    "default": "false",
@@ -1078,8 +198,7 @@
    "note": "Distributes only the leftover space evenly across all four edges. Applied after horizontal/vertical padding, not instead of it.",
    "widget": {
     "type": "switch"
-   },
-   "section": "Window · Appearance"
+   }
   },
   {
    "default": "background",
@@ -1093,34 +212,7 @@
      "extend",
      "extend-always"
     ]
-   },
-   "section": "Window · Appearance"
-  },
-  {
-   "default": "",
-   "description": "Background color for the window titlebar. Only takes effect if `window-theme` is set to `ghostty`. Currently only supported in the GTK app runtime. Specified as hex or named X11 color.",
-   "key": "window-titlebar-background",
-   "name": "Titlebar background",
-   "platform": [
-    "gtk"
-   ],
-   "widget": {
-    "type": "color"
-   },
-   "section": "Window · Appearance"
-  },
-  {
-   "default": "",
-   "description": "Foreground color for the window titlebar. Only takes effect if `window-theme` is set to `ghostty`. Currently only supported in the GTK app runtime. Specified as hex or named X11 color.",
-   "key": "window-titlebar-foreground",
-   "name": "Titlebar foreground",
-   "platform": [
-    "gtk"
-   ],
-   "widget": {
-    "type": "color"
-   },
-   "section": "Window · Appearance"
+   }
   },
   {
    "default": "1",
@@ -1132,8 +224,7 @@
     "min": 0,
     "max": 1,
     "step": 0.01
-   },
-   "section": "Window · Appearance"
+   }
   },
   {
    "default": "false",
@@ -1143,317 +234,7 @@
    "since": "1.2.0",
    "widget": {
     "type": "switch"
-   },
-   "section": "Window · Appearance"
-  },
-  {
-   "default": "false",
-   "description": "Whether to blur the background when `background-opacity` is less than 1.\n\nValues:\n- A nonnegative integer specifying the blur intensity\n- `false` (equivalent to intensity 0)\n- `true` (equivalent to default intensity of 20)\n- `macos-glass-regular` - Standard glass effect (macOS 26.0+)\n- `macos-glass-clear` - Highly transparent glass effect (macOS 26.0+)\n\nSupported on macOS and some Linux DEs (KDE Plasma). On KDE Plasma, the exact blur intensity is ignored — any truthy value enables blur.",
-   "key": "background-blur",
-   "name": "Background blur",
-   "note": "Set to <code>true</code> to enable blur, <code>false</code> to disable, a number for a specific radius (macOS), or <code>macos-glass-regular</code>/<code>macos-glass-clear</code> for macOS glass effects.",
-   "widget": {
-    "type": "custom-number",
-    "presets": [
-     {
-      "value": "false",
-      "label": "Off"
-     },
-     {
-      "value": "true",
-      "label": "On"
-     },
-     {
-      "value": "macos-glass-regular",
-      "label": "Regular Glass"
-     },
-     {
-      "value": "macos-glass-clear",
-      "label": "Clear Glass"
-     }
-    ],
-    "min": 0,
-    "integer": true
-   },
-   "section": "Window · Appearance"
-  },
-  {
-   "default": "",
-   "description": "Background image for the terminal. Should be a path to a PNG or JPEG file.\n\nThe background image is per-terminal, not per-window. Background images are duplicated in VRAM per-terminal.\n\nWARNING: For large images this could lead to significant VRAM usage.",
-   "key": "background-image",
-   "name": "Background image",
-   "note": "Path to an image file to use as the terminal background.",
-   "since": "1.2.0",
-   "section": "Window · Appearance"
-  },
-  {
-   "default": "1",
-   "description": "Background image opacity, relative to `background-opacity`. A value of 1.0 places the image on top of the background color. Values greater than 1.0 give the image higher opacity than the general background.",
-   "key": "background-image-opacity",
-   "name": "Background image opacity",
-   "since": "1.2.0",
-   "widget": {
-    "type": "range",
-    "min": 0,
-    "max": 1,
-    "step": 0.01
-   },
-   "section": "Window · Appearance"
-  },
-  {
-   "default": "center",
-   "description": "Background image position.",
-   "key": "background-image-position",
-   "name": "Background image position",
-   "since": "1.2.0",
-   "widget": {
-    "type": "dropdown",
-    "options": [
-     "center",
-     "top-left",
-     "top-center",
-     "top-right",
-     "center-left",
-     "center-center",
-     "center-right",
-     "bottom-left",
-     "bottom-center",
-     "bottom-right"
-    ]
-   },
-   "section": "Window · Appearance"
-  },
-  {
-   "default": "contain",
-   "description": "Background image fit.\n\n- `contain` - Scale to largest size that fits within the terminal while preserving aspect ratio.\n- `cover` - Scale to smallest size that completely covers the terminal while preserving aspect ratio (may clip edges).\n- `stretch` - Stretch to full size of the terminal without preserving aspect ratio.\n- `none` - Don't scale the background image.",
-   "key": "background-image-fit",
-   "name": "Background image fit",
-   "since": "1.2.0",
-   "widget": {
-    "type": "dropdown",
-    "options": [
-     "contain",
-     "cover",
-     "stretch",
-     "none"
-    ]
-   },
-   "section": "Window · Appearance"
-  },
-  {
-   "default": "false",
-   "description": "Whether to repeat the background image if it doesn't completely fill the terminal area.",
-   "key": "background-image-repeat",
-   "name": "Repeat background image",
-   "since": "1.2.0",
-   "widget": {
-    "type": "switch"
-   },
-   "section": "Window · Appearance"
-  },
-  {
-   "default": "system",
-   "description": "Control when the scrollbar is shown.\n\n- `system` - Respect the system settings for when to show scrollbars.\n- `never` - Never show a scrollbar.\n\nCurrently only supported on macOS. GTK doesn't yet support scrollbars.",
-   "key": "scrollbar",
-   "name": "Scrollbar visibility",
-   "note": "Currently only supported on macOS.",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "system",
-      "label": "System"
-     },
-     {
-      "value": "never",
-      "label": "Never"
-     }
-    ]
-   },
-   "section": "Window · Appearance"
-  },
-  {
-   "default": "0.7",
-   "description": "The opacity level of an unfocused split. Unfocused splits are slightly faded out to make it easier to see which split is focused. To disable this feature, set to 1. Clamped to [0.15, 1].",
-   "key": "unfocused-split-opacity",
-   "name": "Unfocused split opacity",
-   "widget": {
-    "type": "range",
-    "min": 0.15,
-    "max": 1,
-    "step": 0.01
-   },
-   "section": "Window · Appearance"
-  },
-  {
-   "default": "",
-   "description": "The color to dim the unfocused split. Unfocused splits are dimmed by rendering a semi-transparent rectangle over the split. Defaults to the background color. Specified as hex or named X11 color.",
-   "key": "unfocused-split-fill",
-   "name": "Unfocused split fill color",
-   "widget": {
-    "type": "color"
-   },
-   "section": "Window · Appearance"
-  },
-  {
-   "default": "",
-   "description": "The color of the split divider. If not set, a default will be chosen. Specified as hex or named X11 color.",
-   "key": "split-divider-color",
-   "name": "Split divider color",
-   "since": "1.1.0",
-   "widget": {
-    "type": "color"
-   },
-   "section": "Window · Appearance"
-  },
-  {
-   "default": "false",
-   "description": "Control when Ghostty preserves a zoomed split. Normally, any operation that changes focus or layout of the split tree will unzoom any zoomed split.\n\nSet to `navigation` to preserve the zoomed split state when navigating to another split (e.g. via `goto_split`). Prefix with `no-` to disable.\n\nExample: `split-preserve-zoom = navigation`",
-   "key": "split-preserve-zoom",
-   "name": "Split preserve zoom on navigation",
-   "note": "When navigating between splits, keep the zoomed state.",
-   "since": "1.3.0",
-   "widget": {
-    "type": "switch"
-   },
-   "section": "Window · Appearance"
-  },
-  {
-   "default": "",
-   "description": "The initial window height in terminal grid cells. Both `window-height` and `window-width` must be set to take effect. Values smaller than 4 are not allowed. Setting to 0 uses the app runtime default.",
-   "key": "window-height",
-   "name": "Initial window height",
-   "note": "This size is not in pixels but in number of terminal grid cells",
-   "widget": {
-    "type": "number",
-    "min": 4,
-    "step": 1,
-    "size": 4,
-    "placeholder": "e.g. 24"
-   },
-   "section": "Window · Sizing & Resizing"
-  },
-  {
-   "default": "",
-   "description": "The initial window width in terminal grid cells. Both `window-height` and `window-width` must be set to take effect. Values smaller than 10 are not allowed. Setting to 0 uses the app runtime default.",
-   "key": "window-width",
-   "name": "Initial window width",
-   "note": "This size is not in pixels but in number of terminal grid cells",
-   "widget": {
-    "type": "number",
-    "min": 10,
-    "step": 1,
-    "size": 4,
-    "placeholder": "e.g. 80"
-   },
-   "section": "Window · Sizing & Resizing"
-  },
-  {
-   "default": "0",
-   "description": "The starting window Y position in pixels, relative to the top-left corner of the primary monitor. On macOS, relative to the top-left of the visible screen area. Both x and y must be set to take effect.",
-   "key": "window-position-y",
-   "name": "Initial window Y",
-   "note": "Relative to the top left pixel of the screen",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "number",
-    "min": 0,
-    "step": 1,
-    "size": 4,
-    "placeholder": "e.g. 0"
-   },
-   "section": "Window · Sizing & Resizing"
-  },
-  {
-   "default": "0",
-   "description": "The starting window X position in pixels, relative to the top-left corner of the primary monitor. Both x and y must be set to take effect. Note: only supported on macOS; GTK does not support setting window position.",
-   "key": "window-position-x",
-   "name": "Initial window X",
-   "note": "Relative to the top left pixel of the screen",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "number",
-    "min": 0,
-    "step": 1,
-    "size": 4,
-    "placeholder": "e.g. 0"
-   },
-   "section": "Window · Sizing & Resizing"
-  },
-  {
-   "default": "false",
-   "description": "Resize the window in discrete increments of the focused surface's cell size. If disabled, surfaces are resized in pixel increments. Currently only supported on macOS.",
-   "key": "window-step-resize",
-   "name": "Resize in grid cell increments",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "switch"
-   },
-   "section": "Window · Sizing & Resizing"
-  },
-  {
-   "default": "after-first",
-   "description": "Controls when resize overlays are shown. Resize overlays are a transient popup showing the terminal size while resizing.\n\n- `always` - Always show resize overlays.\n- `never` - Never show resize overlays.\n- `after-first` - Don't show on initial creation, but show on subsequent resizes.",
-   "key": "resize-overlay",
-   "name": "Show resize overlays",
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "always",
-      "label": "Always"
-     },
-     {
-      "value": "never",
-      "label": "Never"
-     },
-     {
-      "value": "after-first",
-      "label": "After first"
-     }
-    ]
-   },
-   "section": "Window · Sizing & Resizing"
-  },
-  {
-   "default": "center",
-   "description": "If resize overlays are enabled, controls the position of the overlay.",
-   "key": "resize-overlay-position",
-   "name": "Resize overlay position",
-   "widget": {
-    "type": "dropdown",
-    "options": [
-     "center",
-     "top-left",
-     "top-center",
-     "top-right",
-     "bottom-left",
-     "bottom-center",
-     "bottom-right"
-    ]
-   },
-   "section": "Window · Sizing & Resizing"
-  },
-  {
-   "default": "750ms",
-   "description": "If resize overlays are enabled, controls how long the overlay is visible before it is hidden. Default is 750ms. Duration format: numbers followed by time units (y, d, h, m, s, ms, us, ns).",
-   "key": "resize-overlay-duration",
-   "name": "Show resize overlay time",
-   "note": "How long the resize overlay stays visible. Format like <code>750ms</code>, <code>1s</code>.",
-   "widget": {
-    "type": "duration",
-    "allowEmpty": false
-   },
-   "section": "Window · Sizing & Resizing"
+   }
   },
   {
    "default": "",
@@ -1463,8 +244,7 @@
    "note": "Any colors selected after setting this will overwrite the theme's colors.",
    "widget": {
     "type": "theme"
-   },
-   "section": "Colors"
+   }
   },
   {
    "default": "",
@@ -1481,8 +261,7 @@
       "label": "Bright"
      }
     ]
-   },
-   "section": "Colors"
+   }
   },
   {
    "default": "0.5",
@@ -1495,8 +274,7 @@
     "min": 0,
     "max": 1,
     "step": 0.01
-   },
-   "section": "Colors"
+   }
   },
   {
    "default": "1",
@@ -1508,8 +286,7 @@
     "min": 1,
     "max": 21,
     "step": 0.1
-   },
-   "section": "Colors"
+   }
   },
   {
    "default": "true",
@@ -1520,8 +297,7 @@
    "since": "1.3.0",
    "widget": {
     "type": "switch"
-   },
-   "section": "Colors"
+   }
   },
   {
    "default": "false",
@@ -1532,8 +308,7 @@
    "since": "1.3.0",
    "widget": {
     "type": "switch"
-   },
-   "section": "Colors"
+   }
   },
   {
    "default": "#282c34",
@@ -1542,8 +317,7 @@
    "name": "Background color",
    "widget": {
     "type": "color"
-   },
-   "section": "Colors · Base Colors"
+   }
   },
   {
    "default": "#ffffff",
@@ -1552,8 +326,7 @@
    "name": "Foreground color",
    "widget": {
     "type": "color"
-   },
-   "section": "Colors · Base Colors"
+   }
   },
   {
    "default": "",
@@ -1572,8 +345,7 @@
       "label": "Cell BG"
      }
     ]
-   },
-   "section": "Colors · Base Colors"
+   }
   },
   {
    "default": "",
@@ -1592,8 +364,7 @@
       "label": "Cell BG"
      }
     ]
-   },
-   "section": "Colors · Base Colors"
+   }
   },
   {
    "default": "true",
@@ -1603,8 +374,7 @@
    "since": "1.2.0",
    "widget": {
     "type": "switch"
-   },
-   "section": "Colors · Base Colors"
+   }
   },
   {
    "default": "false",
@@ -1613,8 +383,7 @@
    "name": "Clear selection on copy",
    "widget": {
     "type": "switch"
-   },
-   "section": "Colors · Base Colors"
+   }
   },
   {
    "default": "",
@@ -1622,8 +391,7 @@
    "key": "selection-word-chars",
    "name": "Word selection characters",
    "note": "Each character is an individual boundary where selection stops. Not a pattern or regex.",
-   "since": "1.3.0",
-   "section": "Colors · Base Colors"
+   "since": "1.3.0"
   },
   {
    "default": "",
@@ -1633,8 +401,7 @@
    "note": "Foreground color for non-focused (candidate) search matches. Also accepts `cell-foreground` or `cell-background`.",
    "widget": {
     "type": "color"
-   },
-   "section": "Colors · Search Colors"
+   }
   },
   {
    "default": "",
@@ -1644,8 +411,7 @@
    "note": "Background color for non-focused (candidate) search matches. Defaults to golden yellow (#ffe082). Also accepts `cell-foreground` or `cell-background`.",
    "widget": {
     "type": "color"
-   },
-   "section": "Colors · Search Colors"
+   }
   },
   {
    "default": "",
@@ -1655,8 +421,7 @@
    "note": "Foreground color for the active/focused search match.",
    "widget": {
     "type": "color"
-   },
-   "section": "Colors · Search Colors"
+   }
   },
   {
    "default": "",
@@ -1666,8 +431,7 @@
    "note": "Background color for the active/focused search match. Defaults to soft peach (#f2a57e).",
    "widget": {
     "type": "color"
-   },
-   "section": "Colors · Search Colors"
+   }
   },
   {
    "default": "",
@@ -1686,8 +450,7 @@
       "label": "Cell BG"
      }
     ]
-   },
-   "section": "Colors · Cursor"
+   }
   },
   {
    "default": "",
@@ -1706,8 +469,7 @@
       "label": "Cell BG"
      }
     ]
-   },
-   "section": "Colors · Cursor"
+   }
   },
   {
    "default": "1",
@@ -1719,8 +481,7 @@
     "min": 0,
     "max": 1,
     "step": 0.05
-   },
-   "section": "Colors · Cursor"
+   }
   },
   {
    "default": "block",
@@ -1738,8 +499,7 @@
       "value": "block_hollow"
      }
     ]
-   },
-   "section": "Colors · Cursor"
+   }
   },
   {
    "default": "",
@@ -1763,8 +523,7 @@
       "label": "Default"
      }
     ]
-   },
-   "section": "Colors · Cursor"
+   }
   },
   {
    "default": [
@@ -2031,8 +790,7 @@
    "repeatable": true,
    "widget": {
     "type": "palette"
-   },
-   "section": "Colors · Color Palette"
+   }
   },
   {
    "default": "13",
@@ -2044,8 +802,7 @@
     "min": 4,
     "max": 60,
     "step": 0.5
-   },
-   "section": "Fonts"
+   }
   },
   {
    "default": "false",
@@ -2058,8 +815,7 @@
    ],
    "widget": {
     "type": "switch"
-   },
-   "section": "Fonts"
+   }
   },
   {
    "default": "255",
@@ -2074,8 +830,7 @@
     "min": 0,
     "max": 255,
     "step": 1
-   },
-   "section": "Fonts"
+   }
   },
   {
    "default": "",
@@ -2092,8 +847,7 @@
       "default": false
      }
     ]
-   },
-   "section": "Fonts"
+   }
   },
   {
    "default": [],
@@ -2104,8 +858,7 @@
    "widget": {
     "type": "repeatable-text",
     "placeholder": "e.g. -calt"
-   },
-   "section": "Fonts"
+   }
   },
   {
    "default": "",
@@ -2132,8 +885,7 @@
       "default": true
      }
     ]
-   },
-   "section": "Fonts"
+   }
   },
   {
    "default": "native",
@@ -2148,8 +900,7 @@
      "linear",
      "linear-corrected"
     ]
-   },
-   "section": "Fonts"
+   }
   },
   {
    "default": "unicode",
@@ -2168,48 +919,7 @@
       "label": "Legacy"
      }
     ]
-   },
-   "section": "Fonts"
-  },
-  {
-   "default": "",
-   "description": "FreeType load flags to enable. Format: comma-separated flags. Prefix with `no-` to disable. Use `true`/`false` to turn all flags on or off.\n\nAvailable flags:\n- `hinting` - Enable hinting (default: on)\n- `force-autohint` - Always use the freetype auto-hinter (default: off)\n- `monochrome` - Use 1-bit monochrome rendering, disables anti-aliasing (default: off)\n- `autohint` - Enable the freetype auto-hinter (default: on)\n- `light` - Use light hinting style, better preserving glyph shapes (default: on)\n\nOnly applies to Ghostty builds that use FreeType (typically Linux builds).",
-   "key": "freetype-load-flags",
-   "name": "FreeType load flags",
-   "platform": [
-    "linux"
-   ],
-   "widget": {
-    "type": "feature-list",
-    "features": [
-     {
-      "id": "hinting",
-      "label": "Hinting",
-      "default": true
-     },
-     {
-      "id": "force-autohint",
-      "label": "Force autohint",
-      "default": false
-     },
-     {
-      "id": "monochrome",
-      "label": "Monochrome",
-      "default": false
-     },
-     {
-      "id": "autohint",
-      "label": "Autohint",
-      "default": true
-     },
-     {
-      "id": "light",
-      "label": "Light hinting",
-      "default": true
-     }
-    ]
-   },
-   "section": "Fonts"
+   }
   },
   {
    "default": [],
@@ -2220,32 +930,28 @@
    "widget": {
     "type": "repeatable-text",
     "placeholder": "JetBrainsMono NF"
-   },
-   "section": "Fonts · Font Families"
+   }
   },
   {
    "default": [],
    "description": "The font family to use for bold text. Falls back to `font-family` if not set or not found.",
    "key": "font-family-bold",
    "name": "Font family for bold text",
-   "repeatable": true,
-   "section": "Fonts · Font Families"
+   "repeatable": true
   },
   {
    "default": [],
    "description": "The font family to use for italic text. Falls back to `font-family` if not set or not found.",
    "key": "font-family-italic",
    "name": "Font family for italic text",
-   "repeatable": true,
-   "section": "Fonts · Font Families"
+   "repeatable": true
   },
   {
    "default": [],
    "description": "The font family to use for bold italic text. Falls back to `font-family` if not set or not found.",
    "key": "font-family-bold-italic",
    "name": "Font family for bold italic text",
-   "repeatable": true,
-   "section": "Fonts · Font Families"
+   "repeatable": true
   },
   {
    "default": [],
@@ -2257,36 +963,31 @@
    "widget": {
     "type": "repeatable-text",
     "placeholder": "U+E000-U+E0FF=Symbols Nerd Font"
-   },
-   "section": "Fonts · Font Families"
+   }
   },
   {
    "default": "default",
    "description": "Named font style for the main font. For example for `Iosevka Heavy` use a style of `Heavy`. Set to `false` to completely disable the style.",
    "key": "font-style",
-   "name": "Main font style",
-   "section": "Fonts · Font Styles"
+   "name": "Main font style"
   },
   {
    "default": "default",
    "description": "Named font style for bold text. For example for `Iosevka Heavy` use a style of `Heavy`. Set to `false` to completely disable the style.",
    "key": "font-style-bold",
-   "name": "Font style for bold text",
-   "section": "Fonts · Font Styles"
+   "name": "Font style for bold text"
   },
   {
    "default": "default",
    "description": "Named font style for italic text. Set to `false` to completely disable the style.",
    "key": "font-style-italic",
-   "name": "Font style for italic text",
-   "section": "Fonts · Font Styles"
+   "name": "Font style for italic text"
   },
   {
    "default": "default",
    "description": "Named font style for bold italic text. Set to `false` to completely disable the style.",
    "key": "font-style-bold-italic",
-   "name": "Font style for bold italic text",
-   "section": "Fonts · Font Styles"
+   "name": "Font style for bold italic text"
   },
   {
    "default": [],
@@ -2297,32 +998,28 @@
    "widget": {
     "type": "repeatable-text",
     "placeholder": "e.g. wght=600"
-   },
-   "section": "Fonts · Font Variations"
+   }
   },
   {
    "default": [],
    "description": "Variable font variations for bold text. See `font-variation`.",
    "key": "font-variation-bold",
    "name": "Font variant for bold text",
-   "repeatable": true,
-   "section": "Fonts · Font Variations"
+   "repeatable": true
   },
   {
    "default": [],
    "description": "Variable font variations for italic text. See `font-variation`.",
    "key": "font-variation-italic",
    "name": "Font variant for italic text",
-   "repeatable": true,
-   "section": "Fonts · Font Variations"
+   "repeatable": true
   },
   {
    "default": [],
    "description": "Variable font variations for bold italic text. See `font-variation`.",
    "key": "font-variation-bold-italic",
    "name": "Font variant for bold italic text",
-   "repeatable": true,
-   "section": "Fonts · Font Variations"
+   "repeatable": true
   },
   {
    "default": "",
@@ -2331,8 +1028,7 @@
    "name": "Cell width",
    "widget": {
     "type": "number-units"
-   },
-   "section": "Fonts · Metric Adjustments"
+   }
   },
   {
    "default": "",
@@ -2341,8 +1037,7 @@
    "name": "Cell height",
    "widget": {
     "type": "number-units"
-   },
-   "section": "Fonts · Metric Adjustments"
+   }
   },
   {
    "default": "",
@@ -2351,8 +1046,7 @@
    "name": "Font baseline",
    "widget": {
     "type": "number-units"
-   },
-   "section": "Fonts · Metric Adjustments"
+   }
   },
   {
    "default": "",
@@ -2361,8 +1055,7 @@
    "name": "Underline position",
    "widget": {
     "type": "number-units"
-   },
-   "section": "Fonts · Metric Adjustments"
+   }
   },
   {
    "default": "",
@@ -2371,8 +1064,7 @@
    "name": "Underline thickness",
    "widget": {
     "type": "number-units"
-   },
-   "section": "Fonts · Metric Adjustments"
+   }
   },
   {
    "default": "",
@@ -2381,8 +1073,7 @@
    "name": "Strikethrough position",
    "widget": {
     "type": "number-units"
-   },
-   "section": "Fonts · Metric Adjustments"
+   }
   },
   {
    "default": "",
@@ -2391,8 +1082,7 @@
    "name": "Strikethrough thickness",
    "widget": {
     "type": "number-units"
-   },
-   "section": "Fonts · Metric Adjustments"
+   }
   },
   {
    "default": "",
@@ -2401,8 +1091,7 @@
    "name": "Overline position",
    "widget": {
     "type": "number-units"
-   },
-   "section": "Fonts · Metric Adjustments"
+   }
   },
   {
    "default": "",
@@ -2411,8 +1100,7 @@
    "name": "Overline thickness",
    "widget": {
     "type": "number-units"
-   },
-   "section": "Fonts · Metric Adjustments"
+   }
   },
   {
    "default": "",
@@ -2421,8 +1109,7 @@
    "name": "Cursor thickness",
    "widget": {
     "type": "number-units"
-   },
-   "section": "Fonts · Metric Adjustments"
+   }
   },
   {
    "default": "",
@@ -2431,8 +1118,7 @@
    "name": "Box thickness",
    "widget": {
     "type": "number-units"
-   },
-   "section": "Fonts · Metric Adjustments"
+   }
   },
   {
    "default": "",
@@ -2441,8 +1127,7 @@
    "name": "Cursor height",
    "widget": {
     "type": "number-units"
-   },
-   "section": "Fonts · Metric Adjustments"
+   }
   },
   {
    "default": "",
@@ -2452,8 +1137,7 @@
    "since": "1.2.0",
    "widget": {
     "type": "number-units"
-   },
-   "section": "Fonts · Metric Adjustments"
+   }
   },
   {
    "default": [
@@ -2532,8 +1216,7 @@
    "description": "Key bindings. Format: `trigger=action`. Duplicate triggers overwrite previous values.\n\nTrigger: `+`-separated list of keys and modifiers (e.g. `ctrl+a`, `ctrl+shift+b`).\n\nPhysical keys can be specified using W3C key codes (e.g. `KeyA`, `key_a`).\n\nSpecial trigger prefix values:\n- `all:` - Apply to all terminal surfaces\n- `global:` - Make keybind global (system-wide)\n- `unconsumed:` - Don't consume the input\n- `performable:` - Only consume if action is performable\n\nSpecial values:\n- `keybind=clear` - Clear all keybindings\n\nChained actions (since 1.3.0): Use `chain=action` as subsequent keybind entries.\n\nKey tables (since 1.3.0): Use `<table>/<binding>` syntax.",
    "key": "keybind",
    "name": "",
-   "repeatable": true,
-   "section": "Keybinds"
+   "repeatable": true
   },
   {
    "default": "true",
@@ -2542,8 +1225,7 @@
    "name": "Enable click to move cursor",
    "widget": {
     "type": "switch"
-   },
-   "section": "Mouse"
+   }
   },
   {
    "default": "false",
@@ -2552,8 +1234,7 @@
    "name": "Hide mouse while typing",
    "widget": {
     "type": "switch"
-   },
-   "section": "Mouse"
+   }
   },
   {
    "default": "true",
@@ -2563,8 +1244,7 @@
    "note": "Allows terminal applications to receive mouse events.",
    "widget": {
     "type": "switch"
-   },
-   "section": "Mouse"
+   }
   },
   {
    "default": "false",
@@ -2579,8 +1259,7 @@
      "always",
      "never"
     ]
-   },
-   "section": "Mouse"
+   }
   },
   {
    "default": "precision:1,discrete:3",
@@ -2589,8 +1268,7 @@
    "name": "Mouse scroll multiplier",
    "widget": {
     "type": "scroll-multiplier"
-   },
-   "section": "Mouse"
+   }
   },
   {
    "default": "context-menu",
@@ -2606,8 +1284,7 @@
      "paste",
      "ignore"
     ]
-   },
-   "section": "Mouse"
+   }
   },
   {
    "default": "primary-paste",
@@ -2620,18 +1297,7 @@
      "primary-paste",
      "ignore"
     ]
-   },
-   "section": "Mouse"
-  },
-  {
-   "default": "false",
-   "description": "If true, when there are multiple split panes, the mouse selects the pane that is focused. Only applies to the currently focused window.",
-   "key": "focus-follows-mouse",
-   "name": "Focus splits on mouse move",
-   "widget": {
-    "type": "switch"
-   },
-   "section": "Mouse"
+   }
   },
   {
    "default": "0",
@@ -2643,408 +1309,7 @@
     "type": "number",
     "min": 0,
     "size": 4
-   },
-   "section": "Mouse"
-  },
-  {
-   "default": "",
-   "description": "Set Ghostty's graphical user interface language to a language other than the system default language. The language must be fully specified, including the encoding. For example: `language = de_DE.UTF-8` will force the strings in Ghostty's graphical user interface to be in German rather than the system default.\n\nThis will not affect the language used by programs run within Ghostty. Those will continue to use the default system language.\n\nWarning: This setting cannot be reloaded at runtime. To change the language you must fully restart Ghostty.",
-   "key": "language",
-   "name": "UI language",
-   "note": "Set Ghostty's GTK GUI language (e.g. <code>de</code>, <code>fr</code>). Requires a full restart. GTK only.",
-   "platform": [
-    "gtk"
-   ],
-   "since": "1.3.0",
-   "section": "GTK"
-  },
-  {
-   "default": "",
-   "description": "Controls the WM_CLASS class field (X11), Wayland application ID, and DBus bus name. Default is `com.mitchellh.ghostty`. Changing this creates separate single-instance Ghostty instances.",
-   "key": "class",
-   "name": "WM_CLASS class field",
-   "note": "This defaults to <code>com.mitchellh.ghostty</code>",
-   "platform": [
-    "gtk"
-   ],
-   "section": "GTK"
-  },
-  {
-   "default": "",
-   "description": "Controls the instance name field of the WM_CLASS X11 property when running under X11. Default is `ghostty`.",
-   "key": "x11-instance-name",
-   "name": "WM_CLASS instance name",
-   "note": "This defaults to <code>ghostty</code>",
-   "platform": [
-    "gtk-x11"
-   ],
-   "section": "GTK"
-  },
-  {
-   "default": "detect",
-   "description": "Controls whether the Ghostty GTK application runs in single-instance mode.\n\n- `true` - Single instance mode: new processes create windows in the existing instance\n- `false` - Each new process launches a separate application\n- `detect` - Assume single-instance unless TERM_PROGRAM is set or CLI args exist (default)\n\nNote: debug builds have a separate single-instance ID to avoid conflicting with release builds.",
-   "key": "gtk-single-instance",
-   "name": "Single-instance mode",
-   "platform": [
-    "gtk"
-   ],
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "detect",
-      "label": "Detect"
-     },
-     {
-      "value": "true",
-      "label": "On"
-     },
-     {
-      "value": "false",
-      "label": "Off"
-     }
-    ]
-   },
-   "section": "GTK"
-  },
-  {
-   "default": "",
-   "description": "Custom CSS files to be loaded. Can be repeated to load multiple files. Prepend `?` to suppress errors if the file doesn't exist. File size limit per stylesheet: 5MiB.",
-   "key": "gtk-custom-css",
-   "name": "Custom css file",
-   "platform": [
-    "gtk"
-   ],
-   "since": "1.1.0",
-   "section": "GTK"
-  },
-  {
-   "default": "false",
-   "description": "Enable or disable GTK's OpenGL debugging logs. The default is true for debug builds and false for all others.",
-   "key": "gtk-opengl-debug",
-   "name": "OpenGL debug",
-   "platform": [
-    "gtk"
-   ],
-   "since": "1.1.0",
-   "widget": {
-    "type": "switch"
-   },
-   "section": "GTK"
-  },
-  {
-   "default": "",
-   "description": "Control the in-app notifications that Ghostty shows (toasts on GTK).\n\nNotifications:\n- `clipboard-copy` - Show when text is copied to clipboard (default: on)\n- `config-reload` - Show when configuration is reloaded (default: on)\n\nPrefix with `no-` to disable. Use `true`/`false` to enable/disable all. GTK only.",
-   "key": "app-notifications",
-   "name": "App notifications",
-   "note": "Comma-separated list of notifications to enable/disable. Available: clipboard-copy, config-reload. Prefix with <code>no-</code> to disable. <code>true</code>/<code>false</code> to enable/disable all.",
-   "platform": [
-    "gtk"
-   ],
-   "since": "1.1.0",
-   "widget": {
-    "type": "feature-list",
-    "features": [
-     {
-      "id": "clipboard-copy",
-      "label": "Clipboard copy",
-      "default": true
-     },
-     {
-      "id": "config-reload",
-      "label": "Config reload",
-      "default": true
-     }
-    ]
-   },
-   "section": "GTK"
-  },
-  {
-   "default": "raised",
-   "description": "Determines the appearance of the top and bottom bars in the GTK terminal.\n\n- `flat` - Top and bottom bars are flat with the terminal window\n- `raised` - Top and bottom bars cast a shadow on the terminal area\n- `raised-border` - Like `raised` but the shadow is replaced with a subtle border",
-   "key": "gtk-toolbar-style",
-   "name": "Toolbar style",
-   "platform": [
-    "gtk"
-   ],
-   "widget": {
-    "type": "dropdown",
-    "options": [
-     "raised",
-     "flat",
-     "raised-border"
-    ]
-   },
-   "section": "GTK · Titlebar & Tabs"
-  },
-  {
-   "default": "native",
-   "description": "The style of the GTK titlebar.\n\n- `native` - Traditional titlebar with title, buttons, and window controls. Tab bar appears below when multiple tabs are open.\n- `tabs` - Merges the tab bar and titlebar to save vertical space. Cannot drag the window by tab titles.",
-   "key": "gtk-titlebar-style",
-   "name": "Titlebar style",
-   "note": "<code>tabs</code> merges the tab bar and titlebar to save vertical space.",
-   "platform": [
-    "gtk"
-   ],
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "native",
-      "label": "Native"
-     },
-     {
-      "value": "tabs",
-      "label": "Tabs"
-     }
-    ]
-   },
-   "section": "GTK · Titlebar & Tabs"
-  },
-  {
-   "default": "top",
-   "description": "Determines the side of the screen that the GTK tab bar will stick to. When `hidden`, a tab button displaying the number of tabs appears in the title bar.",
-   "key": "gtk-tabs-location",
-   "name": "Tab location",
-   "platform": [
-    "gtk"
-   ],
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "top",
-      "label": "Top"
-     },
-     {
-      "value": "bottom",
-      "label": "Bottom"
-     }
-    ]
-   },
-   "section": "GTK · Titlebar & Tabs"
-  },
-  {
-   "default": "true",
-   "description": "If true (default), GTK tabs will be 'wide' (fill available space, GNOME style). If false, tabs only take up space they need.",
-   "key": "gtk-wide-tabs",
-   "name": "Use wide tabs",
-   "note": "Setting this to <code>false</code> will make tabs use the least space necessary.",
-   "platform": [
-    "gtk"
-   ],
-   "widget": {
-    "type": "switch"
-   },
-   "section": "GTK · Titlebar & Tabs"
-  },
-  {
-   "default": "true",
-   "description": "When enabled, the full GTK titlebar is displayed instead of your window manager's simple titlebar. Has no effect when `window-decoration` is none or when running under macOS.",
-   "key": "gtk-titlebar",
-   "name": "Show titlebar",
-   "platform": [
-    "gtk"
-   ],
-   "widget": {
-    "type": "switch"
-   },
-   "section": "GTK · Titlebar & Tabs"
-  },
-  {
-   "default": "false",
-   "description": "If true, the titlebar will be hidden when the window is maximized, and shown when unmaximized. GTK only.",
-   "key": "gtk-titlebar-hide-when-maximized",
-   "name": "Hide titlebar on maximize",
-   "platform": [
-    "gtk"
-   ],
-   "since": "1.1.0",
-   "widget": {
-    "type": "switch"
-   },
-   "section": "GTK · Titlebar & Tabs"
-  },
-  {
-   "default": "top",
-   "description": "The layer of the quick terminal window.\n\n- `overlay` - In front of all windows\n- `top` - In front of normal windows but behind fullscreen overlays (default)\n- `bottom` - Behind normal windows but in front of wallpapers\n- `background` - Behind all windows\n\nGTK Wayland only.",
-   "key": "gtk-quick-terminal-layer",
-   "name": "Quick terminal layer",
-   "note": "Controls which layer the quick terminal appears on. GTK Wayland only.",
-   "platform": [
-    "gtk-wayland"
-   ],
-   "since": "1.2.0",
-   "widget": {
-    "type": "dropdown",
-    "options": [
-     "overlay",
-     "top",
-     "bottom",
-     "background"
-    ]
-   },
-   "section": "GTK · Titlebar & Tabs"
-  },
-  {
-   "default": "ghostty-quick-terminal",
-   "description": "The namespace (identifier) for the quick terminal window used by the Wayland compositor and/or scripts to determine the type of layer surfaces.\n\nGTK Wayland only.",
-   "key": "gtk-quick-terminal-namespace",
-   "name": "Quick terminal namespace",
-   "note": "Identifier for the quick terminal layer surface. GTK Wayland only.",
-   "platform": [
-    "gtk-wayland"
-   ],
-   "since": "1.2.0",
-   "widget": {
-    "type": "text",
-    "size": 18
-   },
-   "section": "GTK · Titlebar & Tabs"
-  },
-  {
-   "default": "auto",
-   "description": "Configures the low-level API to use for async IO, eventing, etc.\n\n- `auto` - Automatically choose the best backend (default)\n- `epoll` - Use the epoll API\n- `io_uring` - Use the io_uring API\n\nOnly supported on Linux. Requires a full application restart to take effect.",
-   "key": "async-backend",
-   "name": "Async backend",
-   "note": "If unsure, leave this set to auto.",
-   "platform": [
-    "linux"
-   ],
-   "since": "1.2.0",
-   "widget": {
-    "type": "dropdown",
-    "options": [
-     "auto",
-     "epoll",
-     "io_uring"
-    ]
-   },
-   "section": "Linux"
-  },
-  {
-   "default": "single-instance",
-   "description": "Put every surface (tab, split, window) into a transient systemd scope for per-surface resource management.\n\n- `never` - Never use cgroups\n- `always` - Always use cgroups\n- `single-instance` - Enable cgroups only for Ghostty instances launched as single-instance applications (default on Linux)\n\nRequires systemd. Causes slightly slower startup. Changes not reflected in existing surfaces.",
-   "key": "linux-cgroup",
-   "name": "Use dedicated cgroups",
-   "platform": [
-    "linux"
-   ],
-   "widget": {
-    "type": "dropdown",
-    "options": [
-     "single-instance",
-     "always",
-     "never"
-    ]
-   },
-   "section": "Linux"
-  },
-  {
-   "default": "",
-   "description": "Memory limit in bytes for any individual terminal process (tab, split, window). If unset, no limit is set. Sets the `MemoryHigh` setting on the transient systemd scope (soft limit). Changes not reflected in existing surfaces.",
-   "key": "linux-cgroup-memory-limit",
-   "name": "Memory limit (bytes)",
-   "platform": [
-    "linux"
-   ],
-   "widget": {
-    "type": "number",
-    "min": 0,
-    "max": 4294967295,
-    "size": 12
-   },
-   "section": "Linux"
-  },
-  {
-   "default": "",
-   "description": "Number of processes limit for any individual terminal process (tab, split, window). If unset, no limit is set. Sets the `TasksMax` setting (hard limit). Changes not reflected in existing surfaces.",
-   "key": "linux-cgroup-processes-limit",
-   "name": "Max number of processes",
-   "platform": [
-    "linux"
-   ],
-   "widget": {
-    "type": "number",
-    "min": 0,
-    "size": 5
-   },
-   "section": "Linux"
-  },
-  {
-   "default": "false",
-   "description": "If false, creating a transient systemd scope will be allowed to fail silently. If true, any transient systemd scope creation failure will cause surface creation to fail.",
-   "key": "linux-cgroup-hard-fail",
-   "name": "Hard fail on startup",
-   "platform": [
-    "linux"
-   ],
-   "widget": {
-    "type": "switch"
-   },
-   "section": "Linux"
-  },
-  {
-   "default": "false",
-   "description": "If not false, fullscreen on macOS will not use native fullscreen but makes the window fullscreen without animations using a new space.\n\nIMPORTANT: Tabs do NOT work in this mode.\n\n- `false` - Use native macOS fullscreen (default)\n- `true` - Non-native fullscreen, hide menu bar\n- `visible-menu` - Non-native fullscreen, keep menu bar visible\n- `padded-notch` - Non-native fullscreen, hide menu bar, pad for notch",
-   "key": "macos-non-native-fullscreen",
-   "name": "Use non-native fullscreen",
-   "note": "Tabs currently do not work with non-native fullscreen windows",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "dropdown",
-    "options": [
-     "visible-menu",
-     "true",
-     "false",
-     "padded-notch"
-    ]
-   },
-   "section": "macOS"
-  },
-  {
-   "default": "transparent",
-   "description": "The style of the macOS titlebar.\n\n- `native` - Standard native macOS titlebar\n- `transparent` - Native but transparent, shows window background color\n- `tabs` - Custom titlebar that integrates the tab bar (limitations on macOS 13 and below)\n- `hidden` - Hides the titlebar (window frame and rounded corners remain unlike `window-decoration = none`)",
-   "key": "macos-titlebar-style",
-   "name": "Titlebar style",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "dropdown",
-    "options": [
-     "transparent",
-     "native",
-     "tabs",
-     "hidden"
-    ]
-   },
-   "section": "macOS"
-  },
-  {
-   "default": "visible",
-   "description": "Whether the proxy icon in the macOS titlebar is visible. The proxy icon represents the folder of the current working directory. Only visible with native macOS titlebar style.",
-   "key": "macos-titlebar-proxy-icon",
-   "name": "Titlebar proxy icon",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "visible",
-      "label": "Visible"
-     },
-     {
-      "value": "hidden",
-      "label": "Hidden"
-     }
-    ]
-   },
-   "section": "macOS"
+   }
   },
   {
    "default": "",
@@ -3064,335 +1329,7 @@
     ],
     "allowEmpty": true,
     "emptyLabel": "Reset to default"
-   },
-   "section": "macOS"
-  },
-  {
-   "default": "true",
-   "description": "Whether to enable the macOS window shadow. With some window managers and window transparency settings, you may find false more visually appealing.",
-   "key": "macos-window-shadow",
-   "name": "Show the window shadow",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "switch"
-   },
-   "section": "macOS"
-  },
-  {
-   "default": "visible",
-   "description": "Whether the window buttons (traffic lights) in the macOS titlebar are visible.\n\n- `visible` - Show the window buttons (default)\n- `hidden` - Hide the window buttons\n\nNo effect when `window-decoration = none` or `macos-titlebar-style = hidden`.",
-   "key": "macos-window-buttons",
-   "name": "Window buttons (traffic lights)",
-   "platform": [
-    "macos"
-   ],
-   "since": "1.2.0",
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "visible",
-      "label": "Visible"
-     },
-     {
-      "value": "hidden",
-      "label": "Hidden"
-     }
-    ]
-   },
-   "section": "macOS"
-  },
-  {
-   "default": "never",
-   "description": "Control whether the macOS app is excluded from the dock and app switcher. Mainly intended for those primarily using quick-terminal mode.\n\n- `never` - App is never hidden (default)\n- `always` - App is always hidden\n\nNote: When hidden, keyboard layout changes will not be automatic.",
-   "key": "macos-hidden",
-   "name": "Hide from dock and switcher",
-   "platform": [
-    "macos"
-   ],
-   "since": "1.2.0",
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "never",
-      "label": "Never"
-     },
-     {
-      "value": "always",
-      "label": "Always"
-     }
-    ]
-   },
-   "section": "macOS"
-  },
-  {
-   "default": "true",
-   "description": "If true, Ghostty on macOS will automatically enable Secure Input when it detects a password prompt. Secure Input prevents applications from reading keyboard events. Note that automatic detection is based on heuristics and may not work over SSH.",
-   "key": "macos-auto-secure-input",
-   "name": "Auto secure input",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "switch"
-   },
-   "section": "macOS"
-  },
-  {
-   "default": "true",
-   "description": "If true, Ghostty will show a graphical indication when secure input is enabled.",
-   "key": "macos-secure-input-indication",
-   "name": "Indicate secure input",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "switch"
-   },
-   "section": "macOS"
-  },
-  {
-   "default": "true",
-   "description": "If true (default), Ghostty exposes and handles the built-in AppleScript dictionary on macOS. If false, all AppleScript interactions are disabled, including AppleScript commands and object lookup for windows, tabs, and terminals.",
-   "key": "macos-applescript",
-   "name": "Enable AppleScript support",
-   "note": "If disabled, all AppleScript interactions with Ghostty are turned off.",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "switch"
-   },
-   "section": "macOS"
-  },
-  {
-   "default": "new-tab",
-   "description": "Controls the windowing behavior when dropping a file or folder onto the Ghostty icon in the macOS dock.\n\n- `new-tab` - Create a new tab in the current window (default)\n- `new-window` - Create a new window unconditionally",
-   "key": "macos-dock-drop-behavior",
-   "name": "Dock drop behavior",
-   "note": "What happens when a file is dropped onto Ghostty's dock icon.",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "new-tab",
-      "label": "New tab"
-     },
-     {
-      "value": "new-window",
-      "label": "New window"
-     }
-    ]
-   },
-   "section": "macOS"
-  },
-  {
-   "default": "ask",
-   "description": "Whether macOS Shortcuts are allowed to control Ghostty. Ghostty exposes actions that allow Shortcuts to create terminals, send text, run commands, etc.\n\n- `ask` - Ask the user for permission (remembered, like other macOS permissions) (default)\n- `allow` - Allow without asking\n- `deny` - Deny Shortcuts from controlling Ghostty",
-   "key": "macos-shortcuts",
-   "name": "macOS shortcuts",
-   "note": "Controls whether macOS system shortcuts (e.g. Cmd+Space) can be captured.",
-   "platform": [
-    "macos"
-   ],
-   "since": "1.2.0",
-   "widget": {
-    "type": "pill",
-    "options": [
-     {
-      "value": "allow",
-      "label": "Allow"
-     },
-     {
-      "value": "deny",
-      "label": "Deny"
-     },
-     {
-      "value": "ask",
-      "label": "Ask"
-     }
-    ]
-   },
-   "section": "macOS"
-  },
-  {
-   "default": "",
-   "description": "Control the auto-update functionality. Only supported on macOS.\n\n- `off` - Disable auto-updates\n- `check` - Check for updates and notify, but don't download\n- `download` - Download the update automatically, but don't install\n\nIf unset, defers to Sparkle's default behavior.",
-   "key": "auto-update",
-   "name": "Auto update",
-   "note": "Leaving this unset will fall back to your Sparkle preferences.",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "dropdown",
-    "options": [
-     "off",
-     "check",
-     "download"
-    ],
-    "allowEmpty": true,
-    "emptyLabel": "Follow Sparkle",
-    "placeholder": "Follow Sparkle"
-   },
-   "section": "macOS"
-  },
-  {
-   "default": "",
-   "description": "The release channel to use for auto-updates. Defaults to match the release channel of the currently running Ghostty version.\n\n- `stable` - Stable tagged releases\n- `tip` - Pre-release versions from the main branch\n\nRequires a full restart to take effect. macOS only.",
-   "key": "auto-update-channel",
-   "name": "Update channel",
-   "note": "By default this will adhere to whichever version you downloaded.",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "dropdown",
-    "options": [
-     "stable",
-     "tip"
-    ],
-    "allowEmpty": true,
-    "emptyLabel": "Current Sparkle",
-    "placeholder": "Current Channel"
-   },
-   "section": "macOS"
-  },
-  {
-   "default": "official",
-   "description": "Customize the macOS app icon (affects dock, application switcher, etc.).\n\n- `official` - Official Ghostty icon\n- `blueprint`, `chalkboard`, `microchip`, `glass`, `holographic`, `paper`, `retro`, `xray` - Official icon variants\n- `custom` - Completely custom icon (set path with `macos-custom-icon`)\n- `custom-style` - Official icon with custom styles (requires `macos-icon-ghost-color` and `macos-icon-screen-color`)",
-   "key": "macos-icon",
-   "name": "Icon",
-   "note": "Custom style must specify both ghost and screen colors.",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "dropdown",
-    "options": [
-     {
-      "value": "official",
-      "name": "Official"
-     },
-     {
-      "value": "blueprint",
-      "name": "Blueprint"
-     },
-     {
-      "value": "chalkboard",
-      "name": "Chalkboard"
-     },
-     {
-      "value": "microchip",
-      "name": "Microchip"
-     },
-     {
-      "value": "glass",
-      "name": "Glass"
-     },
-     {
-      "value": "holographic",
-      "name": "Holographic"
-     },
-     {
-      "value": "paper",
-      "name": "Paper"
-     },
-     {
-      "value": "retro",
-      "name": "Retro"
-     },
-     {
-      "value": "xray",
-      "name": "Xray"
-     },
-     {
-      "value": "custom",
-      "name": "Custom Icon",
-      "description": "Use your own icon file."
-     },
-     {
-      "value": "custom-style",
-      "name": "Custom Style",
-      "description": "Customize the icon with colors and frames."
-     }
-    ]
-   },
-   "section": "macOS · App Icon"
-  },
-  {
-   "default": "",
-   "description": "The absolute path to the custom icon file. Supported formats: PNG, JPEG, ICNS. Defaults to `~/.config/ghostty/Ghostty.icns`. Used when `macos-icon = custom`.",
-   "key": "macos-custom-icon",
-   "name": "Icon file",
-   "note": "Only used when <code>custom</code> is selected above.",
-   "platform": [
-    "macos"
-   ],
-   "section": "macOS · App Icon"
-  },
-  {
-   "default": "aluminum",
-   "description": "The material to use for the frame of the macOS app icon. Required when `macos-icon = custom-style`.\n\n- `aluminum` - Brushed aluminum frame (default)\n- `beige` - Classic 90's computer beige frame\n- `plastic` - Glossy dark plastic frame\n- `chrome` - Shiny chrome frame",
-   "key": "macos-icon-frame",
-   "name": "Icon frame",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "dropdown",
-    "options": [
-     {
-      "value": "aluminum",
-      "name": "Aluminum"
-     },
-     {
-      "value": "beige",
-      "name": "Beige"
-     },
-     {
-      "value": "plastic",
-      "name": "Plastic"
-     },
-     {
-      "value": "chrome",
-      "name": "Chrome"
-     }
-    ]
-   },
-   "section": "macOS · App Icon"
-  },
-  {
-   "default": "",
-   "description": "The color of the ghost in the macOS app icon. Required when `macos-icon = custom-style`. Specified as hex or named X11 color.",
-   "key": "macos-icon-ghost-color",
-   "name": "Ghost color",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "color"
-   },
-   "section": "macOS · App Icon"
-  },
-  {
-   "default": "",
-   "description": "The color(s) of the screen in the macOS app icon. The screen is a linear gradient; specify up to 64 comma-separated colors. First color is the bottom of the gradient, last is the top. Required when `macos-icon = custom-style`.",
-   "key": "macos-icon-screen-color",
-   "name": "Screen color",
-   "platform": [
-    "macos"
-   ],
-   "widget": {
-    "type": "color"
-   },
-   "section": "macOS · App Icon"
+   }
   }
  ]
 }

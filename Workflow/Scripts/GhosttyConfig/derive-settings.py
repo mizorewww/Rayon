@@ -1,9 +1,10 @@
 """Reduces the exported Ghostty Config catalog to the data Rayon bundles.
 
-usage: python3 derive-settings.py catalog.json ghosttytheme-names.txt OUT_DIR
+usage: python3 derive-settings.py catalog.json ghosttytheme-names.txt OUT_DIR [KEY...]
 
-Writes OUT_DIR/settings.json (every option in the upstream category order,
-with its section, and widgets without web-only fields) and OUT_DIR/themes.json
+Rewrites OUT_DIR/settings.json with the options it already lists, plus each
+KEY, in the upstream category order and with widgets without web-only fields:
+the options that take effect in Rayon's terminal. Writes OUT_DIR/themes.json
 (the catalog themes that GhosttyTheme does not ship; names one per line in
 ghosttytheme-names.txt).
 """
@@ -13,13 +14,18 @@ import sys
 catalog_path, names_path, out_dir = sys.argv[1:4]
 catalog = json.load(open(catalog_path))
 registry = catalog["registry"]
+kept = {setting["key"] for setting in json.load(open(f"{out_dir}/settings.json"))["settings"]}
+kept.update(sys.argv[4:])
+missing = kept - {setting["key"] for setting in registry.values()}
+assert not missing, f"not in the catalog: {sorted(missing)}"
 
 settings = []
 for category in catalog["navigation"]:
     for group in category["groups"]:
-        section = category["name"] + (" · " + group["name"] if group["name"] else "")
         for setting_id in group["settings"]:
             setting = dict(registry[setting_id])
+            if setting["key"] not in kept:
+                continue
             widget = setting.get("widget")
             if widget:
                 widget = dict(widget)
@@ -33,9 +39,8 @@ for category in catalog["navigation"]:
                         for option in widget["options"]
                     ]
                 setting["widget"] = widget
-            setting["section"] = section
             settings.append(setting)
-assert len(settings) == len(registry), "a setting is missing from the navigation"
+assert len(settings) == len(kept), "a kept setting is missing from the navigation"
 
 with open(f"{out_dir}/settings.json", "w") as f:
     json.dump({"revision": catalog["revision"], "settings": settings}, f, ensure_ascii=False, indent=1)

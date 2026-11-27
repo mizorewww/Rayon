@@ -80,11 +80,8 @@ enum RayonTerminalConfiguration {
         return result
     }()
 
-    /// The settings that take effect inside Rayon: the ones Settings shows
-    /// outside Ghostty App, but `theme`, which `lines` resolves into colors.
-    nonisolated static let supportedKeys: Set<String> = Set(
-        SettingsLayout.categories.filter { $0.id != SettingsLayout.Category.ghosttyID }.flatMap(\.keys)
-    ).subtracting(["theme"])
+    /// The settings Settings shows, but `theme`, which `lines` resolves into colors.
+    nonisolated static let supportedKeys: Set<String> = Set(SettingsLayout.categories.flatMap(\.keys)).subtracting(["theme"])
 
     nonisolated static let supportedActions: Set<String> = [
         "ignore", "unbind", "csi", "esc", "text", "cursor_key", "reset", "copy_to_clipboard", "paste_from_clipboard",
