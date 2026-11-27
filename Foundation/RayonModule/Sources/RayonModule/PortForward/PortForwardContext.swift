@@ -98,7 +98,6 @@ public class PortForwardContext: ObservableObject, Identifiable, @unchecked Send
     /// identity, else with the automatic ones. A forward that listens on
     /// this side listens first, so a port in use costs no sign-in.
     private func runRound(reconnecting: Bool) async {
-        putLifecycle(.awaitingConnect)
         let listener: SSHForwardListener?
         do {
             switch info.forwardOrientation {
@@ -117,6 +116,8 @@ public class PortForwardContext: ObservableObject, Identifiable, @unchecked Send
             putLifecycle(.forwardStopped)
             return
         }
+        // Only now: a port still in use keeps saying so between retries.
+        putLifecycle(.awaitingConnect)
         let lease: SSHLease
         do {
             lease = try await SSHConnectionPool.shared.lease(for: machine, background: reconnecting)

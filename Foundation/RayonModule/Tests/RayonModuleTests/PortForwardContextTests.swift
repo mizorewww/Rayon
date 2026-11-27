@@ -2,7 +2,8 @@
 //  PortForwardContextTests.swift
 //  RayonModuleTests
 //
-//  A forward whose local port is taken says so and signs in to nothing.
+//  A forward whose local port is taken says so, and keeps saying so while
+//  it retries, and signs in to nothing.
 //
 
 import NIOCore
@@ -52,6 +53,9 @@ final class PortForwardContextTests: XCTestCase {
         context.terminate()
 
         XCTAssertEqual(signIns.withLock { $0 }, 0, "signed in for a forward that cannot listen")
-        XCTAssertTrue(states.withLock { $0 }.contains(.portInUse), "\(states.withLock { $0 })")
+        // Retrying the listen does not flip it to awaiting connect between.
+        let seen = states.withLock { $0 }
+        XCTAssertGreaterThan(seen.count, 1, "\(seen)")
+        XCTAssertTrue(seen.allSatisfy { $0 == .portInUse }, "\(seen)")
     }
 }
