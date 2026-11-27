@@ -142,7 +142,7 @@ enum KeybindingNames {
         let title = action(binding.action)
         guard let argument = binding.argument, !argument.isEmpty else { return title }
         if binding.action.hasSuffix("font_size") { return String(localized: "\(title) (\(argument) pt)", bundle: .module) }
-        let definition = KeybindingCatalog.shared.actions.first { $0.name == binding.action }
+        let definition = KeybindingCatalog.shared.actionsByName[binding.action]
         let shown = definition?.type == "enum" ? option(argument) : argument
         return String(localized: "\(title) (\(shown))", bundle: .module)
     }
@@ -332,7 +332,7 @@ struct KeybindingBuilder: View {
     }
 
     private var parsed: Keybinding { Keybinding(raw) }
-    private var definition: KeybindingAction? { KeybindingCatalog.shared.actions.first { $0.name == parsed.action } }
+    private var definition: KeybindingAction? { KeybindingCatalog.shared.actionsByName[parsed.action] }
 
     private func edit(_ mutation: (inout Keybinding) -> Void) {
         var next = parsed

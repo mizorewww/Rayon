@@ -1,8 +1,24 @@
 import Foundation
 
 struct KeybindingCatalog: Decodable, Sendable {
+    /// In Ghostty's order, which the key pickers group by.
     let keys: [String]
     let actions: [KeybindingAction]
+    /// Every binding parses each step and its action, so both are looked up
+    /// rather than searched.
+    let keySet: Set<String>
+    let actionsByName: [String: KeybindingAction]
+
+    private enum CodingKeys: String, CodingKey { case keys, actions }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        keys = try container.decode([String].self, forKey: .keys)
+        actions = try container.decode([KeybindingAction].self, forKey: .actions)
+        keySet = Set(keys)
+        actionsByName = Dictionary(actions.map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first })
+    }
+
     static let shared = try! JSONDecoder().decode(Self.self, from: Data(contentsOf:
         Bundle.module.url(forResource: "keybindings", withExtension: "json")!))
 }
@@ -41,9 +57,9 @@ struct Keybinding: Equatable {
         for step in steps {
             let (mods, key) = Self.splitStep(step)
             if mods.count > 4 || mods.contains(where: { !["super", "ctrl", "shift", "alt"].contains($0) }) { errors.append(String(localized: "Invalid modifiers in \(step)", bundle: .module)) }
-            if key.isEmpty || !(key.unicodeScalars.count == 1 || key.hasPrefix("physical:") || KeybindingCatalog.shared.keys.contains(key)) { errors.append(String(localized: "Invalid key: \(key)", bundle: .module)) }
+            if key.isEmpty || !(key.unicodeScalars.count == 1 || key.hasPrefix("physical:") || KeybindingCatalog.shared.keySet.contains(key)) { errors.append(String(localized: "Invalid key: \(key)", bundle: .module)) }
         }
-        guard let definition = KeybindingCatalog.shared.actions.first(where: { $0.name == action }) else {
+        guard let definition = KeybindingCatalog.shared.actionsByName[action] else {
             errors.append(String(localized: "Unknown action: \(action)", bundle: .module)); return
         }
         let arg = argument ?? ""
@@ -75,7 +91,7 @@ struct Keybinding: Equatable {
         let aliases = ["cmd": "super", "command": "super", "control": "ctrl", "opt": "alt", "option": "alt"]
         mods = mods.filter { !$0.isEmpty }.map { aliases[$0.lowercased()] ?? $0.lowercased() }
         let lowered = key.lowercased()
-        if !KeybindingCatalog.shared.keys.contains(lowered), key.unicodeScalars.count > 1, !lowered.hasPrefix("physical:") {
+        if !KeybindingCatalog.shared.keySet.contains(lowered), key.unicodeScalars.count > 1, !lowered.hasPrefix("physical:") {
             key = lowerDigitToUpperRegex.stringByReplacingMatches(
                 in: key, range: NSRange(key.startIndex..., in: key), withTemplate: "$1_$2"
             )
