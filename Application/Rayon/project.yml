@@ -25,10 +25,12 @@ targets:
     type: application
     supportedDestinations: [macOS, iOS]
     sources:
-      - path: macOS
-        destinationFilters: [macOS]
-      - path: iOS
-        destinationFilters: [iOS]
+      # Every source builds for both platforms; a file for one of them is
+      # named Type+macOS.swift or Type+iOS.swift and guarded by #if os(...).
+      - Application
+      - Extension
+      - Interface
+      - PlatformSupport
       - path: Resources
         excludes:
           - InfoPlist

@@ -70,8 +70,8 @@ jobs:
             NetEase UU Remote). Its original author, Lakr233, transferred the project to the
             maintainer; issues from 2022 describe the old app, which has since been rewritten.
             The working tree is the repository's default branch. Where things live:
-            - Application/Rayon: the macOS app (Interface/ holds each page);
-              Application/mRayon: the iOS and iPadOS app.
+            - Application/Rayon: the app, one target for macOS, iPhone and iPad (Interface/
+              holds each page; a file for one platform is named Type+macOS or Type+iOS).
             - Foundation/RayonModule: servers, identities, store, sync, SSH sessions, files,
               remote desktop; Foundation/RayonTerminal: the Ghostty terminal and its settings
               (CONFIGURATION.md); Foundation/MachineStatus and MachineStatusView: the monitor;
