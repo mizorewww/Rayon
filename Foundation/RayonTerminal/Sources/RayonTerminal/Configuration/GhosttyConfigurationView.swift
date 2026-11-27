@@ -182,7 +182,7 @@ private struct SettingsShell: View {
     }
 
     private func changedCount(_ category: SettingsLayout.Category) -> Int {
-        category.keys.filter(settings.isSet).count
+        settings.changedCounts[category.id] ?? 0
     }
 }
 

@@ -25,7 +25,7 @@ public struct TerminalSettingsCategory: Identifiable, Hashable, Sendable {
 
     /// How many of its settings are set in config.ghostty.
     @MainActor public var changedCount: Int {
-        (layout?.keys ?? []).filter(TerminalSettings.shared.isSet).count
+        TerminalSettings.shared.changedCounts[id] ?? 0
     }
 }
 

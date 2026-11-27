@@ -16,7 +16,16 @@ public final class TerminalSettings {
     public let fileURL: URL
 
     /// What Settings shows, including a change not applied yet.
-    private(set) var config: GhosttyConfigText
+    private(set) var config: GhosttyConfigText {
+        didSet {
+            if config.keys != oldValue.keys { countChanges() }
+        }
+    }
+
+    /// How many of each category's settings are set, by category: what the
+    /// sidebar's badges read, so a change redraws them only when a count
+    /// changes rather than on every slider step.
+    private(set) var changedCounts: [String: Int] = [:]
     /// What the terminals use and the file holds.
     private(set) var applied: GhosttyConfigText
     /// Why the last change, or the file at launch, was not applied.
@@ -67,6 +76,16 @@ public final class TerminalSettings {
             fileIsUnreadable = true
             issue = Self.unreadableIssue
         }
+        countChanges()
+    }
+
+    private func countChanges() {
+        let keys = config.keys
+        var counts: [String: Int] = [:]
+        for category in SettingsLayout.categories {
+            counts[category.id] = category.keys.filter(keys.contains).count
+        }
+        if counts != changedCounts { changedCounts = counts }
     }
 
     private static let unreadableIssue = String(localized: "config.ghostty is not UTF-8 text, so it was not read.", bundle: .module)
