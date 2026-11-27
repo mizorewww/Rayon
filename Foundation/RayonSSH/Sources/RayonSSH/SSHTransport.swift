@@ -69,7 +69,7 @@ extension SSHTransport {
             } catch {
                 own?.shutdownGracefully { _ in }
                 close(descriptor)
-                throw SSHError.connectionFailed("The tunnel to \(host):\(port) could not be used (\(Self.describe(error))).")
+                throw SSHError.connectionFailed("The tunnel to \(host):\(port) could not be used (\(Self.describe(error))).", cause: Self.cause(of: error))
             }
         case let .jump(bastion):
             let channel = try await bastion.openRawDirectTCPIP(host: host, port: port) { channel in
@@ -115,7 +115,7 @@ extension SSHTransport {
                 .connect(host: host, port: port)
                 .get()
         } catch {
-            throw SSHError.connectionFailed("Unable to connect to \(host):\(port) (\(describe(error))).")
+            throw SSHError.connectionFailed("Unable to connect to \(host):\(port) (\(describe(error))).", cause: cause(of: error))
         }
     }
 
@@ -146,6 +146,38 @@ extension SSHTransport {
             return error.errorDescription ?? ""
         default:
             return String(describing: error)
+        }
+    }
+
+    /// The cause of a transport error, read from the same types `describe`
+    /// words.
+    public static func cause(of error: Error) -> SSHConnectFailure {
+        switch error {
+        case let error as NWError:
+            switch error {
+            case let .posix(code): cause(of: code)
+            case .dns: .hostNotFound
+            default: .other
+            }
+        case let error as IOError:
+            POSIXErrorCode(rawValue: error.errnoCode).map(cause) ?? .other
+        case let error as POSIXError:
+            cause(of: error.code)
+        case ChannelError.connectTimeout:
+            .timedOut
+        case ChannelError.ioOnClosedChannel, ChannelError.alreadyClosed, ChannelError.eof, ChannelError.outputClosed, ChannelError.inputClosed:
+            .closed
+        default:
+            .other
+        }
+    }
+
+    static func cause(of code: POSIXErrorCode) -> SSHConnectFailure {
+        switch code {
+        case .ECONNREFUSED: .refused
+        case .ETIMEDOUT: .timedOut
+        case .ECONNRESET, .ECONNABORTED, .EPIPE, .ENOTCONN: .closed
+        default: .other
         }
     }
 

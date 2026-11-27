@@ -131,13 +131,12 @@ public extension RDMachine {
         let transport = try await makeTransport(timeout: timeout, background: background, visited: visited)
         do {
             try await transport.reach(host: remoteAddress, port: sshPort, timeout: timeout)
-        } catch let SSHError.connectionFailed(reason) {
-            throw SSHFailure(message: transport.isWebSocket ? cloudflareReason(reason) : reason, unreachable: true, outcome: .init(reason: reason))
+        } catch let SSHError.connectionFailed(reason, cause) {
+            throw SSHFailure(message: transport.isWebSocket ? cloudflareReason(reason) : reason, unreachable: true, outcome: .init(cause))
         } catch let refusal as SSHWebSocketEndpoint.Refusal {
             throw SSHFailure(message: cloudflareReason(refusal), unreachable: true)
         } catch {
-            let reason = SSHTransport.describe(error)
-            throw SSHFailure(message: reason, unreachable: true, outcome: .init(reason: reason))
+            throw SSHFailure(message: SSHTransport.describe(error), unreachable: true, outcome: .init(SSHTransport.cause(of: error)))
         }
     }
 
@@ -188,8 +187,8 @@ public extension RDMachine {
                     KnownHosts.shared.trust(offered, host: host, port: port)
                 case .authenticationFailed, .agentUnavailable:
                     throw error
-                case let .connectionFailed(reason):
-                    throw SSHFailure(message: transport.isWebSocket ? cloudflareReason(reason) : reason, unreachable: true, outcome: .init(reason: reason))
+                case let .connectionFailed(reason, cause):
+                    throw SSHFailure(message: transport.isWebSocket ? cloudflareReason(reason) : reason, unreachable: true, outcome: .init(cause))
                 default:
                     throw SSHFailure(message: error.localizedDescription, unreachable: true, outcome: error == .timedOut ? .timeout : .other)
                 }

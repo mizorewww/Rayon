@@ -45,7 +45,8 @@ final class SSHTimeoutTests: XCTestCase {
         do {
             try await connect(.tcp, timeout: .seconds(1))
             XCTFail("connected to a silent server")
-        } catch let SSHError.connectionFailed(reason) {
+        } catch let SSHError.connectionFailed(reason, cause) {
+            XCTAssertEqual(cause, .timedOut)
             XCTAssertTrue(reason.contains("Timed out"), reason)
         }
         XCTAssertLessThan(ContinuousClock.now - started, .seconds(3))
@@ -57,7 +58,8 @@ final class SSHTimeoutTests: XCTestCase {
         do {
             try await connect(.webSocket(endpoint), timeout: .seconds(1))
             XCTFail("connected to a silent server")
-        } catch let SSHError.connectionFailed(reason) {
+        } catch let SSHError.connectionFailed(reason, cause) {
+            XCTAssertEqual(cause, .timedOut)
             XCTAssertTrue(reason.contains("WebSocket upgrade"), reason)
         }
         XCTAssertLessThan(ContinuousClock.now - started, .seconds(3))

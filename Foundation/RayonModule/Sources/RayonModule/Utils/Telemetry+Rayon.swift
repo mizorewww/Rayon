@@ -44,18 +44,12 @@ public extension RDIdentity {
 }
 
 extension TelemetryReport.ConnectionOutcome {
-    /// RayonSSH words a transport failure for the person; these are the
-    /// phrases SSHTransport.describe uses for each cause.
-    init(reason: String) {
-        let reason = reason.lowercased()
-        self = if reason.contains("connection refused") {
-            .refused
-        } else if reason.contains("could not be found") {
-            .dnsFailed
-        } else if reason.contains("in time") || reason.contains("timed out") {
-            .timeout
-        } else {
-            .other
+    init(_ cause: SSHConnectFailure) {
+        self = switch cause {
+        case .refused: .refused
+        case .hostNotFound: .dnsFailed
+        case .timedOut: .timeout
+        case .closed, .other: .other
         }
     }
 }

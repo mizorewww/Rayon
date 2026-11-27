@@ -185,7 +185,7 @@ public actor SSHConnection {
             }.get()
         } catch {
             abandon()
-            throw SSHError.connectionFailed("The connection to \(configuration.host) closed (\(SSHTransport.describe(error))).")
+            throw SSHError.connectionFailed("The connection to \(configuration.host) closed (\(SSHTransport.describe(error))).", cause: .closed)
         }
         let authenticator = SSHCredentialAuthenticator(username: configuration.username, offer: offer)
         var settings = SSHClientSettings(
@@ -219,7 +219,7 @@ public actor SSHConnection {
                 guard extended > .now else { break }
                 limit = extended
             }
-            signedIn.fail(SSHError.connectionFailed("Timed out signing in to \(configuration.host)."))
+            signedIn.fail(SSHError.connectionFailed("Timed out signing in to \(configuration.host).", cause: .timedOut))
         }
         signedIn.futureResult.whenComplete { _ in deadline.cancel() }
         signedIn.completeWithTask { [settings] in
@@ -264,12 +264,12 @@ public actor SSHConnection {
     private static func translate(_ error: Error, host: String) -> Error {
         if let error = error as? SSHError { return error }
         if case ChannelError.connectTimeout = error {
-            return SSHError.connectionFailed("Timed out signing in to \(host).")
+            return SSHError.connectionFailed("Timed out signing in to \(host).", cause: .timedOut)
         }
         if error is SSHClientError {
             return SSHError.authenticationFailed
         }
-        return SSHError.connectionFailed("The connection to \(host) failed (\(SSHTransport.describe(error))).")
+        return SSHError.connectionFailed("The connection to \(host) failed (\(SSHTransport.describe(error))).", cause: SSHTransport.cause(of: error))
     }
 
     public nonisolated var isActive: Bool {

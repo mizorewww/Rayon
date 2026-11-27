@@ -42,7 +42,7 @@ public struct SSHWebSocketEndpoint: Sendable {
         let eventLoop = group.next()
         let upgraded = eventLoop.makePromise(of: Void.self)
         guard var bootstrap = NIOTSConnectionBootstrap(validatingGroup: eventLoop) else {
-            throw SSHError.connectionFailed("No event loop for the WebSocket to \(host).")
+            throw SSHError.connectionFailed("No event loop for the WebSocket to \(host).", cause: .other)
         }
         bootstrap = bootstrap
             .connectTimeout(timeout)
@@ -70,12 +70,12 @@ public struct SSHWebSocketEndpoint: Sendable {
             .get()
         } catch {
             upgraded.fail(error)
-            throw SSHError.connectionFailed("Unable to reach \(host) (\(SSHTransport.describe(error))).")
+            throw SSHError.connectionFailed("Unable to reach \(host) (\(SSHTransport.describe(error))).", cause: SSHTransport.cause(of: error))
         }
         // A server that accepts the connection but never answers the
         // upgrade is given the connect timeout, and a cancelled task ends it.
         let deadline = channel.eventLoop.scheduleTask(in: timeout) {
-            upgraded.fail(SSHError.connectionFailed("\(host) did not answer the WebSocket upgrade in time."))
+            upgraded.fail(SSHError.connectionFailed("\(host) did not answer the WebSocket upgrade in time.", cause: .timedOut))
         }
         defer { deadline.cancel() }
         do {

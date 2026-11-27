@@ -9,11 +9,11 @@ import XCTest
 final class TelemetryMappingTests: XCTestCase {
     func testTransportFailuresMapToTheirCause() {
         typealias Outcome = TelemetryReport.ConnectionOutcome
-        XCTAssertEqual(Outcome(reason: "Unable to connect to db.example.com:22 (connection refused; nothing is listening on that port)."), .refused)
-        XCTAssertEqual(Outcome(reason: "Unable to connect to nowhere.invalid:22 (the host name could not be found)."), .dnsFailed)
-        XCTAssertEqual(Outcome(reason: "Unable to connect to 10.0.0.1:22 (the server did not answer in time)."), .timeout)
-        XCTAssertEqual(Outcome(reason: "Timed out signing in to 10.0.0.1."), .timeout)
-        XCTAssertEqual(Outcome(reason: "the server reset the connection"), .other)
+        XCTAssertEqual(Outcome(.refused), .refused)
+        XCTAssertEqual(Outcome(.hostNotFound), .dnsFailed)
+        XCTAssertEqual(Outcome(.timedOut), .timeout)
+        XCTAssertEqual(Outcome(.closed), .other)
+        XCTAssertEqual(Outcome(.other), .other)
     }
 
     func testIdentitiesNameTheirMethodAndKeyType() {
@@ -29,5 +29,20 @@ final class TelemetryMappingTests: XCTestCase {
         XCTAssertEqual(identity.telemetryKeyType, .ecdsa)
         identity.useSSHAgent = true
         XCTAssertEqual(identity.telemetryAuthMethod, .agent)
+    }
+}
+
+final class ConnectionOutcomeTests: XCTestCase {
+    /// A refused port is counted as refused because of the error's type,
+    /// whatever the message says.
+    func testARefusedPortCountsAsRefused() async throws {
+        let machine = RDMachine(remoteAddress: "127.0.0.1", remotePort: "1", name: "closed")
+        do {
+            _ = try await machine.connectSSH(identity: nil, autoIdentities: [], timeout: .seconds(2))
+            XCTFail("connected to a closed port")
+        } catch let failure as RDMachine.SSHFailure {
+            XCTAssertTrue(failure.unreachable)
+            XCTAssertEqual(failure.outcome, .refused)
+        }
     }
 }
