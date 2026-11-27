@@ -8,10 +8,6 @@
 import Foundation
 @preconcurrency import WCDBSwift
 
-// WCDB's Database serializes its handles internally and is documented as safe
-// to use from any thread; the compiler cannot know that.
-extension Database: @retroactive @unchecked Sendable {}
-
 extension UUID: @retroactive ColumnCodable {
     public init?(with value: Value) {
         self.init(uuidString: value.stringValue)
