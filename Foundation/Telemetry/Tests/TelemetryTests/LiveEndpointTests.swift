@@ -8,7 +8,7 @@
 //  (see Server/Telemetry/README.md). Its app version, and its crash's, is
 //  0.0.0, which no release has, so its rows are easy to find and delete on a live
 //  database. With TELEMETRY_LIVE_QUEUE set to an
-//  app's Application Support/Telemetry/pending, it sends those real reports
+//  app's Application Support/<bundle id>/Telemetry/pending, it sends those real reports
 //  instead, as a Release build would (a Debug build marks them "debug",
 //  which the Worker refuses). Skipped otherwise.
 //

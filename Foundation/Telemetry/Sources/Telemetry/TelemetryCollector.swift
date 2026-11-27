@@ -4,7 +4,8 @@
 //
 //  Adds up the day's events on the device, turns a finished day into one
 //  report, keeps the queue and sends it. Everything it stores lives in
-//  Application Support/Telemetry.
+//  Application Support/<bundle id>/Telemetry, apart for the Debug and
+//  Release builds of the Mac app as the database is.
 //
 
 import Foundation
@@ -70,7 +71,9 @@ actor TelemetryCollector {
     }
 
     static var defaultRoot: URL {
-        URL.applicationSupportDirectory.appending(path: "Telemetry", directoryHint: .isDirectory)
+        URL.applicationSupportDirectory
+            .appending(path: Bundle.main.bundleIdentifier ?? "me.mizorewww.rayon", directoryHint: .isDirectory)
+            .appending(path: "Telemetry", directoryHint: .isDirectory)
     }
 
     // MARK: - State

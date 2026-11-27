@@ -3,7 +3,7 @@
 //  Telemetry
 //
 //  Reports waiting to be sent: one JSON file each in
-//  Application Support/Telemetry/pending, the oldest dropped past 14.
+//  Application Support/<bundle id>/Telemetry/pending, the oldest dropped past 14.
 //
 
 import Foundation
