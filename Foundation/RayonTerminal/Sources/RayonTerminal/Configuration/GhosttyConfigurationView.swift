@@ -258,19 +258,24 @@ private struct GroupSection: View {
 }
 
 /// Every setting matching all the words typed, under their
-/// categories, each with a way to its category.
+/// categories, each with a way to its category. The matches are worked out
+/// once, when it is made.
 struct SearchResults: View {
+    /// A category with a match, and its groups with their matching keys.
+    typealias Match = (SettingsLayout.Category, [(SettingsLayout.Group, [String])])
+
     let query: String
-    let categories: [SettingsLayout.Category]
+    let results: [Match]
     let show: (String) -> Void
 
-    private var tokens: [Substring] {
-        query.lowercased().split(whereSeparator: \.isWhitespace)
+    init(query: String, categories: [SettingsLayout.Category], show: @escaping (String) -> Void) {
+        self.init(query: query, results: Self.results(for: query, in: categories), show: show)
     }
 
-    private func matches(_ text: String) -> Bool {
-        let text = text.lowercased()
-        return tokens.allSatisfy { text.contains($0) }
+    init(query: String, results: [Match], show: @escaping (String) -> Void) {
+        self.query = query
+        self.results = results
+        self.show = show
     }
 
     /// Whether a shortcut in use answers `query` by its keys or its action.
@@ -281,19 +286,22 @@ struct SearchResults: View {
         }
     }
 
-    private func settingMatches(_ key: String, in category: SettingsLayout.Category, _ group: SettingsLayout.Group) -> Bool {
-        if key == "keybind", Self.shortcutsMatch(query) {
-            return true
-        }
-        guard let setting = SettingCatalog.shared.setting(key) else { return false }
-        let options = (setting.widget?.options ?? []).map { SettingsLayout.optionName(key, value: $0.value, fallback: $0.name) }
-        return matches(([setting.key, setting.name, setting.plainDescription, SettingsLayout.title(setting),
-                         SettingsLayout.summary(setting), category.title, group.title] + options).joined(separator: " "))
-    }
-
     /// The groups with a match, under their categories.
-    var results: [(SettingsLayout.Category, [(SettingsLayout.Group, [String])])] {
-        categories.compactMap { category -> (SettingsLayout.Category, [(SettingsLayout.Group, [String])])? in
+    static func results(for query: String, in categories: [SettingsLayout.Category]) -> [Match] {
+        let tokens = query.lowercased().split(whereSeparator: \.isWhitespace)
+        // Asked once: it reads every shortcut in use.
+        let shortcutsMatch = categories.contains { $0.keys.contains("keybind") } && Self.shortcutsMatch(query)
+        func settingMatches(_ key: String, in category: SettingsLayout.Category, _ group: SettingsLayout.Group) -> Bool {
+            if key == "keybind", shortcutsMatch {
+                return true
+            }
+            guard let setting = SettingCatalog.shared.setting(key) else { return false }
+            let options = (setting.widget?.options ?? []).map { SettingsLayout.optionName(key, value: $0.value, fallback: $0.name) }
+            let text = ([setting.key, setting.name, setting.plainDescription, SettingsLayout.title(setting),
+                         SettingsLayout.summary(setting), category.title, group.title] + options).joined(separator: " ").lowercased()
+            return tokens.allSatisfy { text.contains($0) }
+        }
+        return categories.compactMap { category -> Match? in
             let groups = category.groups.compactMap { group -> (SettingsLayout.Group, [String])? in
                 let keys = group.keys.filter { settingMatches($0, in: category, group) }
                 return keys.isEmpty ? nil : (group, keys)
@@ -303,7 +311,6 @@ struct SearchResults: View {
     }
 
     var body: some View {
-        let results = results
         if results.isEmpty {
             ContentUnavailableView.search(text: query)
         } else {
@@ -313,7 +320,7 @@ struct SearchResults: View {
     }
 
     /// The results as form sections, for a form that shows more.
-    func sections(_ results: [(SettingsLayout.Category, [(SettingsLayout.Group, [String])])]) -> some View {
+    func sections(_ results: [Match]) -> some View {
         ForEach(results, id: \.0.id) { category, groups in
             Section {
                 Button(.init("Show \(category.title)", bundle: .module), systemImage: category.icon) { show(category.id) }

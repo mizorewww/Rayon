@@ -193,25 +193,51 @@ private struct SettingsPageView: View {
 }
 
 /// Rayon's groups and the terminal's settings matching every word typed.
+/// They are worked out once per query, and a moment after typing stops
+/// rather than on every keystroke.
 private struct SettingsSearchResults: View {
     let query: String
     let show: (String) -> Void
+    @State private var found: Found?
+
+    private struct Found {
+        let query: String
+        let groups: [SettingsGroup]
+        let terminal: TerminalSettingsSearch
+
+        @MainActor init(_ query: String) {
+            self.query = query
+            groups = SettingsGroup.allCases.filter { $0.isAvailable && $0.matches(query) }
+            terminal = TerminalSettingsSearch(query)
+        }
+    }
 
     var body: some View {
-        let groups = SettingsGroup.allCases.filter { $0.isAvailable && $0.matches(query) }
-        if groups.isEmpty, !TerminalSettingsSearchSections.matches(query) {
-            ContentUnavailableView.search(text: query)
-        } else {
-            Form {
-                ForEach(groups) { group in
-                    Section {
-                        Button("Show \(group.page.title)", systemImage: group.page.icon) { show(group.page.id) }
+        Group {
+            if let found {
+                if found.groups.isEmpty, found.terminal.isEmpty {
+                    ContentUnavailableView.search(text: found.query)
+                } else {
+                    Form {
+                        ForEach(found.groups) { group in
+                            Section {
+                                Button("Show \(group.page.title)", systemImage: group.page.icon) { show(group.page.id) }
+                            }
+                            SettingsGroupSection(group: group, prefix: group.page.title)
+                        }
+                        TerminalSettingsSearchSections(found.terminal, show: show)
                     }
-                    SettingsGroupSection(group: group, prefix: group.page.title)
+                    .formStyle(.grouped)
                 }
-                TerminalSettingsSearchSections(query: query, show: show)
             }
-            .formStyle(.grouped)
+        }
+        .task(id: query) {
+            // The first query shows at once; later ones wait for a pause.
+            if found != nil {
+                try? await Task.sleep(for: .milliseconds(150))
+                if Task.isCancelled { return }
+            }
+            found = Found(query)
         }
     }
 }

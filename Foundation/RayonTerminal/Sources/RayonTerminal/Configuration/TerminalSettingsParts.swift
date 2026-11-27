@@ -53,22 +53,29 @@ public extension TerminalSettingsPage where Header == EmptyView {
     }
 }
 
-/// The terminal settings matching every word of `query`, as form sections
-/// under their categories; `show` opens a category.
+/// The terminal settings matching every word of a query, worked out once.
+public struct TerminalSettingsSearch {
+    let query: String
+    let results: [SearchResults.Match]
+
+    @MainActor public init(_ query: String) {
+        self.query = query
+        results = SearchResults.results(for: query, in: SettingsLayout.categories)
+    }
+
+    /// Whether no terminal setting matches.
+    public var isEmpty: Bool {
+        results.isEmpty
+    }
+}
+
+/// A search's terminal settings as form sections under their categories;
+/// `show` opens a category.
 public struct TerminalSettingsSearchSections: View {
     private let search: SearchResults
 
-    public init(query: String, show: @escaping (String) -> Void) {
-        search = SearchResults(
-            query: query,
-            categories: SettingsLayout.categories,
-            show: show
-        )
-    }
-
-    /// Whether any terminal setting matches `query`.
-    @MainActor public static func matches(_ query: String) -> Bool {
-        !TerminalSettingsSearchSections(query: query) { _ in }.search.results.isEmpty
+    public init(_ search: TerminalSettingsSearch, show: @escaping (String) -> Void) {
+        self.search = SearchResults(query: search.query, results: search.results, show: show)
     }
 
     public var body: some View {
