@@ -101,7 +101,7 @@ final class RSAUserPublicKey<Algorithm: RSASignatureAlgorithm>: NIOSSHPublicKeyP
     static func read(from buffer: inout ByteBuffer) throws -> Self {
         guard let e = buffer.readLengthPrefixedSlice(as: UInt32.self),
               let n = buffer.readLengthPrefixedSlice(as: UInt32.self)
-        else { throw SSHError.unsupportedKey("Malformed RSA public key.") }
+        else { throw SSHError.unsupportedKey(String(localized: "Malformed RSA public key.", bundle: .module)) }
         return try Self(_RSA.Signing.PublicKey(n: Data(n.readableBytesView), e: Data(e.readableBytesView)))
     }
 }
@@ -117,7 +117,7 @@ struct RSAUserSignature<Algorithm: RSASignatureAlgorithm>: NIOSSHSignatureProtoc
 
     static func read(from buffer: inout ByteBuffer) throws -> Self {
         guard let blob = buffer.readLengthPrefixedSlice(as: UInt32.self) else {
-            throw SSHError.unsupportedKey("Malformed RSA signature.")
+            throw SSHError.unsupportedKey(String(localized: "Malformed RSA signature.", bundle: .module))
         }
         return Self(rawRepresentation: Data(blob.readableBytesView))
     }

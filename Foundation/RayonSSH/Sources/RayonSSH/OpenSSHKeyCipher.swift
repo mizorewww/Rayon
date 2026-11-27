@@ -27,7 +27,7 @@ enum OpenSSHKeyCipher {
         case "aes128-gcm@openssh.com": (.gcm, 16)
         case "aes256-gcm@openssh.com": (.gcm, 32)
         default:
-            throw SSHError.unsupportedKey("Keys encrypted with \(cipher) are not supported. Re-encrypt it with `ssh-keygen -p -Z aes256-ctr -f <key>`.")
+            throw SSHError.unsupportedKey(String(localized: "Keys encrypted with \(cipher) are not supported. Re-encrypt it with `ssh-keygen -p -Z aes256-ctr -f <key>`.", bundle: .module))
         }
         let ivLength = mode == .gcm ? 12 : 16
         let derived = try deriveKey(passphrase: passphrase, salt: salt, rounds: rounds, length: keyLength + ivLength)
@@ -35,12 +35,12 @@ enum OpenSSHKeyCipher {
         let iv = Array(derived[keyLength...])
         switch mode {
         case .gcm:
-            guard tag.count >= 16 else { throw SSHError.unsupportedKey("The private key is damaged or incomplete.") }
+            guard tag.count >= 16 else { throw SSHError.unsupportedKey(String(localized: "The private key is damaged or incomplete.", bundle: .module)) }
             do {
                 let box = try AES.GCM.SealedBox(nonce: AES.GCM.Nonce(data: iv), ciphertext: section, tag: tag.prefix(16))
                 return try Array(AES.GCM.open(box, using: SymmetricKey(data: key)))
             } catch {
-                throw SSHError.unsupportedKey("The private key could not be decrypted. Check the identity's password, which is the key's passphrase.")
+                throw SSHError.unsupportedKey(String(localized: "The private key could not be decrypted. Check the identity's password, which is the key's passphrase.", bundle: .module))
             }
         case .ctr, .cbc:
             return try commonCrypto(section, key: key, iv: iv, mode: mode == .ctr ? CCMode(kCCModeCTR) : CCMode(kCCModeCBC))
@@ -53,12 +53,12 @@ enum OpenSSHKeyCipher {
             CCOperation(kCCDecrypt), mode, CCAlgorithm(kCCAlgorithmAES), CCPadding(ccNoPadding),
             iv, key, key.count, nil, 0, 0, CCModeOptions(mode == CCMode(kCCModeCTR) ? kCCModeOptionCTR_BE : 0), &cryptor
         )
-        guard created == kCCSuccess, let cryptor else { throw SSHError.unsupportedKey("The private key could not be decrypted.") }
+        guard created == kCCSuccess, let cryptor else { throw SSHError.unsupportedKey(String(localized: "The private key could not be decrypted.", bundle: .module)) }
         defer { CCCryptorRelease(cryptor) }
         var output = [UInt8](repeating: 0, count: input.count)
         var moved = 0
         let status = CCCryptorUpdate(cryptor, input, input.count, &output, output.count, &moved)
-        guard status == kCCSuccess, moved == input.count else { throw SSHError.unsupportedKey("The private key could not be decrypted.") }
+        guard status == kCCSuccess, moved == input.count else { throw SSHError.unsupportedKey(String(localized: "The private key could not be decrypted.", bundle: .module)) }
         return output
     }
 
@@ -74,7 +74,7 @@ enum OpenSSHKeyCipher {
         _ = hashInstalled
         var derived = [UInt8](repeating: 0, count: length)
         guard citadel_bcrypt_pbkdf(passphrase, passphrase.count, salt, salt.count, &derived, length, rounds) == 0 else {
-            throw SSHError.unsupportedKey("The private key could not be decrypted.")
+            throw SSHError.unsupportedKey(String(localized: "The private key could not be decrypted.", bundle: .module))
         }
         return derived
     }

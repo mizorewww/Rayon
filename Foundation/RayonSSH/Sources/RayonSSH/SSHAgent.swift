@@ -53,12 +53,12 @@ public struct SSHAgent: Sendable {
         var reply = try request(Self.requestIdentities, payload: ByteBuffer())
         guard reply.readInteger(as: UInt8.self) == Self.identitiesAnswer,
               let count = reply.readInteger(as: UInt32.self)
-        else { throw SSHError.agentUnavailable("The SSH agent did not list its keys.") }
+        else { throw SSHError.agentUnavailable(String(localized: "The SSH agent did not list its keys.", bundle: .module)) }
         var identities: [Identity] = []
         for _ in 0 ..< count {
             guard let blob = reply.readLengthPrefixedSlice(as: UInt32.self),
                   let comment = reply.readSSHText()
-            else { throw SSHError.agentUnavailable("The SSH agent's list of keys is malformed.") }
+            else { throw SSHError.agentUnavailable(String(localized: "The SSH agent's list of keys is malformed.", bundle: .module)) }
             identities.append(Identity(blob: Array(blob.readableBytesView), comment: comment))
         }
         return identities
@@ -75,7 +75,7 @@ public struct SSHAgent: Sendable {
         var reply = try request(Self.signRequest, payload: payload)
         guard reply.readInteger(as: UInt8.self) == Self.signResponse,
               let signature = reply.readLengthPrefixedSlice(as: UInt32.self)
-        else { throw SSHError.agentUnavailable("The SSH agent did not sign with the key.") }
+        else { throw SSHError.agentUnavailable(String(localized: "The SSH agent did not sign with the key.", bundle: .module)) }
         return signature
     }
 
@@ -91,11 +91,11 @@ public struct SSHAgent: Sendable {
         let header = try receive(4, on: socket)
         let length = header.reduce(0) { $0 << 8 | Int($1) }
         guard length > 0, length <= 256 * 1024 else {
-            throw SSHError.agentUnavailable("The SSH agent sent a malformed reply.")
+            throw SSHError.agentUnavailable(String(localized: "The SSH agent sent a malformed reply.", bundle: .module))
         }
         let body = try receive(length, on: socket)
         if body.first == Self.failure {
-            throw SSHError.agentUnavailable("The SSH agent refused the request.")
+            throw SSHError.agentUnavailable(String(localized: "The SSH agent refused the request.", bundle: .module))
         }
         return ByteBuffer(bytes: body)
     }
@@ -105,7 +105,7 @@ public struct SSHAgent: Sendable {
         address.sun_family = sa_family_t(AF_UNIX)
         let path = Array(socketPath.utf8)
         guard !path.isEmpty, path.count < MemoryLayout.size(ofValue: address.sun_path) else {
-            throw SSHError.agentUnavailable("\"\(socketPath)\" is not an SSH agent socket.")
+            throw SSHError.agentUnavailable(String(localized: "\"\(socketPath)\" is not an SSH agent socket.", bundle: .module))
         }
         withUnsafeMutableBytes(of: &address.sun_path) { raw in
             raw.copyBytes(from: path)
@@ -113,7 +113,7 @@ public struct SSHAgent: Sendable {
         }
         address.sun_len = UInt8(MemoryLayout<sockaddr_un>.size)
         let socket = Darwin.socket(AF_UNIX, SOCK_STREAM, 0)
-        guard socket >= 0 else { throw SSHError.agentUnavailable("Could not open a socket for the SSH agent.") }
+        guard socket >= 0 else { throw SSHError.agentUnavailable(String(localized: "Could not open a socket for the SSH agent.", bundle: .module)) }
         var on: Int32 = 1
         setsockopt(socket, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
         var limit = timeval(tv_sec: Int(timeout), tv_usec: 0)
@@ -127,7 +127,7 @@ public struct SSHAgent: Sendable {
         guard connected == 0 else {
             let reason = String(cString: strerror(errno))
             close(socket)
-            throw SSHError.agentUnavailable("Could not reach the SSH agent at \(socketPath) (\(reason)).")
+            throw SSHError.agentUnavailable(String(localized: "Could not reach the SSH agent at \(socketPath) (\(reason)).", bundle: .module))
         }
         return socket
     }
@@ -137,7 +137,7 @@ public struct SSHAgent: Sendable {
         while sent < bytes.count {
             let count = bytes[sent...].withUnsafeBytes { Darwin.write(socket, $0.baseAddress, $0.count) }
             if count < 0, errno == EINTR { continue }
-            guard count > 0 else { throw SSHError.agentUnavailable("The SSH agent stopped answering.") }
+            guard count > 0 else { throw SSHError.agentUnavailable(String(localized: "The SSH agent stopped answering.", bundle: .module)) }
             sent += count
         }
     }
@@ -148,7 +148,7 @@ public struct SSHAgent: Sendable {
         while received < length {
             let count = bytes[received...].withUnsafeMutableBytes { Darwin.read(socket, $0.baseAddress, $0.count) }
             if count < 0, errno == EINTR { continue }
-            guard count > 0 else { throw SSHError.agentUnavailable("The SSH agent stopped answering.") }
+            guard count > 0 else { throw SSHError.agentUnavailable(String(localized: "The SSH agent stopped answering.", bundle: .module)) }
             received += count
         }
         return bytes
@@ -268,7 +268,7 @@ struct AgentSignedAnotherAlgorithm: Error {
     let algorithm: String
 
     var sshError: SSHError {
-        .agentUnavailable("The SSH agent signed with another algorithm than \(algorithm).")
+        .agentUnavailable(String(localized: "The SSH agent signed with another algorithm than \(algorithm).", bundle: .module))
     }
 }
 

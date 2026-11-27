@@ -113,7 +113,7 @@ public actor SSHConnection {
         // it still checks that the server can be reached.
         guard !offers.isEmpty else {
             let usesAgent = credentials.contains { if case .agent = $0 { true } else { false } }
-            throw usesAgent ? SSHError.agentUnavailable("The SSH agent holds no keys.") : SSHError.authenticationFailed
+            throw usesAgent ? SSHError.agentUnavailable(String(localized: "The SSH agent holds no keys.", bundle: .module)) : SSHError.authenticationFailed
         }
         var lastError: Error = SSHError.authenticationFailed
         var serverVersion: String?
@@ -185,7 +185,7 @@ public actor SSHConnection {
             }.get()
         } catch {
             abandon()
-            throw SSHError.connectionFailed("The connection to \(configuration.host) closed (\(SSHTransport.describe(error))).", cause: .closed)
+            throw SSHError.connectionFailed(String(localized: "The connection to \(configuration.host) closed (\(SSHTransport.describe(error))).", bundle: .module), cause: .closed)
         }
         let authenticator = SSHCredentialAuthenticator(username: configuration.username, offer: offer)
         var settings = SSHClientSettings(
@@ -219,7 +219,7 @@ public actor SSHConnection {
                 guard extended > .now else { break }
                 limit = extended
             }
-            signedIn.fail(SSHError.connectionFailed("Timed out signing in to \(configuration.host).", cause: .timedOut))
+            signedIn.fail(SSHError.connectionFailed(String(localized: "Timed out signing in to \(configuration.host).", bundle: .module), cause: .timedOut))
         }
         signedIn.futureResult.whenComplete { _ in deadline.cancel() }
         signedIn.completeWithTask { [settings] in
@@ -264,12 +264,12 @@ public actor SSHConnection {
     private static func translate(_ error: Error, host: String) -> Error {
         if let error = error as? SSHError { return error }
         if case ChannelError.connectTimeout = error {
-            return SSHError.connectionFailed("Timed out signing in to \(host).", cause: .timedOut)
+            return SSHError.connectionFailed(String(localized: "Timed out signing in to \(host).", bundle: .module), cause: .timedOut)
         }
         if error is SSHClientError {
             return SSHError.authenticationFailed
         }
-        return SSHError.connectionFailed("The connection to \(host) failed (\(SSHTransport.describe(error))).", cause: SSHTransport.cause(of: error))
+        return SSHError.connectionFailed(String(localized: "The connection to \(host) failed (\(SSHTransport.describe(error))).", bundle: .module), cause: SSHTransport.cause(of: error))
     }
 
     public nonisolated var isActive: Bool {
@@ -320,7 +320,7 @@ public actor SSHConnection {
         do {
             return try await SFTPSession(client: client.openSFTP())
         } catch {
-            throw SSHError.channelRejected("The server did not start SFTP (\(SSHTransport.describe(error))).")
+            throw SSHError.channelRejected(String(localized: "The server did not start SFTP (\(SSHTransport.describe(error))).", bundle: .module))
         }
     }
 
@@ -359,7 +359,7 @@ public actor SSHConnection {
             outcome.fail(error)
         }
         let deadline = eventLoop.scheduleTask(in: min(timeout.map(TimeAmount.init) ?? Self.channelTimeout, Self.channelTimeout)) {
-            giveUp(SSHError.channelRejected("The server did not open a channel in time."))
+            giveUp(SSHError.channelRejected(String(localized: "The server did not open a channel in time.", bundle: .module)))
         }
         outcome.futureResult.whenComplete { _ in deadline.cancel() }
         eventLoop.execute {
@@ -400,7 +400,7 @@ public actor SSHConnection {
             throw error
         } catch {
             throw parent.isActive
-                ? SSHError.channelRejected("The server refused to open a channel (\(SSHTransport.describe(error))).")
+                ? SSHError.channelRejected(String(localized: "The server refused to open a channel (\(SSHTransport.describe(error))).", bundle: .module))
                 : SSHError.disconnected
         }
     }

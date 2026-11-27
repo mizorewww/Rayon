@@ -33,11 +33,11 @@ public enum SSHError: Error, Sendable, Equatable, LocalizedError {
     public var errorDescription: String? {
         switch self {
         case let .unknownHostKey(key):
-            "The server's host key is not known yet (\(key.type) \(key.fingerprint))."
+            String(localized: "The server's host key is not known yet (\(key.type) \(key.fingerprint)).", bundle: .module)
         case let .hostKeyChanged(offered, saved):
-            "The server's host key has changed. Saved: \(saved.type) \(saved.fingerprint). Offered: \(offered.type) \(offered.fingerprint). If the server was reinstalled or its keys were replaced, forget its host key and connect again. If not, something may be intercepting the connection."
+            String(localized: "The server's host key has changed. Saved: \(saved.type) \(saved.fingerprint). Offered: \(offered.type) \(offered.fingerprint). If the server was reinstalled or its keys were replaced, forget its host key and connect again. If not, something may be intercepting the connection.", bundle: .module)
         case .authenticationFailed:
-            "The server did not accept any of the credentials."
+            String(localized: "The server did not accept any of the credentials.", bundle: .module)
         case let .connectionFailed(reason, _):
             reason
         case let .unsupportedKey(reason):
@@ -47,13 +47,13 @@ public enum SSHError: Error, Sendable, Equatable, LocalizedError {
         case let .channelRejected(reason):
             reason
         case .timedOut:
-            "The command timed out."
+            String(localized: "The command timed out.", bundle: .module)
         case .noExitStatus:
-            "The command ended without an exit status."
+            String(localized: "The command ended without an exit status.", bundle: .module)
         case .disconnected:
-            "The connection closed."
+            String(localized: "The connection closed.", bundle: .module)
         case let .portInUse(port):
-            "Port \(port) is already in use on this device."
+            String(localized: "Port \(port) is already in use on this device.", bundle: .module)
         }
     }
 }

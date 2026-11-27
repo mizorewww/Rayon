@@ -53,14 +53,14 @@ public extension SSHConnection {
                     switch event {
                     case let .output(chunk): await output(chunk, false)
                     case let .errorOutput(chunk): await output(chunk, true)
-                    case .requestRejected: throw SSHError.channelRejected("The server refused to run the command.")
+                    case .requestRejected: throw SSHError.channelRejected(String(localized: "The server refused to run the command.", bundle: .module))
                     case .requestAccepted: break
                     case let .exitStatus(code): status = code
                     case let .exitSignal(name): signal = name
                     }
                 }
                 if let status { return status }
-                if let signal { throw SSHError.channelRejected("The command was killed by SIG\(signal).") }
+                if let signal { throw SSHError.channelRejected(String(localized: "The command was killed by SIG\(signal).", bundle: .module)) }
                 throw SSHError.noExitStatus
             }
         }
@@ -90,7 +90,7 @@ public extension SSHConnection {
             try await channel.triggerUserOutboundEvent(SSHChannelRequestEvent.ShellRequest(wantReply: true)).get()
         } catch {
             channel.close(promise: nil)
-            throw SSHError.channelRejected("The server would not start a shell (\(SSHTransport.describe(error))).")
+            throw SSHError.channelRejected(String(localized: "The server would not start a shell (\(SSHTransport.describe(error))).", bundle: .module))
         }
         return SSHShell(session: session)
     }
@@ -121,7 +121,7 @@ public struct SSHShell: Sendable {
                     case let .output(chunk), let .errorOutput(chunk): await output(chunk)
                     case .requestRejected:
                         rejected += 1
-                        throw SSHError.channelRejected("The server refused a pseudo-terminal or a shell.")
+                        throw SSHError.channelRejected(String(localized: "The server refused a pseudo-terminal or a shell.", bundle: .module))
                     case .requestAccepted: break
                     case let .exitStatus(code): status = code
                     case .exitSignal: break

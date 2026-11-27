@@ -238,7 +238,7 @@ public struct SFTPSession: Sendable {
         if SFTPEntry(name: "", attributes: attributes).isDirectory {
             guard depth < Self.maxDepth else {
                 throw CocoaError(.fileReadUnknown, userInfo: [
-                    NSLocalizedDescriptionKey: "\(remote) is more than \(Self.maxDepth) folders deep.",
+                    NSLocalizedDescriptionKey: String(localized: "\(remote) is more than \(Self.maxDepth) folders deep.", bundle: .module),
                 ])
             }
             try FileManager.default.createDirectory(at: local, withIntermediateDirectories: true)

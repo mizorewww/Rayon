@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "RayonSSH",
+    defaultLocalization: "en",
     platforms: [
         .macOS(.v15),
         .iOS(.v18),
@@ -39,7 +40,8 @@ let package = Package(
                 .product(name: "NIOTransportServices", package: "swift-nio-transport-services"),
                 .product(name: "Crypto", package: "swift-crypto"),
                 .product(name: "_CryptoExtras", package: "swift-crypto"),
-            ]
+            ],
+            resources: [.process("Resources")]
         ),
         .testTarget(
             name: "RayonSSHTests",

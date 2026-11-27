@@ -35,9 +35,9 @@ public struct SSHPrivateKey: Sendable {
         } else if text.contains("-----BEGIN") {
             storage = try Self.readPEM(text, passphrase: passphrase)
         } else if text.hasPrefix("PuTTY-User-Key-File") {
-            throw SSHError.unsupportedKey("PuTTY keys (.ppk) are not supported. Export the key in OpenSSH format from PuTTYgen.")
+            throw SSHError.unsupportedKey(String(localized: "PuTTY keys (.ppk) are not supported. Export the key in OpenSSH format from PuTTYgen.", bundle: .module))
         } else {
-            throw SSHError.unsupportedKey("This does not look like a private key.")
+            throw SSHError.unsupportedKey(String(localized: "This does not look like a private key.", bundle: .module))
         }
     }
 
@@ -81,16 +81,16 @@ public struct SSHPrivateKey: Sendable {
 
         if cipher != "none" {
             guard let passphrase else {
-                throw SSHError.unsupportedKey("The private key is protected by a passphrase. Enter it as the identity's password.")
+                throw SSHError.unsupportedKey(String(localized: "The private key is protected by a passphrase. Enter it as the identity's password.", bundle: .module))
             }
             guard kdf == "bcrypt",
                   let salt = kdfOptions.readLengthPrefixedSlice(as: UInt32.self),
                   let rounds = kdfOptions.readInteger(as: UInt32.self)
-            else { throw SSHError.unsupportedKey("The key is encrypted with an unknown key derivation (\(kdf)).") }
+            else { throw SSHError.unsupportedKey(String(localized: "The key is encrypted with an unknown key derivation (\(kdf)).", bundle: .module)) }
             // ssh-keygen's default is 16; each round costs the same again,
             // and a key with billions would never open.
             guard rounds <= maxRounds else {
-                throw SSHError.unsupportedKey("The key's passphrase is derived with \(rounds) bcrypt rounds; at most \(maxRounds) are supported.")
+                throw SSHError.unsupportedKey(String(localized: "The key's passphrase is derived with \(rounds) bcrypt rounds; at most \(maxRounds) are supported.", bundle: .module))
             }
             let tag = buffer.readBytes(length: buffer.readableBytes) ?? []
             let plain = try OpenSSHKeyCipher.decrypt(
@@ -105,7 +105,7 @@ public struct SSHPrivateKey: Sendable {
               let check2 = section.readInteger(as: UInt32.self)
         else { throw malformed }
         guard check1 == check2 else {
-            throw SSHError.unsupportedKey("The private key could not be decrypted. Check the identity's password, which is the key's passphrase.")
+            throw SSHError.unsupportedKey(String(localized: "The private key could not be decrypted. Check the identity's password, which is the key's passphrase.", bundle: .module))
         }
         guard section.readSSHText() == type else { throw malformed }
         switch type {
@@ -134,7 +134,7 @@ public struct SSHPrivateKey: Sendable {
             else { throw malformed }
             return try .rsa(_RSA.Signing.PrivateKey(n: n, e: e, d: d, p: p, q: q))
         default:
-            throw SSHError.unsupportedKey("\(type) keys are not supported. Use an Ed25519, ECDSA or RSA key.")
+            throw SSHError.unsupportedKey(String(localized: "\(type) keys are not supported. Use an Ed25519, ECDSA or RSA key.", bundle: .module))
         }
     }
 
@@ -156,7 +156,7 @@ public struct SSHPrivateKey: Sendable {
         guard var der = Data(base64Encoded: body) else { throw malformed }
         if headers["Proc-Type"]?.hasSuffix("ENCRYPTED") == true {
             guard let passphrase else {
-                throw SSHError.unsupportedKey("The private key is protected by a passphrase. Enter it as the identity's password.")
+                throw SSHError.unsupportedKey(String(localized: "The private key is protected by a passphrase. Enter it as the identity's password.", bundle: .module))
             }
             der = try decryptLegacyPEM(der, info: headers["DEK-Info"] ?? "", passphrase: passphrase)
         }
@@ -175,13 +175,13 @@ public struct SSHPrivateKey: Sendable {
                 if let key = try? P384.Signing.PrivateKey(rawRepresentation: scalar) { return .p384(key) }
                 if let key = try? P521.Signing.PrivateKey(rawRepresentation: scalar) { return .p521(key) }
             }
-            throw SSHError.unsupportedKey("The PEM key could not be read. Rayon reads RSA and ECDSA keys in PEM.")
+            throw SSHError.unsupportedKey(String(localized: "The PEM key could not be read. Rayon reads RSA and ECDSA keys in PEM.", bundle: .module))
         case "ENCRYPTED PRIVATE KEY":
-            throw SSHError.unsupportedKey("Encrypted PKCS#8 keys are not supported. Convert the key with `ssh-keygen -p -f <key>`, which writes OpenSSH format.")
+            throw SSHError.unsupportedKey(String(localized: "Encrypted PKCS#8 keys are not supported. Convert the key with `ssh-keygen -p -f <key>`, which writes OpenSSH format.", bundle: .module))
         case "DSA PRIVATE KEY":
-            throw SSHError.unsupportedKey("DSA keys are not supported. Use an Ed25519, ECDSA or RSA key.")
+            throw SSHError.unsupportedKey(String(localized: "DSA keys are not supported. Use an Ed25519, ECDSA or RSA key.", bundle: .module))
         default:
-            throw SSHError.unsupportedKey("\"\(label)\" is not a private key Rayon can read.")
+            throw SSHError.unsupportedKey(String(localized: "\"\(label)\" is not a private key Rayon can read.", bundle: .module))
         }
     }
 
@@ -205,7 +205,7 @@ public struct SSHPrivateKey: Sendable {
         case "AES-192-CBC": (algorithm, keyLength) = (CCAlgorithm(kCCAlgorithmAES), kCCKeySizeAES192)
         case "AES-256-CBC": (algorithm, keyLength) = (CCAlgorithm(kCCAlgorithmAES), kCCKeySizeAES256)
         case "DES-EDE3-CBC": (algorithm, keyLength) = (CCAlgorithm(kCCAlgorithm3DES), kCCKeySize3DES)
-        default: throw SSHError.unsupportedKey("PEM keys encrypted with \(parts[0]) are not supported.")
+        default: throw SSHError.unsupportedKey(String(localized: "PEM keys encrypted with \(parts[0]) are not supported.", bundle: .module))
         }
         var key = Data()
         var block = Data()
@@ -232,7 +232,7 @@ public struct SSHPrivateKey: Sendable {
             }
         }
         guard status == kCCSuccess else {
-            throw SSHError.unsupportedKey("The private key could not be decrypted. Check the identity's password, which is the key's passphrase.")
+            throw SSHError.unsupportedKey(String(localized: "The private key could not be decrypted. Check the identity's password, which is the key's passphrase.", bundle: .module))
         }
         return output.prefix(written)
     }
@@ -263,7 +263,7 @@ public struct SSHPrivateKey: Sendable {
         return element(0x04)
     }
 
-    private static let malformed = SSHError.unsupportedKey("The private key is damaged or incomplete.")
+    private static let malformed = SSHError.unsupportedKey(String(localized: "The private key is damaged or incomplete.", bundle: .module))
 }
 
 extension ByteBuffer {

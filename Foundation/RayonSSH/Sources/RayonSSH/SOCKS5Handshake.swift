@@ -138,7 +138,7 @@ final class SOCKS5Handshake: ChannelInboundHandler, RemovableChannelHandler {
     private func fail(_ context: ChannelHandlerContext) -> Bool {
         state = .answering
         buffered = nil
-        resolve(.failure(SSHError.channelRejected("Not a SOCKS5 CONNECT request.")))
+        resolve(.failure(SSHError.channelRejected(String(localized: "Not a SOCKS5 CONNECT request.", bundle: .module))))
         context.close(promise: nil)
         return false
     }

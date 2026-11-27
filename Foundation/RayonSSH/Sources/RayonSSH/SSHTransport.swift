@@ -69,7 +69,7 @@ extension SSHTransport {
             } catch {
                 own?.shutdownGracefully { _ in }
                 close(descriptor)
-                throw SSHError.connectionFailed("The tunnel to \(host):\(port) could not be used (\(Self.describe(error))).", cause: Self.cause(of: error))
+                throw SSHError.connectionFailed(String(localized: "The tunnel to \(host):\(port) could not be used (\(Self.describe(error))).", bundle: .module), cause: Self.cause(of: error))
             }
         case let .jump(bastion):
             let channel = try await bastion.openRawDirectTCPIP(host: host, port: port) { channel in
@@ -115,7 +115,7 @@ extension SSHTransport {
                 .connect(host: host, port: port)
                 .get()
         } catch {
-            throw SSHError.connectionFailed("Unable to connect to \(host):\(port) (\(describe(error))).", cause: cause(of: error))
+            throw SSHError.connectionFailed(String(localized: "Unable to connect to \(host):\(port) (\(describe(error))).", bundle: .module), cause: cause(of: error))
         }
     }
 
@@ -128,8 +128,10 @@ extension SSHTransport {
         case let error as NWError:
             switch error {
             case let .posix(code): return describe(code)
-            case .dns: return "the host name could not be found"
-            case let .tls(status): return "TLS failed: " + ((SecCopyErrorMessageString(status, nil) as String?) ?? "error \(status)")
+            case .dns: return String(localized: "the host name could not be found", bundle: .module)
+            case let .tls(status):
+                let reason = (SecCopyErrorMessageString(status, nil) as String?) ?? String(status)
+                return String(localized: "TLS failed: \(reason)", bundle: .module)
             default: return error.localizedDescription
             }
         case let error as IOError:
@@ -137,11 +139,11 @@ extension SSHTransport {
         case let error as POSIXError:
             return describe(error.code)
         case ChannelError.connectTimeout:
-            return "the server did not answer in time"
+            return String(localized: "the server did not answer in time", bundle: .module)
         case ChannelError.ioOnClosedChannel, ChannelError.alreadyClosed, ChannelError.eof, ChannelError.outputClosed, ChannelError.inputClosed:
-            return "the connection closed"
+            return String(localized: "the connection closed", bundle: .module)
         case let error as NIOSSHError:
-            return "the SSH session broke off (\(error.type))"
+            return String(localized: "the SSH session broke off (\(String(describing: error.type)))", bundle: .module)
         case let error as LocalizedError where error.errorDescription != nil:
             return error.errorDescription ?? ""
         default:
@@ -183,16 +185,16 @@ extension SSHTransport {
 
     static func describe(_ code: POSIXErrorCode) -> String {
         switch code {
-        case .ECONNREFUSED: "connection refused; nothing is listening on that port"
-        case .ETIMEDOUT: "the server did not answer in time"
-        case .EHOSTUNREACH, .EHOSTDOWN: "the host cannot be reached"
-        case .ENETUNREACH: "the network cannot reach the host"
-        case .ENETDOWN: "the network is down"
-        case .ECONNRESET: "the server reset the connection"
-        case .ECONNABORTED: "the connection was aborted"
-        case .EPIPE, .ENOTCONN: "the connection closed"
-        case .EADDRINUSE: "the port is already in use"
-        case .EACCES, .EPERM: "the system did not allow the connection"
+        case .ECONNREFUSED: String(localized: "connection refused; nothing is listening on that port", bundle: .module)
+        case .ETIMEDOUT: String(localized: "the server did not answer in time", bundle: .module)
+        case .EHOSTUNREACH, .EHOSTDOWN: String(localized: "the host cannot be reached", bundle: .module)
+        case .ENETUNREACH: String(localized: "the network cannot reach the host", bundle: .module)
+        case .ENETDOWN: String(localized: "the network is down", bundle: .module)
+        case .ECONNRESET: String(localized: "the server reset the connection", bundle: .module)
+        case .ECONNABORTED: String(localized: "the connection was aborted", bundle: .module)
+        case .EPIPE, .ENOTCONN: String(localized: "the connection closed", bundle: .module)
+        case .EADDRINUSE: String(localized: "the port is already in use", bundle: .module)
+        case .EACCES, .EPERM: String(localized: "the system did not allow the connection", bundle: .module)
         default: String(cString: strerror(code.rawValue))
         }
     }

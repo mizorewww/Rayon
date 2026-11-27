@@ -101,7 +101,7 @@ public struct SSHForwardListener: Sendable {
         } catch NWError.posix(.EADDRINUSE) {
             throw SSHError.portInUse(port)
         } catch {
-            throw SSHError.connectionFailed("Could not listen on port \(port) (\(SSHTransport.describe(error))).", cause: SSHTransport.cause(of: error))
+            throw SSHError.connectionFailed(String(localized: "Could not listen on port \(port) (\(SSHTransport.describe(error))).", bundle: .module), cause: SSHTransport.cause(of: error))
         }
     }
 }
