@@ -276,7 +276,10 @@
                     }
                 }
                 Spacer(minLength: RX.Space.s2)
-                ForEach([ServerTool.terminal, .files, .monitor]) { tool in
+                // The main window's tools, the desktop too, through the same
+                // actions: a UU device's terminal and streams ride on its open
+                // desktop's connection there as anywhere.
+                ForEach(ServerTool.available(for: session.machine).filter { $0 != .editor }) { tool in
                     RXIconButton(tool.help, systemImage: tool.systemImage, kind: .plain) {
                         dismiss()
                         MainWindow.show()
