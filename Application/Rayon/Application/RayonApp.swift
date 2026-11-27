@@ -7,7 +7,6 @@ import AppKit
 import Combine
 import RayonModule
 import RayonTerminal
-import os
 import SwiftUI
 
 @main
@@ -17,7 +16,7 @@ struct RayonApp: App {
 
     init() {
         #if DEBUG
-            NSLog(CommandLine.arguments.joined(separator: "\n"))
+            Logger.app.debugFile("command arguments: \(CommandLine.arguments.joined(separator: " "))")
         #endif
         _ = RayonStore.shared
         CloudSyncModel.shared.start()
@@ -29,7 +28,7 @@ struct RayonApp: App {
         FileTransferInterface.uiHandler = MacFileTransferUIHandler()
         HostKeyTrust.handler = MacHostKeyTrustHandler()
 
-        NSLog("static main completed")
+        Logger.app.infoFile("launched")
     }
 
     var body: some Scene {
@@ -362,7 +361,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     private var quitConfirmed = false
     private var quitAsked = false
     private var terminating = false
-    private static let quitLog = Logger(subsystem: "me.mizorewww.rayon", category: "quit")
 
     func applicationShouldTerminate(_: NSApplication) -> NSApplication.TerminateReply {
         if quitConfirmed {
@@ -382,7 +380,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         default: "SSH sessions will be closed; UU Remote sessions keep running on their devices, to resume next time."
         }
         let unsaved = EditorCenter.shared.workspaces.contains(where: \.hasUnsavedChanges)
-        Self.quitLog.info("quit requested: terminals \(terminals), unsaved \(unsaved)")
+        Logger.app.infoFile("quit requested: terminals \(terminals), unsaved \(unsaved)")
         guard terminals || unsaved else {
             terminating = true
             return .terminateNow
