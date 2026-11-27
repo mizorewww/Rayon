@@ -5,9 +5,6 @@
       location = "group:Application/Rayon/Rayon.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:Application/mRayon/mRayon.xcodeproj">
-   </FileRef>
-   <FileRef
       location = "group:Foundation/RayonModule">
    </FileRef>
    <FileRef
