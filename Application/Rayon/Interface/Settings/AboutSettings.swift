@@ -46,22 +46,8 @@ struct AboutSettings: View {
             Text("Build")
             Text("The git commit this copy was built from; \"-dirty\" when the source had uncommitted changes.")
         }
-        LabeledContent {
-            Link(destination: URL(string: "https://github.com/mizorewww/Rayon")!) {
-                Label("GitHub", systemImage: "arrow.up.right.square")
-            }
-        } label: {
-            Text("Source code")
-            Text("mizorewww/Rayon on GitHub")
-        }
-        LabeledContent {
-            Link(destination: URL(string: "https://github.com/mizorewww/Rayon/issues")!) {
-                Label("Issues", systemImage: "arrow.up.right.square")
-            }
-        } label: {
-            Text("Report a problem")
-            Text("Bugs and ideas go to the project's issue tracker.")
-        }
+        linkRow("Source code", "mizorewww/Rayon on GitHub", link: "GitHub", to: "https://github.com/mizorewww/Rayon")
+        linkRow("Report a problem", "Bugs and ideas go to the project's issue tracker.", link: "Issues", to: "https://github.com/mizorewww/Rayon/issues")
         #if os(macOS)
             LabeledContent("Legal") {
                 HStack {
@@ -75,6 +61,41 @@ struct AboutSettings: View {
             }
         #else
             NavigationLink("License") { LicenseView() }
+        #endif
+    }
+
+    /// A row that opens a web page. On iOS the whole row is the link: a
+    /// LabeledContent holding a Link and its Label sized wrongly in a Form,
+    /// leaving a blank gap and wrapping the link under its label.
+    @ViewBuilder
+    private func linkRow(_ title: String, _ detail: String, link: String, to address: String) -> some View {
+        let url = URL(string: address)!
+        #if os(macOS)
+            LabeledContent {
+                Link(destination: url) {
+                    Label(link, systemImage: "arrow.up.right.square")
+                }
+            } label: {
+                Text(title)
+                Text(detail)
+            }
+        #else
+            Link(destination: url) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(title)
+                            .foregroundStyle(Color.primary)
+                        Text(detail)
+                            .font(.footnote)
+                            .foregroundStyle(Color.secondary)
+                    }
+                    Spacer()
+                    // Text and an image, not a Label: a Label in a Form row
+                    // drops its title and swells the row.
+                    Text(link)
+                    Image(systemName: "arrow.up.right.square")
+                }
+            }
         #endif
     }
 }
