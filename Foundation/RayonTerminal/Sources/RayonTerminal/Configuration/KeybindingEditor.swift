@@ -372,7 +372,11 @@ struct KeybindingBuilder: View {
                     Text("When", bundle: .module)
                 }
                 Section {
+                    // A labelled field in a Mac Form trails its text whatever
+                    // the alignment; the header names this one.
                     TextField(String(localized: "Ghostty syntax", bundle: .module), text: $raw)
+                        .labelsHidden()
+                        .multilineTextAlignment(.leading)
                         .font(.body.monospaced())
                         #if os(iOS)
                         .autocorrectionDisabled()
@@ -476,7 +480,7 @@ struct KeybindingBuilder: View {
                     HStack {
                         TextField("1", text: argument)
                             .labelsHidden()
-                            .multilineTextAlignment(.trailing)
+                            .multilineTextAlignment(.leading)
                             .frame(width: 80)
                         Stepper(String(localized: "Amount", bundle: .module), onIncrement: { argument.wrappedValue = format((Double(argument.wrappedValue) ?? 0) + 1) },
                                 onDecrement: {
@@ -487,8 +491,14 @@ struct KeybindingBuilder: View {
                     }
                 }
             default:
-                TextField(definition.type == "text" ? String(localized: "Text to type (\\n, \\x1b…)", bundle: .module) : String(localized: "Sequence", bundle: .module), text: argument)
-                    .font(.body.monospaced())
+                // In a LabeledContent with its own label hidden: a labelled
+                // field in a Mac Form trails its text whatever the alignment.
+                LabeledContent(definition.type == "text" ? String(localized: "Text", bundle: .module) : String(localized: "Sequence", bundle: .module)) {
+                    TextField(definition.type == "text" ? String(localized: "Text to type (\\n, \\x1b…)", bundle: .module) : String(localized: "Sequence", bundle: .module), text: argument)
+                        .labelsHidden()
+                        .multilineTextAlignment(.leading)
+                        .font(.body.monospaced())
+                }
             }
         }
     }

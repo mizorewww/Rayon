@@ -324,7 +324,6 @@ private struct ListEditor: View {
                         next[index] = text
                         settings.set(key, next.filter { !$0.isEmpty })
                     }
-                    .multilineTextAlignment(.leading)
                     Button { var next = values; next.swapAt(index, index - 1); settings.set(key, next) } label: {
                         Label(.init("Move Up", bundle: .module), systemImage: "arrow.up")
                     }
@@ -494,7 +493,7 @@ private struct BytesEditor: View {
         HStack(spacing: 6) {
             TextField(String(localized: "MB", bundle: .module), value: Binding(get: { megabytes }, set: { set(megabytes: $0) }), format: .number.precision(.fractionLength(0 ... 1)))
                 .labelsHidden()
-                .multilineTextAlignment(.trailing)
+                .multilineTextAlignment(.leading)
                 .frame(width: 80)
             Stepper(.init("Megabytes", bundle: .module), onIncrement: { set(megabytes: megabytes + 1) }, onDecrement: { set(megabytes: megabytes - 1) })
                 .labelsHidden()

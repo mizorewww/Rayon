@@ -91,7 +91,8 @@ extension Color {
 
 /// A text field that sets its value when editing ends (Return, or focus
 /// leaving it), not on every keystroke: a half-typed color or number is not
-/// handed to Ghostty.
+/// handed to Ghostty. Its text leads: a Form trails a row's value, and the
+/// field sits there.
 struct CommitField: View {
     let prompt: String
     let text: String
@@ -114,7 +115,7 @@ struct CommitField: View {
             .labelsHidden()
             .focused($focused)
             .font(monospaced ? .body.monospaced() : .body)
-            .multilineTextAlignment(.trailing)
+            .multilineTextAlignment(.leading)
             .frame(width: width)
             .onAppear { draft = text }
             .onChange(of: text) { _, new in if !focused { draft = new } }
