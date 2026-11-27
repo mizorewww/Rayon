@@ -75,6 +75,9 @@
         /// Pages on screen, so a session of theirs switches them rather than
         /// opening another.
         private var onScreen: [SessionOwner: Int] = [:]
+        /// Pages presented but not on screen yet, so a reveal during the
+        /// transition does not present a second one.
+        private var presenting: Set<SessionOwner> = []
 
         private init() {}
 
@@ -105,7 +108,7 @@
                 selection = .session(owner)
                 return
             }
-            guard onScreen[owner, default: 0] == 0 else { return }
+            guard onScreen[owner, default: 0] == 0, presenting.insert(owner).inserted else { return }
             let host = UIHostingController(rootView: DefaultModalPresenter {
                 ServerWorkspaceView(owner: owner)
             }.environmentObject(RayonStore.shared))
@@ -115,7 +118,10 @@
             ModalPresenter.present(host, push: true)
         }
 
-        fileprivate func appeared(_ owner: SessionOwner) { onScreen[owner, default: 0] += 1 }
+        fileprivate func appeared(_ owner: SessionOwner) {
+            presenting.remove(owner)
+            onScreen[owner, default: 0] += 1
+        }
         fileprivate func disappeared(_ owner: SessionOwner) { onScreen[owner, default: 1] -= 1 }
     }
 
