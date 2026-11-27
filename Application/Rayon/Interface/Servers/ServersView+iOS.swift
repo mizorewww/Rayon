@@ -16,33 +16,7 @@
         @AppSetting(AppSettings.serverRedaction) private var redaction
         @ObservedObject var monitors = MonitorCenter.shared
         @State private var searchKey = ""
-        @State private var openNewServer = false
-        @State private var editing: RDMachine.ID?
         @State private var sshConfigSource: SSHConfigSource?
-
-        var filtered: [RDMachine] {
-            let all = store.machines
-            guard !searchKey.isEmpty else { return all }
-            return all.filter { $0.isQualifiedForSearch(text: searchKey.lowercased()) }
-        }
-
-        /// The folders in order, Default last; empty folders only while not
-        /// searching.
-        var groups: [(name: String, machines: [RDMachine])] {
-            let machines = filtered
-            // One group per name: folders of the same name from two devices
-            // would list their servers twice.
-            var names: [String] = []
-            for folder in store.folders where !names.contains(folder.name) { names.append(folder.name) }
-            // A server whose folder is gone is with the default ones.
-            if machines.contains(where: { store.folder($0.folderId) == nil }) { names.append("") }
-            return names.compactMap { name in
-                let inside = machines.filter { store.folderName(of: $0) == name }
-                    .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-                if inside.isEmpty, !searchKey.isEmpty { return nil }
-                return (name, inside)
-            }
-        }
 
         var body: some View {
             Group {
@@ -52,7 +26,7 @@
                         systemImage: "server.rack",
                         actionTitle: "New Server"
                     ) {
-                        openNewServer = true
+                        ServerActions.create()
                     }
                     .frame(maxHeight: .infinity)
                     .background(RXBackdrop().ignoresSafeArea())
@@ -72,7 +46,7 @@
                                 .rxListRow()
                             }
                         }
-                        ForEach(groups, id: \.name) { group in
+                        ForEach(store.serverGroups(matching: searchKey)) { group in
                             Section {
                                 if group.machines.isEmpty {
                                     Text(store.folder(named: group.name)?.isLinked == true ? "No desktop devices on the account" : "Empty — move servers here from their menu")
@@ -81,11 +55,11 @@
                                         .rxListRow()
                                 }
                                 ForEach(group.machines) { machine in
-                                    ServerListRow(machine: machine.id, edit: { editing = machine.id })
+                                    ServerListRow(machine: machine.id)
                                         .rxListRow()
                                 }
                             } header: {
-                                FolderSectionHeader(name: group.name, count: group.machines.count)
+                                FolderHeader(name: group.name, count: group.machines.count)
                             }
                         }
                     }
@@ -103,10 +77,9 @@
                             Label("Hide Names and Addresses", systemImage: "eye.slash.fill").tag(RDMachine.RedactedLevel.all)
                         }
                         Divider()
-                        Button {
-                            FolderActions.newFolder()
-                        } label: {
-                            Label("New Folder…", systemImage: "folder.badge.plus")
+                        Button("New Folder…", systemImage: "folder.badge.plus") { FolderActions.newFolder() }
+                        Button(UURemoteAccount.shared.isLoggedIn ? "UU Remote Account…" : "Link UU Remote Account…", systemImage: "link") {
+                            FolderActions.linkUURemote()
                         }
                         SSHConfigImportMenuItems(source: $sshConfigSource)
                         Divider()
@@ -120,29 +93,20 @@
                         Label("More", systemImage: redaction == .none ? "ellipsis.circle" : "eye.slash")
                     }
                     Button {
-                        openNewServer = true
+                        ServerActions.create()
                     } label: {
                         Label("New Server", systemImage: "plus")
                     }
                 }
             }
             .sshConfigImporter($sshConfigSource)
-            .sheet(isPresented: $openNewServer) {
-                NavigationStack { EditMachineView() }
-            }
-            .sheet(item: Binding(get: { editing.map(EditTarget.init) }, set: { editing = $0?.id })) { target in
-                NavigationStack { EditMachineView(requestMachine: target.id) }
-            }
         }
-
-        private struct EditTarget: Identifiable { let id: RDMachine.ID }
     }
 
     /// A server row: name, address, state. A tap goes into the server's
     /// terminal; its actions are in the ⋯ menu and on a long press.
     struct ServerListRow: View {
         let machine: RDMachine.ID
-        let edit: () -> Void
         @EnvironmentObject var store: RayonStore
         @AppSetting(AppSettings.serverRedaction) private var redaction
         @ObservedObject var monitors = MonitorCenter.shared
@@ -178,7 +142,7 @@
                             .foregroundStyle(.rxInkSecondary)
                     }
                     Menu {
-                        ServerMenuItems(machine: machine, edit: edit)
+                        ServerContextMenu(machine: machine)
                     } label: {
                         Image(systemName: "ellipsis.circle")
                             .font(.system(size: 20))
@@ -191,14 +155,16 @@
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            .contextMenu { ServerMenuItems(machine: machine, edit: edit) }
+            .contextMenu { ServerContextMenu(machine: machine) }
             .swipeActions {
                 Button(role: .destructive) {
-                    ServerActions.delete(machine)
+                    ServerActions.delete([machine])
                 } label: {
                     Label("Delete", systemImage: "trash")
                 }
-                Button(action: edit) {
+                Button {
+                    ServerActions.edit(machine)
+                } label: {
                     Label("Edit", systemImage: "pencil")
                 }
                 .tint(.rxAccent)
@@ -216,178 +182,6 @@
                         .foregroundStyle(.rxInkSecondary)
                 }
             }
-        }
-    }
-
-    /// Open Terminal, Monitor, File Transfer; Edit, Move to Folder, Duplicate,
-    /// Copy, Forget Host Key, Check Terminfo Again; Delete.
-    struct ServerMenuItems: View {
-        let machine: RDMachine.ID
-        var edit: (() -> Void)?
-
-        var body: some View {
-            Section {
-                Button { TerminalManager.shared.begin(for: machine) } label: {
-                    Label("Open Terminal", systemImage: "terminal")
-                }
-                Button { ServerActions.openMonitor(machine) } label: {
-                    Label("Open Monitor", systemImage: "waveform.path.ecg")
-                }
-                Button { FileTransferManager.shared.begin(for: machine) } label: {
-                    Label("Open File Transfer", systemImage: "arrow.up.arrow.down")
-                }
-                let read = (RayonStore.shared.machine(machine) ?? RDMachine())
-                if read.hasRemoteDesktop {
-                    Button { ServerActions.openDesktop(machine) } label: {
-                        Label("Open Remote Desktop", systemImage: "display")
-                    }
-                }
-                if read.remoteDesktopProtocol == .uuRemote, UULocalBridge.officialAppInstalled {
-                    Button { UULocalBridge.openControlInOfficialApp(for: read) } label: {
-                        Label("UU Remote (PiP)", systemImage: "pip")
-                    }
-                }
-            }
-            Section {
-                if let edit {
-                    Button(action: edit) { Label("Edit", systemImage: "pencil") }
-                }
-                MoveToFolderMenu(machine: machine)
-                Button { ServerActions.duplicate(machine) } label: {
-                    Label("Duplicate", systemImage: "plus.square.on.square")
-                }
-            }
-            Section {
-                let read = (RayonStore.shared.machine(machine) ?? RDMachine())
-                if read.isUURemoteDevice {
-                    // Its address is the device id; no ssh command reaches it.
-                    Button { Pasteboard.copy(read.uuDeviceID) } label: {
-                        Label("Copy Device ID", systemImage: "doc.on.doc")
-                    }
-                } else {
-                    Button { Pasteboard.copy("\(read.remoteAddress):\(read.remotePort)") } label: {
-                        Label("Copy Address", systemImage: "doc.on.doc")
-                    }
-                    Button { Pasteboard.copy(read.getCommand()) } label: {
-                        Label("Copy SSH Command", systemImage: "chevron.left.forwardslash.chevron.right")
-                    }
-                }
-                Button { ServerActions.forgetHostKey(machine) } label: {
-                    Label("Forget Host Key", systemImage: "key.slash")
-                }
-                if read.hasGhosttyTerminfo {
-                    Button { ServerActions.reinstallTerminfo(machine) } label: {
-                        Label("Check Terminfo Again", systemImage: "arrow.triangle.2.circlepath")
-                    }
-                }
-            }
-            Section {
-                Button(role: .destructive) { ServerActions.delete(machine) } label: {
-                    Label("Delete", systemImage: "trash")
-                }
-            }
-        }
-    }
-
-    @MainActor
-    enum ServerActions {
-        /// The server's terminal on its page: the one open, else a new one.
-        @MainActor
-        static func openTerminal(_ machine: RDMachine.ID) {
-            if SessionDirectory.hasSession(machine, .terminal) {
-                SessionNavigation.shared.reveal(.server(machine), tool: .terminal)
-            } else {
-                TerminalManager.shared.begin(for: machine)
-            }
-        }
-
-        @MainActor
-        static func openMonitor(_ machine: RDMachine.ID) {
-            do {
-                let existing = MonitorCenter.shared.session(for: machine)
-                let session = try MonitorCenter.shared.begin(for: machine)
-                // An existing monitor is brought forward even when sessions do
-                // not open automatically; a new one waits for the setting.
-                guard existing != nil || AppSettings.showsSessionOnConnect.value else { return }
-                SessionNavigation.shared.reveal(.server(session.machine.id), tool: .monitor)
-            } catch {
-                Indicator.error(String(localized: "Cannot open monitor"))
-            }
-        }
-
-        /// The server's remote desktop, on the server's page.
-        @MainActor
-        static func openDesktop(_ machine: RDMachine.ID) {
-            let existing = RemoteDesktopManager.shared.session(for: machine)
-            guard let session = RemoteDesktopManager.shared.begin(for: machine) else { return }
-            guard existing != nil || AppSettings.showsSessionOnConnect.value else { return }
-            SessionNavigation.shared.reveal(.server(session.machine.id), tool: .desktop)
-        }
-
-        static func duplicate(_ machine: RDMachine.ID) {
-            guard var copy = RayonStore.shared.machine(machine) else { return }
-            copy.id = UUID()
-            copy.name = String(localized: "\(copy.name) copy")
-            RayonStore.shared.save(copy)
-        }
-
-        /// For a server whose keys were replaced: its next host key is saved.
-        @MainActor
-        static func forgetHostKey(_ machine: RDMachine.ID) {
-            guard let read = RayonStore.shared.machine(machine) else { return }
-            Indicator.confirm(message: "Forget the host key of \(read.name)? The key it presents next is saved as its key.", destructive: true) { confirmed in
-                guard confirmed else { return }
-                read.forgetHostKey()
-            }
-        }
-
-        /// The next terminal checks the server for Ghostty's terminfo again and
-        /// installs it if it is missing (say, after ~/.terminfo was cleared).
-        @MainActor
-        static func reinstallTerminfo(_ machine: RDMachine.ID) {
-            RayonStore.shared.updateMachine(machine) { $0.forgetGhosttyTerminfo() }
-        }
-
-        @MainActor
-        static func delete(_ machine: RDMachine.ID) {
-            let read = RayonStore.shared.machine(machine) ?? RDMachine()
-            let informative: LocalizedStringResource
-            if read.isUURemoteDevice {
-                informative = "This cannot be undone. The device stays on your UU Remote account, which Rayon cannot remove it from; Rayon stops listing it."
-            } else {
-                informative = "This cannot be undone."
-            }
-            Indicator.confirm(
-                message: "Delete \(read.name)?",
-                informative: informative,
-                confirmTitle: "Delete",
-                destructive: true
-            ) { confirmed in
-                guard confirmed else { return }
-                UURemoteAccount.shared.forgetDevices(ofDeleting: [machine])
-                if let session = MonitorCenter.shared.session(for: machine) {
-                    MonitorCenter.shared.end(session.id)
-                }
-                RayonStore.shared.deleteMachines([machine])
-                RayonStore.shared.cleanRecentIfNeeded()
-            }
-        }
-
-        /// Pick servers, then open a terminal for each.
-        static func batchStartup() {
-            Task { @MainActor in
-                let machines = await RayonUtil.selectMachine()
-                for machine in machines {
-                    TerminalManager.shared.begin(for: machine, force: true)
-                }
-            }
-        }
-    }
-
-    private extension RDMachine {
-        /// host, or host:port when the port is not 22.
-        var displayAddress: String {
-            remotePort.isEmpty || remotePort == "22" ? remoteAddress : "\(remoteAddress):\(remotePort)"
         }
     }
 

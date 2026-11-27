@@ -27,22 +27,8 @@
             return machines.filter { $0.isQualifiedForSearch(text: searchText) }
         }
 
-        /// The folders in order, Default last; empty folders only while not
-        /// searching.
         var groups: [(name: String, machines: [RDMachine])] {
-            let machines = filtered
-            // One group per name: folders of the same name from two devices
-            // would list their servers twice.
-            var names: [String] = []
-            for folder in store.folders where !names.contains(folder.name) { names.append(folder.name) }
-            // A server whose folder is gone is with the default ones.
-            if machines.contains(where: { store.folder($0.folderId) == nil }) { names.append("") }
-            return names.compactMap { name in
-                let inside = machines.filter { store.folderName(of: $0) == name }
-                    .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-                if inside.isEmpty, !searchText.isEmpty { return nil }
-                return (name, inside)
-            }
+            store.serverGroups(matching: searchText).map { ($0.name, $0.machines) }
         }
 
         var body: some View {
@@ -180,7 +166,12 @@
                 header(columns)
                 Hairline()
                 ForEach(groups, id: \.name) { group in
-                    FolderHeaderRow(name: group.name, count: group.machines.count)
+                    FolderHeader(name: group.name, count: group.machines.count)
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.rxInkSecondary)
+                        .padding(.horizontal, RX.Space.s3)
+                        .padding(.top, RX.Space.s3)
+                        .padding(.bottom, 6)
                         .transition(.opacity)
                     if group.machines.isEmpty {
                         Text(store.folder(named: group.name)?.isLinked == true ? "No desktop devices on the account" : "Empty — move servers here from their menu")

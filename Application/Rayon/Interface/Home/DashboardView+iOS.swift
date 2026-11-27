@@ -75,7 +75,7 @@
         var body: some View {
             let read = (store.machine(machine) ?? RDMachine())
             Menu {
-                ServerMenuItems(machine: machine)
+                ServerContextMenu(machine: machine)
             } label: {
                 VStack(alignment: .leading, spacing: RX.Space.s3) {
                     HStack(alignment: .top) {

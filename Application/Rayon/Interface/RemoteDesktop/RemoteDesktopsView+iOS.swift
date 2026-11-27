@@ -277,7 +277,7 @@
                 .tint(.rxAccent)
             }
             .contextMenu {
-                ServerMenuItems(machine: machine.id, edit: edit)
+                ServerContextMenu(machine: machine.id)
                 if let session {
                     Button(role: .destructive) { RemoteDesktopManager.shared.end(session.id) } label: {
                         Label("Close Desktop", systemImage: "xmark")
