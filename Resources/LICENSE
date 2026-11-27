@@ -1332,8 +1332,8 @@ https://github.com/apple/swift-protobuf
 
 ---
 
-Citadel 0.12.0
-https://github.com/orlandos-nl/Citadel
+Citadel 0.12.0 (Rayon's fork of orlandos-nl/Citadel, with fixes)
+https://github.com/mizorewww/Citadel
 
 MIT License
 

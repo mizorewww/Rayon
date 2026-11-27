@@ -11,9 +11,10 @@ let package = Package(
         .library(name: "RayonSSH", targets: ["RayonSSH"]),
     ],
     dependencies: [
-        // 0.12.1 moved its swift-nio-ssh pin to an unvetted third-party fork;
-        // 0.12.0 still pins the Citadel author's own.
-        .package(url: "https://github.com/orlandos-nl/Citadel.git", exact: "0.12.0"),
+        // Citadel 0.12.0 (0.12.1 moved its swift-nio-ssh pin to an unvetted
+        // third-party fork) with the login timeout left to the caller,
+        // listDirectory closing the handle it opens, and an lstat.
+        .package(url: "https://github.com/mizorewww/Citadel.git", revision: "2f469512a57fe9e49fd51de6170499022cbba2af"),
         // Citadel's swift-nio-ssh fork (0.3.5) with apple/swift-nio-ssh#144
         // applied (data arriving on a channel this side has closed adjusted
         // the closed channel's window and trapped), and a child channel's
@@ -43,6 +44,8 @@ let package = Package(
             name: "RayonSSHTests",
             dependencies: [
                 "RayonSSH",
+                .product(name: "Citadel", package: "Citadel"),
+                .product(name: "NIOSSH", package: "swift-nio-ssh"),
                 .product(name: "NIOPosix", package: "swift-nio"),
                 .product(name: "Crypto", package: "swift-crypto"),
             ]
