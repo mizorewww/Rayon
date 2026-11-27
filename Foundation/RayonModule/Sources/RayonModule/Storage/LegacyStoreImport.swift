@@ -53,10 +53,21 @@ enum LegacyStoreImport {
     enum Outcome: Equatable {
         /// There was nothing (left) to import.
         case nothingToImport
-        case imported
+        case imported(Imported)
         /// The old data is there and stays there, but could not be
         /// imported; the next launch tries again. Says why, for the user.
         case blocked(String)
+    }
+
+    /// What an import brought over, to tell the user.
+    struct Imported: Equatable {
+        var servers = 0
+        var identities = 0
+        var snippets = 0
+        var forwards = 0
+        /// The keys whose copy 2.8 set aside as damaged still cannot be
+        /// read: they stay in the defaults, not imported.
+        var unreadableCopies: [String] = []
     }
 
     /// Imports what the previous release stored, if it has not been. Without
@@ -80,8 +91,9 @@ enum LegacyStoreImport {
         }
         let opener = Opener(masterKey: master)
         let copies: [String]
+        let imported: Imported
         do {
-            copies = try importRecords(from: defaults, opener: opener, into: storage)
+            (copies, imported) = try importRecords(from: defaults, opener: opener, into: storage)
         } catch {
             Logger.database.errorFile("legacy import failed: \(error)")
             return .blocked(String(localized: "The servers, identities and snippets saved by the previous version of Rayon could not be opened (\(error.localizedDescription)). They are kept as they are, and Rayon tries again on its next launch.", bundle: .module))
@@ -91,7 +103,7 @@ enum LegacyStoreImport {
         }
         defaults.set(true, forKey: doneKey)
         forgetMasterKey()
-        return .imported
+        return .imported(imported)
     }
 
     enum Failure: LocalizedError {
@@ -114,8 +126,11 @@ enum LegacyStoreImport {
         }
     }
 
-    /// Returns the keys of the copies 2.8 set aside that were imported.
-    private static func importRecords(from defaults: UserDefaults, opener: Opener, into storage: RayonStorage) throws -> [String] {
+    /// Returns the keys of the copies 2.8 set aside that were imported, and
+    /// what came over.
+    private static func importRecords(
+        from defaults: UserDefaults, opener: Opener, into storage: RayonStorage
+    ) throws -> (copies: [String], imported: Imported) {
         /// A value that is there but cannot be read stops the import: the
         /// rest is not worth losing it for.
         func open<T: Decodable>(_ key: String, as _: T.Type) throws -> T? {
@@ -132,9 +147,14 @@ enum LegacyStoreImport {
         /// what the user had. One that opens now is imported after the
         /// value itself (whose records win); one that does not stays.
         var copies: [String] = []
+        var unreadableCopies: [String] = []
         func openCopy<T: Decodable>(_ key: String, as type: T.Type) -> T? {
             let copy = key + ".corrupt"
-            guard let value = try? open(copy, as: type) else { return nil }
+            guard defaults.object(forKey: copy) != nil else { return nil }
+            guard let value = try? open(copy, as: type) else {
+                unreadableCopies.append(key)
+                return nil
+            }
             copies.append(copy)
             return value
         }
@@ -181,7 +201,11 @@ enum LegacyStoreImport {
                 try handle.insertOrIgnore([host], intoTable: KnownHostRecord.tableName)
             }
         }
-        return copies
+        let imported = Imported(
+            servers: machines.count, identities: identities.count, snippets: snippets.count, forwards: forwards.count,
+            unreadableCopies: unreadableCopies
+        )
+        return (copies, imported)
     }
 
     /// A server named its folder; a name no folder records is a folder too.

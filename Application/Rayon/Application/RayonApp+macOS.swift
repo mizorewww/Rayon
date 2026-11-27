@@ -25,6 +25,9 @@
             MainView()
                 .onAppear {
                     if let problem = RayonStore.shared.launchProblem { Indicator.error(problem) }
+                    if let notice = RayonStore.shared.takeMigrationNotice() {
+                        Indicator.alert("Imported from the Previous Version", message: "\(notice)")
+                    }
                 }
         }
     }

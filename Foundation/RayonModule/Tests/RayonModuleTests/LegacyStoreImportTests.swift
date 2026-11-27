@@ -60,7 +60,12 @@ final class LegacyStoreImportTests: XCTestCase {
     @discardableResult
     private func runImport(masterKey: String? = nil, forget: @escaping () -> Void = {}) -> Bool {
         let key = masterKey ?? master
-        return LegacyStoreImport.runIfNeeded(into: storage, defaults: defaults, masterKey: { key }, forgetMasterKey: forget) == .imported
+        return imported(LegacyStoreImport.runIfNeeded(into: storage, defaults: defaults, masterKey: { key }, forgetMasterKey: forget)) != nil
+    }
+
+    private func imported(_ outcome: LegacyStoreImport.Outcome) -> LegacyStoreImport.Imported? {
+        guard case let .imported(imported) = outcome else { return nil }
+        return imported
     }
 
     func testImportsWhat24Wrote() throws {
@@ -145,7 +150,7 @@ final class LegacyStoreImportTests: XCTestCase {
         for (key, value) in try fixture("v2.8") {
             otherDefaults.set(value, forKey: key)
         }
-        XCTAssertEqual(LegacyStoreImport.runIfNeeded(into: other.storage, defaults: otherDefaults, masterKey: { self.master }, forgetMasterKey: {}), .imported)
+        XCTAssertNotNil(imported(LegacyStoreImport.runIfNeeded(into: other.storage, defaults: otherDefaults, masterKey: { self.master }, forgetMasterKey: {})))
 
         let folders = storage.records(RDFolder.self).sorted { $0.name < $1.name }
         XCTAssertEqual(folders, other.storage.records(RDFolder.self).sorted { $0.name < $1.name })
@@ -172,7 +177,7 @@ final class LegacyStoreImportTests: XCTestCase {
         for (key, value) in try fixture("v2.8") {
             lateDefaults.set(value, forKey: key)
         }
-        XCTAssertEqual(LegacyStoreImport.runIfNeeded(into: late.storage, defaults: lateDefaults, masterKey: { self.master }, forgetMasterKey: {}), .imported)
+        XCTAssertNotNil(imported(LegacyStoreImport.runIfNeeded(into: late.storage, defaults: lateDefaults, masterKey: { self.master }, forgetMasterKey: {})))
         let stale = try XCTUnwrap(late.storage.record(RDMachine.self, id: serverID))
 
         XCTAssertEqual(try storage.mergeRemote(stale), .keptLocal)
@@ -216,6 +221,31 @@ final class LegacyStoreImportTests: XCTestCase {
         XCTAssertNotNil(storage.record(RDIdentity.self, id: identityID))
         XCTAssertNil(defaults.object(forKey: LegacyStoreImport.Key.snippets + ".corrupt"))
         XCTAssertEqual(defaults.data(forKey: LegacyStoreImport.Key.identities + ".corrupt"), unreadable)
+    }
+
+    /// The first launch after the update says what came over, the copy
+    /// that could not be read among it; a fresh install says nothing.
+    func testTheImportSaysWhatItBroughtOver() throws {
+        try load("v2.8")
+        let unreadable = Data("RGCM2 not a sealed box".utf8)
+        defaults.set(unreadable, forKey: LegacyStoreImport.Key.identities + ".corrupt")
+        let result = try XCTUnwrap(imported(LegacyStoreImport.runIfNeeded(into: storage, defaults: defaults, masterKey: { self.master }, forgetMasterKey: {})))
+        XCTAssertEqual(result, .init(
+            servers: storage.records(RDMachine.self).count, identities: storage.records(RDIdentity.self).count,
+            snippets: storage.records(RDSnippet.self).count, forwards: storage.records(RDPortForward.self).count,
+            unreadableCopies: [LegacyStoreImport.Key.identities]
+        ))
+        XCTAssertGreaterThan(result.servers, 0)
+
+        let notice = try XCTUnwrap(LegacyStoreImport.notice(imported: result, settings: 3))
+        XCTAssertTrue(notice.contains("\(result.servers) servers"), notice)
+        XCTAssertTrue(notice.contains("3 settings."), notice)
+        XCTAssertTrue(notice.contains("damaged copy of the identities"), notice)
+        XCTAssertEqual(LegacyStoreImport.notice(imported: .init(), settings: 1)?.contains("1 setting."), true)
+
+        // The next launch, and a fresh install, bring nothing over.
+        XCTAssertEqual(LegacyStoreImport.runIfNeeded(into: storage, defaults: defaults, masterKey: { self.master }, forgetMasterKey: {}), .nothingToImport)
+        XCTAssertNil(LegacyStoreImport.notice(imported: nil, settings: 0))
     }
 
     func testTheWrongKeyImportsNothing() throws {
@@ -313,11 +343,11 @@ final class LegacyStoreImportTests: XCTestCase {
         XCTAssertEqual(LegacyStoreImport.readMasterKey(from: items), master)
 
         try load("v2.4")
-        XCTAssertEqual(LegacyStoreImport.runIfNeeded(
+        XCTAssertNotNil(imported(LegacyStoreImport.runIfNeeded(
             into: storage, defaults: defaults,
             masterKey: { LegacyStoreImport.readMasterKey(from: items) },
             forgetMasterKey: { LegacyStoreImport.removeMasterKey(items: items) }
-        ), .imported)
+        )))
         XCTAssertNil(LegacyStoreImport.readMasterKey(from: items), "forgotten once imported")
     }
 

@@ -12,18 +12,24 @@ import ConfigurableKit
 import Foundation
 
 public enum LegacySettingsImport {
-    public static func run(defaults: UserDefaults = .standard, storage: KeyValueStorage = ConfigurableKit.storage) {
+    /// Returns how many of 2.8's settings it moved: 0 once they have been.
+    @discardableResult
+    public static func run(defaults: UserDefaults = .standard, storage: KeyValueStorage = ConfigurableKit.storage) -> Int {
+        var moved = 0
         func move<Value>(_ old: String, to key: SettingKey<Value>, _ convert: (Any) -> Value?) {
             move(old, to: [key], convert)
         }
         func move<Value>(_ old: String, to keys: [SettingKey<Value>], _ convert: (Any) -> Value?) {
             let old = "me.mizorewww.rayon." + old
             guard let object = defaults.object(forKey: old) else { return }
+            var took = false
             for key in keys where storage.value(forKey: key.key) == nil {
                 if let value = convert(object) {
                     ConfigurableKit.set(value: value, forKey: key.key, storage: storage)
+                    took = true
                 }
             }
+            if took { moved += 1 }
             defaults.removeObject(forKey: old)
         }
         let bool = { (object: Any) in (object as? NSNumber)?.boolValue }
@@ -57,5 +63,6 @@ public enum LegacySettingsImport {
         move("sync.portForwards", to: AppSettings.syncsPortForwards, bool)
         // 2.8 had one switch for all settings; it now covers two.
         move("sync.settings", to: [AppSettings.syncsAppSettings, AppSettings.syncsTerminalSettings], bool)
+        return moved
     }
 }

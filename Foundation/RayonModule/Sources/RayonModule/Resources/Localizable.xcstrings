@@ -529,6 +529,40 @@
         }
       }
     },
+    "%lld settings." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 项设置。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 項設定。"
+          }
+        },
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld setting."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld settings."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "+86" : {
       "shouldTranslate" : false
     },
@@ -2786,6 +2820,22 @@
         }
       }
     },
+    "Not imported: a damaged copy of the %@ that the previous version set aside cannot be read. It is kept as it was." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未导入：旧版本另存的已损坏%@副本无法读取，已原样保留。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未匯入：舊版本另存的已損壞%@副本無法讀取，已原樣保留。"
+          }
+        }
+      }
+    },
     "Off" : {
       "localizations" : {
         "zh-Hans" : {
@@ -3230,6 +3280,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "畫質"
+          }
+        }
+      }
+    },
+    "Rayon brought over what its previous version kept:" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rayon 已导入旧版本保存的内容："
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rayon 已匯入舊版本儲存的內容："
           }
         }
       }
@@ -5796,6 +5862,54 @@
         }
       }
     },
+    "folders" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文件夹"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "資料夾"
+          }
+        }
+      }
+    },
+    "host keys" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "主机密钥"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "主機金鑰"
+          }
+        }
+      }
+    },
+    "identities" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "身份"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "身份"
+          }
+        }
+      }
+    },
     "it has no database" : {
       "localizations" : {
         "zh-Hans" : {
@@ -6068,6 +6182,38 @@
         }
       }
     },
+    "port forwards" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "端口转发"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "埠轉發"
+          }
+        }
+      }
+    },
+    "recent connections" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最近连接"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最近連線"
+          }
+        }
+      }
+    },
     "relay" : {
       "localizations" : {
         "zh-Hans" : {
@@ -6080,6 +6226,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "中繼"
+          }
+        }
+      }
+    },
+    "servers" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "伺服器"
+          }
+        }
+      }
+    },
+    "snippets" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "代码片段"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "程式碼片段"
           }
         }
       }

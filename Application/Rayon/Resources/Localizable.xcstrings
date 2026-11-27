@@ -5738,6 +5738,22 @@
         }
       }
     },
+    "Imported from the Previous Version" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已从旧版本导入"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已從舊版本匯入"
+          }
+        }
+      }
+    },
     "Imported settings." : {
       "localizations" : {
         "zh-Hans" : {

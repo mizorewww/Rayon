@@ -22,7 +22,7 @@ public final class RayonStore: ObservableObject {
     public static let shared: RayonStore = {
         // Before the store reads a setting (it trims the recent list to
         // the recent limit).
-        LegacySettingsImport.run()
+        let settings = LegacySettingsImport.run()
         let storage = RayonStorage.shared
         let store: RayonStore
         if storage.openProblem != nil {
@@ -33,7 +33,14 @@ public final class RayonStore: ObservableObject {
             let legacy = LegacyStoreImport.runIfNeeded(into: storage)
             storage.purgeTombstones()
             store = RayonStore(storage: storage)
-            if case let .blocked(reason) = legacy { store.importProblem = reason }
+            switch legacy {
+            case let .blocked(reason):
+                store.importProblem = reason
+            case let .imported(imported):
+                store.migrationNotice = LegacyStoreImport.notice(imported: imported, settings: settings)
+            case .nothingToImport:
+                store.migrationNotice = LegacyStoreImport.notice(imported: nil, settings: settings)
+            }
         }
         store.publishesWorkerSnapshot = true
         store.updateWorkerSnapshot()
@@ -51,6 +58,17 @@ public final class RayonStore: ObservableObject {
     }
 
     private var importProblem: String?
+
+    /// What the first launch after the previous release brought over, to
+    /// tell the user once.
+    private var migrationNotice: String?
+
+    /// The migration notice, the first time it is asked for; nil after, and
+    /// on any launch that brought nothing over.
+    public func takeMigrationNotice() -> String? {
+        defer { migrationNotice = nil }
+        return migrationNotice
+    }
 
     public nonisolated let storage: RayonStorage
 

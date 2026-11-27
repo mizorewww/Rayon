@@ -50,7 +50,8 @@ final class LegacySettingsImportTests: XCTestCase {
             defaults.set(value, forKey: "me.mizorewww.rayon." + key)
         }
 
-        LegacySettingsImport.run(defaults: defaults, storage: storage)
+        XCTAssertEqual(LegacySettingsImport.run(defaults: defaults, storage: storage), old.count)
+        XCTAssertEqual(LegacySettingsImport.run(defaults: defaults, storage: storage), 0, "once")
 
         XCTAssertEqual(value(AppSettings.appearance), .dark)
         XCTAssertEqual(value(AppSettings.animatesHome), false)
@@ -99,7 +100,7 @@ final class LegacySettingsImportTests: XCTestCase {
         ConfigurableKit.set(value: 9, forKey: AppSettings.connectionTimeout.key, storage: storage)
         defaults.set(30, forKey: "me.mizorewww.rayon.timeout")
 
-        LegacySettingsImport.run(defaults: defaults, storage: storage)
+        XCTAssertEqual(LegacySettingsImport.run(defaults: defaults, storage: storage), 0, "nothing moved")
 
         XCTAssertEqual(value(AppSettings.connectionTimeout), 9)
         XCTAssertNil(defaults.object(forKey: "me.mizorewww.rayon.timeout"))

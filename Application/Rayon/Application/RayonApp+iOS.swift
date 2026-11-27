@@ -40,6 +40,9 @@
                     if let problem = store.launchProblem {
                         Indicator.alert("\(problem)")
                     }
+                    if let notice = store.takeMigrationNotice() {
+                        Indicator.alert("Imported from the Previous Version", message: "\(notice)")
+                    }
                     #if DEBUG
                         runPreviewHooks()
                     #endif

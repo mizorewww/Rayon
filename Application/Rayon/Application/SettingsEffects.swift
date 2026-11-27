@@ -17,8 +17,6 @@ enum SettingsEffects {
 
     static func start() {
         guard subscriptions.isEmpty else { return }
-        // 2.8's settings, before the first is applied.
-        LegacySettingsImport.run()
         // At once, so the first window does not show the other appearance.
         AppSettings.appearance.value.apply()
         AppSettings.appearance.publisher
