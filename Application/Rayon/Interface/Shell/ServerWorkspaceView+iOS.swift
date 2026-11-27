@@ -26,41 +26,7 @@
         }
     }
 
-    /// The tools of a server's page.
-    enum ServerTool: CaseIterable, Identifiable {
-        case terminal
-        case files
-        case editor
-        case monitor
-        case desktop
-
-        var id: Self { self }
-
-        var title: String {
-            switch self {
-            case .terminal: "Terminal"
-            case .files: "Files"
-            case .editor: "Editor"
-            case .monitor: "Monitor"
-            case .desktop: "Desktop"
-            }
-        }
-
-        var systemImage: String {
-            switch self {
-            case .terminal: "terminal"
-            case .files: "folder"
-            case .editor: "square.and.pencil"
-            case .monitor: "gauge.with.dots.needle.33percent"
-            case .desktop: "display"
-            }
-        }
-
-        /// A "Desktop" on a server without one would only fail.
-        static func available(for machine: RDMachine) -> [ServerTool] {
-            allCases.filter { $0 != .desktop || machine.hasRemoteDesktop }
-        }
-
+    extension ServerTool {
         /// Opens this tool's session for the server, if it has none.
         @MainActor
         func open(_ machine: RDMachine.ID) {

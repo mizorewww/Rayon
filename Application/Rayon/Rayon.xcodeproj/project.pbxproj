@@ -95,6 +95,7 @@
 		E49C84E7C6517A21CDE81547 /* RayonApp+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EAAB20C299B02DDA17537E0 /* RayonApp+macOS.swift */; };
 		E4C3CDB570BD4945D7125016 /* AppRouter+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7109E63DD0F7034B6B1746DA /* AppRouter+macOS.swift */; };
 		E6094927BFDE83EB490D228A /* RayonCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = B24EC3D2BE3F2C512AF4CE33 /* RayonCommands.swift */; };
+		E8423E2105556F0B5DBC98D2 /* ServerTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = D05AE48DF1CC0C85A4421B70 /* ServerTool.swift */; };
 		EB69FC54AB1E3106B2011446 /* DeviceOwner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94CA35B5C9475DA7487AB2ED /* DeviceOwner.swift */; };
 		ED4DF613CEE5D14BCBFC5161 /* SettingsView+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54BE7E40D29FE857801EC1F /* SettingsView+macOS.swift */; };
 		F1F9247D4AC81E428C168D8B /* PageScaffold+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEB68BCA67DCAE0F20F5EA19 /* PageScaffold+macOS.swift */; };
@@ -188,6 +189,7 @@
 		C06FA8CD33BCACA3FE0634A5 /* RayonApp+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RayonApp+iOS.swift"; sourceTree = "<group>"; };
 		C271F9345D5AE7980B3BE9F8 /* MonitorView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MonitorView+iOS.swift"; sourceTree = "<group>"; };
 		C6006ADAF2B77180217E116A /* SymbolPicker */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SymbolPicker; path = ../../Foundation/SymbolPicker; sourceTree = SOURCE_ROOT; };
+		D05AE48DF1CC0C85A4421B70 /* ServerTool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerTool.swift; sourceTree = "<group>"; };
 		D39DB7FB8828DB64E12E7B66 /* ContentView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContentView+iOS.swift"; sourceTree = "<group>"; };
 		DEB68BCA67DCAE0F20F5EA19 /* PageScaffold+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PageScaffold+macOS.swift"; sourceTree = "<group>"; };
 		DF75232AABE500F80C3CC7AC /* SnippetEditorSheet+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SnippetEditorSheet+macOS.swift"; sourceTree = "<group>"; };
@@ -349,6 +351,7 @@
 				16D6756E0FEF16806ED6AFBC /* ServerEditorSheet+macOS.swift */,
 				E03C916E94043159FA948E16 /* ServersView+iOS.swift */,
 				599B6104F9D67675A1DD1762 /* ServersView+macOS.swift */,
+				D05AE48DF1CC0C85A4421B70 /* ServerTool.swift */,
 			);
 			path = Servers;
 			sourceTree = "<group>";
@@ -708,6 +711,7 @@
 				43F4835D822E245FDA2BE81B /* RemoteDesktopsView+macOS.swift in Sources */,
 				AD0A1CA8D7F3989094822923 /* ServerActions+macOS.swift in Sources */,
 				B2D2F0237653B9CAF362B38F /* ServerEditorSheet+macOS.swift in Sources */,
+				E8423E2105556F0B5DBC98D2 /* ServerTool.swift in Sources */,
 				23BF21BC95FFA9650D516E06 /* ServerWorkspaceView+iOS.swift in Sources */,
 				59633B558C86B6AEB646041A /* ServersView+iOS.swift in Sources */,
 				11F37129F22DCD299C26236F /* ServersView+macOS.swift in Sources */,
