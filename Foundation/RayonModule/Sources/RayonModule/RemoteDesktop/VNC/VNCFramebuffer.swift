@@ -35,6 +35,18 @@ final class VNCFramebuffer: Sendable {
     }
     func pixel(x: Int, y: Int) -> UInt32? { store.withLock { $0.pixel(x: x, y: y) } }
     func makePicture() -> RemoteDesktopPicture? { store.withLock { $0.makePicture() } }
+    /// Pixels the last picture copied, for tests.
+    var lastCopiedPixels: Int { store.withLock { $0.lastCopiedPixels } }
+}
+
+/// A pixel rectangle, its far edges exclusive.
+private struct VNCDirtyRect {
+    var x0, y0, x1, y1: Int
+
+    func union(_ other: VNCDirtyRect?) -> VNCDirtyRect {
+        guard let other else { return self }
+        return VNCDirtyRect(x0: min(x0, other.x0), y0: min(y0, other.y0), x1: max(x1, other.x1), y1: max(y1, other.y1))
+    }
 }
 
 /// The pixels and the pool their pictures come from, behind the
@@ -43,6 +55,24 @@ private struct VNCFramebufferStore {
     private var pixels: [UInt32] = []
     private(set) var width = 0
     private(set) var height = 0
+    /// What changed since the last picture.
+    private var dirty: VNCDirtyRect?
+    /// The last pictures' numbers and what each changed, newest last: a
+    /// surface the pool hands back is brought up to date from its own
+    /// number on, not copied whole.
+    private var history: [(generation: Int, changed: VNCDirtyRect?)] = []
+    private var generation = 0
+    private(set) var lastCopiedPixels = 0
+    /// The picture number a surface holds, as one of its values.
+    private static let generationKey = "me.mizorewww.rayon.vnc-generation"
+    private static let historyLength = 8
+
+    /// Marks a rectangle as changed, clipped to the buffer.
+    private mutating func touch(x: Int, y: Int, width w: Int, height h: Int) {
+        let rect = VNCDirtyRect(x0: max(0, x), y0: max(0, y), x1: min(width, x + w), y1: min(height, y + h))
+        guard rect.x1 > rect.x0, rect.y1 > rect.y0 else { return }
+        dirty = rect.union(dirty)
+    }
 
     /// Resizes the buffer; existing contents are discarded beyond the new
     /// edges and new pixels start transparent-black.
@@ -51,11 +81,15 @@ private struct VNCFramebufferStore {
         self.width = width
         self.height = height
         pixels = [UInt32](repeating: 0xFF00_0000, count: width * height)
+        // Every surface of the old size is stale.
+        history = []
+        dirty = VNCDirtyRect(x0: 0, y0: 0, x1: width, y1: height)
     }
 
     /// Writes one canonical pixel.
     mutating func put(x: Int, y: Int, pixel: UInt32) {
         guard x >= 0, y >= 0, x < width, y < height else { return }
+        touch(x: x, y: y, width: 1, height: 1)
         pixels[y * width + x] = pixel
     }
 
@@ -64,6 +98,7 @@ private struct VNCFramebufferStore {
         let x0 = max(0, x), y0 = max(0, y)
         let x1 = min(width, x + w), y1 = min(height, y + h)
         guard x1 > x0, y1 > y0 else { return }
+        touch(x: x0, y: y0, width: x1 - x0, height: y1 - y0)
         let spanCount = x1 - x0
         pixels.withUnsafeMutableBufferPointer { dst in
             guard let base = dst.baseAddress else { return }
@@ -76,6 +111,7 @@ private struct VNCFramebufferStore {
     /// Copies a rectangle inside the buffer (CopyRect), handling overlapping regions in-place.
     mutating func copy(fromX: Int, fromY: Int, toX: Int, toY: Int, width w: Int, height h: Int) {
         guard w > 0, h > 0 else { return }
+        touch(x: toX, y: toY, width: w, height: h)
         if fromX >= 0, fromY >= 0, toX >= 0, toY >= 0,
            fromX + w <= width, fromY + h <= height,
            toX + w <= width, toY + h <= height
@@ -125,6 +161,7 @@ private struct VNCFramebufferStore {
         guard w > 0, !line.isEmpty else { return }
         let total = line.count
         let rows = (total + w - 1) / w
+        touch(x: x, y: y, width: w, height: rows)
         pixels.withUnsafeMutableBufferPointer { dst in
             guard let dstBase = dst.baseAddress else { return }
             line.withUnsafeBufferPointer { src in
@@ -154,27 +191,48 @@ private struct VNCFramebufferStore {
     /// The pool the pictures come from, for the framebuffer's size.
     private var pool: CVPixelBufferPool?
 
-    /// The whole framebuffer as a picture: one copy onto a pooled IOSurface,
-    /// which then goes to the screen as it is. The copy is what lets the
-    /// decoders draw the next update while this one is shown.
+    /// The framebuffer as a picture on a pooled IOSurface, which then goes
+    /// to the screen as it is. The copy is what lets the decoders draw the
+    /// next update while this one is shown; a surface the pool hands back
+    /// again only takes what changed since it was last drawn.
     mutating func makePicture() -> RemoteDesktopPicture? {
         guard width > 0, height > 0 else { return nil }
         if pool.map({ Self.matches($0, width: width, height: height) }) != true {
             pool = Self.makePool(width: width, height: height)
+            history = []
         }
         var made: CVPixelBuffer?
         guard let pool, CVPixelBufferPoolCreatePixelBuffer(nil, pool, &made) == kCVReturnSuccess,
               let buffer = made, let surface = CVPixelBufferGetIOSurface(buffer)?.takeUnretainedValue()
         else { return nil }
+
+        generation += 1
+        history.append((generation, dirty))
+        if history.count > Self.historyLength { history.removeFirst(history.count - Self.historyLength) }
+        dirty = nil
+        let full = VNCDirtyRect(x0: 0, y0: 0, x1: width, y1: height)
+        let region: VNCDirtyRect?
+        if let held = (IOSurfaceCopyValue(surface, Self.generationKey as CFString) as? NSNumber)?.intValue,
+           let oldest = history.first?.generation, oldest <= held + 1 {
+            region = history.filter { $0.generation > held }.reduce(nil) { $1.changed?.union($0) ?? $0 }
+        } else {
+            region = full
+        }
+        IOSurfaceSetValue(surface, Self.generationKey as CFString, NSNumber(value: generation))
+        lastCopiedPixels = region.map { ($0.x1 - $0.x0) * ($0.y1 - $0.y0) } ?? 0
+        guard let region else { return RemoteDesktopPicture(surface: surface) }
+
         CVPixelBufferLockBaseAddress(buffer, [])
         defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
         guard let base = CVPixelBufferGetBaseAddress(buffer) else { return nil }
         let destinationRow = CVPixelBufferGetBytesPerRow(buffer)
         let sourceRow = width * MemoryLayout<UInt32>.stride
+        let offset = region.x0 * MemoryLayout<UInt32>.stride
+        let span = (region.x1 - region.x0) * MemoryLayout<UInt32>.stride
         pixels.withUnsafeBytes { source in
             guard let from = source.baseAddress else { return }
-            for row in 0 ..< height {
-                (base + row * destinationRow).copyMemory(from: from + row * sourceRow, byteCount: sourceRow)
+            for row in region.y0 ..< region.y1 {
+                (base + row * destinationRow + offset).copyMemory(from: from + row * sourceRow + offset, byteCount: span)
             }
         }
         return RemoteDesktopPicture(surface: surface)

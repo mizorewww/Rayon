@@ -301,6 +301,34 @@ final class VNCRFBTests: XCTestCase {
         XCTAssertFalse(next.surface === surface)
     }
 
+    /// A picture drawn on a surface the pool hands back again copies only
+    /// what changed since that surface last held the framebuffer, and
+    /// still shows every change.
+    func testAPictureCopiesOnlyWhatChangedSinceItsSurfaceWasDrawn() throws {
+        func pixel(_ picture: RemoteDesktopPicture, _ x: Int, _ y: Int) -> UInt32 {
+            let surface = picture.surface
+            surface.lock(options: .readOnly, seed: nil)
+            defer { surface.unlock(options: .readOnly, seed: nil) }
+            return surface.baseAddress.load(fromByteOffset: y * surface.bytesPerRow + x * 4, as: UInt32.self)
+        }
+        let framebuffer = VNCFramebuffer()
+        framebuffer.resize(width: 64, height: 64)
+        var first: RemoteDesktopPicture? = framebuffer.makePicture()
+        XCTAssertEqual(framebuffer.lastCopiedPixels, 64 * 64)
+        let firstSurface = first?.surface
+        framebuffer.put(x: 5, y: 5, pixel: 0xFF_11_11_11)
+        var second: RemoteDesktopPicture? = framebuffer.makePicture()
+        XCTAssertFalse(second?.surface === firstSurface, "the first is still held")
+        first = nil
+        second = nil
+        framebuffer.fill(x: 10, y: 20, width: 2, height: 3, pixel: 0xFF_22_22_22)
+        let third = try XCTUnwrap(framebuffer.makePicture())
+        XCTAssertLessThanOrEqual(framebuffer.lastCopiedPixels, 7 * 18, "only the changed area")
+        XCTAssertEqual(pixel(third, 5, 5), 0xFF_11_11_11)
+        XCTAssertEqual(pixel(third, 11, 22), 0xFF_22_22_22)
+        XCTAssertEqual(pixel(third, 40, 40), 0xFF00_0000)
+    }
+
     func testCopyRectDecode() async throws {
         let framebuffer = VNCFramebuffer()
         framebuffer.resize(width: 8, height: 8)
