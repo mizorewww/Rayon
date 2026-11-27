@@ -857,6 +857,44 @@ final class SSHLiveTests: XCTestCase {
         await connection.close()
     }
 
+    /// `ssh -L` and `ssh -D` clients that connect while the server is
+    /// frozen, then hang up, and forwards stopped before it thaws: the
+    /// channels opened for them are confirmed late and closed quietly, and
+    /// new forwards on the same connection work.
+    func testForwardsThroughAFrozenServer() async throws {
+        let connection = try await connect([.password(password)])
+        _ = try await connection.execute("true")
+        let localPort = try Self.freePort()
+        let socksPort = try Self.freePort()
+        let local = try await SSHForwardListener.local(port: localPort, targetHost: "127.0.0.1", targetPort: 9000)
+        let socks = try await SSHForwardListener.dynamic(port: socksPort)
+        let forwards = [local, socks].map { listener in Task { try await connection.runForward(listener) } }
+        let thaw = try freezeServer()
+
+        for _ in 0 ..< 3 {
+            let client = try await Self.dial(port: localPort)
+            try await client.executeThenClose { _, outbound in try await outbound.write(ByteBuffer(string: "lost")) }
+            let socksClient = try await Self.dial(port: socksPort)
+            try await socksClient.executeThenClose { _, outbound in
+                let host = Array("localhost".utf8)
+                try await outbound.write(ByteBuffer(bytes: [5, 1, 0, 5, 1, 0, 3, UInt8(host.count)] + host + [0x23, 0x28]))
+            }
+        }
+        try await Task.sleep(for: .milliseconds(500))
+        forwards.forEach { $0.cancel() }
+        for forward in forwards { _ = try? await forward.value }
+
+        thaw()
+        let result = try await connection.execute("echo thawed", timeout: .seconds(10))
+        XCTAssertEqual(String(decoding: result.output, as: UTF8.self), "thawed\n")
+        let listener = try await SSHForwardListener.local(port: localPort, targetHost: "127.0.0.1", targetPort: 9000)
+        let forward = Task { try await connection.runForward(listener) }
+        let (sent, echoed) = try await Self.echo(total: 64 * 1024, through: localPort, slowReader: false)
+        XCTAssertEqual(sent, echoed)
+        forward.cancel()
+        await connection.close()
+    }
+
     /// A service that hangs up first: this side's EOF after the server's
     /// closes the channel instead of breaking swift-nio-ssh's state.
     func testAServerThatHangsUpFirst() async throws {

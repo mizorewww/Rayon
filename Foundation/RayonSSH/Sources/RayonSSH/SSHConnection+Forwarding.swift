@@ -208,11 +208,18 @@ public extension SSHConnection {
 
     /// Runs `body` until it returns or the connection closes, whichever is first.
     private nonisolated func untilClosed(_ body: @escaping @Sendable () async throws -> Void) async throws {
-        let closed = closed
+        // Waiting on a future ignores cancellation, and the group waits for
+        // every task: a cancelled forward would wait for the connection.
+        let closed = channel.eventLoop.makePromise(of: Void.self)
+        self.closed.cascade(to: closed)
         try await withThrowingTaskGroup(of: Void.self) { group in
             group.addTask { try await body() }
             group.addTask {
-                try await closed.get()
+                try await withTaskCancellationHandler {
+                    try await closed.futureResult.get()
+                } onCancel: {
+                    closed.fail(CancellationError())
+                }
                 throw SSHError.disconnected
             }
             defer { group.cancelAll() }
