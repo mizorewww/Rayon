@@ -80,9 +80,8 @@ public final class RemoteDesktopCanvasView: UIView {
         static let usesTouchGestures = false
     #endif
 
-    /// Shows the picture as its layer's contents: a decoded frame's
-    /// IOSurface goes on screen without being converted.
-    private let frameView = UIView()
+    /// Shows the pictures: each IOSurface goes on screen as it is.
+    private let frameView = RemoteDesktopFrameView()
     private let cursorView = UIImageView()
     /// The pointer drawn here on a touch screen when the host draws none:
     /// a finger moving it like a trackpad must see where it is.
@@ -127,8 +126,6 @@ public final class RemoteDesktopCanvasView: UIView {
         backgroundColor = .black
         isUserInteractionEnabled = true
         isMultipleTouchEnabled = Self.usesTouchGestures
-        frameView.layer.contentsGravity = .resize // it is sized to the fit rect already
-        frameView.isUserInteractionEnabled = false
         cursorView.isUserInteractionEnabled = false
         cursorView.isHidden = true
         localPointerView.isUserInteractionEnabled = false
@@ -203,8 +200,8 @@ public final class RemoteDesktopCanvasView: UIView {
     }
 
     func applyFrame(_ picture: RemoteDesktopPicture?, framebufferSize: CGSize) {
-        let first = frameView.layer.contents == nil
-        if let picture { frameView.layer.contents = picture.surface }
+        let first = frameView.picture == nil
+        if let picture { frameView.show(picture) }
         // A frame of the same size draws where the last one was; the first
         // picture brings up the local pointer.
         guard framebufferSize != self.framebufferSize || frameView.frame.isEmpty || (first && picture != nil) else { return }
@@ -289,7 +286,7 @@ public final class RemoteDesktopCanvasView: UIView {
         frameView.frame = rect
         // Ours only on a touch screen, with a picture, and while the host
         // draws no pointer of its own.
-        let showsLocal = Self.usesTouchGestures && cursorView.isHidden && framebufferSize.width > 0 && frameView.layer.contents != nil
+        let showsLocal = Self.usesTouchGestures && cursorView.isHidden && framebufferSize.width > 0 && frameView.picture != nil
         if localPointerView.isHidden == showsLocal {
             localPointerView.isHidden = !showsLocal
             #if os(iOS) && !targetEnvironment(macCatalyst)
@@ -748,9 +745,8 @@ public struct RemoteDesktopCanvas: NSViewRepresentable {
 public final class RemoteDesktopCanvasNSView: NSView {
     public var session: RemoteDesktopSession?
 
-    /// Shows the picture as its layer's contents: a decoded frame's
-    /// IOSurface goes on screen without being converted.
-    private let frameView = NSView()
+    /// Shows the pictures: each IOSurface goes on screen as it is.
+    private let frameView = RemoteDesktopFrameView()
     private let cursorView = NSImageView()
     private var framebufferSize: CGSize = .zero
     private var cursorPosition = CGPoint.zero
@@ -763,10 +759,6 @@ public final class RemoteDesktopCanvasNSView: NSView {
         super.init(frame: frameRect)
         wantsLayer = true
         layer?.backgroundColor = NSColor.black.cgColor
-        frameView.wantsLayer = true
-        // Nothing draws into it: AppKit must leave the contents alone.
-        frameView.layerContentsRedrawPolicy = .never
-        frameView.layer?.contentsGravity = .resize
         addSubview(frameView)
         cursorView.isHidden = true
         addSubview(cursorView)
@@ -800,7 +792,7 @@ public final class RemoteDesktopCanvasNSView: NSView {
     }
 
     func applyFrame(_ picture: RemoteDesktopPicture?, framebufferSize: CGSize) {
-        if let picture { frameView.layer?.contents = picture.surface }
+        if let picture { frameView.show(picture) }
         guard framebufferSize != self.framebufferSize else { return }
         self.framebufferSize = framebufferSize
         needsLayout = true
