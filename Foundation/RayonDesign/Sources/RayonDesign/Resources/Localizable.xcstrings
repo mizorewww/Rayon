@@ -188,22 +188,6 @@
           }
         }
       }
-    },
-    "Working…" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "正在处理…"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "正在處理…"
-          }
-        }
-      }
     }
   },
   "version" : "1.0"

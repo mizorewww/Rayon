@@ -150,11 +150,6 @@ public final class RayonStore: ObservableObject {
     @Published public var licenseAgreed: Bool {
         didSet { UserDefaults.standard.set(licenseAgreed, forKey: Self.licenseAgreedKey) }
     }
-
-    @Published public var globalProgressInPresent: Bool = false
-    public var globalProgressCount: Int = 0 {
-        didSet { globalProgressInPresent = globalProgressCount != 0 }
-    }
 }
 
 // MARK: - Lookups

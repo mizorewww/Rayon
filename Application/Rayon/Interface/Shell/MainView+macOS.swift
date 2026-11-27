@@ -9,7 +9,6 @@
     import SwiftUI
 
     struct MainView: View {
-        @EnvironmentObject var store: RayonStore
         @ObservedObject var router = AppRouter.shared
 
         @State private var openLicenseAgreement = false
@@ -43,13 +42,6 @@
             }
             .frame(minWidth: 940, minHeight: 600)
             .modifier(HiddenWindowTitle())
-            .overlay {
-                if store.globalProgressInPresent {
-                    ProgressHUD()
-                        .transition(.opacity)
-                }
-            }
-            .animation(.easeOut(duration: 0.2), value: store.globalProgressInPresent)
             .background(WindowReader(anchor: anchor))
             .sheet(item: Binding(
                 get: { router.sheet(in: anchor.window) },
@@ -62,7 +54,7 @@
                 AgreementSheet()
             }
             .onAppear {
-                if !store.licenseAgreed { openLicenseAgreement = true }
+                if !RayonStore.shared.licenseAgreed { openLicenseAgreement = true }
             }
         }
 

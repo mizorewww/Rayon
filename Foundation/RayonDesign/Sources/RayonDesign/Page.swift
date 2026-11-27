@@ -218,33 +218,6 @@ public struct SheetScaffold<Content: View, Footer: View>: View {
 
 // MARK: - Progress
 
-/// Blocking "Operation in progress" HUD over a `scrim`.
-public struct ProgressHUD: View {
-    let text: LocalizedStringResource?
-
-    public init(_ text: LocalizedStringResource? = nil) {
-        self.text = text
-    }
-
-    public var body: some View {
-        ZStack {
-            Color.rxScrim.ignoresSafeArea()
-            VStack(spacing: RX.Space.s3) {
-                ProgressView()
-                    .rxSpinner()
-                Text(text ?? .init("Working…", bundle: .module))
-                    .font(.rxBody)
-                    .foregroundStyle(.rxInk)
-            }
-            .padding(.horizontal, RX.Space.s6)
-            .padding(.vertical, RX.Space.s5)
-            .frame(minWidth: 200)
-            .background(RXCardBackground())
-        }
-        .accessibilityElement(children: .combine)
-    }
-}
-
 /// A running transfer: file and direction, done/total, speed, a 4pt bar and Cancel.
 public struct ProgressRowView: View {
     let title: String
