@@ -13,9 +13,9 @@
         @ObservedObject var router = AppRouter.shared
 
         @State private var openLicenseAgreement = false
-        /// This window's number: the shared router's sheet shows only in
+        /// This view's window: each of the router's sheets shows only in
         /// the window that asked for it.
-        @State private var window: Int?
+        @StateObject private var anchor = WindowAnchor()
 
         var body: some View {
             NavigationSplitView(columnVisibility: $router.columnVisibility) {
@@ -52,16 +52,13 @@
                 }
             }
             .animation(.easeOut(duration: 0.2), value: store.globalProgressInPresent)
-            .background(WindowNumberReader(number: $window))
+            .background(WindowReader(anchor: anchor))
             .sheet(item: Binding(
-                get: { router.sheet.flatMap { $0.window == nil || $0.window == window ? $0 : nil } },
-                set: { if $0 == nil { router.sheet = nil } }
+                get: { router.sheet(in: anchor.window) },
+                set: { if $0 == nil, let shown = router.sheet(in: anchor.window) { router.dismissSheet(shown.id) } }
             )) { sheet in
-                sheet.content {
-                    // A sheet that replaced this one stays up.
-                    if router.sheet?.id == sheet.id { router.sheet = nil }
-                }
-                .environmentObject(RayonStore.shared)
+                sheet.content { router.dismissSheet(sheet.id) }
+                    .environmentObject(RayonStore.shared)
             }
             .sheet(isPresented: $openLicenseAgreement) {
                 AgreementSheet()
@@ -146,21 +143,29 @@
         }
     }
 
-    /// Reads the number of the window a view is in.
-    private struct WindowNumberReader: NSViewRepresentable {
-        @Binding var number: Int?
+    /// The window a view is in, published after AppKit has inserted the view.
+    @MainActor
+    private final class WindowAnchor: ObservableObject {
+        // Weak: the window holds this view, and so this anchor.
+        weak var window: NSWindow? {
+            willSet { objectWillChange.send() }
+        }
+    }
+
+    private struct WindowReader: NSViewRepresentable {
+        let anchor: WindowAnchor
 
         func makeNSView(context _: Context) -> Probe {
-            Probe(number: $number)
+            Probe(anchor: anchor)
         }
 
         func updateNSView(_: Probe, context _: Context) {}
 
         final class Probe: NSView {
-            let number: Binding<Int?>
+            let anchor: WindowAnchor
 
-            init(number: Binding<Int?>) {
-                self.number = number
+            init(anchor: WindowAnchor) {
+                self.anchor = anchor
                 super.init(frame: .zero)
             }
 
@@ -169,7 +174,8 @@
 
             override func viewDidMoveToWindow() {
                 super.viewDidMoveToWindow()
-                number.wrappedValue = window?.windowNumber
+                // Not during the insertion, which can run inside a SwiftUI update.
+                Task { @MainActor [anchor, window] in anchor.window = window }
             }
         }
     }

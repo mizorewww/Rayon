@@ -53,10 +53,9 @@
         /// The last page that is not a session; closing a session returns here.
         private(set) var lastPlace: Route = .home
         @Published var columnVisibility: NavigationSplitViewVisibility = .all
-        /// The sheet over the main window, asked for from anywhere: a menu,
-        /// a context menu, a command. Asking for another while one is up
-        /// replaces it.
-        @Published var sheet: WindowSheet?
+        /// The sheets over the main windows, at most one per window, asked
+        /// for from anywhere: a menu, a context menu, a command.
+        @Published private(set) var sheets: [WindowSheet] = []
         /// Settings category to show when Settings opens.
         /// Settings follows this itself, so a change of category does not go
         /// through every view that watches the router.
@@ -380,10 +379,32 @@
         }
 
         /// Shows `content` as a sheet on the main window in front (the one
-        /// a sheet or menu was used in); `dismiss` closes it.
+        /// a sheet or menu was used in); `dismiss` closes it. While that
+        /// window shows a sheet, the request is refused: replacing the sheet
+        /// would throw away what is typed in it.
         func present<Content: View>(@ViewBuilder _ content: @escaping (_ dismiss: @escaping () -> Void) -> Content) {
-            let window = NSApp.mainWindow ?? MainWindow.ordinaryWindows.first(where: \.isVisible)
-            sheet = WindowSheet(window: window?.windowNumber) { AnyView(content($0)) }
+            let window = (NSApp.mainWindow ?? MainWindow.ordinaryWindows.first(where: \.isVisible))?.windowNumber
+            sheets.removeAll { sheet in
+                sheet.window.map { NSApp.window(withWindowNumber: $0) == nil } ?? false
+            }
+            if let shown = sheets.first(where: { $0.window == nil || $0.window == window }) {
+                if let number = shown.window { NSApp.window(withWindowNumber: number)?.makeKeyAndOrderFront(nil) }
+                NSSound.beep()
+                return
+            }
+            sheets.append(WindowSheet(window: window) { AnyView(content($0)) })
+        }
+
+        /// The sheet `window` shows, if any.
+        func sheet(in window: NSWindow?) -> WindowSheet? {
+            sheets.first { sheet in
+                guard let number = sheet.window else { return true }
+                return number == window?.windowNumber
+            }
+        }
+
+        func dismissSheet(_ id: WindowSheet.ID) {
+            sheets.removeAll { $0.id == id }
         }
 
         func openSettings(_ category: String = SettingsCategory.general) {
