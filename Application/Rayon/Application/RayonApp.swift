@@ -52,6 +52,11 @@ struct RayonCommands: Commands {
     @ObservedObject private var desktops = RemoteDesktopManager.shared
 
     var body: some Commands {
+        if UpdateManager.shared.canCheckForUpdates {
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates…") { Task { await checkForUpdates() } }
+            }
+        }
         CommandGroup(replacing: .appSettings) {
             Button("Settings…") { AppRouter.shared.openSettings() }
                 .keyboardShortcut(",", modifiers: .command)
@@ -98,6 +103,26 @@ struct RayonCommands: Commands {
                 }
             }
             Divider()
+        }
+    }
+
+    @MainActor private func checkForUpdates() async {
+        let manager = UpdateManager.shared
+        do {
+            guard let package = try await manager.availableUpdate() else {
+                UIBridge.alert(message: "Rayon is up to date", informative: "Version \(manager.currentVersion) is the latest release.")
+                return
+            }
+            UIBridge.alert(
+                message: "Rayon \(package.version) is available",
+                informative: "You are running version \(manager.currentVersion).",
+                buttons: ["Download", "Later"]
+            ) { index, _ in
+                if index == 0 { UIBridge.open(url: package.downloadURL) }
+            }
+        } catch {
+            Logger.app.errorFile("update check failed: \(error.localizedDescription)")
+            UIBridge.alert(message: "Unable to check for updates", informative: error.localizedDescription)
         }
     }
 
