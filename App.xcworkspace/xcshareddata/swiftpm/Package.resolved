@@ -81,24 +81,6 @@
       }
     },
     {
-      "identity" : "colorfulx",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Lakr233/ColorfulX",
-      "state" : {
-        "revision" : "025be056e59a62d06c6867ad65a7cb03fc63baf1",
-        "version" : "6.2.1"
-      }
-    },
-    {
-      "identity" : "colorvector",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Lakr233/ColorVector.git",
-      "state" : {
-        "revision" : "6dc3839b6060b835aed8dc82d2d620cc3b4ebe33",
-        "version" : "2.0.0"
-      }
-    },
-    {
       "identity" : "configurablekit",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/ConfigurableKit",
@@ -159,15 +141,6 @@
       "state" : {
         "revision" : "e8a045f91757b32bb29c6feff1644ef79c8daedf",
         "version" : "1.6.5"
-      }
-    },
-    {
-      "identity" : "springinterpolation",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Lakr233/SpringInterpolation.git",
-      "state" : {
-        "revision" : "c98d56c895abc41b3f78097dae7ab6dfb015e147",
-        "version" : "3.0.1"
       }
     },
     {

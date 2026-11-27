@@ -114,7 +114,6 @@
 		EBFC3098962D37AC8E997F98 /* EULA in Resources */ = {isa = PBXBuildFile; fileRef = DA860A20B96E130A67B41F4B /* EULA */; };
 		EBFD30BF7EC88F60BA18B87A /* Pasteboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46910F2B6D3EE880A8F2A142 /* Pasteboard.swift */; };
 		F1F9247D4AC81E428C168D8B /* PageScaffold+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEB68BCA67DCAE0F20F5EA19 /* PageScaffold+macOS.swift */; };
-		F7167E2C34F15D359E10A931 /* ColorfulX in Frameworks */ = {isa = PBXBuildFile; productRef = 127779DD98D4B80E064918CB /* ColorfulX */; };
 		F98D576A6F79A246C851A6E3 /* SymbolPicker in Frameworks */ = {isa = PBXBuildFile; productRef = 679D5A8D992D398335F44C83 /* SymbolPicker */; };
 		FA024B8E85B605035B85E019 /* EditIdentityView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8BC83D8881657A297C46C79 /* EditIdentityView+iOS.swift */; };
 		FD2C5E820251AAB79A955F40 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 4E43E5CF37DB308FCBC06E53 /* PrivacyInfo.xcprivacy */; };
@@ -245,7 +244,6 @@
 				01B3BB8C084B19623AA6156B /* MachineStatusView in Frameworks */,
 				F98D576A6F79A246C851A6E3 /* SymbolPicker in Frameworks */,
 				A7900A3F89BA4CDA1B30693C /* AlertController in Frameworks */,
-				F7167E2C34F15D359E10A931 /* ColorfulX in Frameworks */,
 				72366AC02B20085EBB6480EC /* SPIndicator in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -603,7 +601,6 @@
 				BACEAFD2486E184D130E727E /* MachineStatusView */,
 				679D5A8D992D398335F44C83 /* SymbolPicker */,
 				FC99819CF2817E656542200D /* AlertController */,
-				127779DD98D4B80E064918CB /* ColorfulX */,
 				46DB13677D651D54DE9A7A99 /* SPIndicator */,
 			);
 			productName = Rayon;
@@ -636,7 +633,6 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				60C6870EC5BE1DB901360632 /* XCRemoteSwiftPackageReference "AlertController" */,
-				CD97C59ADEA9061B1CD7B473 /* XCRemoteSwiftPackageReference "ColorfulX" */,
 				F3D09B64EDC4128D697CC336 /* XCRemoteSwiftPackageReference "SPIndicator" */,
 				F8344144E9BAF2DC745D47FD /* XCRemoteSwiftPackageReference "SymbolPicker" */,
 				61FAF13AFABC6423128F2B60 /* XCLocalSwiftPackageReference "../../Foundation/MachineStatus" */,
@@ -1056,14 +1052,6 @@
 				minimumVersion = 3.0.0;
 			};
 		};
-		CD97C59ADEA9061B1CD7B473 /* XCRemoteSwiftPackageReference "ColorfulX" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/Lakr233/ColorfulX";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 6.2.1;
-			};
-		};
 		F3D09B64EDC4128D697CC336 /* XCRemoteSwiftPackageReference "SPIndicator" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ivanvorobei/SPIndicator";
@@ -1086,11 +1074,6 @@
 		08929048713DE59C22E8E2D1 /* RayonTerminal */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = RayonTerminal;
-		};
-		127779DD98D4B80E064918CB /* ColorfulX */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CD97C59ADEA9061B1CD7B473 /* XCRemoteSwiftPackageReference "ColorfulX" */;
-			productName = ColorfulX;
 		};
 		1F9D3E0CB0D3A8B5CC89EBFE /* RayonEditor */ = {
 			isa = XCSwiftPackageProductDependency;
