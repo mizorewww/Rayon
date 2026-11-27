@@ -5,9 +5,9 @@
 //  A record as a CloudKit record, after FlowDown's sync: record type = the
 //  table, record name = "<id>:<table>". The record (without its secrets)
 //  is JSON in an encrypted field, and the secrets are in an encrypted field
-//  of their own. Nothing goes in a CKAsset: an asset is not encrypted. The CloudKit
-//  system fields kept from the last exchange make a save an update, not a
-//  conflict.
+//  of their own. Nothing goes in a CKAsset: an asset is not encrypted, so a
+//  record too large for one CloudKit record is not sent. The CloudKit system
+//  fields kept from the last exchange make a save an update, not a conflict.
 //
 
 import CloudKit
@@ -18,7 +18,6 @@ enum CloudRecordCoding {
 
     enum Field {
         static let record = "record"
-        static let recordAsset = "recordAsset"
         static let secrets = "secrets"
         static let modified = "modified"
     }
@@ -70,8 +69,6 @@ enum CloudRecordCoding {
         let data = try encoder.encode(plain)
         guard data.count <= inlineLimit else { throw TooLarge() }
         ck.encryptedValues[Field.record] = data
-        // Earlier builds put large records in an asset, unencrypted.
-        ck[Field.recordAsset] = nil
         if T.Secrets.self != NoSecrets.self {
             ck.encryptedValues[Field.secrets] = try encoder.encode(record.secrets)
         }
@@ -88,14 +85,7 @@ enum CloudRecordCoding {
     }
 
     private static func decode<T: StoredRecord>(_ ck: CKRecord, as _: T.Type) throws -> T {
-        let data: Data
-        if let inline = ck.encryptedValues[Field.record] as? Data {
-            data = inline
-        } else if let asset = ck[Field.recordAsset] as? CKAsset, let url = asset.fileURL {
-            data = try Data(contentsOf: url)
-        } else {
-            throw CocoaError(.coderValueNotFound)
-        }
+        guard let data = ck.encryptedValues[Field.record] as? Data else { throw CocoaError(.coderValueNotFound) }
         var record = try decoder.decode(T.self, from: data)
         if T.Secrets.self != NoSecrets.self, let secrets = ck.encryptedValues[Field.secrets] as? Data {
             record.secrets = try decoder.decode(T.Secrets.self, from: secrets)

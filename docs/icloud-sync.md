@@ -51,6 +51,16 @@ field:
    schema; records are not copied.
 
 Schema deploys only add: a type or field once in Production stays there.
+So before the first deploy, check that Development holds only those fields
+(**Reset Development Environment** clears it): unreleased builds also wrote a
+`recordAsset` field, which nothing reads now.
+
+## Record size
+
+A record's JSON and its secrets are stored inline in `encryptedValues`.
+Nothing goes in a `CKAsset`, which CloudKit does not encrypt end to end, so a
+record larger than about 768 KB (a CloudKit record holds about 1 MB) is not
+sent; the log says so, and it stays on the device.
 
 ## Signing
 

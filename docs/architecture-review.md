@@ -71,7 +71,7 @@ UU 远程（当前位于 `Foundation/RayonModule/Sources/RayonModule/RemoteDeskt
 
 整体删除 `Foundation/RayonModule/Sources/RayonModule/Sync/` 下近两千行的手搓同步引擎，直接迁入 FlowDown 验证成熟的 **`CKSyncEngine`** 同步架构：
 
-- **记录级增量同步**：基于 CloudKit 自定义 Zone、`UploadQueue` 与 `SyncMetadata`（持久化系统字段与 ETag）按单条记录增量上下行，超过阈值的大字段自动走 `CKAsset`，彻底告别 `NSUbiquitousKeyValueStore` 1MB 总配额上限与整包覆盖丢更新问题。
+- **记录级增量同步**：基于 CloudKit 自定义 Zone、`UploadQueue` 与 `SyncMetadata`（持久化系统字段与 ETag）按单条记录增量上下行。记录 JSON 与密钥都以 `encryptedValues` 内联保存（`CKAsset` 不做端到端加密，故不使用）；超过单条 CloudKit 记录上限（约 768 KB 内联阈值）的记录拒绝上传并记录日志，彻底告别 `NSUbiquitousKeyValueStore` 1MB 总配额上限与整包覆盖丢更新问题。
 - **原生免口令端到端加密**：直接使用 CloudKit `encryptedValues`（底层由系统托管于 iCloud Keychain 实现端到端加密），删除全部自定义信封（`SyncEnvelope`）、60 万轮 PBKDF2 口令派生、30 秒钥匙串轮询以及全套同步口令弹窗 UI（`PassphraseSheet`），交互简化为“一键开启 iCloud 同步 + 同步范围开关（Sync Scope）”。
 - **隔离设备形态相关偏好**：停止在手机与桌面端之间同步终端字号、窗口内边距等强绑定屏幕尺寸的本地显示参数。
 
@@ -122,7 +122,7 @@ UU 远程（当前位于 `Foundation/RayonModule/Sources/RayonModule/RemoteDeskt
 | **Rayon 存储层** | `RayonStore` `UserDefaults` 加密 Plist、`DeferredStoreWrites`、`WorkerState`、`RDGroup` | `WCDBSwift` (`Lakr233/wcdb.xcframework`) + `BetterCodable` + `OrderedCollections` | FlowDown `Frameworks/Storage` |
 | **Rayon 凭据与加密** | `AES.swift`（含三代格式与硬件序列号密钥）、`Foundation/Keychain`、`SyncKeychain` | 系统 `Security` (`kSecUseDataProtectionKeychain`) + 原生 `CryptoKit` | Apple 原生框架 |
 | **Rayon 备份归档** | 双端重复且默认明文导出私钥的 `BackupArchive` JSON | `ZIPFoundation` + 原子数据库导出/预迁移校验 + `SettingsBackup` | FlowDown `Storage+Export` |
-| **Rayon 云端同步** | `Sync/*`（KVS 1MB 单键整包、自定义信封、PBKDF2 口令、30s 轮询） | `CKSyncEngine` + `CKRecord.encryptedValues` + `CKAsset` | FlowDown `Storage/Sync` |
+| **Rayon 云端同步** | `Sync/*`（KVS 1MB 单键整包、自定义信封、PBKDF2 口令、30s 轮询） | `CKSyncEngine` + `CKRecord.encryptedValues`（内联加密，带大小上限；不用 `CKAsset`） | FlowDown `Storage/Sync` |
 | **Rayon 设置管理** | 4 套 `UserDefaults` 混写 + 双端手写设置页 + `GhosttyConfigurationView` 劫持 | `ConfigurableKit` (`Lakr233/ConfigurableKit`) | FlowDown `Value+*.swift` & `SettingController` |
 | **Rayon 代码编辑器** | macOS 手写 `LineNumberRulerView` + 主线程全文 4 遍正则 `MacSyntaxHighlighter` | `Lakr233/Runestone.xcframework`（或 AppKit 下 `STTextView` / `CodeEditSourceEditor`） | FlowDown `CodeEditorController` |
 | **Rayon 弹窗与通知** | 双端 `UIBridge`、`DoubleConfirm`、`0.1s` 轮询 `PresentationQueue`、40 字截断 Toast | `Lakr233/AlertController` + `Lakr233/UIEffectKit` + `SPIndicator` | FlowDown `Indicator.swift` |

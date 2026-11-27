@@ -59,12 +59,6 @@ public actor CloudSync {
         storage.databaseURL.deletingLastPathComponent().appendingPathComponent("sync-scopes.json")
     }
 
-    /// Where earlier builds left the files of large records sent as
-    /// assets; removed at start.
-    private var assetDirectory: URL {
-        storage.databaseURL.deletingLastPathComponent().appendingPathComponent("SyncAssets", isDirectory: true)
-    }
-
     /// Whether this build may use CloudKit: without the entitlement,
     /// touching a container ends the app.
     public nonisolated static var isAvailable: Bool {
@@ -140,7 +134,6 @@ public actor CloudSync {
     }
 
     private func start() {
-        try? FileManager.default.removeItem(at: assetDirectory)
         var configuration = CKSyncEngine.Configuration(
             database: CKContainer(identifier: Self.containerIdentifier).privateCloudDatabase,
             stateSerialization: loadState(),

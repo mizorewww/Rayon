@@ -51,32 +51,18 @@ final class CloudSyncMappingTests: XCTestCase {
         XCTAssertEqual(sent.lastBanner, "")
     }
 
-    /// A large record is still encrypted, never in an asset; one too large
-    /// for a CloudKit record is not sent. A record an earlier build sent in
-    /// an asset is still read, and the asset dropped when it is sent again.
+    /// A large record is still encrypted inline; one too large for a
+    /// CloudKit record is not sent.
     func testLargeRecordsStayEncrypted() throws {
         var snippet = RDSnippet(name: "big", group: "", code: String(repeating: "x", count: 64 * 1024), comment: "")
         snippet.modified = Date(timeIntervalSince1970: 1_700_000_000)
         let ck = try CloudRecordCoding.ckRecord(for: snippet, systemFields: nil)
         XCTAssertNotNil(ck.encryptedValues[CloudRecordCoding.Field.record])
-        XCTAssertNil(ck[CloudRecordCoding.Field.recordAsset])
         XCTAssertEqual(try CloudRecordCoding.decode(ck) as? RDSnippet, snippet)
 
         var huge = snippet
         huge.code = String(repeating: "x", count: 1024 * 1024)
         XCTAssertThrowsError(try CloudRecordCoding.ckRecord(for: huge, systemFields: nil))
-
-        let file = test.directory.appendingPathComponent("asset")
-        var older = snippet
-        older.name = "old"
-        let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .millisecondsSince1970
-        try encoder.encode(older).write(to: file)
-        let old = CKRecord(recordType: RDSnippet.tableName, recordID: ck.recordID)
-        old[CloudRecordCoding.Field.recordAsset] = CKAsset(fileURL: file)
-        XCTAssertEqual((try CloudRecordCoding.decode(old) as? RDSnippet)?.name, "old")
-        let resent = try CloudRecordCoding.ckRecord(for: snippet, systemFields: CloudRecordCoding.encode(systemFields: old))
-        XCTAssertNil(resent[CloudRecordCoding.Field.recordAsset])
     }
 
     func testSystemFieldsAreReused() throws {
