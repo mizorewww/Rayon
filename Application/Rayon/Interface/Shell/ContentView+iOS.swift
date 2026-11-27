@@ -55,9 +55,13 @@
         var sessionCount: Int { SessionDirectory.owners.count }
 
         /// Home; in Debug, `RAYON_PREVIEW_TAB=dashboard|servers|sessions|more`
-        /// opens that tab, for screenshots without input.
+        /// opens that tab (`RAYON_PREVIEW_SETTINGS` opens More), for
+        /// screenshots without input.
         static var initialTab: AppTab {
             #if DEBUG
+                if ProcessInfo.processInfo.environment["RAYON_PREVIEW_SETTINGS"] != nil {
+                    return .more
+                }
                 switch ProcessInfo.processInfo.environment["RAYON_PREVIEW_TAB"] {
                 case "dashboard": return .dashboard
                 case "servers": return .servers
@@ -260,6 +264,9 @@
     struct MoreView: View {
         @EnvironmentObject var store: RayonStore
         @State private var openUUAccount = false
+        #if DEBUG
+            @State private var previewSettings = ProcessInfo.processInfo.environment["RAYON_PREVIEW_SETTINGS"] != nil
+        #endif
 
         var body: some View {
             List {
@@ -297,10 +304,13 @@
                 }
             }
             .rxGroupedList()
-            .navigationTitle("More")
-            .sheet(isPresented: $openUUAccount) {
-                UURemoteAccountSheet()
-            }
+            #if DEBUG
+                .navigationDestination(isPresented: $previewSettings) { SettingsView() }
+            #endif
+                .navigationTitle("More")
+                .sheet(isPresented: $openUUAccount) {
+                    UURemoteAccountSheet()
+                }
         }
 
         func moreRow(_ title: String, _ icon: String, count: Int? = nil) -> some View {

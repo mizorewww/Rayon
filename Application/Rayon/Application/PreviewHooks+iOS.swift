@@ -5,7 +5,7 @@
 //  Debug builds read RAYON_PREVIEW_* from the environment at launch and
 //  open the tab, sample data or tool they name, for screenshots without
 //  input. RAYON_PREVIEW_TAB is read by TabsView, RAYON_PREVIEW_EDITOR by
-//  RootView.
+//  RootView, RAYON_PREVIEW_SETTINGS=<page> by MoreView and SettingsView.
 //
 
 #if os(iOS) && DEBUG
@@ -17,6 +17,9 @@
             seedPreviewServers()
             seedPreviewVNC()
             openPreviewTool()
+            if ProcessInfo.processInfo.environment["RAYON_PREVIEW_SETTINGS"] != nil {
+                SessionNavigation.shared.selection = .settings
+            }
         }
 
         /// `RAYON_PREVIEW_SEED=1` adds sample UU Remote devices, enough

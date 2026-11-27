@@ -35,6 +35,11 @@ struct SettingsView: View {
                     if let text = ProcessInfo.processInfo.environment["RAYON_PREVIEW_SEARCH"] {
                         search = text
                     }
+                    #if os(iOS)
+                        if let id = ProcessInfo.processInfo.environment["RAYON_PREVIEW_SETTINGS"], shown == nil {
+                            shown = SettingsPage(id: id)
+                        }
+                    #endif
                 #endif
             }
     }
