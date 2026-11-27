@@ -935,7 +935,7 @@ public final class RemoteDesktopCanvasNSView: NSView {
             if isDown { session.typeText(characters) }
             return
         }
-        let keySym = VNCKeySyms.keySym(forKeyCode: event.keyCode, characters: characters)
+        let keySym = VNCKeySyms.keySym(forKeyCode: event.keyCode, characters: event.charactersIgnoringModifiers ?? "")
         session.keyPressed(keyCode: event.keyCode, keySym: keySym, characters: characters, isDown: isDown)
     }
 

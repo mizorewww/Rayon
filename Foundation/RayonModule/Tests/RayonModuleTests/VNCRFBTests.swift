@@ -617,6 +617,18 @@ final class VNCRFBTests: XCTestCase {
         XCTAssertEqual(VNCKeySyms.keySym(forKeyCode: 0, characters: "a"), 0x61)
     }
 
+    /// What a key reports when it types nothing names no key: a Ctrl
+    /// combo's control character, UIKit's names for special keys and
+    /// AppKit's function-key scalars.
+    func testKeySymsIgnoreTextThatIsNoCharacter() {
+        XCTAssertNil(VNCKeySyms.keySym(forCharacter: "\u{3}")) // Ctrl+C
+        XCTAssertNil(VNCKeySyms.keySym(forCharacter: "UIKeyInputLeftArrow"))
+        XCTAssertNil(VNCKeySyms.keySym(forCharacter: "UIKeyInputF5"))
+        XCTAssertNil(VNCKeySyms.keySym(forCharacter: "\u{F702}")) // NSLeftArrowFunctionKey
+        XCTAssertNil(VNCKeySyms.keySym(forCharacter: ""))
+        XCTAssertEqual(VNCKeySyms.keySym(forKeyCode: 8, characters: "c"), 0x63) // Ctrl+C, ignoring modifiers
+    }
+
     // MARK: Full handshake over a memory channel
 
     private final class RecordingDelegate: VNCRFBClientDelegate {

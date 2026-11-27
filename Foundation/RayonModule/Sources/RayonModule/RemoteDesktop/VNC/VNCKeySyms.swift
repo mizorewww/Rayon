@@ -73,7 +73,8 @@ enum VNCKeySyms {
 
     /// The KeySym for a key event: the physical code first (so Escape is
     /// Escape even when IME would turn its character into something else),
-    /// then the produced text.
+    /// then the text the key types without modifiers. Callers pass that
+    /// text, not the modified one: Ctrl+C types U+0003, which names no key.
     static func keySym(forKeyCode keyCode: UInt16, characters: String) -> UInt32? {
         if let sym = byKeyCode[keyCode] {
             return sym
@@ -85,14 +86,17 @@ enum VNCKeySyms {
     /// special names, ASCII stays ASCII, the Latin-1 supplement maps to the
     /// same KeySym value (per keysymdef.h, U+00A0...U+00FF keep their
     /// codepoint), and other Unicode scalars become 0x01000000 | scalar
-    /// per the RFB convention.
+    /// per the RFB convention. What a key reports without typing text, a
+    /// UIKit name (`UIKeyInputLeftArrow`) or an AppKit function-key scalar
+    /// (U+F700...U+F8FF), is no character and has none.
     static func keySym(forCharacter characters: String) -> UInt32? {
-        guard let scalar = characters.unicodeScalars.first else { return nil }
+        guard !characters.hasPrefix("UIKeyInput"), let scalar = characters.unicodeScalars.first else { return nil }
         switch scalar.value {
         case 0x08, 0x7F: return backSpace
         case 0x09: return tab
         case 0x0A, 0x0D: return `return`
         case 0x1B: return escape
+        case 0x00 ... 0x1F, 0xF700 ... 0xF8FF: return nil
         case 0x20 ... 0x7E: return scalar.value // printable ASCII
         case 0xA0 ... 0xFF: return scalar.value // Latin-1 supplement
         default:
