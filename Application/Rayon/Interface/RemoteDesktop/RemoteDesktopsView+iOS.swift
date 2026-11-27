@@ -66,10 +66,10 @@
                 UURemoteAccountSheet()
             }
             .sheet(isPresented: $openNewServer) {
-                NavigationStack { EditMachineView() }
+                ServerEditor()
             }
             .sheet(item: Binding(get: { editing.map(EditTarget.init) }, set: { editing = $0?.id })) { target in
-                NavigationStack { EditMachineView(requestMachine: target.id) }
+                ServerEditor(machine: target.id)
             }
         }
 

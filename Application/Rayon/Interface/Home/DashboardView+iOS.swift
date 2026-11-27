@@ -60,7 +60,7 @@
                 }
             }
             .sheet(isPresented: $openNewServer) {
-                NavigationStack { EditMachineView() }
+                ServerEditor()
             }
         }
     }

@@ -14,12 +14,12 @@
 
     extension ServerActions {
         static func edit(_ machine: RDMachine.ID) {
-            AppRouter.shared.present { dismiss in ServerEditorSheet(machine: machine, close: dismiss) }
+            AppRouter.shared.present { _ in ServerEditor(machine: machine) }
         }
 
         /// New Server, filled in from `template`.
         static func create(from template: RDMachine? = nil) {
-            AppRouter.shared.present { dismiss in ServerEditorSheet(machine: nil, template: template, close: dismiss) }
+            AppRouter.shared.present { _ in ServerEditor(template: template) }
         }
     }
 

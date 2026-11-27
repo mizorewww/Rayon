@@ -13,11 +13,11 @@
 
     extension ServerActions {
         static func edit(_ machine: RDMachine.ID) {
-            RayonUtil.presentModalSheet(rootView: NavigationStack { EditMachineView(requestMachine: machine) })
+            RayonUtil.presentModalSheet(rootView: ServerEditor(machine: machine))
         }
 
         static func create() {
-            RayonUtil.presentModalSheet(rootView: NavigationStack { EditMachineView() })
+            RayonUtil.presentModalSheet(rootView: ServerEditor())
         }
 
         /// The server's terminal on its page: the one open, else a new one.

@@ -65,7 +65,6 @@
 		72E5D2C0EF09868BB5B19040 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 39E0490988A2256F97D6CE80 /* Assets.xcassets */; };
 		75640C9BDCC96E2D5815E223 /* LicenseView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68766FBCCF75FCB358204392 /* LicenseView+iOS.swift */; };
 		75895AB87069372F2E145052 /* SnippetExecuteView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4891BB4CCDB1EF158C7686B5 /* SnippetExecuteView+iOS.swift */; };
-		7AFA47851B241E8C80C931CA /* EditMachineView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 540551E0222D2FB7A5C11F35 /* EditMachineView+iOS.swift */; };
 		7C9989948AD70810D5DEAF79 /* MainView+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68EF0B11EAAADAA8A5712883 /* MainView+macOS.swift */; };
 		7CF725352B956341C3E18534 /* DataSettings+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 41317BAA331C5AF4D338C81B /* DataSettings+macOS.swift */; };
 		7E6F0969D5874F9FB79CF3F7 /* MachineStatus in Frameworks */ = {isa = PBXBuildFile; productRef = EBF017679A8CED57F2A003C9 /* MachineStatus */; };
@@ -87,7 +86,6 @@
 		AD0A1CA8D7F3989094822923 /* ServerActions+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92B3F2B0E48F627ECB88E470 /* ServerActions+macOS.swift */; };
 		AFA2D005700B5AB58E28448B /* FilesApp+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49909667418741184D8DFDB7 /* FilesApp+iOS.swift */; };
 		B0D416E1AE6D322B6B41DC24 /* MenubarTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02E7957B625CC60A97734088 /* MenubarTool.swift */; };
-		B2D2F0237653B9CAF362B38F /* ServerEditorSheet+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16D6756E0FEF16806ED6AFBC /* ServerEditorSheet+macOS.swift */; };
 		B46985049F950FE751B30BA8 /* GeneralSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = BDA227414A14A2A06F8B49E6 /* GeneralSettings.swift */; };
 		B678CCEF95EC53603CE84038 /* RayonCommands+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A192E7F4DED6FA660A616D9 /* RayonCommands+macOS.swift */; };
 		BB0CCF64B24775610335BBAA /* View+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = F303FA061D1A76E58FCA4BA2 /* View+iOS.swift */; };
@@ -105,6 +103,7 @@
 		D52F3C99987D87F91063F030 /* RemoteDesktopPage+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 950037C40D23B72981F9865C /* RemoteDesktopPage+macOS.swift */; };
 		D8CAFB1638E85094BF10215C /* UURemoteSessionList.swift in Sources */ = {isa = PBXBuildFile; fileRef = F603B55585172E30DD6B2202 /* UURemoteSessionList.swift */; };
 		D9A96FC6380B5BD2E9DDFB0A /* RayonTerminal in Frameworks */ = {isa = PBXBuildFile; productRef = 08929048713DE59C22E8E2D1 /* RayonTerminal */; };
+		DC104D3C5E2051DD637D9F70 /* EditorForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24E51B5C5912BEA70CD568D6 /* EditorForm.swift */; };
 		DEACAC819BF45E404F0E7D4B /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = AE48638BBF0DC27BB471515F /* Localizable.xcstrings */; };
 		E264C226203517E36CA50B37 /* HomeView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64158AA391E2A5FA827154BC /* HomeView+iOS.swift */; };
 		E445D0B019737F40848FF568 /* MonitorView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = C271F9345D5AE7980B3BE9F8 /* MonitorView+iOS.swift */; };
@@ -120,6 +119,7 @@
 		F98D576A6F79A246C851A6E3 /* SymbolPicker in Frameworks */ = {isa = PBXBuildFile; productRef = 679D5A8D992D398335F44C83 /* SymbolPicker */; };
 		FA024B8E85B605035B85E019 /* EditIdentityView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8BC83D8881657A297C46C79 /* EditIdentityView+iOS.swift */; };
 		FD2C5E820251AAB79A955F40 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 4E43E5CF37DB308FCBC06E53 /* PrivacyInfo.xcprivacy */; };
+		FE43259A5AE68FB054916D9E /* ServerEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = E33D1511527A7FE53A19C7BC /* ServerEditor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -132,11 +132,11 @@
 		0F8B14D36D71D3CD49CDE61B /* TerminalClipboardSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalClipboardSettings.swift; sourceTree = "<group>"; };
 		0FDB488EB7AA16D9618D62A1 /* SnippetsView+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SnippetsView+macOS.swift"; sourceTree = "<group>"; };
 		15E5774EFF6FBF61114C8BB7 /* FileTransferPage+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FileTransferPage+macOS.swift"; sourceTree = "<group>"; };
-		16D6756E0FEF16806ED6AFBC /* ServerEditorSheet+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ServerEditorSheet+macOS.swift"; sourceTree = "<group>"; };
 		18C713FACF99C4DFC563A81D /* EditSnippetView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EditSnippetView+iOS.swift"; sourceTree = "<group>"; };
 		202DDEC94CD2F67C49DF6918 /* PreviewHooks+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PreviewHooks+iOS.swift"; sourceTree = "<group>"; };
 		2149ACAE9A3E09AAC44779A1 /* MachineStatusView */ = {isa = PBXFileReference; lastKnownFileType = folder; name = MachineStatusView; path = ../../Foundation/MachineStatusView; sourceTree = SOURCE_ROOT; };
 		223A263F84AFBF12F7AC4E89 /* DataBackupSettings+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DataBackupSettings+iOS.swift"; sourceTree = "<group>"; };
+		24E51B5C5912BEA70CD568D6 /* EditorForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorForm.swift; sourceTree = "<group>"; };
 		2AAD00A41DF855F9DDB521E4 /* IdentityView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IdentityView+iOS.swift"; sourceTree = "<group>"; };
 		2C7CD87B933BC6EB14E4AFC2 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		30519B949F1845B161D0DBFC /* UURemoteAccountSheet+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UURemoteAccountSheet+iOS.swift"; sourceTree = "<group>"; };
@@ -157,7 +157,6 @@
 		4E43E5CF37DB308FCBC06E53 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		5040999EA7140DCDE990E310 /* ServerActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerActions.swift; sourceTree = "<group>"; };
 		521179FEE31987BB065C6D42 /* LogView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LogView+iOS.swift"; sourceTree = "<group>"; };
-		540551E0222D2FB7A5C11F35 /* EditMachineView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EditMachineView+iOS.swift"; sourceTree = "<group>"; };
 		574BCE00636C1AD0B3E7D306 /* TerminalPage+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalPage+macOS.swift"; sourceTree = "<group>"; };
 		579465A771ECF0E568C2E717 /* SnippetView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SnippetView+iOS.swift"; sourceTree = "<group>"; };
 		599B6104F9D67675A1DD1762 /* ServersView+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ServersView+macOS.swift"; sourceTree = "<group>"; };
@@ -222,6 +221,7 @@
 		DF75232AABE500F80C3CC7AC /* SnippetEditorSheet+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SnippetEditorSheet+macOS.swift"; sourceTree = "<group>"; };
 		E03C916E94043159FA948E16 /* ServersView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ServersView+iOS.swift"; sourceTree = "<group>"; };
 		E0C5A72EDFD1768CEE932329 /* FileTransferView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FileTransferView+iOS.swift"; sourceTree = "<group>"; };
+		E33D1511527A7FE53A19C7BC /* ServerEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerEditor.swift; sourceTree = "<group>"; };
 		E43D050747F750FDFB018732 /* UIViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIViewController.swift; sourceTree = "<group>"; };
 		E54E20A564F4D21E1E74C519 /* RayonTerminal */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RayonTerminal; path = ../../Foundation/RayonTerminal; sourceTree = SOURCE_ROOT; };
 		E6293DC9A28B290B8453B5E3 /* UURemoteAccountSheet+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UURemoteAccountSheet+macOS.swift"; sourceTree = "<group>"; };
@@ -378,13 +378,12 @@
 		5D264D47F403927C96EF21F4 /* Servers */ = {
 			isa = PBXGroup;
 			children = (
-				540551E0222D2FB7A5C11F35 /* EditMachineView+iOS.swift */,
 				FA914B94B55F43DF6752AFB3 /* FolderActions.swift */,
 				071A34F8A55AD6852DD7D4F8 /* PickMachineView+iOS.swift */,
 				5040999EA7140DCDE990E310 /* ServerActions.swift */,
 				A6013D8CE6F7618B3A396409 /* ServerActions+iOS.swift */,
 				92B3F2B0E48F627ECB88E470 /* ServerActions+macOS.swift */,
-				16D6756E0FEF16806ED6AFBC /* ServerEditorSheet+macOS.swift */,
+				E33D1511527A7FE53A19C7BC /* ServerEditor.swift */,
 				AA74C3D92BD950F96112FAD2 /* ServerGroup.swift */,
 				E03C916E94043159FA948E16 /* ServersView+iOS.swift */,
 				599B6104F9D67675A1DD1762 /* ServersView+macOS.swift */,
@@ -511,6 +510,7 @@
 		BDE66FE544E53054C823232E /* Common */ = {
 			isa = PBXGroup;
 			children = (
+				24E51B5C5912BEA70CD568D6 /* EditorForm.swift */,
 				A33CB8416F5E2EAED9B8F821 /* PickerSheets+macOS.swift */,
 			);
 			path = Common;
@@ -722,8 +722,8 @@
 				EB69FC54AB1E3106B2011446 /* DeviceOwner.swift in Sources */,
 				0103C387589C0C0E061527A2 /* DiagnosticsSettings.swift in Sources */,
 				FA024B8E85B605035B85E019 /* EditIdentityView+iOS.swift in Sources */,
-				7AFA47851B241E8C80C931CA /* EditMachineView+iOS.swift in Sources */,
 				4B02C664534C58F9BB72703B /* EditSnippetView+iOS.swift in Sources */,
+				DC104D3C5E2051DD637D9F70 /* EditorForm.swift in Sources */,
 				1D3D3FE1B2353A98278271B1 /* EditorPage+macOS.swift in Sources */,
 				61BBD29D1024C28EDB8626E1 /* EditorWorkspace+macOS.swift in Sources */,
 				35EC52844AE02588ACD672F1 /* EditorWorkspaceView+iOS.swift in Sources */,
@@ -770,7 +770,7 @@
 				C9223A63A91DDB99BC478A4D /* ServerActions+iOS.swift in Sources */,
 				AD0A1CA8D7F3989094822923 /* ServerActions+macOS.swift in Sources */,
 				8DFA7D4A3BA74D62B66DBACD /* ServerActions.swift in Sources */,
-				B2D2F0237653B9CAF362B38F /* ServerEditorSheet+macOS.swift in Sources */,
+				FE43259A5AE68FB054916D9E /* ServerEditor.swift in Sources */,
 				05F8B57F61A7CF4E328B9981 /* ServerGroup.swift in Sources */,
 				E8423E2105556F0B5DBC98D2 /* ServerTool.swift in Sources */,
 				23BF21BC95FFA9650D516E06 /* ServerWorkspaceView+iOS.swift in Sources */,
