@@ -50,32 +50,13 @@
 
             let finished = DispatchSemaphore(value: 0)
             let decoder = UTF8StreamDecoder()
-            let readSource = DispatchSource.makeReadSource(fileDescriptor: masterFD, queue: DispatchQueue.global(qos: .userInteractive))
-            readSource.setEventHandler { [weak self] in
-                guard let self else { return }
-                var buf = [UInt8](repeating: 0, count: 65536)
-                while true {
-                    let n = Darwin.read(masterFD, &buf, buf.count)
-                    if n > 0 {
-                        let text = decoder.decode(Data(buf[0 ..< n]))
-                        if !text.isEmpty {
-                            self.surface.write(text)
-                        }
-                    } else if n == 0 {
-                        finished.signal()
-                        self.uuWakeSemaphore.signal()
-                        break
-                    } else {
-                        if errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR {
-                            break
-                        }
-                        finished.signal()
-                        self.uuWakeSemaphore.signal()
-                        break
-                    }
-                }
+            let io = PseudoTerminalIO(descriptor: masterFD) { [weak self] data in
+                let text = decoder.decode(data)
+                if !text.isEmpty { self?.surface.write(text) }
+            } ended: { [weak self] in
+                finished.signal()
+                self?.uuWakeSemaphore.signal()
             }
-            readSource.resume()
 
             var lastSize = initial
             var exited = false
@@ -94,26 +75,7 @@
                 }
 
                 let typed = getBuffer()
-                if !typed.isEmpty {
-                    let data = Data(typed.utf8)
-                    data.withUnsafeBytes { raw in
-                        guard let base = raw.baseAddress else { return }
-                        var offset = 0
-                        while offset < raw.count {
-                            let written = Darwin.write(masterFD, base + offset, raw.count - offset)
-                            if written > 0 {
-                                offset += written
-                            } else if written < 0, errno == EINTR {
-                                continue
-                            } else if written < 0, errno == EAGAIN || errno == EWOULDBLOCK {
-                                usleep(1000)
-                                continue
-                            } else {
-                                break
-                            }
-                        }
-                    }
-                }
+                if !typed.isEmpty { io.send(Data(typed.utf8)) }
 
                 var status: Int32 = 0
                 if waitpid(pid, &status, WNOHANG) == pid {
@@ -122,8 +84,7 @@
                 }
             }
 
-            readSource.cancel()
-            Darwin.close(masterFD)
+            io.close()
             // A reaped pid may belong to another process already.
             if !exited { LocalPseudoTerminal.hangUp(pid) }
         }
