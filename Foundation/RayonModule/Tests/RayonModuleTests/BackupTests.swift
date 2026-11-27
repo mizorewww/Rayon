@@ -3,6 +3,7 @@
 //  RayonModuleTests
 //
 
+import CloudKit
 @testable import RayonModule
 import RayonTerminal
 import XCTest
@@ -117,6 +118,36 @@ final class BackupTests: XCTestCase {
         let store = source.store()
         store.restore(contents)
         XCTAssertEqual(store.identity(identity.id)?.password, "hunter2")
+    }
+
+    /// On a device that lacks them, records restored from a backup without
+    /// secrets have them missing, not empty: they are not sent, so the
+    /// devices that have the secrets keep them, and the first of those
+    /// that syncs fills them in.
+    func testSecretsLeftOutOfABackupAreMissingOnANewDevice() async throws {
+        let (machine, identity) = seed()
+        try await source.store().exportBackup(to: file, includeSecrets: false, password: nil)
+        let store = target.store()
+        store.restore(try DataBackup.read(file, password: nil))
+
+        let restored = try XCTUnwrap(target.storage.record(RDIdentity.self, id: identity.id))
+        XCTAssertTrue(restored.secretsUnread)
+        XCTAssertEqual(target.storage.record(RDMachine.self, id: machine.id)?.secretsUnread, true)
+        XCTAssertEqual(target.storage.record(RDSnippet.self, id: store.snippets[0].id)?.name, "uptime")
+        let sync = CloudSync(storage: target.storage)
+        await sync.apply(CloudSyncPreferences(isOn: true))
+        let id = CloudRecordCoding.recordID(table: RDIdentity.tableName, id: identity.id)
+        let sent = await sync.ckRecord(for: id)
+        XCTAssertNil(sent, "the identity would go out with its secrets empty")
+
+        // The device the backup came from syncs its version.
+        let theirs = try XCTUnwrap(source.storage.recordToSend(named: id.recordName) as? RDIdentity)
+        XCTAssertEqual(restored.modified, theirs.modified)
+        XCTAssertEqual(try target.storage.mergeRemote(theirs), .tookRemote)
+        let filled = try XCTUnwrap(target.storage.record(RDIdentity.self, id: identity.id))
+        XCTAssertFalse(filled.secretsUnread)
+        XCTAssertEqual(filled.password, "hunter2")
+        XCTAssertEqual(filled.privateKey, "KEY")
     }
 
     func testOtherFilesAreNotBackups() throws {

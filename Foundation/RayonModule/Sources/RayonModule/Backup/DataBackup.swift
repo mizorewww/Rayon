@@ -60,6 +60,10 @@ public enum DataBackup {
             }
             let hosts: [KnownHostRecord] = try storage.db.getObjects(fromTable: KnownHostRecord.tableName)
             try snapshot.insert(hosts, intoTable: KnownHostRecord.tableName)
+            // Which records have secrets, so that a restore without them
+            // knows those are missing rather than empty.
+            let presence: [SecretPresence] = try storage.db.getObjects(fromTable: SecretPresence.tableName)
+            try snapshot.insert(presence, intoTable: SecretPresence.tableName)
             // Everything into the database file itself, which is all that
             // is packed.
             try snapshot.truncateCheckpoint()
@@ -122,6 +126,12 @@ public enum DataBackup {
             throw BackupError.newerVersion
         }
 
+        let present: Set<String>
+        do {
+            present = try Set((snapshot.getObjects(fromTable: SecretPresence.tableName) as [SecretPresence]).map(\.account))
+        } catch {
+            throw BackupError.damaged(error.localizedDescription)
+        }
         func rows<T: StoredRecord>(_: T.Type) throws -> [T] {
             let rows: [T] = try snapshot.getObjects(fromTable: T.tableName, where: Column(named: "removed") == false)
             guard T.Secrets.self != NoSecrets.self else { return rows }
@@ -132,6 +142,9 @@ public enum DataBackup {
                         throw BackupError.damaged("the passwords of \(T.tableName) \(row.id) cannot be read")
                     }
                     row.secrets = value
+                } else if present.contains(row.secretAccount) {
+                    // It has secrets the backup was made without.
+                    row.secretsUnread = true
                 }
                 return row
             }
@@ -189,7 +202,8 @@ public extension RayonStore {
 
     /// Adds what a backup holds, replacing records with the same id.
     /// Without the backup's passwords and keys, a record already here keeps
-    /// its own.
+    /// its own, and one new here has them missing until a device that has
+    /// them syncs it, or they are typed in.
     @discardableResult
     func restore(_ contents: DataBackupContents) -> RestoreResult {
         var result = RestoreResult()

@@ -134,14 +134,16 @@ public extension RayonStorage {
         var record = record
         let existing = row(T.self, id: record.id).map(withSecrets)
         if record.secretsUnread {
-            if record.secrets == T.Secrets(), let existing {
+            if record.secrets != T.Secrets() {
+                // New ones typed in: they are written.
+                record.secretsUnread = false
+            } else if let existing, !existing.removed {
                 // Nothing typed in their place: the keychain's stay, read
                 // now if it gives them.
                 record.secrets = existing.secrets
                 record.secretsUnread = existing.secretsUnread
             } else {
-                // New ones typed in: they are written.
-                record.secretsUnread = false
+                return try insertWithoutSecrets(record, after: existing)
             }
         }
         if let existing, !existing.removed, !record.differsInSyncedContent(from: existing) {
@@ -156,6 +158,26 @@ public extension RayonStorage {
         try db.run(transaction: { handle in
             try handle.insertOrReplace([record], intoTable: T.tableName)
             try self.notePresence(present, of: record, handle: handle)
+            try self.enqueueUpload(T.self, id: record.id, modified: record.modified, handle: handle)
+        })
+        NotificationCenter.default.post(name: Self.didQueueChanges, object: self)
+        return record
+    }
+
+    /// A copy of a record from elsewhere whose secrets did not come with it
+    /// (a backup made without them), new here: they are missing, not empty.
+    /// The keychain is left alone and the record reads as unread, so it is
+    /// not sent until they are known. It keeps the time of the version it
+    /// copies: that version, coming from a device that has the secrets, is
+    /// then the same change and fills them in, instead of an older one this
+    /// copy would win over everywhere with its secrets empty.
+    private func insertWithoutSecrets<T: StoredRecord>(_ record: T, after existing: T?) throws -> T {
+        var record = record
+        record.modified = Self.stamp(record.modified, after: existing)
+        record.removed = false
+        try db.run(transaction: { handle in
+            try handle.insertOrReplace([record], intoTable: T.tableName)
+            try self.notePresence(true, of: record, handle: handle)
             try self.enqueueUpload(T.self, id: record.id, modified: record.modified, handle: handle)
         })
         NotificationCenter.default.post(name: Self.didQueueChanges, object: self)
