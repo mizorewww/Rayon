@@ -201,13 +201,6 @@ public enum RXFormat {
         return formatter
     }()
 
-    private static let relativeFormatter: RelativeDateTimeFormatter = {
-        let formatter = RelativeDateTimeFormatter()
-        formatter.unitsStyle = .full
-        formatter.dateTimeStyle = .named
-        return formatter
-    }()
-
     /// "41 days, 3 h" style uptime.
     public static func duration(_ seconds: Double) -> String {
         guard seconds.isFinite, seconds > 0 else { return "—" }
@@ -218,6 +211,6 @@ public enum RXFormat {
     public static func relative(_ date: Date) -> String {
         if date.timeIntervalSince1970 < 86400 * 365 { return String(localized: "Never", bundle: .module) }
         if abs(date.timeIntervalSinceNow) < 60 { return String(localized: "Now", bundle: .module) }
-        return relativeFormatter.localizedString(for: date, relativeTo: Date())
+        return date.formatted(.relative(presentation: .named, unitsStyle: .wide))
     }
 }

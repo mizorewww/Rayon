@@ -19,8 +19,7 @@ let package = Package(
     targets: [
         .target(
             name: "RayonDesign",
-            resources: [.process("Resources")],
-            swiftSettings: [.swiftLanguageMode(.v5)]
+            resources: [.process("Resources")]
         ),
     ]
 )
