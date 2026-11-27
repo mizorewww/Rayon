@@ -338,24 +338,24 @@
 
         func handleDrop(_ providers: [NSItemProvider]) -> Bool {
             guard context.connected, !busy, !providers.isEmpty else { return false }
-            let group = DispatchGroup()
-            let urls = DroppedURLs()
             let staging = FileManager.default.temporaryDirectory
                 .appendingPathComponent("Upload-\(UUID().uuidString)", isDirectory: true)
             try? FileManager.default.createDirectory(at: staging, withIntermediateDirectories: true)
-            for provider in providers {
-                group.enter()
-                // The file given is removed when the handler returns: it is
-                // copied out first.
-                _ = provider.loadFileRepresentation(forTypeIdentifier: UTType.item.identifier) { url, _ in
-                    defer { group.leave() }
-                    guard let url else { return }
-                    let copy = staging.appendingPathComponent(url.lastPathComponent)
-                    if (try? FileManager.default.copyItem(at: url, to: copy)) != nil { urls.append(copy) }
+            Task {
+                var urls: [URL] = []
+                for provider in providers {
+                    let copy = await withCheckedContinuation { (loaded: CheckedContinuation<URL?, Never>) in
+                        // The file given is removed when the handler returns: it is
+                        // copied out first.
+                        _ = provider.loadFileRepresentation(forTypeIdentifier: UTType.item.identifier) { url, _ in
+                            guard let url else { return loaded.resume(returning: nil) }
+                            let copy = staging.appendingPathComponent(url.lastPathComponent)
+                            loaded.resume(returning: (try? FileManager.default.copyItem(at: url, to: copy)) != nil ? copy : nil)
+                        }
+                    }
+                    if let copy { urls.append(copy) }
                 }
-            }
-            group.notify(queue: .main) {
-                if !urls.values.isEmpty { context.upload(urls: urls.values) }
+                if !urls.isEmpty { context.upload(urls: urls) }
             }
             return true
         }
@@ -555,25 +555,6 @@
                 formatter.doesRelativeDateFormatting = true
                 return formatter
             }()
-        }
-    }
-
-    /// What the drop providers fill: appended on their completion queues under
-    /// the lock, read once the group has drained.
-    private final class DroppedURLs: @unchecked Sendable {
-        private let lock = NSLock()
-        private var storage: [URL] = []
-
-        func append(_ url: URL) {
-            lock.lock()
-            storage.append(url)
-            lock.unlock()
-        }
-
-        var values: [URL] {
-            lock.lock()
-            defer { lock.unlock() }
-            return storage
         }
     }
 

@@ -346,17 +346,15 @@
             let matching = providers.filter { $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) }
             // Say no to a drop with nothing we can take, so it lands elsewhere.
             guard !matching.isEmpty else { return false }
-            let group = DispatchGroup()
-            let urls = DroppedURLs()
-            for provider in matching {
-                group.enter()
-                _ = provider.loadObject(ofClass: URL.self) { url, _ in
+            Task {
+                var urls: [URL] = []
+                for provider in matching {
+                    let url = await withCheckedContinuation { (loaded: CheckedContinuation<URL?, Never>) in
+                        _ = provider.loadObject(ofClass: URL.self) { url, _ in loaded.resume(returning: url) }
+                    }
                     if let url { urls.append(url) }
-                    group.leave()
                 }
-            }
-            group.notify(queue: .main) {
-                if !urls.values.isEmpty { context.upload(urls: urls.values) }
+                if !urls.isEmpty { context.upload(urls: urls) }
             }
             return true
         }
@@ -401,25 +399,6 @@
             guard context.connected, !context.processConnection, !context.isProgressRunning else { return true }
             if back { context.goBack() } else { context.goForward() }
             return true
-        }
-    }
-
-    /// What the drop providers fill: appended on their completion queues under
-    /// the lock, read once the group has drained.
-    private final class DroppedURLs: @unchecked Sendable {
-        private let lock = NSLock()
-        private var storage: [URL] = []
-
-        func append(_ url: URL) {
-            lock.lock()
-            storage.append(url)
-            lock.unlock()
-        }
-
-        var values: [URL] {
-            lock.lock()
-            defer { lock.unlock() }
-            return storage
         }
     }
 
