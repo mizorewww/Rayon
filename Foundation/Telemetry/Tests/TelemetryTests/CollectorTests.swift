@@ -3,6 +3,7 @@
 //  TelemetryTests
 //
 
+import Synchronization
 @testable import Telemetry
 import XCTest
 
@@ -10,9 +11,12 @@ final class CollectorTests: XCTestCase {
     private var root: URL!
     private let clock = Clock()
 
-    final class Clock: @unchecked Sendable {
-        // Only mutated between awaits on the test's own task.
-        var date = Date(timeIntervalSince1970: 1_800_000_000)
+    final class Clock: Sendable {
+        private let value = Mutex(Date(timeIntervalSince1970: 1_800_000_000))
+        var date: Date {
+            get { value.withLock { $0 } }
+            set { value.withLock { $0 = newValue } }
+        }
     }
 
     override func setUp() {
@@ -166,14 +170,21 @@ final class CollectorTests: XCTestCase {
     }
 }
 
-final class StubProtocol: URLProtocol, @unchecked Sendable {
-    nonisolated(unsafe) static var bodies: [Data] = []
-    nonisolated(unsafe) static var status = 200
-
-    static func reset() {
-        bodies = []
-        status = 200
+final class StubProtocol: URLProtocol {
+    private struct State {
+        var bodies: [Data] = []
+        var status = 200
     }
+
+    private static let state = Mutex(State())
+
+    static var bodies: [Data] { state.withLock { $0.bodies } }
+    static var status: Int {
+        get { state.withLock { $0.status } }
+        set { state.withLock { $0.status = newValue } }
+    }
+
+    static func reset() { state.withLock { $0 = State() } }
 
     override class func canInit(with _: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
@@ -189,7 +200,7 @@ final class StubProtocol: URLProtocol, @unchecked Sendable {
                 data.append(buffer, count: read)
             }
             stream.close()
-            Self.bodies.append(data)
+            Self.state.withLock { $0.bodies.append(data) }
         }
         let response = HTTPURLResponse(url: request.url!, statusCode: Self.status, httpVersion: nil, headerFields: nil)!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
