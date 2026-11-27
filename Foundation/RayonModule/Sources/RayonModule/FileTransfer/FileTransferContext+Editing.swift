@@ -39,7 +39,7 @@ public extension FileTransferContext {
     /// then by name as Finder sorts.
     static func sortedForDisplay(_ list: [RemoteFile]) -> [RemoteFile] {
         // The kind is read once per file, not once per comparison.
-        var keyed = list.map { (isDirectory: $0.fstat.isDirectory, file: $0) }
+        var keyed = list.map { (isDirectory: $0.isFolder, file: $0) }
         keyed.sort { lhs, rhs in
             if lhs.isDirectory != rhs.isDirectory { return lhs.isDirectory }
             return lhs.file.name.localizedStandardCompare(rhs.file.name) == .orderedAscending
@@ -47,9 +47,10 @@ public extension FileTransferContext {
         return keyed.map(\.file)
     }
 
-    /// Whether the editor opens `file` (a file within the size limit).
+    /// Whether the editor opens `file` (a file, or a link to one, within
+    /// the size limit).
     static func isEditable(_ file: RemoteFile) -> Bool {
-        !file.fstat.isDirectory && (file.fstat.size ?? 0) <= editableSizeLimit
+        !file.isFolder && ((file.linkTarget ?? file.fstat).size ?? 0) <= editableSizeLimit
     }
 
     /// Reads a remote file as UTF-8 text, after the operations queued before.

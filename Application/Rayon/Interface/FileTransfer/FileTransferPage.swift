@@ -235,7 +235,7 @@ struct FileTransferPage: View {
 
     @ViewBuilder
     func menu(for file: FileTransferContext.RemoteFile) -> some View {
-        if file.fstat.isDirectory {
+        if file.isFolder {
             Button("Open") { open(file) }
         } else {
             Button("Edit") { edit(file) }
@@ -290,9 +290,9 @@ struct FileTransferPage: View {
     }
 
     func open(_ file: FileTransferContext.RemoteFile) {
-        if file.fstat.isDirectory {
+        if file.isFolder {
             context.navigate(path: context.currentUrl.appendingPathComponent(file.name).path)
-        } else if (file.fstat.size ?? 0) <= FileTransferContext.editableSizeLimit {
+        } else if FileTransferContext.isEditable(file) {
             edit(file)
         } else {
             download(file)

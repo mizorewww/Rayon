@@ -94,13 +94,21 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
         public var id: RemoteFile { self }
         public let base: URL
         public let name: String
+        /// The entry itself; for a link, the link.
         public let fstat: SFTPEntry
+        /// What a link points to; nil for anything else, and for a link
+        /// that is broken or loops.
+        public let linkTarget: SFTPEntry?
 
-        public init(base: URL, name: String, fstat: SFTPEntry) {
+        public init(base: URL, name: String, fstat: SFTPEntry, linkTarget: SFTPEntry? = nil) {
             self.base = base
             self.name = name
             self.fstat = fstat
+            self.linkTarget = linkTarget
         }
+
+        /// A folder, or a link to one: it opens by browsing into it.
+        public var isFolder: Bool { fstat.isDirectory || linkTarget?.isDirectory == true }
     }
 
     // MARK: SHELL CONTEXT -
@@ -281,13 +289,31 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
                 entries = []
                 report(error, "Failed to list \(currentDir)")
             }
-            let builder = entries.map { RemoteFile(base: currentUrl, name: $0.name, fstat: $0) }
+            let targets = await Self.linkTargets(of: entries, in: currentDir, sftp: sftp)
+            let builder = entries.map { RemoteFile(base: currentUrl, name: $0.name, fstat: $0, linkTarget: targets[$0.name]) }
             putInformation("Load Complete")
             onMainThread {
                 guard self.currentDir == currentDir else { return }
                 self.isProgressRunning = false
                 self.currentFileList = builder
             }
+        }
+    }
+
+    /// What each link in a listing points to, asked for all at once. A
+    /// link that loops fails to resolve on the server and stays a link.
+    private static func linkTargets(of entries: [SFTPEntry], in directory: String, sftp: SFTPSession?) async -> [String: SFTPEntry] {
+        guard let sftp else { return [:] }
+        return await withTaskGroup(of: (String, SFTPEntry?).self) { group in
+            for entry in entries where entry.isLink {
+                let path = (directory as NSString).appendingPathComponent(entry.name)
+                group.addTask { (entry.name, try? await sftp.entry(at: path)) }
+            }
+            var targets: [String: SFTPEntry] = [:]
+            for await (name, target) in group {
+                targets[name] = target
+            }
+            return targets
         }
     }
 

@@ -71,7 +71,7 @@ private struct FileRowView<MenuContent: View>: View {
 
     var body: some View {
         let stat = file.fstat
-        let isDir = stat.isDirectory
+        let isDir = file.isFolder
         HStack(spacing: 0) {
             HStack(spacing: RX.Space.s2) {
                 Image(systemName: isDir ? "folder" : (stat.isLink ? "link" : "doc"))

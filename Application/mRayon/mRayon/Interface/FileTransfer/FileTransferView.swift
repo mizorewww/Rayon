@@ -404,7 +404,7 @@ struct FileTransferView: View {
         /// shows its actions.
         private func open() {
             let path = context.currentUrl.appendingPathComponent(file.name).path
-            if file.fstat.isDirectory {
+            if file.isFolder {
                 context.navigate(path: path)
             } else if FileTransferContext.isEditable(file) {
                 edit(path)
@@ -422,7 +422,7 @@ struct FileTransferView: View {
         }
 
         @ViewBuilder private var actions: some View {
-            if !file.fstat.isDirectory {
+            if !file.isFolder {
                 Section {
                     Button {
                         edit(context.currentUrl.appendingPathComponent(file.name).path)
@@ -432,7 +432,7 @@ struct FileTransferView: View {
                     .disabled(tooLargeToEdit)
                 }
             }
-            if file.fstat.isDirectory {
+            if file.isFolder {
                 Section {
                     Button {
                         let path = context.currentUrl.appendingPathComponent(file.name).path
@@ -506,7 +506,7 @@ struct FileTransferView: View {
         var content: some View {
             HStack(spacing: RX.Space.s3) {
                 Image(systemName: sfAvatar)
-                    .foregroundStyle(file.fstat.isDirectory ? Color.rxAccent : Color.rxInkSecondary)
+                    .foregroundStyle(file.isFolder ? Color.rxAccent : Color.rxInkSecondary)
                     .frame(width: 24)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(file.name)
@@ -535,7 +535,7 @@ struct FileTransferView: View {
         }
 
         var sfAvatar: String {
-            if file.fstat.isDirectory {
+            if file.isFolder {
                 return "folder"
             }
             if file.fstat.isLink {
@@ -551,7 +551,7 @@ struct FileTransferView: View {
         /// Size (for a file), modified, permissions and owner, as the Mac's columns.
         var detail: String {
             var parts: [String] = []
-            if !file.fstat.isDirectory { parts.append(size) }
+            if !file.isFolder { parts.append(size) }
             if let modified = file.fstat.modificationDate {
                 parts.append(Self.dateFormatter.string(from: modified))
             }
