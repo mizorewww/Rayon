@@ -347,7 +347,7 @@ struct IdentityForm: View {
                     }
                 }
             } else {
-                HelpText("Signs in using your Mac's running SSH agent (`SSH_AUTH_SOCK`), including system `ssh-agent`, 1Password SSH Agent, Secretive, or YubiKey/GPG agents.")
+                HelpText("Signs in using your Mac's running SSH agent (SSH_AUTH_SOCK), including the system ssh-agent, 1Password SSH Agent, Secretive, or YubiKey/GPG agents.")
                 RXField("Comment") {
                     TextField("Optional", text: $draft.comment)
                         .textFieldStyle(.rx)

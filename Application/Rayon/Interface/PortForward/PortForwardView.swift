@@ -285,7 +285,7 @@ struct PortForwardEditorSheet: View {
                         .frame(width: 120)
                     }
                 } else {
-                    HelpText("Runs a local SOCKS5 proxy on 127.0.0.1:\(bindPort.isEmpty ? "1080" : bindPort) that tunnels all connections through the selected server (`ssh -D`).")
+                    HelpText("Runs a local SOCKS5 proxy on 127.0.0.1:\(bindPort.isEmpty ? "1080" : bindPort) that tunnels all connections through the selected server (ssh -D).")
                 }
                 RXField("Equivalent command") {
                     CodeBlock(draft.commandPreview)

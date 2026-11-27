@@ -131,7 +131,7 @@ struct ServerEditorSheet: View {
                 )
             }
             if transport == .proxyJump {
-                RXField("Jump server (Bastion)", help: "Reaches this server through an SSH tunnel opened on the jump server (`ssh -J`).") {
+                RXField("Jump server (Bastion)", help: "Reaches this server through an SSH tunnel opened on the jump server (ssh -J).") {
                     // A menu rather than a Picker: a Picker's items cannot be
                     // disabled on macOS, and the unavailable ones are shown.
                     let choices = jumpServerChoices
