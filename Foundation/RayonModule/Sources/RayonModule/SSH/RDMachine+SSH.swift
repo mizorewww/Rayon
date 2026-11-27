@@ -238,7 +238,7 @@ public extension RDMachine {
                 )
                 return .jump(connection)
             } catch let failure as SSHFailure {
-                throw SSHFailure(message: "Jump host \(bastion.name): \(failure.message)", unreachable: true)
+                throw SSHFailure(message: "Jump host \(bastion.name): \(failure.message)", unreachable: true, outcome: failure.outcome)
             }
         }
     }
