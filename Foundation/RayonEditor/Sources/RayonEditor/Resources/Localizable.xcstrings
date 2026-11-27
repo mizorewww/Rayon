@@ -2,7 +2,20 @@
   "sourceLanguage" : "en",
   "strings" : {
     "Plain Text" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "纯文本"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "純文字"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

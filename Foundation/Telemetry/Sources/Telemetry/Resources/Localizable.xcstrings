@@ -2,28 +2,132 @@
   "sourceLanguage" : "en",
   "strings" : {
     "Also a daily count of which features are used. No identifier, no IP address kept." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "另外还会发送每日的功能使用计数。不保留任何标识符或 IP 地址。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "另外還會發送每日的功能使用計數。不保留任何識別符號或 IP 位址。"
+          }
+        }
+      }
     },
     "Also performance timings and protocol details, on some days." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "另外还会在部分日期发送性能计时和协议详情。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "另外還會在部分日期傳送效能計時和協議詳情。"
+          }
+        }
+      }
     },
     "Crash Reports" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "崩溃报告"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "崩潰報告"
+          }
+        }
+      }
     },
     "Crash Reports and Usage" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "崩溃报告和使用情况"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "崩潰報告和使用情況"
+          }
+        }
+      }
     },
     "Crash and hang reports, without your hosts, names or terminal content." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "崩溃和卡顿报告，不含你的主机、名称或终端内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "崩潰和卡頓報告，不含你的主機、名稱或終端內容。"
+          }
+        }
+      }
     },
     "Detailed Diagnostics" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "详细诊断"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "詳細診斷"
+          }
+        }
+      }
     },
     "Nothing is sent." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不发送任何内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不傳送任何內容。"
+          }
+        }
+      }
     },
     "Off" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "关闭"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "關閉"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

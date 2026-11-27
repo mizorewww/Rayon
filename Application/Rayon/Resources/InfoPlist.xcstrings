@@ -9,6 +9,18 @@
             "state" : "translated",
             "value" : "We are using Face ID to check your ownership of your devices before performing sensitive operation."
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在执行敏感操作前，Rayon 使用面容 ID 确认你是此设备的主人。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在執行敏感操作前，Rayon 使用 Face ID 確認你是此裝置的擁有者。"
+          }
         }
       }
     },
@@ -19,6 +31,18 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rayon connects to servers and screen-sharing Macs on your local network, and looks for them nearby."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rayon 会连接本地网络中的服务器和开启屏幕共享的 Mac，并在附近查找它们。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rayon 會連線區域網路中的伺服器和開啟螢幕共享的 Mac，並在附近尋找它們。"
           }
         }
       }

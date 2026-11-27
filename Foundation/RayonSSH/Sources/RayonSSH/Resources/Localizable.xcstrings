@@ -2,128 +2,565 @@
   "sourceLanguage" : "en",
   "strings" : {
     "\"%@\" is not a private key Rayon can read." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@”不是 Rayon 能读取的私钥。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@”不是 Rayon 能讀取的私鑰。"
+          }
+        }
+      }
     },
     "\"%@\" is not an SSH agent socket." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@”不是 SSH 代理套接字。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@”不是 SSH 代理套接字。"
+          }
+        }
+      }
     },
     "%@ did not answer the WebSocket upgrade in time." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 未及时响应 WebSocket 升级。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 未及時回應 WebSocket 升級。"
+          }
+        }
+      }
     },
     "%@ is more than %lld folders deep." : {
       "localizations" : {
         "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@ is more than %lld folder deep."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@ is more than %lld folders deep."
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$@ is more than %2$lld folders deep."
+            "state" : "translated",
+            "value" : "%@ 的层级超过 %lld 层文件夹。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 的層級超過 %lld 層資料夾。"
           }
         }
       }
     },
     "%@ keys are not supported. Use an Ed25519, ECDSA or RSA key." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不支持 %@ 密钥。请使用 Ed25519、ECDSA 或 RSA 密钥。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不支援 %@ 金鑰。請使用 Ed25519、ECDSA 或 RSA 金鑰。"
+          }
+        }
+      }
     },
     "Could not listen on port %lld (%@)." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Could not listen on port %1$lld (%2$@)."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法监听端口 %lld（%@）。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法監聽埠 %lld（%@）。"
           }
         }
       }
     },
     "Could not open a socket for the SSH agent." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法为 SSH 代理打开套接字。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法為 SSH 代理開啟套接字。"
+          }
+        }
+      }
     },
     "Could not reach the SSH agent at %@ (%@)." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Could not reach the SSH agent at %1$@ (%2$@)."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法访问位于 %@ 的 SSH 代理（%@）。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法訪問位於 %@ 的 SSH 代理（%@）。"
           }
         }
       }
     },
     "DSA keys are not supported. Use an Ed25519, ECDSA or RSA key." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不支持 DSA 密钥。请使用 Ed25519、ECDSA 或 RSA 密钥。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不支援 DSA 金鑰。請使用 Ed25519、ECDSA 或 RSA 金鑰。"
+          }
+        }
+      }
     },
     "Encrypted PKCS#8 keys are not supported. Convert the key with `ssh-keygen -p -f <key>`, which writes OpenSSH format." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不支持加密的 PKCS#8 密钥。请使用 `ssh-keygen -p -f <key>` 将密钥转换为 OpenSSH 格式。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不支援加密的 PKCS#8 金鑰。請使用 `ssh-keygen -p -f <key>` 將金鑰轉換為 OpenSSH 格式。"
+          }
+        }
+      }
     },
     "Keys encrypted with %@ are not supported. Re-encrypt it with `ssh-keygen -p -Z aes256-ctr -f <key>`." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不支持使用 %@ 加密的密钥。请使用 `ssh-keygen -p -Z aes256-ctr -f <key>` 重新加密。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不支援使用 %@ 加密的金鑰。請使用 `ssh-keygen -p -Z aes256-ctr -f <key>` 重新加密。"
+          }
+        }
+      }
     },
     "Malformed RSA public key." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RSA 公钥格式错误。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RSA 公鑰格式錯誤。"
+          }
+        }
+      }
     },
     "Malformed RSA signature." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RSA 签名格式错误。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RSA 簽名格式錯誤。"
+          }
+        }
+      }
     },
     "No event loop for the WebSocket to %@." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "没有可用于连接 %@ 的 WebSocket 的事件循环。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "沒有可用於連線 %@ 的 WebSocket 的事件迴圈。"
+          }
+        }
+      }
     },
     "Not a SOCKS5 CONNECT request." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不是 SOCKS5 CONNECT 请求。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不是 SOCKS5 CONNECT 請求。"
+          }
+        }
+      }
     },
     "PEM keys encrypted with %@ are not supported." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不支持使用 %@ 加密的 PEM 密钥。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不支援使用 %@ 加密的 PEM 金鑰。"
+          }
+        }
+      }
     },
     "Port %lld is already in use on this device." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此设备上的端口 %lld 已被占用。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此裝置上的埠 %lld 已被佔用。"
+          }
+        }
+      }
     },
     "PuTTY keys (.ppk) are not supported. Export the key in OpenSSH format from PuTTYgen." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不支持 PuTTY 密钥（.ppk）。请在 PuTTYgen 中将密钥导出为 OpenSSH 格式。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不支援 PuTTY 金鑰（.ppk）。請在 PuTTYgen 中將金鑰匯出為 OpenSSH 格式。"
+          }
+        }
+      }
     },
     "TLS failed: %@" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TLS 失败：%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TLS 失敗：%@"
+          }
+        }
+      }
     },
     "The PEM key could not be read. Rayon reads RSA and ECDSA keys in PEM." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法读取 PEM 密钥。Rayon 可读取 PEM 格式的 RSA 和 ECDSA 密钥。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法讀取 PEM 金鑰。Rayon 可讀取 PEM 格式的 RSA 和 ECDSA 金鑰。"
+          }
+        }
+      }
     },
     "The SSH agent did not list its keys." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH 代理未列出其密钥。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH 代理未列出其金鑰。"
+          }
+        }
+      }
     },
     "The SSH agent did not sign with the key." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH 代理未使用该密钥签名。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH 代理未使用該金鑰簽名。"
+          }
+        }
+      }
     },
     "The SSH agent holds no keys." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH 代理中没有密钥。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH 代理中沒有金鑰。"
+          }
+        }
+      }
     },
     "The SSH agent refused the request." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH 代理拒绝了请求。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH 代理拒絕了請求。"
+          }
+        }
+      }
     },
     "The SSH agent sent a malformed reply." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH 代理发送了格式错误的回复。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH 代理傳送了格式錯誤的回覆。"
+          }
+        }
+      }
     },
     "The SSH agent signed with another algorithm than %@." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH 代理使用了 %@ 以外的算法签名。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH 代理使用了 %@ 以外的演算法簽名。"
+          }
+        }
+      }
     },
     "The SSH agent stopped answering." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH 代理已停止响应。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH 代理已停止回應。"
+          }
+        }
+      }
     },
     "The SSH agent's list of keys is malformed." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH 代理的密钥列表格式错误。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH 代理的金鑰列表格式錯誤。"
+          }
+        }
+      }
     },
     "The command ended without an exit status." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "命令已结束，但没有退出状态。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "命令已結束，但沒有退出狀態。"
+          }
+        }
+      }
     },
     "The command timed out." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "命令超时。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "命令超時。"
+          }
+        }
+      }
     },
     "The command was killed by SIG%@." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "命令被 SIG%@ 终止。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "命令被 SIG%@ 終止。"
+          }
+        }
+      }
     },
     "The connection closed." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连接已关闭。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "連線已關閉。"
+          }
+        }
+      }
     },
     "The connection to %@ closed (%@)." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The connection to %1$@ closed (%2$@)."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "与 %@ 的连接已关闭（%@）。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "與 %@ 的連線已關閉（%@）。"
           }
         }
       }
@@ -132,64 +569,256 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The connection to %1$@ failed (%2$@)."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "与 %@ 的连接失败（%@）。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "與 %@ 的連線失敗（%@）。"
           }
         }
       }
     },
     "The key is encrypted with an unknown key derivation (%@)." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "密钥使用了未知的密钥派生方式加密（%@）。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "金鑰使用了未知的金鑰派生方式加密（%@）。"
+          }
+        }
+      }
     },
     "The key's passphrase is derived with %u bcrypt rounds; at most %u are supported." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The key's passphrase is derived with %1$u bcrypt rounds; at most %2$u are supported."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "密钥的密码短语经过 %u 轮 bcrypt 派生；最多支持 %u 轮。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "金鑰的密碼短語經過 %u 輪 bcrypt 派生；最多支援 %u 輪。"
           }
         }
       }
     },
     "The private key could not be decrypted." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法解密私钥。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法解密私鑰。"
+          }
+        }
+      }
     },
     "The private key could not be decrypted. Check the identity's password, which is the key's passphrase." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法解密私钥。请检查身份的密码，即密钥的密码短语。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法解密私鑰。請檢查身份的密碼，即金鑰的密碼短語。"
+          }
+        }
+      }
     },
     "The private key is damaged or incomplete." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "私钥已损坏或不完整。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "私鑰已損壞或不完整。"
+          }
+        }
+      }
     },
     "The private key is protected by a passphrase. Enter it as the identity's password." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "私钥受密码短语保护。请将其输入为身份的密码。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "私鑰受密碼短語保護。請將其輸入為身份的密碼。"
+          }
+        }
+      }
     },
     "The server did not accept any of the credentials." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器未接受任何凭据。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "伺服器未接受任何憑證。"
+          }
+        }
+      }
     },
     "The server did not open a channel in time." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器未及时打开通道。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "伺服器未及時開啟通道。"
+          }
+        }
+      }
     },
     "The server did not start SFTP (%@)." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器未启动 SFTP（%@）。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "伺服器未啟動 SFTP（%@）。"
+          }
+        }
+      }
     },
     "The server refused a pseudo-terminal or a shell." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器拒绝了伪终端或 Shell。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "伺服器拒絕了偽終端或 Shell。"
+          }
+        }
+      }
     },
     "The server refused to open a channel (%@)." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器拒绝打开通道（%@）。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "伺服器拒絕開啟通道（%@）。"
+          }
+        }
+      }
     },
     "The server refused to run the command." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器拒绝运行此命令。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "伺服器拒絕執行此命令。"
+          }
+        }
+      }
     },
     "The server would not start a shell (%@)." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器拒绝启动 Shell（%@）。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "伺服器拒絕啟動 Shell（%@）。"
+          }
+        }
+      }
     },
     "The server's host key has changed. Saved: %@ %@. Offered: %@ %@. If the server was reinstalled or its keys were replaced, forget its host key and connect again. If not, something may be intercepting the connection." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The server's host key has changed. Saved: %1$@ %2$@. Offered: %3$@ %4$@. If the server was reinstalled or its keys were replaced, forget its host key and connect again. If not, something may be intercepting the connection."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器的主机密钥已更改。已存储：%@ %@。出示：%@ %@。如果服务器已重装或其密钥已更换，请忘记其主机密钥后重新连接。否则，可能有东西正在拦截连接。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "伺服器的主機金鑰已更改。已儲存：%@ %@。出示：%@ %@。如果伺服器已重灌或其金鑰已更換，請忘記其主機金鑰後重新連線。否則，可能有東西正在攔截連線。"
           }
         }
       }
@@ -198,8 +827,20 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The server's host key is not known yet (%1$@ %2$@)."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚不知道服务器的主机密钥（%@ %@）。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚不知道伺服器的主機金鑰（%@ %@）。"
           }
         }
       }
@@ -208,24 +849,74 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "The tunnel to %1$@:%2$lld could not be used (%3$@)."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法使用到 %@:%lld 的隧道（%@）。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法使用到 %@:%lld 的隧道（%@）。"
           }
         }
       }
     },
     "This does not look like a private key." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这看起来不是私钥。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這看起來不是私鑰。"
+          }
+        }
+      }
     },
     "Timed out signing in to %@." : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录 %@ 超时。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登入 %@ 超時。"
+          }
+        }
+      }
     },
     "Unable to connect to %@:%lld (%@)." : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Unable to connect to %1$@:%2$lld (%3$@)."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法连接到 %@:%lld（%@）。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法連線到 %@:%lld（%@）。"
           }
         }
       }
@@ -234,47 +925,215 @@
       "localizations" : {
         "en" : {
           "stringUnit" : {
-            "state" : "new",
+            "state" : "translated",
             "value" : "Unable to reach %1$@ (%2$@)."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法访问 %@（%@）。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法訪問 %@（%@）。"
           }
         }
       }
     },
     "connection refused; nothing is listening on that port" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连接被拒绝；该端口上没有程序在监听"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "連線被拒絕；該埠上沒有程式在監聽"
+          }
+        }
+      }
     },
     "the SSH session broke off (%@)" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH 会话中断（%@）"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH 會話中斷（%@）"
+          }
+        }
+      }
     },
     "the connection closed" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连接已关闭"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "連線已關閉"
+          }
+        }
+      }
     },
     "the connection was aborted" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连接被中止"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "連線被中止"
+          }
+        }
+      }
     },
     "the host cannot be reached" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法访问主机"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法訪問主機"
+          }
+        }
+      }
     },
     "the host name could not be found" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "找不到主机名"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "找不到主機名稱"
+          }
+        }
+      }
     },
     "the network cannot reach the host" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "网络无法到达主机"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "網路無法到達主機"
+          }
+        }
+      }
     },
     "the network is down" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "网络已断开"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "網路已斷開"
+          }
+        }
+      }
     },
     "the port is already in use" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "端口已被占用"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "埠已被佔用"
+          }
+        }
+      }
     },
     "the server did not answer in time" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器未及时响应"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "伺服器未及時回應"
+          }
+        }
+      }
     },
     "the server reset the connection" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器重置了连接"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "伺服器重置了連線"
+          }
+        }
+      }
     },
     "the system did not allow the connection" : {
-
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "系统不允许此连接"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "系統不允許此連線"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
