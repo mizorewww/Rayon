@@ -78,6 +78,21 @@ brew install --cask mizorewww/tap/rayon
 4. **设置**（⌘,）包含应用和终端的全部选项。Ghostty 配置项的覆盖情况见
    [CONFIGURATION.md](Foundation/RayonTerminal/CONFIGURATION.md)。
 
+## 隐私
+
+你的服务器、密钥、密码、代码片段、文件和终端会话不会离开你的设备；只有在你开启 iCloud 同步后，才会同步到你自己的 iCloud 账户。
+
+与什么都不收集的姊妹应用 FlowDown 不同，Rayon 可以发送匿名诊断信息，帮助开发者修复崩溃。发送多少由你在每台设备的“设置 › 关于 › 诊断与使用情况”中决定：
+
+- **关闭：**不发送任何内容。
+- **崩溃报告：**来自 Apple MetricKit、已去除敏感信息的崩溃和卡顿报告。
+- **崩溃报告与使用情况：**另外每天发送一份功能使用计数，数字都归入区间。
+- **详细诊断：**另外大约每十天中的一天发送性能耗时和协议信息。
+
+报告不含任何标识符，服务器也从不保存 IP 地址。无论哪个级别，都不会发送服务器地址、用户名、密钥、命令、文件或终端内容。默认级别为“崩溃报告与使用情况”，首次启动时会有提示；在欧洲经济区、英国和瑞士，你做出选择之前不会发送任何内容。“查看发送内容…”可以在发送前看到每一份报告。Mac 版只有在你选择“检查更新”时才会连接 GitHub。
+
+详情请见[隐私政策](Resources/Privacy/PrivacyPolicy-zh-Hans.md)。报告结构在 [`Foundation/Telemetry`](Foundation/Telemetry)，服务器在 [`Server/Telemetry`](Server/Telemetry)，设计说明在 [`docs/telemetry.md`](docs/telemetry.md)。
+
 ## 从源码构建
 
 需要 Xcode 26 或更高版本（Swift 6.2）。

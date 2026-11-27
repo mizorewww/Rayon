@@ -1,6 +1,6 @@
 # Rayon telemetry
 
-Status: proposed (2026-11-27), not implemented. The user-facing setting is a 0–3 slider, default 2 (outside EEA/UK/CH). Every level must stay "Not Linked to You" and "Not Used to Track You" on the App Store label. Any change to what is sent must update this document, the privacy manifests and the App Store label together.
+Status: implemented (2026-11-27) in `Foundation/Telemetry` (client), `Server/Telemetry` (Worker + D1) and Settings › About › Diagnostics & Usage; not yet sending: the endpoint host in `TelemetryEndpoint` is a placeholder until the domain is chosen, and §5 lists where the build differs from this plan. The user-facing setting is a 0–3 slider, default 2 (outside EEA/UK/CH). Every level must stay "Not Linked to You" and "Not Used to Track You" on the App Store label. Any change to what is sent must update this document, the privacy manifests and the App Store label together.
 
 ## Research and recommendation
 
@@ -335,6 +335,49 @@ Assume 30k daily active devices, 70 % at level ≥ 2. That is about 21k requests
 - **Leaking through MetricKit strings** (exception reasons, termination reasons): mitigate with allow-list mapping and a test using crafted payloads (Xcode's "Simulate MetricKit Payloads").
 - **Brand contrast with FlowDown's "nothing collected"**, and community pushback (open-source users are sensitive; see Warp and Tabby discussions). Publish the schema in the repo and point to "View What's Sent".
 - **Scope creep:** every new counter is a schema change that needs review against this allow-list and a label check.
+
+---
+
+## 5. As built
+
+### 5.1 Where it lives
+
+- `Foundation/Telemetry`: the report (`TelemetryReport*.swift`, enums, `Bool` and bucketed `Int` only), the MetricKit subscriber and scrubber, the on-device counters (`TelemetryCollector`), the queue in `Application Support/Telemetry/pending` and the sender. `Telemetry.shared` holds the level, stored under `telemetry.level` in this device's defaults. That key is outside `me.mizorewww.rayon.*`, so neither `AppSettingsSync` nor the preferences backup carries it. The tests pin the JSON in `Tests/TelemetryTests/Fixtures/report-sample.json` and every enum case in `report-enums.json`.
+- `RayonModule` re-exports Telemetry and records events at `RDMachine.connectSSH` (outcome, sign-in method, latency), `TerminalManager`, `FileTransferManager`, `FileTransferContext.upload/download`, `EditorWorkspace.open`, `PortForwardBackend`, `RemoteDesktopManager` and `BatchSnippetExecContext`. `MachineStatusView` records monitor opens and the remote OS family from `uname -s`.
+- The app: `Interface/Settings/DiagnosticsSettings.swift` (the slider, the notice card on Home, "View What's Sent…", the privacy policy sheet) and `Application/TelemetrySnapshot+Rayon.swift`. The privacy policy is bundled from `Resources/Privacy/PrivacyPolicy-{en,zh-Hans,zh-Hant}.md`. `Resources/AppStore/PrivacyPolicy` is a copy of the English text for App Store Connect; keep the two identical.
+- `Server/Telemetry`: the Worker. Its README has the deploy steps.
+
+### 5.2 Differences from §4
+
+- **Level 3 extras.** Built: MetricKit daily metrics (launch, hang time, peak memory, CPU time, disk writes) re-bucketed, the sign-in latency histogram and the remote OS family. Not built, because nothing in Rayon exposes the value without new plumbing: the negotiated SSH algorithms (NIOSSH does not report them), the remote-desktop encodings and codecs, and the terminal frame time. Each is a schema change when added.
+- **Connection outcome.** RayonSSH folds NIO errors into its message, so `refused`, `dnsFailed` and `timeout` are recognised from the phrases `SSHTransport.describe` writes (`TelemetryReport.ConnectionOutcome(reason:)`). A changed phrase falls back to `other`.
+- **Key types** are those among the saved identities, read from the public key or the PEM header, not the key used that day.
+- **Call stacks.** A frame keeps its binary UUID and offset only when its UUID is the app's executable, or an image loaded from `/System/` or `/usr/lib/`, or its binary name is the app's. Other frames keep their place in the tree as `origin: other`. Binary names and absolute addresses are never sent. A crash keeps only its crashed thread, and a diagnostic at most 512 frames.
+- **Days** are the device's local calendar days; the server still stamps the UTC day of arrival. The finished day's report is queued at the first launch, foreground or `NSCalendarDayChanged` of a later day.
+- **China storefront.** Nothing is collected until the notice is dismissed, as §3 asks. The card also links the privacy policy there.
+- **Region unknown** counts as strict: nothing is sent until a choice.
+- **The privacy policy files are not in `.lproj` folders.** Those would mark the app as localized into Chinese and switch the system-provided menus to Chinese around English rows. The sheet picks the file with `Bundle.preferredLocalizations(from:forPreferences:)`.
+- **Server rows.** `os_version` is stored as `<platform> <major.minor>` (`macOS 15.4`), because the bare number is the same for macOS and iOS 26. Zero counts and `false` flags are not written, since they follow from the `reports` totals; this keeps D1 writes per report near ten. Reports go in at `POST /v1/reports` as `{"reports": [...]}`, one to ten per request. A 400, 413 or 422 makes the app drop the batch, and anything else keeps it queued with backoff from 1 minute up to 6 hours.
+- **The sender** sets `User-Agent: Rayon`, so even Cloudflare's edge does not see the exact OS build.
+
+### 5.3 App Store Connect privacy label
+
+Enter this once for the app, on both the iOS and macOS records, before the release that ships the real endpoint.
+
+1. **Do you or your third-party partners collect data from this app?** Yes.
+2. **Data types:** select exactly these four. Select nothing under Contact Info, Health & Fitness, Financial Info, Location, Sensitive Info, Contacts, User Content, Browsing History, Search History, Identifiers, Purchases or Other Data.
+   - Diagnostics › **Crash Data**
+   - Diagnostics › **Performance Data**
+   - Diagnostics › **Other Diagnostic Data**
+   - Usage Data › **Product Interaction**
+3. For **each** of the four, answer:
+   - Purposes: **Analytics** only. Not App Functionality, Product Personalization, Developer's Advertising or Marketing, Third-Party Advertising or Other Purposes.
+   - **Is this data linked to the user's identity?** No.
+   - **Is this data used for tracking purposes?** No.
+4. The resulting label reads "Data Not Linked to You: Diagnostics, Usage Data" and has no "Data Used to Track You" section.
+5. **Privacy Policy URL:** the published copy of `Resources/AppStore/PrivacyPolicy`, for example `https://github.com/mizorewww/Rayon/blob/main/Resources/AppStore/PrivacyPolicy`.
+
+`Application/Rayon/Resources/PrivacyInfo.xcprivacy`, shared by the Mac and iOS builds of the one target, declares the same four types (not linked, not tracking, Analytics). It also adds `NSPrivacyAccessedAPICategorySystemBootTime` `35F9.1` for the `ContinuousClock` that times sign-ins.
 
 ---
 

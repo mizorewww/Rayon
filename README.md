@@ -85,6 +85,21 @@ download the disk image from [Releases](https://github.com/mizorewww/Rayon/relea
 4. **Settings** (⌘,) cover the app and the terminal. Ghostty coverage is described in
    [CONFIGURATION.md](Foundation/RayonTerminal/CONFIGURATION.md).
 
+## Privacy
+
+Your servers, keys, passwords, snippets, files and terminal sessions never leave your devices, except through iCloud Sync into your own iCloud account when you turn it on.
+
+Unlike its sister app FlowDown, which collects nothing, Rayon can send anonymous diagnostics so that its developers can fix crashes. You choose how much in Settings › About › Diagnostics & Usage, on each device:
+
+- **Off:** nothing is sent.
+- **Crash reports:** scrubbed crash and hang reports from Apple's MetricKit.
+- **Crash reports and usage:** also one daily report of feature counts, rounded into ranges.
+- **Detailed:** also performance timings and protocol details, on about one day in ten.
+
+Reports carry no identifier, and the server never stores IP addresses. Server addresses, usernames, keys, commands, files and terminal content are never sent at any level. The default is crash reports and usage, with a notice at first launch. In the EEA, the UK and Switzerland nothing is sent until you choose. "View What's Sent…" shows every report before it goes. The Mac app contacts GitHub only when you choose Check for Updates.
+
+The [privacy policy](Resources/AppStore/PrivacyPolicy) has the details. The report schema is in [`Foundation/Telemetry`](Foundation/Telemetry), the server in [`Server/Telemetry`](Server/Telemetry), and the design in [`docs/telemetry.md`](docs/telemetry.md).
+
 ## Build from source
 
 Needs Xcode 26 or later (Swift 6.2).
