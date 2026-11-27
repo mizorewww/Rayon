@@ -38,6 +38,17 @@ if [[ "$CODE_SIGN_IDENTITY" != "-" && -z "${DEVELOPMENT_TEAM:-}" ]]; then
 fi
 DEVELOPMENT_TEAM="${DEVELOPMENT_TEAM:-}"
 
+# The app's entitlements without those only a provisioning profile grants:
+# signed with them and no profile, the app would not launch. sign_for_icloud
+# adds them back when there is a profile.
+ENTITLEMENTS="$DERIVED_DATA_PATH/Entitlements-macOS-unprovisioned.entitlements"
+mkdir -p "$DERIVED_DATA_PATH"
+cp "$ROOT_DIR/Application/Rayon/Resources/Entitlements/Entitlements-macOS.entitlements" "$ENTITLEMENTS"
+for key in com.apple.developer.icloud-container-identifiers com.apple.developer.icloud-services \
+    com.apple.developer.aps-environment keychain-access-groups; do
+    /usr/libexec/PlistBuddy -c "Delete :$key" "$ENTITLEMENTS" 2>/dev/null || true
+done
+
 # The code editor's CodeEditSourceEditor runs a SwiftLint build plug-in, which
 # xcodebuild would otherwise refuse to run until it is trusted in Xcode.
 xcodebuild \
@@ -54,6 +65,7 @@ xcodebuild \
     CODE_SIGNING_ALLOWED=YES \
     CODE_SIGN_IDENTITY="$CODE_SIGN_IDENTITY" \
     CODE_SIGN_STYLE=Manual \
+    CODE_SIGN_ENTITLEMENTS="$ENTITLEMENTS" \
     DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM" \
     PROVISIONING_PROFILE_SPECIFIER= \
     build
@@ -88,7 +100,9 @@ sign_for_icloud() {
         -c 'Add :com.apple.developer.icloud-container-identifiers array' \
         -c "Add :com.apple.developer.icloud-container-identifiers:0 string $ICLOUD_CONTAINER" \
         -c 'Add :com.apple.developer.icloud-services array' \
-        -c 'Add :com.apple.developer.icloud-services:0 string CloudKit' "$entitlements"
+        -c 'Add :com.apple.developer.icloud-services:0 string CloudKit' \
+        -c 'Add :keychain-access-groups array' \
+        -c "Add :keychain-access-groups:0 string $DEVELOPMENT_TEAM.$bundle_id" "$entitlements"
     # CloudKit tells the app of changes made elsewhere with a push; the
     # profile says to which environment.
     local profile_plist aps
