@@ -16,11 +16,11 @@ enum UIBridge {
         UIPasteboard.general.string = str
     }
 
-    static func open(url: URL) {
+    @MainActor static func open(url: URL) {
         UIApplication.shared.open(url, options: [:], completionHandler: nil)
     }
 
-    static func askForInputText(
+    @MainActor static func askForInputText(
         title: String,
         message: String,
         placeholder: String,
@@ -52,7 +52,7 @@ enum UIBridge {
             .present(alert, animated: true, completion: nil)
     }
 
-    static func openFileContainer() {
+    @MainActor static func openFileContainer() {
         let str = "shareddocuments://" + FileManager
             .default
             .urls(for: .documentDirectory, in: .userDomainMask)[0]

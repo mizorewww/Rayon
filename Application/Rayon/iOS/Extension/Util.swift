@@ -13,35 +13,25 @@ import UIKit
 
 let preferredPopOverSize = CGSize(width: 700, height: 555)
 
+@MainActor
 enum RayonUtil {
-    private static func deviceHasPassword() -> Bool {
-        LAContext().canEvaluatePolicy(.deviceOwnerAuthentication, error: nil)
-    }
-
     typealias DeviceOwnershipCheckSuccess = Bool
+    /// Passes when the device has no passcode: there is no owner to check.
     static func deviceOwnershipAuthenticate(onComplete: @escaping (DeviceOwnershipCheckSuccess) -> Void) {
-        DispatchQueue.global().async {
-            guard deviceHasPassword() else {
-                onMainThread {
-                    onComplete(true)
-                }
-                return
-            }
-            let context = LAContext()
-            let reason = "Performing privacy sensitive operation requires device ownership authenticated"
-            context.evaluatePolicy(
-                .deviceOwnerAuthentication,
-                localizedReason: reason
-            ) { success, error in
-                onMainThread {
-                    if success {
-                        debugPrint(#function, "success")
-                        onComplete(true)
-                    } else {
-                        debugPrint(#function, "failure", error?.localizedDescription ?? "Unknown Error")
-                        onComplete(false)
-                    }
-                }
+        let context = LAContext()
+        guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: nil) else {
+            onComplete(true)
+            return
+        }
+        Task {
+            do {
+                onComplete(try await context.evaluatePolicy(
+                    .deviceOwnerAuthentication,
+                    localizedReason: "Performing privacy sensitive operation requires device ownership authenticated"
+                ))
+            } catch {
+                debugPrint(#function, "failure", error.localizedDescription)
+                onComplete(false)
             }
         }
     }
@@ -63,18 +53,16 @@ enum RayonUtil {
     static func selectIdentity() async -> RDIdentity.ID? {
         debugPrint("Picking Identity")
         return await withCheckedContinuation { continuation in
-            onMainThread {
-                let picker = NavigationStack {
-                    PickIdentityView {
-                        continuation.resume(returning: $0)
-                    }
+            let picker = NavigationStack {
+                PickIdentityView {
+                    continuation.resume(returning: $0)
                 }
-                .expended()
-                presentModalSheet(rootView: picker) { presented in
-                    // No window took the picker: report no selection
-                    // instead of leaking the continuation.
-                    if !presented { continuation.resume(returning: nil) }
-                }
+            }
+            .expended()
+            presentModalSheet(rootView: picker) { presented in
+                // No window took the picker: report no selection
+                // instead of leaking the continuation.
+                if !presented { continuation.resume(returning: nil) }
             }
         }
     }
@@ -82,16 +70,14 @@ enum RayonUtil {
     static func selectMachine(canSelectMany: Bool = true) async -> [RDMachine.ID] {
         debugPrint("Picking Machine")
         return await withCheckedContinuation { continuation in
-            onMainThread {
-                let picker = NavigationStack {
-                    PickMachineView(completion: {
-                        continuation.resume(returning: $0)
-                    }, canSelectMany: canSelectMany)
-                }
-                .expended()
-                presentModalSheet(rootView: picker) { presented in
-                    if !presented { continuation.resume(returning: []) }
-                }
+            let picker = NavigationStack {
+                PickMachineView(completion: {
+                    continuation.resume(returning: $0)
+                }, canSelectMany: canSelectMany)
+            }
+            .expended()
+            presentModalSheet(rootView: picker) { presented in
+                if !presented { continuation.resume(returning: []) }
             }
         }
     }
@@ -107,15 +93,13 @@ enum RayonUtil {
             guard !machineIds.isEmpty else {
                 return
             }
-            onMainThread {
-                let runner = NavigationStack {
-                    SnippetExecuteView(snippet: snippet, machines: machineIds)
-                }
-                .expended()
-                // The picker sheet is still animating out when the
-                // selection comes back; the queue waits it out.
-                presentModalSheet(rootView: runner)
+            let runner = NavigationStack {
+                SnippetExecuteView(snippet: snippet, machines: machineIds)
             }
+            .expended()
+            // The picker sheet is still animating out when the
+            // selection comes back; the queue waits it out.
+            presentModalSheet(rootView: runner)
         }
     }
 }

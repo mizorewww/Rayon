@@ -91,7 +91,6 @@ targets:
         type: folder.iconcomposer
     settings:
       base:
-        SWIFT_VERSION: "5.0"
         PRODUCT_BUNDLE_IDENTIFIER: me.mizorewww.rayon
         DEVELOPMENT_TEAM: LT98S43NKA
         CODE_SIGN_STYLE: Automatic
