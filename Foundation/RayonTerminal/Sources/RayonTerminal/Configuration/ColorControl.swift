@@ -38,6 +38,9 @@ struct ColorControl: View {
                 if hex.lowercased() != effective.lowercased() { set(hex) }
             })
                 .frame(width: 22, height: 22)
+                // The picker's own ring is white; this one keeps a near-white
+                // swatch visible on a light background.
+                .overlay(Circle().strokeBorder(Color.primary.opacity(0.2), lineWidth: 0.5).allowsHitTesting(false))
                 // The picker keeps the color it was made with; a value from
                 // elsewhere (theme, undo, reset) makes a new one.
                 .id(effective)
