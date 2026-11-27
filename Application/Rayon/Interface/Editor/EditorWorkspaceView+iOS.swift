@@ -210,6 +210,7 @@
                 message: "Close \(document.name) without saving?",
                 informative: "Your changes are lost if you don't save them.",
                 confirmTitle: "Discard Changes",
+                destructive: true,
                 always: true
             ) { confirmed in
                 MainActor.assumeIsolated {
@@ -229,6 +230,7 @@
                 message: "Close the editor on \(context.machine.name)?",
                 informative: "Some files have changes that are not saved. They are lost if you close the editor.",
                 confirmTitle: "Discard Changes",
+                destructive: true,
                 always: true
             ) { confirmed in
                 if confirmed { MainActor.assumeIsolated { end() } }
@@ -242,6 +244,7 @@
                 message: "Reload \(current.name) from the server?",
                 informative: "Your changes are replaced by the file on the server.",
                 confirmTitle: "Reload",
+                destructive: true,
                 always: true
             ) { confirmed in
                 MainActor.assumeIsolated {

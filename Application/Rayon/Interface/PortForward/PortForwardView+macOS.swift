@@ -172,7 +172,8 @@
             guard let forward = RayonStore.shared.portForward(id) else { return }
             Indicator.confirm(
                 message: "Delete the forward on port \(forward.bindPort)?",
-                confirmTitle: "Delete"
+                confirmTitle: "Delete",
+                destructive: true
             ) { confirmed in
                 guard confirmed else { return }
                 PortForwardBackend.shared.endSession(withPortForwardID: id)

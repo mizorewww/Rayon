@@ -65,7 +65,7 @@
                         }
                         Divider()
                         Button(role: .destructive) {
-                            Indicator.confirm(message: "Delete \(snippet.name)?") { confirmed in
+                            Indicator.confirm(message: "Delete \(snippet.name)?", destructive: true) { confirmed in
                                 if confirmed { store.deleteSnippets([identity]) }
                             }
                         } label: {

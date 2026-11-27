@@ -340,6 +340,7 @@
                         message: "Close everything open on \(title)?",
                         informative: unsaved ? "Unsaved changes in the editor will be lost." : nil,
                         confirmTitle: unsaved ? "Discard Changes and Close" : "Close All",
+                        destructive: true,
                         always: unsaved
                     ) { confirmed in
                         if confirmed { AppRouter.shared.closeAll(owner) }

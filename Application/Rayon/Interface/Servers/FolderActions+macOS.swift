@@ -57,7 +57,8 @@
             Indicator.confirm(
                 message: plan.message,
                 informative: plan.informative,
-                confirmTitle: plan.confirmTitle
+                confirmTitle: plan.confirmTitle,
+                destructive: true
             ) { confirmed in
                 guard confirmed else { return }
                 MainActor.assumeIsolated {

@@ -53,7 +53,8 @@
             Indicator.confirm(
                 message: message,
                 informative: "Port forwards through it stop working.",
-                confirmTitle: "Delete"
+                confirmTitle: "Delete",
+                destructive: true
             ) { confirmed in
                 guard confirmed else { return }
                 for machine in machines {

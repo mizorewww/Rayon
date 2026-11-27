@@ -153,3 +153,28 @@ public enum HostKeyTrust {
         state.withLock { $0.declined = $0.declined.filter { $0.host != host || $0.port != port } }
     }
 }
+
+/// Hands a host-key question's answer on once. A prompt can go away
+/// without any of its buttons being tapped: UIKit dismisses an alert with
+/// its presenter, AppKit drops a sheet with its window. The prompt's
+/// actions hold this, and when they are released unanswered the question
+/// ends as `.unanswered` instead of waiting forever.
+public final class HostKeyAnswerOnce: Sendable {
+    private let continuation: OSAllocatedUnfairLock<CheckedContinuation<HostKeyAnswer, Never>?>
+
+    public init(_ continuation: CheckedContinuation<HostKeyAnswer, Never>) {
+        self.continuation = OSAllocatedUnfairLock(initialState: continuation)
+    }
+
+    /// The first answer wins; later ones are ignored.
+    public func resume(_ answer: HostKeyAnswer) {
+        continuation.withLock { value in
+            defer { value = nil }
+            return value
+        }?.resume(returning: answer)
+    }
+
+    deinit {
+        resume(.unanswered)
+    }
+}

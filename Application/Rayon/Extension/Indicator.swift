@@ -3,8 +3,11 @@
 //  Rayon
 //
 //  Alerts, confirmations and text input on AlertController, toasts on
-//  SPIndicator, as FlowDown's Indicator does. Every call presents over the
-//  app's frontmost window; nothing is queued or polled.
+//  SPIndicator, as FlowDown's Indicator does. A destructive confirmation
+//  and the host-key question use the system alert instead: AlertController
+//  has no destructive style, and the Mac shows the fingerprints in a
+//  monospaced accessory. Every call presents over the app's frontmost
+//  window; nothing is queued or polled.
 //
 
 import AlertController
@@ -51,6 +54,7 @@ enum Indicator {
         message: String,
         informative: String? = nil,
         confirmTitle: String = "Continue",
+        destructive: Bool = false,
         always: Bool = false,
         confirmation: @escaping (Bool) -> Void
     ) {
@@ -58,22 +62,13 @@ enum Indicator {
             confirmation(true)
             return
         }
+        guard !destructive else {
+            return systemConfirm(title: message, message: informative ?? "", confirmTitle: confirmTitle, confirmation: confirmation)
+        }
         show(title: message, message: informative ?? "", actions: [
             Action(title: "Cancel", accent: false) { confirmation(false) },
             Action(title: confirmTitle, accent: true) { confirmation(true) },
         ], dismissible: false)
-    }
-
-    /// Asks before a server's host key is trusted. A changed key is a
-    /// warning whose default answer is Cancel.
-    static func confirm(_ question: HostKeyQuestion) async -> HostKeyAnswer {
-        await withCheckedContinuation { continuation in
-            let warning = question.isWarning
-            show(title: question.title, message: question.message, actions: [
-                Action(title: "Cancel", accent: warning) { continuation.resume(returning: .declined) },
-                Action(title: question.confirmTitle, accent: !warning) { continuation.resume(returning: .trusted) },
-            ], dismissible: false)
-        }
     }
 
     static func input(
@@ -117,11 +112,42 @@ enum Indicator {
         private static func present(_ alert: AlertViewController) {
             ModalPresenter.present(alert)
         }
+
+        private static func systemConfirm(title: String, message: String, confirmTitle: String, confirmation: @escaping (Bool) -> Void) {
+            let alert = UIAlertController(title: title, message: message.isEmpty ? nil : message, preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { _ in confirmation(false) })
+            alert.addAction(UIAlertAction(title: confirmTitle, style: .destructive) { _ in confirmation(true) })
+            ModalPresenter.present(alert)
+        }
+
+        /// Asks before a server's host key is trusted. A changed key is a
+        /// warning: replacing the saved key is the destructive choice.
+        static func confirm(_ question: HostKeyQuestion) async -> HostKeyAnswer {
+            await withCheckedContinuation { continuation in
+                let answer = HostKeyAnswerOnce(continuation)
+                let alert = UIAlertController(title: question.title, message: question.message, preferredStyle: .alert)
+                alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { _ in answer.resume(.declined) })
+                let trust = UIAlertAction(title: question.confirmTitle, style: question.isWarning ? .destructive : .default) { _ in
+                    answer.resume(.trusted)
+                }
+                alert.addAction(trust)
+                if !question.isWarning { alert.preferredAction = trust }
+                ModalPresenter.present(alert)
+            }
+        }
     #else
-        /// The key window, which is a sheet's own window while one is up.
+        /// The frontmost window, or the sheet on it: a sheet begun on a
+        /// window that already has one would wait for that one to close.
+        private static var window: NSWindow? {
+            var window = NSApp.keyWindow ?? NSApp.mainWindow ?? MainWindow.ordinaryWindows.first(where: \.isVisible)
+            while let sheet = window?.attachedSheet {
+                window = sheet
+            }
+            return window
+        }
+
         private static var presenter: NSViewController? {
-            let window = NSApp.keyWindow ?? NSApp.mainWindow ?? MainWindow.ordinaryWindows.first(where: \.isVisible)
-            return window?.contentViewController
+            window?.contentViewController
         }
 
         private static func present(_ alert: AlertViewController) {
@@ -143,6 +169,68 @@ enum Indicator {
             NSApp.activate()
             let index = alert.runModal().rawValue - NSApplication.ModalResponse.alertFirstButtonReturn.rawValue
             if ordered.indices.contains(index) { ordered[index].run() }
+        }
+
+        private static func systemConfirm(title: String, message: String, confirmTitle: String, confirmation: @escaping (Bool) -> Void) {
+            let alert = NSAlert()
+            alert.messageText = title
+            alert.informativeText = message
+            alert.addButton(withTitle: confirmTitle).hasDestructiveAction = true
+            alert.addButton(withTitle: "Cancel")
+            Task {
+                confirmation(await ask(alert) == .alertFirstButtonReturn)
+            }
+        }
+
+        /// Asks before a server's host key is trusted. A changed key is a
+        /// warning whose default answer is Cancel.
+        static func confirm(_ question: HostKeyQuestion) async -> HostKeyAnswer {
+            let alert = NSAlert()
+            alert.messageText = question.title
+            alert.informativeText = question.explanation
+            alert.accessoryView = monospacedLabel(question.keys)
+            let warning = question.isWarning
+            // NSAlert's first button is its default one.
+            for title in warning ? ["Cancel", question.confirmTitle] : [question.confirmTitle, "Cancel"] {
+                alert.addButton(withTitle: title)
+            }
+            alert.buttons[warning ? 1 : 0].hasDestructiveAction = warning
+            switch await ask(alert) {
+            case warning ? .alertSecondButtonReturn : .alertFirstButtonReturn: return .trusted
+            case warning ? .alertFirstButtonReturn : .alertSecondButtonReturn: return .declined
+            default: return .unanswered
+            }
+        }
+
+        /// Wraps between any two characters, without the hyphens the
+        /// informative text adds to a fingerprint it breaks.
+        private static func monospacedLabel(_ text: String) -> NSTextField {
+            let label = NSTextField(wrappingLabelWithString: text)
+            label.font = .monospacedSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
+            label.lineBreakMode = .byCharWrapping
+            label.lineBreakStrategy = []
+            label.isSelectable = true
+            label.preferredMaxLayoutWidth = 220
+            label.frame.size = label.fittingSize
+            return label
+        }
+
+        /// Shows the alert as a sheet on the frontmost window. A window
+        /// that closes under it ends the sheet with `.abort`, so the
+        /// caller always gets an answer.
+        private static func ask(_ alert: NSAlert) async -> NSApplication.ModalResponse {
+            guard let window else {
+                NSApp.activate()
+                return alert.runModal()
+            }
+            let closing = Task {
+                for await _ in NotificationCenter.default.notifications(named: NSWindow.willCloseNotification, object: window) {
+                    window.endSheet(alert.window, returnCode: .abort)
+                    return
+                }
+            }
+            defer { closing.cancel() }
+            return await alert.beginSheetModal(for: window)
         }
     #endif
 }

@@ -334,7 +334,8 @@
                     Section {
                         Button {
                             Indicator.confirm(
-                                message: "Delete this server?"
+                                message: "Delete this server?",
+                                destructive: true
                             ) { confirmed in
                                 if confirmed {
                                     RayonStore.shared.deleteMachines([identity])

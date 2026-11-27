@@ -335,7 +335,7 @@
         @MainActor
         static func forgetHostKey(_ machine: RDMachine.ID) {
             guard let read = RayonStore.shared.machine(machine) else { return }
-            Indicator.confirm(message: "Forget the host key of \(read.name)? The key it presents next is saved as its key.") { confirmed in
+            Indicator.confirm(message: "Forget the host key of \(read.name)? The key it presents next is saved as its key.", destructive: true) { confirmed in
                 guard confirmed else { return }
                 read.forgetHostKey()
             }
@@ -354,7 +354,8 @@
             Indicator.confirm(
                 message: "Delete \(name)?",
                 informative: "This cannot be undone.",
-                confirmTitle: "Delete"
+                confirmTitle: "Delete",
+                destructive: true
             ) { confirmed in
                 guard confirmed else { return }
                 if let session = MonitorCenter.shared.session(for: machine) {

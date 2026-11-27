@@ -17,6 +17,7 @@
                 message: "Close \(document.name) without saving?",
                 informative: "Your changes are lost if you don't save them.",
                 confirmTitle: "Discard Changes",
+                destructive: true,
                 always: true
             ) { confirmed in
                 MainActor.assumeIsolated {
@@ -34,6 +35,7 @@
                 message: "Close the editor on \(workspace.context.machine.name)?",
                 informative: "Some files have changes that are not saved. They are lost if you close the editor.",
                 confirmTitle: "Discard Changes",
+                destructive: true,
                 always: true
             ) { confirmed in
                 if confirmed { EditorCenter.shared.end(workspace.id) }

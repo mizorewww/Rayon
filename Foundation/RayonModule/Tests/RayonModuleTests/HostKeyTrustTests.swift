@@ -76,4 +76,20 @@ final class HostKeyTrustTests: XCTestCase {
         }
         XCTAssertEqual(asker.asked.withLock { $0 }, 2)
     }
+
+    /// A prompt released without a tap answers unanswered; one tapped
+    /// answers once, whatever follows.
+    func testAPromptAnswersOnce() async {
+        let dropped = await withCheckedContinuation { continuation in
+            _ = HostKeyAnswerOnce(continuation)
+        }
+        XCTAssertEqual(dropped, .unanswered)
+
+        let tapped = await withCheckedContinuation { continuation in
+            let once = HostKeyAnswerOnce(continuation)
+            once.resume(.trusted)
+            once.resume(.declined)
+        }
+        XCTAssertEqual(tapped, .trusted)
+    }
 }

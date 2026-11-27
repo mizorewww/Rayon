@@ -334,7 +334,8 @@
                 informative: file.fstat.isDirectory
                     ? "The folder and everything in it is deleted from the server. This cannot be undone."
                     : "The file is deleted from the server. This cannot be undone.",
-                confirmTitle: "Delete"
+                confirmTitle: "Delete",
+                destructive: true
             ) { confirmed in
                 if confirmed { context.delete(item: item) }
             }
@@ -604,6 +605,7 @@
                         ? "Files open in the editor have changes that are not saved. They are lost if you close."
                         : "A transfer is still running and will be interrupted.",
                     confirmTitle: unsaved ? "Discard Changes" : "Close",
+                    destructive: true,
                     always: unsaved
                 ) { confirmed in
                     if confirmed { FileTransferManager.shared.end(for: context.id) }

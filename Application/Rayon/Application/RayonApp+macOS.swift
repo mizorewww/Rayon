@@ -202,6 +202,7 @@
                 message: "Quit Rayon?",
                 informative: consequences.compactMap { $0 }.joined(separator: " "),
                 confirmTitle: unsaved ? "Discard Changes and Quit" : "Quit",
+                destructive: true,
                 always: unsaved
             ) { confirmed in
                 MainActor.assumeIsolated {

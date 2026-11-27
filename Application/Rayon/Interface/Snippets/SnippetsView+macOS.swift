@@ -185,7 +185,8 @@
             guard let snippet = RayonStore.shared.snippet(id) else { return }
             Indicator.confirm(
                 message: "Delete \(snippet.name.isEmpty ? "this snippet" : snippet.name)?",
-                confirmTitle: "Delete"
+                confirmTitle: "Delete",
+                destructive: true
             ) { confirmed in
                 if confirmed { RayonStore.shared.deleteSnippets([id]) }
             }

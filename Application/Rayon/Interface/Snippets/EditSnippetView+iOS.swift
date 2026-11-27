@@ -75,7 +75,8 @@
                     Section {
                         Button {
                             Indicator.confirm(
-                                message: "Delete this snippet?"
+                                message: "Delete this snippet?",
+                                destructive: true
                             ) { confirmed in
                                 if confirmed {
                                     RayonStore.shared.deleteSnippets([identity])

@@ -240,7 +240,8 @@
                 Indicator.confirm(
                     message: "Replace the key pair?",
                     informative: "Servers that only accept the current key stop accepting this identity.",
-                    confirmTitle: "Replace"
+                    confirmTitle: "Replace",
+                    destructive: true
                 ) { confirmed in
                     if confirmed { replace() }
                 }
