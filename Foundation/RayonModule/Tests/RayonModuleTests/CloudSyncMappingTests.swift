@@ -203,6 +203,23 @@ final class CloudSyncMappingTests: XCTestCase {
         XCTAssertEqual(storage.record(RDMachine.self, id: server.id)?.vncPassword, "changed")
     }
 
+    /// A change of a kind the user stopped syncing is not sent, even when
+    /// the engine was told of it before: identities left out keep their
+    /// secrets off iCloud. It stays queued, for when they sync again.
+    func testAKindLeftOutIsNotSent() async throws {
+        let identity = try storage.save(RDIdentity(username: "root", password: "pw", privateKey: "KEY"))
+        let id = CloudRecordCoding.recordID(table: RDIdentity.tableName, id: identity.id)
+        let sync = CloudSync(storage: storage)
+        await sync.apply(CloudSyncPreferences(isOn: true))
+        let sent = await sync.ckRecord(for: id)
+        XCTAssertNotNil(sent)
+
+        await sync.apply(CloudSyncPreferences(isOn: true, identities: false))
+        let excluded = await sync.ckRecord(for: id)
+        XCTAssertNil(excluded)
+        XCTAssertEqual(storage.pendingUploads().map(\.objectId), [identity.id])
+    }
+
     func testTheScopeDecidesWhatSyncs() {
         var preferences = CloudSyncPreferences(isOn: true, identities: false)
         XCTAssertTrue(preferences.syncs(table: RDMachine.tableName))

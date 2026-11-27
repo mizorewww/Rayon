@@ -246,9 +246,13 @@ public actor CloudSync {
 
     // MARK: - Sending
 
-    /// Tells the engine about every queued change of a kind that syncs.
+    /// Tells the engine about every queued change of a kind that syncs,
+    /// and takes back what it holds of kinds that no longer do: their
+    /// changes stay queued here, for when they sync again.
     private func scheduleUploads() {
         guard let engine else { return }
+        let excluded = engine.state.pendingRecordZoneChanges.filter { !syncs($0) }
+        if !excluded.isEmpty { engine.state.remove(pendingRecordZoneChanges: excluded) }
         let pending = Set(engine.state.pendingRecordZoneChanges)
         let changes = storage.pendingUploads()
             .filter { preferences.syncs(table: $0.tableName) }
@@ -258,8 +262,21 @@ public actor CloudSync {
         engine.state.add(pendingRecordZoneChanges: changes)
     }
 
+    private func syncs(_ change: CKSyncEngine.PendingRecordZoneChange) -> Bool {
+        switch change {
+        case let .saveRecord(id), let .deleteRecord(id): syncs(id)
+        @unknown default: false
+        }
+    }
+
+    private func syncs(_ id: CKRecord.ID) -> Bool {
+        RayonStorage.parse(recordName: id.recordName).map { preferences.syncs(table: $0.table) } ?? false
+    }
+
     func ckRecord(for id: CKRecord.ID) -> CKRecord? {
-        guard let record = storage.recordToSend(named: id.recordName) else { return nil }
+        // A kind left out after its change was handed to the engine.
+        guard syncs(id), let record = storage.recordToSend(named: id.recordName)
+        else { return nil }
         // Sending it would send its secrets as empty, and every device
         // would clear its own. It stays queued until they can be read.
         guard !record.secretsUnread else {
@@ -437,7 +454,7 @@ public actor CloudSync {
     }
 
     func nextBatch(_ context: CKSyncEngine.SendChangesContext, engine: CKSyncEngine) async -> CKSyncEngine.RecordZoneChangeBatch? {
-        let changes = engine.state.pendingRecordZoneChanges.filter { context.options.scope.contains($0) }
+        let changes = engine.state.pendingRecordZoneChanges.filter { context.options.scope.contains($0) && syncs($0) }
         guard !changes.isEmpty else { return nil }
         return await CKSyncEngine.RecordZoneChangeBatch(pendingChanges: changes) { id in
             await self.ckRecord(for: id)

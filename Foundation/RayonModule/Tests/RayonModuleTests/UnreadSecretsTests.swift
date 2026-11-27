@@ -60,6 +60,7 @@ final class UnreadSecretsTests: XCTestCase {
         // The change is queued, but not sent while its secrets are unknown.
         XCTAssertEqual(storage.pendingUploads().map(\.objectId), [server.id])
         let sync = CloudSync(storage: storage)
+        await sync.apply(CloudSyncPreferences(isOn: true))
         let id = CloudRecordCoding.recordID(table: RDMachine.tableName, id: server.id)
         let refused = await sync.ckRecord(for: id)
         XCTAssertNil(refused)
@@ -70,7 +71,9 @@ final class UnreadSecretsTests: XCTestCase {
         XCTAssertFalse(unlocked.secretsUnread)
         XCTAssertEqual(unlocked.name, "renamed")
         XCTAssertEqual(unlocked.vncPassword, "vnc-secret")
-        let sent = await CloudSync(storage: storage).ckRecord(for: id)
+        let unlockedSync = CloudSync(storage: storage)
+        await unlockedSync.apply(CloudSyncPreferences(isOn: true))
+        let sent = await unlockedSync.ckRecord(for: id)
         XCTAssertNotNil(sent?.encryptedValues[CloudRecordCoding.Field.secrets])
     }
 
