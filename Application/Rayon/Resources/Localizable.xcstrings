@@ -26,9 +26,21 @@
     "%@  •••••••• %lld bytes" : {
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@  •••••••• %2$lld bytes"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@  •••••••• %lld byte"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@  •••••••• %lld bytes"
+                }
+              }
+            }
           }
         },
         "zh-Hans" : {
@@ -195,9 +207,21 @@
     "%@ · %lld bytes" : {
       "localizations" : {
         "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ · %2$lld bytes"
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@ · %lld byte"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@ · %lld bytes"
+                }
+              }
+            }
           }
         },
         "zh-Hans" : {
@@ -5591,7 +5615,49 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Imported %1$lld servers and %2$lld identities"
+            "value" : "Imported %#@servers@ and %#@identities@"
+          },
+          "substitutions" : {
+            "servers" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg server"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg servers"
+                    }
+                  }
+                }
+              }
+            },
+            "identities" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg identity"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg identities"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "zh-Hans" : {
@@ -5613,7 +5679,49 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Imported %1$lld servers and %2$lld identities from %3$@."
+            "value" : "Imported %#@servers@ and %#@identities@ from %3$@."
+          },
+          "substitutions" : {
+            "servers" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg server"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg servers"
+                    }
+                  }
+                }
+              }
+            },
+            "identities" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg identity"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg identities"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "zh-Hans" : {

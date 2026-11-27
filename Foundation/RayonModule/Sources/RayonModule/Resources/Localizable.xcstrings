@@ -326,7 +326,89 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$lld servers, %2$lld identities, %3$lld snippets, and %4$lld port forwards."
+            "value" : "%#@servers@, %#@identities@, %#@snippets@, and %#@forwards@."
+          },
+          "substitutions" : {
+            "servers" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg server"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg servers"
+                    }
+                  }
+                }
+              }
+            },
+            "identities" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg identity"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg identities"
+                    }
+                  }
+                }
+              }
+            },
+            "snippets" : {
+              "argNum" : 3,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg snippet"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg snippets"
+                    }
+                  }
+                }
+              }
+            },
+            "forwards" : {
+              "argNum" : 4,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg port forward"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg port forwards"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "zh-Hans" : {
@@ -348,7 +430,89 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%1$lld servers, %2$lld identities, %3$lld snippets, and %4$lld port forwards; %5$lld could not be saved."
+            "value" : "%#@servers@, %#@identities@, %#@snippets@, and %#@forwards@; %5$lld could not be saved."
+          },
+          "substitutions" : {
+            "servers" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg server"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg servers"
+                    }
+                  }
+                }
+              }
+            },
+            "identities" : {
+              "argNum" : 2,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg identity"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg identities"
+                    }
+                  }
+                }
+              }
+            },
+            "snippets" : {
+              "argNum" : 3,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg snippet"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg snippets"
+                    }
+                  }
+                }
+              }
+            },
+            "forwards" : {
+              "argNum" : 4,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg port forward"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg port forwards"
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "zh-Hans" : {

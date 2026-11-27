@@ -235,6 +235,18 @@ final class BackupTests: XCTestCase {
             XCTAssertNoThrow(try machine.proxyJumpChain { store.machine($0) })
         }
     }
+
+    /// Each count takes its own plural form from the catalog's substitutions.
+    func testRestoreSummaryCountsEachKindInItsOwnNumber() throws {
+        try XCTSkipUnless(Locale.current.language.languageCode == .english, "The summary is worded in the test host's language.")
+        var result = RayonStore.RestoreResult()
+        result.machines = 1
+        result.identities = 2
+        result.forwards = 1
+        XCTAssertEqual(result.summary, "1 server, 2 identities, 0 snippets, and 1 port forward.")
+        result.refused = 3
+        XCTAssertEqual(result.summary, "1 server, 2 identities, 0 snippets, and 1 port forward; 3 could not be saved.")
+    }
 }
 
 /// The backups 2.7 and 2.8 exported, written by 2.8's own code (see

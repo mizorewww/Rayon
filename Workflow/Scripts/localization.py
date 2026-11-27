@@ -86,16 +86,33 @@ def sync(catalog, sources, mark_stale, root=None):
     return True
 
 
+SUBSTITUTION = re.compile(r"%#@(\w+)@")
+
+
 def units(entry, language):
-    """Every string unit of a language: the plain one or each variation's."""
+    """Every string unit of a language: the plain one or each variation's.
+
+    A substitution ("%#@servers@", each with its own plural cases) stands
+    for the argument it formats, so its token is read as that specifier.
+    """
     localization = entry.get("localizations", {}).get(language)
     if localization is None:
         return None
+    substitutions = localization.get("substitutions", {})
     found = []
+
+    def expand(match):
+        substitution = substitutions.get(match.group(1))
+        if substitution is None:
+            return match.group(0)
+        position = substitution.get("argNum")
+        return "%" + (f"{position}$" if position else "") + substitution.get("formatSpecifier", "@")
 
     def walk(node):
         if "stringUnit" in node:
-            found.append(node["stringUnit"])
+            unit = dict(node["stringUnit"])
+            unit["value"] = SUBSTITUTION.sub(expand, unit.get("value", ""))
+            found.append(unit)
         for cases in node.get("variations", {}).values():
             for case in cases.values():
                 walk(case)
