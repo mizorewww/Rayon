@@ -64,6 +64,27 @@ describe("ingest", () => {
     expect(row?.count).toBe(1);
   });
 
+  it("counts a report whose first write failed when it is retried", async () => {
+    // The aggregate writes fail after the nonce statements are prepared.
+    await env.DB.exec("CREATE TRIGGER fail_aggregates BEFORE INSERT ON aggregates BEGIN SELECT RAISE(ABORT, 'test failure'); END");
+    try {
+      await expect(post({ reports: [samples[0]] })).rejects.toThrow();
+    } finally {
+      await env.DB.exec("DROP TRIGGER fail_aggregates");
+    }
+    expect(await dump()).toBe("[[],[],[]]");
+
+    expect((await post({ reports: [samples[0]] })).status).toBe(200);
+    const row = await env.DB.prepare("SELECT count FROM aggregates WHERE metric = 'reports'").first<{ count: number }>();
+    expect(row?.count).toBe(1);
+  });
+
+  it("counts a report sent twice in one batch once", async () => {
+    await post({ reports: [samples[0], samples[0]] });
+    const row = await env.DB.prepare("SELECT count FROM aggregates WHERE metric = 'reports'").first<{ count: number }>();
+    expect(row?.count).toBe(1);
+  });
+
   it.each<[string, (r: Sample) => void]>([
     ["an unknown key", (r) => (r.hostname = "db.example.com")],
     ["an unknown nested key", (r) => ((r.usage as Record<string, unknown>).lastHost = "10.0.0.1")],

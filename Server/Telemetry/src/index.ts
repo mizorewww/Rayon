@@ -66,26 +66,29 @@ async function ingest(request: Request, env: Env): Promise<Response> {
   const reports = parsed.map((p) => p.data as Report);
 
   const day = utcDay();
-  // A retried report has the same nonce; only its first copy counts.
-  const claims = await env.DB.batch(
-    reports.map((r) => env.DB.prepare("INSERT INTO nonces (nonce, day) VALUES (?, ?) ON CONFLICT DO NOTHING").bind(r.nonce.toLowerCase(), day)),
-  );
-  const fresh = reports.filter((_, i) => claims[i].meta.changes === 1);
-
-  const statements: D1PreparedStatement[] = [];
+  // A retried report has the same nonce; only its first copy counts. Each
+  // report's writes skip themselves once its nonce is there, and its nonce
+  // is written after them, all in one batch, which D1 runs as one
+  // transaction: a failure leaves no nonce claimed, so the client's retry
+  // still counts.
+  const unseen = "WHERE NOT EXISTS (SELECT 1 FROM nonces WHERE nonce = ?)";
   const upsert = env.DB.prepare(
-    `INSERT INTO aggregates (day, app_version, os_version, metric, bucket, count) VALUES (?, ?, ?, ?, ?, 1)
+    `INSERT INTO aggregates (day, app_version, os_version, metric, bucket, count) SELECT ?, ?, ?, ?, ?, 1 ${unseen}
      ON CONFLICT (day, app_version, os_version, metric, bucket) DO UPDATE SET count = count + 1`,
   );
-  const crash = env.DB.prepare("INSERT INTO crashes (day, app_version, os_version, kind, item) VALUES (?, ?, ?, ?, ?)");
-  for (const r of fresh) {
+  const crash = env.DB.prepare(`INSERT INTO crashes (day, app_version, os_version, kind, item) SELECT ?, ?, ?, ?, ? ${unseen}`);
+  const claim = env.DB.prepare("INSERT INTO nonces (nonce, day) VALUES (?, ?) ON CONFLICT DO NOTHING");
+  const statements: D1PreparedStatement[] = [];
+  for (const r of reports) {
+    const nonce = r.nonce.toLowerCase();
     const os = `${r.platform} ${r.osVersion}`;
-    for (const [metric, bucket] of metrics(r)) statements.push(upsert.bind(day, r.appVersion, os, metric, bucket));
+    for (const [metric, bucket] of metrics(r)) statements.push(upsert.bind(day, r.appVersion, os, metric, bucket, nonce));
     for (const d of r.diagnostics) {
-      statements.push(crash.bind(day, d.appVersion ?? r.appVersion, d.osVersion ? `${r.platform} ${d.osVersion}` : os, d.kind, JSON.stringify(d)));
+      statements.push(crash.bind(day, d.appVersion ?? r.appVersion, d.osVersion ? `${r.platform} ${d.osVersion}` : os, d.kind, JSON.stringify(d), nonce));
     }
+    statements.push(claim.bind(nonce, day));
   }
-  if (statements.length > 0) await env.DB.batch(statements);
+  await env.DB.batch(statements);
   return json({ accepted: reports.length });
 }
 
