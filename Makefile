@@ -13,7 +13,7 @@ WORKSPACE := App.xcworkspace
 TEST_PACKAGES := $(patsubst %/Tests,%,$(wildcard Foundation/*/Tests))
 RESOLVED_PACKAGES := $(patsubst %/Package.resolved,%,$(wildcard Foundation/*/Package.resolved))
 
-.PHONY: help build build-macos build-ios test test-telemetry-server resolve scan-license check-localization sync-localization clean
+.PHONY: help build build-macos build-ios test test-telemetry-server resolve scan-license sync-libraries check-localization sync-localization clean
 
 help:
 	@echo "build         Build the Mac and iOS apps"
@@ -22,7 +22,9 @@ help:
 	@echo "test          Run the Swift package tests: $(notdir $(TEST_PACKAGES))"
 	@echo "test-telemetry-server  Typecheck and test the telemetry Worker in Server/Telemetry (needs bun)"
 	@echo "resolve       Resolve the workspace's and the packages' dependencies"
-	@echo "scan-license  List the resolved dependencies; fail on any missing from Resources/LICENSE"
+	@echo "scan-license  List the resolved dependencies; fail on any missing from Resources/LICENSE,"
+	@echo "              or when Resources/Libraries.json is out of date with it"
+	@echo "sync-libraries  Write Resources/Libraries.json, the About pages' libraries, from Resources/LICENSE"
 	@echo "check-localization  Fail on keys missing from a String Catalog, stale keys, missing translations"
 	@echo "                    and format mismatches; the build in DERIVED_DATA says which keys the code uses"
 	@echo "sync-localization   Add the keys the code uses to the String Catalogs, drop stale ones (after make build)"
@@ -65,6 +67,9 @@ resolve:
 
 scan-license:
 	bash Workflow/Scripts/scan-license.sh
+
+sync-libraries:
+	/usr/bin/python3 Workflow/Scripts/libraries.py sync
 
 check-localization:
 	/usr/bin/python3 Workflow/Scripts/localization.py check
