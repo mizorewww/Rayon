@@ -16,6 +16,7 @@
         func runPreviewHooks() {
             seedPreviewServers()
             seedPreviewVNC()
+            PreviewSSH.seed()
             openPreviewTool()
             if ProcessInfo.processInfo.environment["RAYON_PREVIEW_SETTINGS"] != nil {
                 SessionNavigation.shared.selection = .settings

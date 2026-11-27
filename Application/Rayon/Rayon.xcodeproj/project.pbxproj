@@ -41,6 +41,7 @@
 		4A2538F7D51D2869CCD95EFC /* TerminalTabs+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72B120F9F98EB23F7148DC36 /* TerminalTabs+iOS.swift */; };
 		4C4DC1B026FF0419936E628A /* OpenPanel+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72D3BA0EADD0295E7594B69A /* OpenPanel+macOS.swift */; };
 		4FD42A8B6924024414881F02 /* BatchRunSheet+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 497F349CCADAE671712666CE /* BatchRunSheet+macOS.swift */; };
+		5060BA5004963361F559734C /* PreviewSSH.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BBD8792EBA6CC5E700D64D7 /* PreviewSSH.swift */; };
 		506DA335AC317AAB3BB886CB /* FileTable+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 344160116EA4AF081CD63AF6 /* FileTable+macOS.swift */; };
 		50EECDBE1396B28BF067EFA2 /* TerminalPage+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 574BCE00636C1AD0B3E7D306 /* TerminalPage+macOS.swift */; };
 		533AF44F6B568F744DDF671F /* DashboardView+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082936B899509164A1AC3890 /* DashboardView+macOS.swift */; };
@@ -141,6 +142,7 @@
 		223A263F84AFBF12F7AC4E89 /* DataBackupSettings+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DataBackupSettings+iOS.swift"; sourceTree = "<group>"; };
 		24E51B5C5912BEA70CD568D6 /* EditorForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorForm.swift; sourceTree = "<group>"; };
 		2560E619B2D2B265657F251A /* ServerPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerPicker.swift; sourceTree = "<group>"; };
+		2BBD8792EBA6CC5E700D64D7 /* PreviewSSH.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PreviewSSH.swift; sourceTree = "<group>"; };
 		2C7CD87B933BC6EB14E4AFC2 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		30519B949F1845B161D0DBFC /* UURemoteAccountSheet+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UURemoteAccountSheet+iOS.swift"; sourceTree = "<group>"; };
 		344160116EA4AF081CD63AF6 /* FileTable+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FileTable+macOS.swift"; sourceTree = "<group>"; };
@@ -333,6 +335,7 @@
 				8C33FB7EDEB1D6F9AAB710CA /* FocusedCommands.swift */,
 				202DDEC94CD2F67C49DF6918 /* PreviewHooks+iOS.swift */,
 				4B718F614EB57884F40CDB42 /* PreviewHooks+macOS.swift */,
+				2BBD8792EBA6CC5E700D64D7 /* PreviewSSH.swift */,
 				6FF65F88613D8DEBFABCC991 /* RayonApp.swift */,
 				C06FA8CD33BCACA3FE0634A5 /* RayonApp+iOS.swift */,
 				5EAAB20C299B02DDA17537E0 /* RayonApp+macOS.swift */,
@@ -776,6 +779,7 @@
 				CFA6A5F671852D006E689C55 /* PortForwardView+macOS.swift in Sources */,
 				41B8660B6D1B77C6A7F6600F /* PreviewHooks+iOS.swift in Sources */,
 				8B613BFA91122AA82BCDF109 /* PreviewHooks+macOS.swift in Sources */,
+				5060BA5004963361F559734C /* PreviewSSH.swift in Sources */,
 				944D18340BE2A587E582824C /* RayonApp+iOS.swift in Sources */,
 				E49C84E7C6517A21CDE81547 /* RayonApp+macOS.swift in Sources */,
 				0CB29375DED902A66699BB07 /* RayonApp.swift in Sources */,

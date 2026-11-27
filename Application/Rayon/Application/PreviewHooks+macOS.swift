@@ -15,6 +15,7 @@
 
     extension AppDelegate {
         func runPreviewHooks() {
+            PreviewSSH.seed()
             if ProcessInfo.processInfo.environment["RAYON_PREVIEW_TERMINAL"] != nil,
                let command = SSHCommandReader(command: "ssh demo@203.0.113.10")
             {

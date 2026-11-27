@@ -83,6 +83,16 @@
             }
             .focusedSceneValue(\.fileBrowserCommands, browser.commands)
             .environment(\.editMode, $editMode)
+            #if DEBUG
+                // RAYON_PREVIEW_SELECT=<n> chooses the first n files, for screenshots without input.
+                .onReceive(browser.$files) { files in
+                    guard let count = ProcessInfo.processInfo.environment["RAYON_PREVIEW_SELECT"].flatMap(Int.init),
+                          !files.isEmpty, browser.selection.isEmpty
+                    else { return }
+                    editMode = .active
+                    browser.selection = Set(files.prefix(count).map(\.id))
+                }
+            #endif
             .onChange(of: context.connected) { _, connected in
                 if !connected { editMode = .inactive }
             }
