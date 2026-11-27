@@ -30,4 +30,27 @@ final class SSHForwardListenerTests: XCTestCase {
             }
         }
     }
+
+    /// A connection taken before the forward runs (while signing in) and
+    /// a listener closed because signing in failed: the connection is
+    /// closed with it. An async channel made for it on accept would trip
+    /// NIO's unfinished-writer precondition once dropped.
+    func testClosingAListenerClosesTheConnectionsWaitingOnIt() async throws {
+        let free = try await ServerBootstrap(group: MultiThreadedEventLoopGroup.singleton).bind(host: "127.0.0.1", port: 0).get()
+        let port = try XCTUnwrap(free.localAddress?.port)
+        try await free.close()
+        for listen in [
+            { try await SSHForwardListener.local(port: port, targetHost: "127.0.0.1", targetPort: 22) },
+            { try await SSHForwardListener.dynamic(port: port) },
+        ] {
+            var listener: SSHForwardListener? = try await listen()
+            let client = try await ClientBootstrap(group: MultiThreadedEventLoopGroup.singleton)
+                .connect(host: "127.0.0.1", port: port)
+                .get()
+            try await Task.sleep(for: .milliseconds(200))
+            await listener?.close()
+            listener = nil
+            try await client.closeFuture.get()
+        }
+    }
 }

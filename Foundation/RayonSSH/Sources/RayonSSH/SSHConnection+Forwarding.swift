@@ -7,6 +7,13 @@
 //  cannot take more, an EOF from either side is passed on as an EOF, and
 //  both close once both directions are done.
 //
+//  A connection that waits for its other side (taken before signing in, or
+//  while its channel opens) is held as a bare channel that reads nothing,
+//  and becomes an async channel only to be bridged. A channel lets go of
+//  an async channel's writer once it is active, so one made on accept and
+//  then dropped unfinished trips NIO's "Deinited NIOAsyncWriter"
+//  precondition.
+//
 
 import Network
 import NIOCore
@@ -18,7 +25,7 @@ import NIOTransportServices
 /// connection; connections it takes meanwhile wait for the forward.
 public struct SSHForwardListener: Sendable {
     fileprivate enum Kind: Sendable {
-        case local(NIOAsyncChannel<NIOAsyncChannel<ByteBuffer, ByteBuffer>, Never>, targetHost: String, targetPort: Int)
+        case local(NIOAsyncChannel<Channel, Never>, targetHost: String, targetPort: Int)
         case dynamic(NIOAsyncChannel<PendingSOCKS, Never>)
     }
 
@@ -28,7 +35,8 @@ public struct SSHForwardListener: Sendable {
     /// `targetHost:targetPort` as the server sees it.
     public static func local(port: Int, targetHost: String, targetPort: Int) async throws -> SSHForwardListener {
         let clients = try await listen(port: port) { channel in
-            try NIOAsyncChannel<ByteBuffer, ByteBuffer>(wrappingChannelSynchronously: channel, configuration: .init(isOutboundHalfClosureEnabled: true))
+            try SSHConnection.hold(channel)
+            return channel
         }
         return SSHForwardListener(kind: .local(clients, targetHost: targetHost, targetPort: targetPort))
     }
@@ -44,11 +52,22 @@ public struct SSHForwardListener: Sendable {
         return SSHForwardListener(kind: .dynamic(clients))
     }
 
-    /// Stops listening, for a listener no forward will run on.
+    /// Stops listening, for a listener no forward will run on, and closes
+    /// the connections it took meanwhile.
     public func close() async {
         switch kind {
-        case let .local(clients, _, _): try? await clients.executeThenClose { _ in }
-        case let .dynamic(clients): try? await clients.executeThenClose { _ in }
+        case let .local(clients, _, _): await Self.close(clients) { $0 }
+        case let .dynamic(clients): await Self.close(clients) { $0.channel }
+        }
+    }
+
+    private static func close<Output: Sendable>(_ clients: NIOAsyncChannel<Output, Never>, _ channel: (Output) -> Channel) async {
+        try? await clients.executeThenClose { waiting in
+            // Once closed, the listener hands over what it took, then ends.
+            try? await clients.channel.close()
+            for try await client in waiting {
+                try? await channel(client).close()
+            }
         }
     }
 
@@ -84,9 +103,9 @@ public extension SSHConnection {
                             group.addTask {
                                 do {
                                     let remote = try await self.openDirectTCPIP(host: targetHost, port: targetPort)
-                                    await Self.bridge(client, remote)
+                                    await Self.bridge(held: client, remote)
                                 } catch {
-                                    try? await client.channel.close()
+                                    try? await client.close()
                                 }
                             }
                         }
@@ -112,7 +131,7 @@ public extension SSHConnection {
         targetPort: Int,
         onListening: @escaping @Sendable () -> Void = {}
     ) async throws {
-        let (incoming, continuation) = AsyncStream<NIOAsyncChannel<ByteBuffer, ByteBuffer>>.makeStream()
+        let (incoming, continuation) = AsyncStream<Channel>.makeStream()
         defer { continuation.finish() }
         try await untilClosed {
             try await withThrowingDiscardingTaskGroup { group in
@@ -122,9 +141,9 @@ public extension SSHConnection {
                             connections.addTask {
                                 do {
                                     let local = try await Self.connect(host: targetHost, port: targetPort)
-                                    await Self.bridge(forwarded, local)
+                                    await Self.bridge(held: forwarded, local)
                                 } catch {
-                                    try? await forwarded.channel.close()
+                                    try? await forwarded.close()
                                 }
                             }
                         }
@@ -138,7 +157,8 @@ public extension SSHConnection {
                         channel.eventLoop.makeCompletedFuture {
                             try channel.allowHalfClosure()
                             try channel.pipeline.syncOperations.addHandler(SSHChannelByteCodec())
-                            continuation.yield(try NIOAsyncChannel(wrappingChannelSynchronously: channel, configuration: .init(isOutboundHalfClosureEnabled: true)))
+                            try Self.hold(channel)
+                            if case .terminated = continuation.yield(channel) { channel.close(promise: nil) }
                         }
                     }
                 )
@@ -160,18 +180,24 @@ public extension SSHConnection {
                 }.get()
                 return
             }
-            let local = try await channel.eventLoop.submit {
-                let sync = channel.pipeline.syncOperations
-                let handshake = try sync.handler(type: SOCKS5Handshake.self)
-                handshake.accept()
-                // Bytes the client sent past its request reach the async
-                // channel when the handshake leaves the pipeline.
-                let local = try NIOAsyncChannel<ByteBuffer, ByteBuffer>(
-                    wrappingChannelSynchronously: channel, configuration: .init(isOutboundHalfClosureEnabled: true)
-                )
-                sync.removeHandler(handshake).whenComplete { _ in }
-                return local
-            }.get()
+            let local: NIOAsyncChannel<ByteBuffer, ByteBuffer>
+            do {
+                local = try await channel.eventLoop.submit {
+                    let sync = channel.pipeline.syncOperations
+                    let handshake = try sync.handler(type: SOCKS5Handshake.self)
+                    handshake.accept()
+                    // Bytes the client sent past its request reach the async
+                    // channel when the handshake leaves the pipeline.
+                    let local = try NIOAsyncChannel<ByteBuffer, ByteBuffer>(
+                        wrappingChannelSynchronously: channel, configuration: .init(isOutboundHalfClosureEnabled: true)
+                    )
+                    sync.removeHandler(handshake).whenComplete { _ in }
+                    return local
+                }.get()
+            } catch {
+                try? await remote.executeThenClose { _, _ in }
+                throw error
+            }
             await Self.bridge(local, remote)
         } catch {
             try? await channel.close()
@@ -204,6 +230,33 @@ public extension SSHConnection {
                     try NIOAsyncChannel<ByteBuffer, ByteBuffer>(wrappingChannelSynchronously: channel, configuration: .init(isOutboundHalfClosureEnabled: true))
                 }
             }
+    }
+
+    /// Keeps a waiting connection from reading until `bridge(held:_:)`.
+    static func hold(_ channel: Channel) throws {
+        try channel.syncOptions?.setOption(ChannelOptions.autoRead, value: false)
+    }
+
+    /// Bridges a connection held by `hold` to `other`, closing both if the
+    /// held one is already gone.
+    static func bridge(held channel: Channel, _ other: NIOAsyncChannel<ByteBuffer, ByteBuffer>) async {
+        let wrapped: NIOAsyncChannel<ByteBuffer, ByteBuffer>
+        do {
+            wrapped = try await channel.eventLoop.submit {
+                let wrapped = try NIOAsyncChannel<ByteBuffer, ByteBuffer>(
+                    wrappingChannelSynchronously: channel, configuration: .init(isOutboundHalfClosureEnabled: true)
+                )
+                try channel.syncOptions?.setOption(ChannelOptions.autoRead, value: true)
+                // An SSH channel does not read again on its own.
+                channel.read()
+                return wrapped
+            }.get()
+        } catch {
+            channel.close(promise: nil)
+            try? await other.executeThenClose { _, _ in }
+            return
+        }
+        await bridge(wrapped, other)
     }
 
     /// Copies each side into the other until both are done.
