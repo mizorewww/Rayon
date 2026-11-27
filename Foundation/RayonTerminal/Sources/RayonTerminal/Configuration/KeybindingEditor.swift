@@ -10,13 +10,20 @@ import SwiftUI
 enum KeybindingNames {
     /// Modifiers in the order macOS menus draw them.
     static let modifiers: [(id: String, symbol: String, name: String)] = [
-        ("ctrl", "⌃", "Control"), ("alt", "⌥", "Option"), ("shift", "⇧", "Shift"), ("super", "⌘", "Command"),
+        ("ctrl", "⌃", String(localized: "Control", bundle: .module)),
+        ("alt", "⌥", String(localized: "Option", bundle: .module)),
+        ("shift", "⇧", String(localized: "Shift", bundle: .module)),
+        ("super", "⌘", String(localized: "Command", bundle: .module)),
     ]
 
     private static let symbols: [String: String] = [
         "arrow_up": "↑", "arrow_down": "↓", "arrow_left": "←", "arrow_right": "→",
-        "enter": "↩", "tab": "⇥", "space": "Space", "backspace": "⌫", "delete": "⌦", "escape": "⎋",
-        "page_up": "Page Up", "page_down": "Page Down", "home": "Home", "end": "End", "insert": "Insert",
+        "enter": "↩", "tab": "⇥", "space": String(localized: "Space", bundle: .module), "backspace": "⌫", "delete": "⌦", "escape": "⎋",
+        "page_up": String(localized: "Page Up", bundle: .module),
+        "page_down": String(localized: "Page Down", bundle: .module),
+        "home": String(localized: "Home", bundle: .module),
+        "end": String(localized: "End", bundle: .module),
+        "insert": String(localized: "Insert", bundle: .module),
         "equal": "=", "minus": "-", "plus": "+", "comma": ",", "period": ".", "slash": "/", "backslash": "\\",
         "semicolon": ";", "quote": "'", "backquote": "`", "bracket_left": "[", "bracket_right": "]",
     ]
@@ -31,7 +38,7 @@ enum KeybindingNames {
         if name.hasPrefix("key_"), name.count == 5 { return name.dropFirst(4).uppercased() }
         if name.hasPrefix("digit_") { return String(name.dropFirst(6)) }
         if name.hasPrefix("f"), Int(name.dropFirst()) != nil { return name.uppercased() }
-        if name.hasPrefix("numpad_") { return "Keypad " + key(String(name.dropFirst(7))) }
+        if name.hasPrefix("numpad_") { return String(localized: "Keypad \(key(String(name.dropFirst(7))))", bundle: .module) }
         if name.unicodeScalars.count == 1 { return name.uppercased() }
         return name.split(separator: "_").map { $0.capitalized }.joined(separator: " ")
     }
@@ -42,35 +49,60 @@ enum KeybindingNames {
     }
 
     static func trigger(_ binding: Keybinding) -> String {
-        binding.steps.map(step).joined(separator: " then ")
+        binding.steps.map(step).joined(separator: " \(then) ")
     }
+
+    /// Between the steps of a key sequence.
+    static let then = String(localized: "then", bundle: .module)
+
+    /// The group of actions Rayon does not group.
+    static let otherGroup = String(localized: "Other", bundle: .module)
 
     // MARK: Actions
 
     static let groups: [(title: String, actions: [String])] = [
-        ("Clipboard", ["copy_to_clipboard", "paste_from_clipboard", "paste_from_selection", "copy_url_to_clipboard", "copy_title_to_clipboard"]),
-        ("Text Size", ["increase_font_size", "decrease_font_size", "reset_font_size", "set_font_size"]),
-        ("Scrolling", ["scroll_page_up", "scroll_page_down", "scroll_to_top", "scroll_to_bottom", "scroll_to_selection",
+        (String(localized: "Clipboard", bundle: .module), ["copy_to_clipboard", "paste_from_clipboard", "paste_from_selection", "copy_url_to_clipboard", "copy_title_to_clipboard"]),
+        (String(localized: "Text Size", bundle: .module), ["increase_font_size", "decrease_font_size", "reset_font_size", "set_font_size"]),
+        (String(localized: "Scrolling", bundle: .module), ["scroll_page_up", "scroll_page_down", "scroll_to_top", "scroll_to_bottom", "scroll_to_selection",
                        "scroll_to_row", "scroll_page_fractional", "scroll_page_lines", "jump_to_prompt"]),
-        ("Selection", ["select_all", "adjust_selection"]),
-        ("Send to Terminal", ["text", "esc", "csi", "cursor_key"]),
-        ("Terminal", ["clear_screen", "reset", "toggle_readonly", "toggle_mouse_reporting"]),
-        ("Key Handling", ["ignore", "unbind", "end_key_sequence"]),
+        (String(localized: "Selection", bundle: .module), ["select_all", "adjust_selection"]),
+        (String(localized: "Send to Terminal", bundle: .module), ["text", "esc", "csi", "cursor_key"]),
+        (String(localized: "Terminal", bundle: .module), ["clear_screen", "reset", "toggle_readonly", "toggle_mouse_reporting"]),
+        (String(localized: "Key Handling", bundle: .module), ["ignore", "unbind", "end_key_sequence"]),
     ]
 
     private static let titles: [String: String] = [
-        "copy_to_clipboard": "Copy", "paste_from_clipboard": "Paste", "paste_from_selection": "Paste Selection",
-        "copy_url_to_clipboard": "Copy Link", "copy_title_to_clipboard": "Copy Title",
-        "increase_font_size": "Make Text Bigger", "decrease_font_size": "Make Text Smaller",
-        "reset_font_size": "Reset Text Size", "set_font_size": "Set Text Size",
-        "scroll_page_up": "Scroll Up a Page", "scroll_page_down": "Scroll Down a Page",
-        "scroll_to_top": "Scroll to Top", "scroll_to_bottom": "Scroll to Bottom", "scroll_to_selection": "Scroll to Selection",
-        "scroll_to_row": "Scroll to Row", "scroll_page_fractional": "Scroll by Part of a Page", "scroll_page_lines": "Scroll by Lines",
-        "jump_to_prompt": "Jump to Prompt", "select_all": "Select All", "adjust_selection": "Extend Selection",
-        "text": "Type Text", "esc": "Send Escape Sequence", "csi": "Send Control Sequence", "cursor_key": "Send Cursor Key",
-        "clear_screen": "Clear Screen", "reset": "Reset Terminal", "toggle_readonly": "Toggle Read-Only",
-        "toggle_mouse_reporting": "Toggle Mouse Reporting",
-        "ignore": "Do Nothing", "unbind": "Remove Default Shortcut", "end_key_sequence": "End Key Sequence",
+        "copy_to_clipboard": String(localized: "Copy", bundle: .module),
+        "paste_from_clipboard": String(localized: "Paste", bundle: .module),
+        "paste_from_selection": String(localized: "Paste Selection", bundle: .module),
+        "copy_url_to_clipboard": String(localized: "Copy Link", bundle: .module),
+        "copy_title_to_clipboard": String(localized: "Copy Title", bundle: .module),
+        "increase_font_size": String(localized: "Make Text Bigger", bundle: .module),
+        "decrease_font_size": String(localized: "Make Text Smaller", bundle: .module),
+        "reset_font_size": String(localized: "Reset Text Size", bundle: .module),
+        "set_font_size": String(localized: "Set Text Size", bundle: .module),
+        "scroll_page_up": String(localized: "Scroll Up a Page", bundle: .module),
+        "scroll_page_down": String(localized: "Scroll Down a Page", bundle: .module),
+        "scroll_to_top": String(localized: "Scroll to Top", bundle: .module),
+        "scroll_to_bottom": String(localized: "Scroll to Bottom", bundle: .module),
+        "scroll_to_selection": String(localized: "Scroll to Selection", bundle: .module),
+        "scroll_to_row": String(localized: "Scroll to Row", bundle: .module),
+        "scroll_page_fractional": String(localized: "Scroll by Part of a Page", bundle: .module),
+        "scroll_page_lines": String(localized: "Scroll by Lines", bundle: .module),
+        "jump_to_prompt": String(localized: "Jump to Prompt", bundle: .module),
+        "select_all": String(localized: "Select All", bundle: .module),
+        "adjust_selection": String(localized: "Extend Selection", bundle: .module),
+        "text": String(localized: "Type Text", bundle: .module),
+        "esc": String(localized: "Send Escape Sequence", bundle: .module),
+        "csi": String(localized: "Send Control Sequence", bundle: .module),
+        "cursor_key": String(localized: "Send Cursor Key", bundle: .module),
+        "clear_screen": String(localized: "Clear Screen", bundle: .module),
+        "reset": String(localized: "Reset Terminal", bundle: .module),
+        "toggle_readonly": String(localized: "Toggle Read-Only", bundle: .module),
+        "toggle_mouse_reporting": String(localized: "Toggle Mouse Reporting", bundle: .module),
+        "ignore": String(localized: "Do Nothing", bundle: .module),
+        "unbind": String(localized: "Remove Default Shortcut", bundle: .module),
+        "end_key_sequence": String(localized: "End Key Sequence", bundle: .module),
     ]
 
     static func action(_ name: String) -> String {
@@ -79,17 +111,29 @@ enum KeybindingNames {
 
     static func option(_ value: String) -> String {
         [
-            "plain": "Plain text", "vt": "Text with terminal styling", "html": "HTML", "mixed": "Plain and HTML",
-            "page_up": "Page up", "page_down": "Page down", "beginning_of_line": "Start of line", "end_of_line": "End of line",
+            "plain": String(localized: "Plain text", bundle: .module),
+            "vt": String(localized: "Text with terminal styling", bundle: .module),
+            "html": "HTML",
+            "mixed": String(localized: "Plain and HTML", bundle: .module),
+            "page_up": String(localized: "Page up", bundle: .module),
+            "page_down": String(localized: "Page down", bundle: .module),
+            "beginning_of_line": String(localized: "Start of line", bundle: .module),
+            "end_of_line": String(localized: "End of line", bundle: .module),
         ][value] ?? value.replacingOccurrences(of: "_", with: " ").capitalized
     }
 
     /// Shell editing keys the defaults send as raw bytes, by what they do.
     private static let knownSequences: [String: String] = [
-        "text:\\x01": "Move to Start of Line", "text:\\x05": "Move to End of Line",
-        "text:\\x15": "Delete to Start of Line", "text:\\x0b": "Delete to End of Line",
-        "text:\\x17": "Delete Previous Word", "esc:b": "Move Back a Word", "esc:f": "Move Forward a Word",
-        "esc:d": "Delete Next Word", "jump_to_prompt:-1": "Jump to Previous Prompt", "jump_to_prompt:1": "Jump to Next Prompt",
+        "text:\\x01": String(localized: "Move to Start of Line", bundle: .module),
+        "text:\\x05": String(localized: "Move to End of Line", bundle: .module),
+        "text:\\x15": String(localized: "Delete to Start of Line", bundle: .module),
+        "text:\\x0b": String(localized: "Delete to End of Line", bundle: .module),
+        "text:\\x17": String(localized: "Delete Previous Word", bundle: .module),
+        "esc:b": String(localized: "Move Back a Word", bundle: .module),
+        "esc:f": String(localized: "Move Forward a Word", bundle: .module),
+        "esc:d": String(localized: "Delete Next Word", bundle: .module),
+        "jump_to_prompt:-1": String(localized: "Jump to Previous Prompt", bundle: .module),
+        "jump_to_prompt:1": String(localized: "Jump to Next Prompt", bundle: .module),
     ]
 
     /// "Make Text Bigger (2 pt)" for a binding with an argument.
@@ -97,14 +141,15 @@ enum KeybindingNames {
         if let known = knownSequences["\(binding.action):\(binding.argument ?? "")"] { return known }
         let title = action(binding.action)
         guard let argument = binding.argument, !argument.isEmpty else { return title }
-        if binding.action.hasSuffix("font_size") { return "\(title) (\(argument) pt)" }
+        if binding.action.hasSuffix("font_size") { return String(localized: "\(title) (\(argument) pt)", bundle: .module) }
         let definition = KeybindingCatalog.shared.actions.first { $0.name == binding.action }
-        return "\(title) (\(definition?.type == "enum" ? option(argument) : argument))"
+        let shown = definition?.type == "enum" ? option(argument) : argument
+        return String(localized: "\(title) (\(shown))", bundle: .module)
     }
 
     /// Rayon applies a binding only if its action exists here and it is not global.
     static func group(of action: String) -> String {
-        groups.first { $0.actions.contains(action) }?.title ?? "Other"
+        groups.first { $0.actions.contains(action) }?.title ?? otherGroup
     }
 
     /// What a shortcut is found by: its keys, what it does and its line.
@@ -127,13 +172,13 @@ enum KeybindingNames {
     static let keyGroups: [(title: String, keys: [String])] = {
         let all = KeybindingCatalog.shared.keys
         return [
-            ("Letters", all.filter { $0.hasPrefix("key_") }),
-            ("Numbers", all.filter { $0.hasPrefix("digit_") }),
-            ("Punctuation", ["backquote", "minus", "equal", "bracket_left", "bracket_right", "backslash", "semicolon", "quote", "comma", "period", "slash"]),
-            ("Navigation", ["arrow_up", "arrow_down", "arrow_left", "arrow_right", "home", "end", "page_up", "page_down"]),
-            ("Editing", ["enter", "tab", "space", "backspace", "delete", "escape", "insert"]),
-            ("Function Keys", all.filter { $0.hasPrefix("f") && Int($0.dropFirst()) != nil }),
-            ("Keypad", all.filter { $0.hasPrefix("numpad_") }),
+            (String(localized: "Letters", bundle: .module), all.filter { $0.hasPrefix("key_") }),
+            (String(localized: "Numbers", bundle: .module), all.filter { $0.hasPrefix("digit_") }),
+            (String(localized: "Punctuation", bundle: .module), ["backquote", "minus", "equal", "bracket_left", "bracket_right", "backslash", "semicolon", "quote", "comma", "period", "slash"]),
+            (String(localized: "Navigation", bundle: .module), ["arrow_up", "arrow_down", "arrow_left", "arrow_right", "home", "end", "page_up", "page_down"]),
+            (String(localized: "Editing", bundle: .module), ["enter", "tab", "space", "backspace", "delete", "escape", "insert"]),
+            (String(localized: "Function Keys", bundle: .module), all.filter { $0.hasPrefix("f") && Int($0.dropFirst()) != nil }),
+            (String(localized: "Keypad", bundle: .module), all.filter { $0.hasPrefix("numpad_") }),
         ]
     }()
 }
@@ -197,20 +242,20 @@ struct KeybindingList: View {
         }
         let hidden = parsed.filter { !KeybindingNames.applies($0) }.count
         Section {
-            TextField("Search shortcuts", text: $filter)
+            TextField(String(localized: "Search shortcuts", bundle: .module), text: $filter)
             HStack {
-                Button("Add Shortcut", systemImage: "plus") { editing = Editing(index: nil, raw: Keybinding().rendered) }
+                Button(.init("Add Shortcut", bundle: .module), systemImage: "plus") { editing = Editing(index: nil, raw: Keybinding().rendered) }
                 Spacer()
-                Button("Restore Defaults…") { confirmReset = true }
+                Button(.init("Restore Defaults…", bundle: .module)) { confirmReset = true }
                     .disabled(!settings.isSet("keybind"))
             }
         } footer: {
             if hidden > 0 {
-                Text("\(hidden) of Ghostty's shortcuts are for windows, tabs and splits, which Rayon manages itself; they are not shown.")
+                Text("\(hidden) of Ghostty's shortcuts are for windows, tabs and splits, which Rayon manages itself; they are not shown.", bundle: .module)
             }
         }
-        .confirmationDialog("Restore the default shortcuts?", isPresented: $confirmReset) {
-            Button("Restore", role: .destructive) { settings.reset("keybind") }
+        .confirmationDialog(Text("Restore the default shortcuts?", bundle: .module), isPresented: $confirmReset) {
+            Button(.init("Restore", bundle: .module), role: .destructive) { settings.reset("keybind") }
         }
         .sheet(item: $editing) { item in
             KeybindingBuilder(raw: item.raw) { raw in
@@ -222,7 +267,7 @@ struct KeybindingList: View {
                 editing = nil
             }
         }
-        ForEach(KeybindingNames.groups.map(\.title) + ["Other"], id: \.self) { group in
+        ForEach(KeybindingNames.groups.map(\.title) + [KeybindingNames.otherGroup], id: \.self) { group in
             let members = visible.filter { KeybindingNames.group(of: parsed[$0].action) == group }
             if !members.isEmpty {
                 Section(group) {
@@ -242,7 +287,7 @@ struct KeybindingList: View {
         HStack {
             HStack(spacing: 4) {
                 ForEach(Array(binding.steps.enumerated()), id: \.offset) { offset, step in
-                    if offset > 0 { Text("then").font(.caption).foregroundStyle(.secondary) }
+                    if offset > 0 { Text(KeybindingNames.then).font(.caption).foregroundStyle(.secondary) }
                     KeyCaps(text: KeybindingNames.step(step))
                 }
             }
@@ -253,19 +298,19 @@ struct KeybindingList: View {
                     Text(binding.errors.joined(separator: "; ")).font(.caption).foregroundStyle(.red)
                 }
                 if duplicate {
-                    Text("Same keys as another shortcut").font(.caption).foregroundStyle(.orange)
+                    Text("Same keys as another shortcut", bundle: .module).font(.caption).foregroundStyle(.orange)
                 }
             }
             Spacer()
-            Button("Edit", action: edit)
-            Button(role: .destructive, action: delete) { Label("Delete Shortcut", systemImage: "trash") }
+            Button(.init("Edit", bundle: .module), action: edit)
+            Button(role: .destructive, action: delete) { Label(.init("Delete Shortcut", bundle: .module), systemImage: "trash") }
                 .labelStyle(.iconOnly)
         }
         .buttonStyle(.borderless)
         .help(raw)
         .contextMenu {
-            Button("Edit…", action: edit)
-            Button("Delete", role: .destructive, action: delete)
+            Button(.init("Edit…", bundle: .module), action: edit)
+            Button(.init("Delete", bundle: .module), role: .destructive, action: delete)
         }
     }
 }
@@ -299,17 +344,17 @@ struct KeybindingBuilder: View {
         NavigationStack {
             Form {
                 ForEach(Array(parsed.steps.enumerated()), id: \.offset) { index, step in
-                    Section(parsed.steps.count > 1 ? "Keys, step \(index + 1)" : "Keys") {
+                    Section(parsed.steps.count > 1 ? String(localized: "Keys, step \(index + 1)", bundle: .module) : String(localized: "Keys", bundle: .module)) {
                         stepEditor(index: index, step: step)
                     }
                 }
                 Section {
-                    Button("Add Step", systemImage: "plus") { edit { $0.steps.append("key_k") } }
+                    Button(.init("Add Step", bundle: .module), systemImage: "plus") { edit { $0.steps.append("key_k") } }
                         .disabled(parsed.steps.count >= 4)
-                        .help("Make a sequence: press the first keys, release, then the next")
+                        .help(.init("Make a sequence: press the first keys, release, then the next", bundle: .module))
                 }
                 Section {
-                    Picker("Action", selection: Binding(get: { parsed.action }, set: { name in edit { $0.action = name; $0.argument = nil } })) {
+                    Picker(.init("Action", bundle: .module), selection: Binding(get: { parsed.action }, set: { name in edit { $0.action = name; $0.argument = nil } })) {
                         ForEach(KeybindingNames.groups, id: \.title) { group in
                             Section(group.title) {
                                 ForEach(group.actions, id: \.self) { Text(KeybindingNames.action($0)).tag($0) }
@@ -320,19 +365,21 @@ struct KeybindingBuilder: View {
                 } footer: {
                     if let description = definition?.description { Text(description) }
                 }
-                Section("When") {
-                    Toggle("Also send the keys to the program", isOn: prefix("unconsumed"))
-                    Toggle("Only when the action can run", isOn: prefix("performable"))
+                Section {
+                    Toggle(.init("Also send the keys to the program", bundle: .module), isOn: prefix("unconsumed"))
+                    Toggle(.init("Only when the action can run", bundle: .module), isOn: prefix("performable"))
+                } header: {
+                    Text("When", bundle: .module)
                 }
                 Section {
-                    TextField("Ghostty syntax", text: $raw)
+                    TextField(String(localized: "Ghostty syntax", bundle: .module), text: $raw)
                         .font(.body.monospaced())
                         #if os(iOS)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
                         #endif
                 } header: {
-                    Text("Ghostty Syntax")
+                    Text("Ghostty Syntax", bundle: .module)
                 } footer: {
                     if !parsed.errors.isEmpty {
                         Text(parsed.errors.joined(separator: "\n")).foregroundStyle(.red)
@@ -340,11 +387,11 @@ struct KeybindingBuilder: View {
                 }
             }
             .formStyle(.grouped)
-            .navigationTitle(parsed.steps.isEmpty ? "Shortcut" : KeybindingNames.trigger(parsed))
+            .navigationTitle(parsed.steps.isEmpty ? String(localized: "Shortcut", bundle: .module) : KeybindingNames.trigger(parsed))
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) { Button("Cancel", action: cancel) }
+                ToolbarItem(placement: .cancellationAction) { Button(.init("Cancel", bundle: .module), action: cancel) }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") { save(raw) }
+                    Button(.init("Save", bundle: .module)) { save(raw) }
                         .disabled(!parsed.errors.isEmpty || recordingStep != nil)
                 }
             }
@@ -366,12 +413,12 @@ struct KeybindingBuilder: View {
     @ViewBuilder private func stepEditor(index: Int, step: String) -> some View {
         let (mods, key) = Keybinding.splitStep(step)
         HStack {
-            KeyCaps(text: recordingStep == index ? "Press keys…" : KeybindingNames.step(step))
+            KeyCaps(text: recordingStep == index ? String(localized: "Press keys…", bundle: .module) : KeybindingNames.step(step))
             #if os(macOS) || targetEnvironment(macCatalyst)
-                Button(recordingStep == index ? "Cancel" : "Record") {
+                Button(recordingStep == index ? String(localized: "Cancel", bundle: .module) : String(localized: "Record", bundle: .module)) {
                     recordingStep = recordingStep == index ? nil : index
                 }
-                .help("Press the shortcut on the keyboard")
+                .help(.init("Press the shortcut on the keyboard", bundle: .module))
                 .background(KeyRecorder(
                     active: recordingStep == index,
                     record: { recorded in
@@ -384,7 +431,7 @@ struct KeybindingBuilder: View {
             Spacer()
             if parsed.steps.count > 1 {
                 Button(role: .destructive) { edit { $0.steps.remove(at: index) } } label: {
-                    Label("Remove Step", systemImage: "minus.circle")
+                    Label(.init("Remove Step", bundle: .module), systemImage: "minus.circle")
                 }
                 .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)
@@ -392,7 +439,7 @@ struct KeybindingBuilder: View {
         }
         HStack {
             ForEach(KeybindingNames.modifiers, id: \.id) { modifier in
-                Toggle("\(modifier.symbol) \(modifier.name)", isOn: Binding(get: { mods.contains(modifier.id) }, set: { on in
+                Toggle(modifier.symbol + " " + modifier.name, isOn: Binding(get: { mods.contains(modifier.id) }, set: { on in
                     edit {
                         var (current, key) = Keybinding.splitStep($0.steps[index])
                         current.removeAll { $0 == modifier.id }
@@ -403,7 +450,7 @@ struct KeybindingBuilder: View {
                 .toggleStyle(.button)
             }
         }
-        Picker("Key", selection: Binding(get: { key }, set: { name in edit { $0.steps[index] = (mods.sorted() + [name]).joined(separator: "+") } })) {
+        Picker(.init("Key", bundle: .module), selection: Binding(get: { key }, set: { name in edit { $0.steps[index] = (mods.sorted() + [name]).joined(separator: "+") } })) {
             ForEach(KeybindingNames.keyGroups, id: \.title) { group in
                 Section(group.title) {
                     ForEach(group.keys, id: \.self) { Text(KeybindingNames.key($0)).tag($0) }
@@ -420,18 +467,18 @@ struct KeybindingBuilder: View {
             let argument = Binding(get: { parsed.argument ?? "" }, set: { value in edit { $0.argument = value.isEmpty ? nil : value } })
             switch definition.type {
             case "enum":
-                Picker("Option", selection: argument) {
-                    if definition.allowEmpty == true { Text("Default").tag("") }
+                Picker(.init("Option", bundle: .module), selection: argument) {
+                    if definition.allowEmpty == true { Text("Default", bundle: .module).tag("") }
                     ForEach(definition.options ?? [], id: \.self) { Text(KeybindingNames.option($0)).tag($0) }
                 }
             case "number", "integer", "unsignedInteger":
-                LabeledContent(definition.name.contains("font") ? "Points" : "Amount") {
+                LabeledContent(definition.name.contains("font") ? String(localized: "Points", bundle: .module) : String(localized: "Amount", bundle: .module)) {
                     HStack {
                         TextField("1", text: argument)
                             .labelsHidden()
                             .multilineTextAlignment(.trailing)
                             .frame(width: 80)
-                        Stepper("Amount", onIncrement: { argument.wrappedValue = format((Double(argument.wrappedValue) ?? 0) + 1) },
+                        Stepper(String(localized: "Amount", bundle: .module), onIncrement: { argument.wrappedValue = format((Double(argument.wrappedValue) ?? 0) + 1) },
                                 onDecrement: {
                                     let next = (Double(argument.wrappedValue) ?? 0) - 1
                                     argument.wrappedValue = format(definition.type == "unsignedInteger" ? max(0, next) : next)
@@ -440,7 +487,7 @@ struct KeybindingBuilder: View {
                     }
                 }
             default:
-                TextField(definition.type == "text" ? "Text to type (\\n, \\x1b…)" : "Sequence", text: argument)
+                TextField(definition.type == "text" ? String(localized: "Text to type (\\n, \\x1b…)", bundle: .module) : String(localized: "Sequence", bundle: .module), text: argument)
                     .font(.body.monospaced())
             }
         }

@@ -56,58 +56,58 @@ enum SettingsLayout {
             }
         }
         return Category(
-            id: Category.ghosttyID, title: "Ghostty App", icon: "app.dashed", groups: groups,
-            note: "Rayon's terminal does not use these: they belong to the Ghostty app, or Rayon sets them itself. They are kept in config.ghostty, so the file also works in Ghostty."
+            id: Category.ghosttyID, title: String(localized: "Ghostty App", bundle: .module), icon: "app.dashed", groups: groups,
+            note: String(localized: "Rayon's terminal does not use these: they belong to the Ghostty app, or Rayon sets them itself. They are kept in config.ghostty, so the file also works in Ghostty.", bundle: .module)
         )
     }()
 
     private static let rayonCategories: [Category] = [
-        Category(id: "text", title: "Text", icon: "textformat", groups: [
-            Group("font", "Font", keys: ["font-family", "font-style", "font-size", "font-thicken", "font-thicken-strength"]),
-            Group("styles", "Bold and Italic", keys: [
+        Category(id: "text", title: String(localized: "Text", bundle: .module), icon: "textformat", groups: [
+            Group("font", String(localized: "Font", bundle: .module), keys: ["font-family", "font-style", "font-size", "font-thicken", "font-thicken-strength"]),
+            Group("styles", String(localized: "Bold and Italic", bundle: .module), keys: [
                 "font-family-bold", "font-style-bold", "font-family-italic", "font-style-italic",
                 "font-family-bold-italic", "font-style-bold-italic", "font-synthetic-style",
             ]),
-            Group("features", "Features and Variations", keys: [
+            Group("features", String(localized: "Features and Variations", bundle: .module), keys: [
                 "font-feature", "font-variation", "font-variation-bold", "font-variation-italic", "font-variation-bold-italic",
             ]),
-            Group("glyphs", "Glyphs", keys: ["font-codepoint-map", "grapheme-width-method"]),
-            Group("metrics", "Cell Metrics", keys: [
+            Group("glyphs", String(localized: "Glyphs", bundle: .module), keys: ["font-codepoint-map", "grapheme-width-method"]),
+            Group("metrics", String(localized: "Cell Metrics", bundle: .module), keys: [
                 "adjust-cell-width", "adjust-cell-height", "adjust-font-baseline",
                 "adjust-underline-position", "adjust-underline-thickness",
                 "adjust-strikethrough-position", "adjust-strikethrough-thickness",
                 "adjust-overline-position", "adjust-overline-thickness", "adjust-box-thickness",
             ]),
         ]),
-        Category(id: "colors", title: "Colors", icon: "paintpalette", groups: [
-            Group("theme", "Theme", keys: ["theme"]),
-            Group("base", "Text and Background", keys: ["foreground", "background", "bold-color", "minimum-contrast"]),
-            Group("selection", "Selection", keys: ["selection-foreground", "selection-background"]),
-            Group("palette", "Palette", keys: ["palette"]),
+        Category(id: "colors", title: String(localized: "Colors", bundle: .module), icon: "paintpalette", groups: [
+            Group("theme", String(localized: "Theme", bundle: .module), keys: ["theme"]),
+            Group("base", String(localized: "Text and Background", bundle: .module), keys: ["foreground", "background", "bold-color", "minimum-contrast"]),
+            Group("selection", String(localized: "Selection", bundle: .module), keys: ["selection-foreground", "selection-background"]),
+            Group("palette", String(localized: "Palette", bundle: .module), keys: ["palette"]),
         ]),
-        Category(id: "cursor", title: "Cursor", icon: "character.cursor.ibeam", groups: [
-            Group("shape", "Shape", keys: ["cursor-style", "cursor-style-blink", "adjust-cursor-thickness", "adjust-cursor-height"]),
-            Group("color", "Color", keys: ["cursor-color", "cursor-text", "cursor-opacity"]),
+        Category(id: "cursor", title: String(localized: "Cursor", bundle: .module), icon: "character.cursor.ibeam", groups: [
+            Group("shape", String(localized: "Shape", bundle: .module), keys: ["cursor-style", "cursor-style-blink", "adjust-cursor-thickness", "adjust-cursor-height"]),
+            Group("color", String(localized: "Color", bundle: .module), keys: ["cursor-color", "cursor-text", "cursor-opacity"]),
         ]),
-        Category(id: "window", title: "Window", icon: "macwindow", groups: [
-            Group("transparency", "Transparency", keys: ["background-opacity", "background-opacity-cells"]),
-            Group("padding", "Padding", keys: ["window-padding-x", "window-padding-y", "window-padding-balance", "window-padding-color"]),
+        Category(id: "window", title: String(localized: "Window", bundle: .module), icon: "macwindow", groups: [
+            Group("transparency", String(localized: "Transparency", bundle: .module), keys: ["background-opacity", "background-opacity-cells"]),
+            Group("padding", String(localized: "Padding", bundle: .module), keys: ["window-padding-x", "window-padding-y", "window-padding-balance", "window-padding-color"]),
         ]),
-        Category(id: "input", title: "Mouse & Clipboard", icon: "cursorarrow.click", groups: [
+        Category(id: "input", title: String(localized: "Mouse & Clipboard", bundle: .module), icon: "cursorarrow.click", groups: [
             // Copy on Select is the app's own row: a touch selection never
             // passes through Ghostty's `copy-on-select`.
-            Group("copy", "Copy and Paste", keys: [
+            Group("copy", String(localized: "Copy and Paste", bundle: .module), keys: [
                 "clipboard-trim-trailing-spaces", "selection-clear-on-copy",
                 "selection-clear-on-typing", "clipboard-paste-protection", "clipboard-paste-bracketed-safe",
             ]),
-            Group("mouse", "Mouse", keys: ["mouse-scroll-multiplier", "mouse-hide-while-typing", "mouse-shift-capture", "cursor-click-to-move", "link-url"]),
+            Group("mouse", String(localized: "Mouse", bundle: .module), keys: ["mouse-scroll-multiplier", "mouse-hide-while-typing", "mouse-shift-capture", "cursor-click-to-move", "link-url"]),
         ]),
-        Category(id: "keyboard", title: "Keyboard", icon: "keyboard", groups: [
-            Group("keybinds", "Shortcuts", keys: ["keybind"]),
+        Category(id: "keyboard", title: String(localized: "Keyboard", bundle: .module), icon: "keyboard", groups: [
+            Group("keybinds", String(localized: "Shortcuts", bundle: .module), keys: ["keybind"]),
         ]),
-        Category(id: "advanced", title: "Advanced", icon: "slider.horizontal.3", groups: [
-            Group("memory", "Memory", keys: ["scrollback-limit", "image-storage-limit"]),
-            Group("compatibility", "Compatibility", keys: ["title", "enquiry-response", "vt-kam-allowed"]),
+        Category(id: "advanced", title: String(localized: "Advanced", bundle: .module), icon: "slider.horizontal.3", groups: [
+            Group("memory", String(localized: "Memory", bundle: .module), keys: ["scrollback-limit", "image-storage-limit"]),
+            Group("compatibility", String(localized: "Compatibility", bundle: .module), keys: ["title", "enquiry-response", "vt-kam-allowed"]),
         ]),
     ]
 
@@ -130,41 +130,41 @@ enum SettingsLayout {
     /// Rayon's wording where the catalog's is written for standalone Ghostty, or
     /// no longer matches the control (sizes edited in MB, fonts picked from a list).
     static let wording: [String: (title: String, summary: String?)] = [
-        "font-family": ("Font", "The typeface for terminal text, then fallbacks for characters it lacks."),
-        "font-style": ("Style", "Which of the font's styles regular text uses."),
-        "font-size": ("Size", "Text size in points. ⌘+ and ⌘− change it for one session."),
-        "font-thicken": ("Thicken strokes", "Draw text with a heavier stroke, like Terminal on macOS."),
-        "font-thicken-strength": ("Thickening amount", "How much heavier strokes are drawn while thickening is on."),
-        "font-family-bold": ("Bold font", nil),
-        "font-style-bold": ("Bold style", nil),
-        "font-family-italic": ("Italic font", nil),
-        "font-style-italic": ("Italic style", nil),
-        "font-family-bold-italic": ("Bold italic font", nil),
-        "font-style-bold-italic": ("Bold italic style", nil),
-        "font-feature": ("OpenType features", "Turn ligatures and stylistic alternates on or off."),
-        "font-variation": ("Variation axes", "Weight, width or slant of a variable font."),
-        "font-variation-bold": ("Bold variation axes", nil),
-        "font-variation-italic": ("Italic variation axes", nil),
-        "font-variation-bold-italic": ("Bold italic variation axes", nil),
-        "font-codepoint-map": ("Font for character ranges", "Draw specific Unicode ranges, such as icons, with another font."),
-        "background-opacity": ("Background opacity", "Below 1, the window behind shows through the terminal background."),
-        "background-opacity-cells": ("Apply opacity to colored cells", "Also make cells with their own background color translucent."),
-        "window-padding-x": ("Horizontal padding", "Space between the text and the left and right edges, in points."),
-        "window-padding-y": ("Vertical padding", "Space between the text and the top and bottom edges, in points."),
-        "window-padding-balance": ("Balance padding", "Spread leftover space evenly around the text."),
-        "scrollback-limit": ("Scrollback", "Memory kept for lines that have scrolled off screen."),
-        "image-storage-limit": ("Images", "Memory kept for images shown in the terminal."),
-        "title": ("Fixed session title", "Use this instead of the title the remote shell sets."),
-        "mouse-scroll-multiplier": ("Scroll speed", "Multiplies trackpad (precise) and mouse wheel (line) scrolling."),
-        "cursor-click-to-move": ("Option-click moves the cursor", "Option-click at a prompt to move the cursor there."),
-        "link-url": ("Detect links", "⌘-click URLs in terminal output to open them."),
-        "cursor-style": ("Style", nil),
-        "cursor-style-blink": ("Blinking", "Whether the cursor blinks; programs can still ask for either."),
-        "adjust-cursor-thickness": ("Bar thickness", "Width of the bar and hollow-block cursor, in points or percent."),
-        "adjust-cursor-height": ("Height", "Height of the cursor, in points or percent."),
-        "cursor-color": ("Fill", "Color of the cursor itself."),
-        "cursor-text": ("Text under the cursor", nil),
-        "cursor-opacity": ("Opacity", nil),
+        "font-family": (String(localized: "Font", bundle: .module), String(localized: "The typeface for terminal text, then fallbacks for characters it lacks.", bundle: .module)),
+        "font-style": (String(localized: "Style", bundle: .module), String(localized: "Which of the font's styles regular text uses.", bundle: .module)),
+        "font-size": (String(localized: "Size", bundle: .module), String(localized: "Text size in points. ⌘+ and ⌘− change it for one session.", bundle: .module)),
+        "font-thicken": (String(localized: "Thicken strokes", bundle: .module), String(localized: "Draw text with a heavier stroke, like Terminal on macOS.", bundle: .module)),
+        "font-thicken-strength": (String(localized: "Thickening amount", bundle: .module), String(localized: "How much heavier strokes are drawn while thickening is on.", bundle: .module)),
+        "font-family-bold": (String(localized: "Bold font", bundle: .module), nil),
+        "font-style-bold": (String(localized: "Bold style", bundle: .module), nil),
+        "font-family-italic": (String(localized: "Italic font", bundle: .module), nil),
+        "font-style-italic": (String(localized: "Italic style", bundle: .module), nil),
+        "font-family-bold-italic": (String(localized: "Bold italic font", bundle: .module), nil),
+        "font-style-bold-italic": (String(localized: "Bold italic style", bundle: .module), nil),
+        "font-feature": (String(localized: "OpenType features", bundle: .module), String(localized: "Turn ligatures and stylistic alternates on or off.", bundle: .module)),
+        "font-variation": (String(localized: "Variation axes", bundle: .module), String(localized: "Weight, width or slant of a variable font.", bundle: .module)),
+        "font-variation-bold": (String(localized: "Bold variation axes", bundle: .module), nil),
+        "font-variation-italic": (String(localized: "Italic variation axes", bundle: .module), nil),
+        "font-variation-bold-italic": (String(localized: "Bold italic variation axes", bundle: .module), nil),
+        "font-codepoint-map": (String(localized: "Font for character ranges", bundle: .module), String(localized: "Draw specific Unicode ranges, such as icons, with another font.", bundle: .module)),
+        "background-opacity": (String(localized: "Background opacity", bundle: .module), String(localized: "Below 1, the window behind shows through the terminal background.", bundle: .module)),
+        "background-opacity-cells": (String(localized: "Apply opacity to colored cells", bundle: .module), String(localized: "Also make cells with their own background color translucent.", bundle: .module)),
+        "window-padding-x": (String(localized: "Horizontal padding", bundle: .module), String(localized: "Space between the text and the left and right edges, in points.", bundle: .module)),
+        "window-padding-y": (String(localized: "Vertical padding", bundle: .module), String(localized: "Space between the text and the top and bottom edges, in points.", bundle: .module)),
+        "window-padding-balance": (String(localized: "Balance padding", bundle: .module), String(localized: "Spread leftover space evenly around the text.", bundle: .module)),
+        "scrollback-limit": (String(localized: "Scrollback", bundle: .module), String(localized: "Memory kept for lines that have scrolled off screen.", bundle: .module)),
+        "image-storage-limit": (String(localized: "Images", bundle: .module), String(localized: "Memory kept for images shown in the terminal.", bundle: .module)),
+        "title": (String(localized: "Fixed session title", bundle: .module), String(localized: "Use this instead of the title the remote shell sets.", bundle: .module)),
+        "mouse-scroll-multiplier": (String(localized: "Scroll speed", bundle: .module), String(localized: "Multiplies trackpad (precise) and mouse wheel (line) scrolling.", bundle: .module)),
+        "cursor-click-to-move": (String(localized: "Option-click moves the cursor", bundle: .module), String(localized: "Option-click at a prompt to move the cursor there.", bundle: .module)),
+        "link-url": (String(localized: "Detect links", bundle: .module), String(localized: "⌘-click URLs in terminal output to open them.", bundle: .module)),
+        "cursor-style": (String(localized: "Style", bundle: .module), nil),
+        "cursor-style-blink": (String(localized: "Blinking", bundle: .module), String(localized: "Whether the cursor blinks; programs can still ask for either.", bundle: .module)),
+        "adjust-cursor-thickness": (String(localized: "Bar thickness", bundle: .module), String(localized: "Width of the bar and hollow-block cursor, in points or percent.", bundle: .module)),
+        "adjust-cursor-height": (String(localized: "Height", bundle: .module), String(localized: "Height of the cursor, in points or percent.", bundle: .module)),
+        "cursor-color": (String(localized: "Fill", bundle: .module), String(localized: "Color of the cursor itself.", bundle: .module)),
+        "cursor-text": (String(localized: "Text under the cursor", bundle: .module), nil),
+        "cursor-opacity": (String(localized: "Opacity", bundle: .module), nil),
     ]
 
     static func title(_ setting: Setting) -> String {
@@ -177,10 +177,20 @@ enum SettingsLayout {
 
     /// Human names for option values the catalog leaves raw.
     static let optionNames: [String: [String: String]] = [
-        "cursor-style": ["block": "Block", "bar": "Bar", "underline": "Underline", "block_hollow": "Hollow"],
-        "cursor-style-blink": ["true": "Blink", "false": "Steady", "": "Auto"],
-        "mouse-shift-capture": ["false": "Off (programs can opt in)", "true": "On (programs can opt out)", "always": "Always", "never": "Never"],
-        "window-padding-color": ["background": "Background color", "extend": "Extend edge cells", "extend-always": "Always extend edge cells"],
+        "cursor-style": ["block": String(localized: "Block", bundle: .module),
+        "bar": String(localized: "Bar", bundle: .module),
+        "underline": String(localized: "Underline", bundle: .module),
+        "block_hollow": String(localized: "Hollow", bundle: .module)],
+        "cursor-style-blink": ["true": String(localized: "Blink", bundle: .module),
+        "false": String(localized: "Steady", bundle: .module),
+        "": String(localized: "Auto", bundle: .module)],
+        "mouse-shift-capture": ["false": String(localized: "Off (programs can opt in)", bundle: .module),
+        "true": String(localized: "On (programs can opt out)", bundle: .module),
+        "always": String(localized: "Always", bundle: .module),
+        "never": String(localized: "Never", bundle: .module)],
+        "window-padding-color": ["background": String(localized: "Background color", bundle: .module),
+        "extend": String(localized: "Extend edge cells", bundle: .module),
+        "extend-always": String(localized: "Always extend edge cells", bundle: .module)],
     ]
 
     static func optionName(_ key: String, value: String, fallback: String) -> String {

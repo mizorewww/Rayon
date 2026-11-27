@@ -26,7 +26,7 @@ struct FontPicker: View {
                 Image(systemName: "chevron.up.chevron.down").font(.caption2).foregroundStyle(.secondary)
             }
         }
-        .help("Choose an installed font")
+        .help(.init("Choose an installed font", bundle: .module))
         .popover(isPresented: $open) {
             FontFamilyList(selection: $family, placeholder: placeholder) { open = false }
         }
@@ -58,8 +58,8 @@ private struct FontFamilyList: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            TextField("Search fonts", text: $search).textFieldStyle(.roundedBorder)
-            Toggle("Monospaced fonts only", isOn: $monospacedOnly)
+            TextField(String(localized: "Search fonts", bundle: .module), text: $search).textFieldStyle(.roundedBorder)
+            Toggle(.init("Monospaced fonts only", bundle: .module), isOn: $monospacedOnly)
             ScrollViewReader { proxy in
                 List {
                     row(name: "", title: placeholder, font: .body)
@@ -70,7 +70,7 @@ private struct FontFamilyList: View {
                 .listStyle(.plain)
                 .onAppear { if !selection.isEmpty { proxy.scrollTo(selection, anchor: .center) } }
             }
-            if families.isEmpty { Text("No installed font matches.").foregroundStyle(.secondary) }
+            if families.isEmpty { Text("No installed font matches.", bundle: .module).foregroundStyle(.secondary) }
         }
         .padding()
         .frame(minWidth: 320, idealWidth: 340, minHeight: 420, idealHeight: 520)
@@ -109,17 +109,17 @@ struct FontFamilyEditor: View {
             }), placeholder: placeholder)
             ForEach(Array(families.enumerated().dropFirst()), id: \.offset) { index, family in
                 HStack {
-                    Text("Fallback").font(.caption).foregroundStyle(.secondary)
+                    Text("Fallback", bundle: .module).font(.caption).foregroundStyle(.secondary)
                     FontPicker(family: Binding(get: { family }, set: { name in
                         var next = families
                         next[index] = name
                         settings.set(key, next.filter { !$0.isEmpty })
-                    }), placeholder: "Choose…")
+                    }), placeholder: String(localized: "Choose…", bundle: .module))
                     Button(role: .destructive) {
                         var next = families
                         next.remove(at: index)
                         settings.set(key, next)
-                    } label: { Label("Remove Fallback", systemImage: "minus.circle") }
+                    } label: { Label(.init("Remove Fallback", bundle: .module), systemImage: "minus.circle") }
                         .labelStyle(.iconOnly)
                         .buttonStyle(.borderless)
                 }
@@ -127,17 +127,17 @@ struct FontFamilyEditor: View {
             if !families.isEmpty {
                 if addingFallback {
                     HStack {
-                        Text("Fallback").font(.caption).foregroundStyle(.secondary)
+                        Text("Fallback", bundle: .module).font(.caption).foregroundStyle(.secondary)
                         FontPicker(family: Binding(get: { "" }, set: { name in
                             addingFallback = false
                             if !name.isEmpty { settings.set(key, families + [name]) }
-                        }), placeholder: "Choose…")
-                        Button("Cancel") { addingFallback = false }.buttonStyle(.borderless)
+                        }), placeholder: String(localized: "Choose…", bundle: .module))
+                        Button(.init("Cancel", bundle: .module)) { addingFallback = false }.buttonStyle(.borderless)
                     }
                 } else {
-                    Button("Add Fallback", systemImage: "plus") { addingFallback = true }
+                    Button(.init("Add Fallback", bundle: .module), systemImage: "plus") { addingFallback = true }
                         .buttonStyle(.borderless)
-                        .help("Used for characters the font does not have")
+                        .help(.init("Used for characters the font does not have", bundle: .module))
                 }
             }
         }
@@ -153,9 +153,9 @@ struct FontStylePicker: View {
         let family = family(for: key, prefix: "font-style")
         let styles = FontLibrary.styles(of: family)
         let value = settings.value(key)
-        Picker("Style", selection: Binding(get: { value }, set: { settings.set(key, $0) })) {
-            Text("Default").tag("default")
-            if key != "font-style" { Text("Disabled (use regular)").tag("false") }
+        Picker(.init("Style", bundle: .module), selection: Binding(get: { value }, set: { settings.set(key, $0) })) {
+            Text("Default", bundle: .module).tag("default")
+            if key != "font-style" { Text("Disabled (use regular)", bundle: .module).tag("false") }
             Divider()
             ForEach(styles, id: \.self) { Text($0).tag($0) }
             if !["default", "false"].contains(value), !styles.contains(value) {
@@ -164,7 +164,7 @@ struct FontStylePicker: View {
         }
         .labelsHidden()
         .fixedSize()
-        .help(family.isEmpty ? "Styles of the built-in font" : "Styles installed for \(family)")
+        .help(family.isEmpty ? String(localized: "Styles of the built-in font", bundle: .module) : String(localized: "Styles installed for \(family)", bundle: .module))
     }
 }
 
@@ -192,7 +192,7 @@ struct FontFeatureEditor: View {
         let known = Set(features.map(\.tag))
         let groups = features.map(\.group).reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
         VStack(alignment: .leading, spacing: 10) {
-            if features.isEmpty { Text("\(family) has no OpenType features to switch.").foregroundStyle(.secondary) }
+            if features.isEmpty { Text("\(family) has no OpenType features to switch.", bundle: .module).foregroundStyle(.secondary) }
             ForEach(groups, id: \.self) { group in
                 VStack(alignment: .leading, spacing: 4) {
                     Text(group).font(.caption).foregroundStyle(.secondary)
@@ -205,26 +205,26 @@ struct FontFeatureEditor: View {
                                 settings.set("font-feature", next)
                             }))
                             .toggleStyle(.button)
-                            .help("\(feature.tag)\(feature.defaultOn ? " · on by default" : "")")
+                            .help(feature.defaultOn ? String(localized: "\(feature.tag) · on by default", bundle: .module) : feature.tag)
                         }
                     }
                 }
             }
             let others = entries.filter { !known.contains(Self.parse($0).tag) }
             if !others.isEmpty {
-                Text("Other").font(.caption).foregroundStyle(.secondary)
+                Text("Other", bundle: .module).font(.caption).foregroundStyle(.secondary)
                 RXFlowLayout {
                     ForEach(others, id: \.self) { entry in
                         Button(entry, systemImage: "xmark.circle") { settings.set("font-feature", entries.filter { $0 != entry }) }
-                            .help("Remove \(entry)")
+                            .help(.init("Remove \(entry)", bundle: .module))
                     }
                 }
             }
-            AddValueField(placeholder: "Other feature, e.g. ss07 or -liga") { value in
+            AddValueField(placeholder: String(localized: "Other feature, e.g. ss07 or -liga", bundle: .module)) { value in
                 settings.set("font-feature", entries.filter { Self.parse($0).tag != Self.parse(value).tag } + [value])
             }
             if family.isEmpty {
-                Text("These are the built-in font's features; choose a font under Font to see its own.")
+                Text("These are the built-in font's features; choose a font under Font to see its own.", bundle: .module)
                     .font(.caption).foregroundStyle(.secondary)
             }
         }
@@ -243,9 +243,9 @@ struct FontVariationEditor: View {
         let entries = settings.config.values(key)
         VStack(alignment: .leading, spacing: 6) {
             if family.isEmpty {
-                Text("Choose a variable font under Font to adjust its axes.").foregroundStyle(.secondary)
+                Text("Choose a variable font under Font to adjust its axes.", bundle: .module).foregroundStyle(.secondary)
             } else if axes.isEmpty {
-                Text("\(family) is not a variable font.").foregroundStyle(.secondary)
+                Text("\(family) is not a variable font.", bundle: .module).foregroundStyle(.secondary)
             }
             ForEach(axes) { axis in
                 let value = entries.reversed().lazy.compactMap { entry -> Double? in
@@ -312,7 +312,7 @@ struct CodepointMapEditor: View {
                     remove: { self.pending = nil }
                 )
             } else {
-                Button("Add Rule", systemImage: "plus") {
+                Button(.init("Add Rule", bundle: .module), systemImage: "plus") {
                     pending = CodepointMapping(ranges: CodepointRangeSet.presets[0].ranges, family: "")
                 }
             }
@@ -322,15 +322,15 @@ struct CodepointMapEditor: View {
     private func row(ranges: Binding<String>, family: Binding<String>, remove: @escaping () -> Void) -> some View {
         HStack {
             CodepointRangePicker(ranges: ranges)
-            Text("use").foregroundStyle(.secondary)
-            FontPicker(family: family, placeholder: "Choose a font…")
+            Text("use", bundle: .module).foregroundStyle(.secondary)
+            FontPicker(family: family, placeholder: String(localized: "Choose a font…", bundle: .module))
             Spacer()
             removeButton(remove)
         }
     }
 
     private func removeButton(_ remove: @escaping () -> Void) -> some View {
-        Button(role: .destructive, action: remove) { Label("Remove Rule", systemImage: "minus.circle") }
+        Button(role: .destructive, action: remove) { Label(.init("Remove Rule", bundle: .module), systemImage: "minus.circle") }
             .labelStyle(.iconOnly)
             .buttonStyle(.borderless)
     }
@@ -343,7 +343,7 @@ private struct CodepointRangePicker: View {
 
     var body: some View {
         Menu {
-            Picker("Characters", selection: $ranges) {
+            Picker(.init("Characters", bundle: .module), selection: $ranges) {
                 ForEach(CodepointRangeSet.presets) { Text($0.name).tag($0.ranges) }
                 if !CodepointRangeSet.presets.contains(where: { $0.ranges == ranges }) {
                     Text(ranges).tag(ranges)
@@ -351,7 +351,7 @@ private struct CodepointRangePicker: View {
             }
             .pickerStyle(.inline)
             Divider()
-            Button("Custom Ranges…") { editing = true }
+            Button(.init("Custom Ranges…", bundle: .module)) { editing = true }
         } label: {
             Text(CodepointRangeSet.describe(ranges)).lineLimit(1).truncationMode(.tail)
         }
@@ -359,8 +359,8 @@ private struct CodepointRangePicker: View {
         .help(ranges)
         .popover(isPresented: $editing) {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Character Ranges").font(.headline)
-                Text("Hexadecimal code points or ranges, separated by commas: U+E000-U+F8FF,U+1F600")
+                Text("Character Ranges", bundle: .module).font(.headline)
+                Text("Hexadecimal code points or ranges, separated by commas: U+E000-U+F8FF,U+1F600", bundle: .module)
                     .font(.caption).foregroundStyle(.secondary)
                 CommitField("U+E000-U+F8FF", text: ranges, width: 300, monospaced: true) { text in
                     let cleaned = text.replacingOccurrences(of: " ", with: "")

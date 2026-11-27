@@ -15,7 +15,7 @@ struct TerminalPreview: View {
         terminal
             // Nothing typed here goes anywhere; keep the keyboard out of it.
             .allowsHitTesting(false)
-            .accessibilityLabel("Terminal preview")
+            .accessibilityLabel(Text("Terminal preview", bundle: .module))
             .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 

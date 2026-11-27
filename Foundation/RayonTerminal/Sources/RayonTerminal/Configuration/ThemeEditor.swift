@@ -76,31 +76,31 @@ struct ThemeEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Toggle("Separate themes for light and dark appearance", isOn: Binding(
+            Toggle(.init("Separate themes for light and dark appearance", bundle: .module), isOn: Binding(
                 get: { sides != nil },
                 set: { settings.set("theme", $0 ? "light:\(value),dark:\(value)" : selected) }
             ))
             if sides != nil {
-                Picker("Appearance", selection: $editingDark) {
-                    Text("Light").tag(false)
-                    Text("Dark").tag(true)
+                Picker(.init("Appearance", bundle: .module), selection: $editingDark) {
+                    Text("Light", bundle: .module).tag(false)
+                    Text("Dark", bundle: .module).tag(true)
                 }
                 .pickerStyle(.segmented)
                 .fixedSize()
             }
             HStack {
-                Text(selected.isEmpty ? "No theme: the colors below apply." : "Using \(selected)")
+                Text(selected.isEmpty ? String(localized: "No theme: the colors below apply.", bundle: .module) : String(localized: "Using \(selected)", bundle: .module))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                 Spacer()
                 if !selected.isEmpty {
-                    Button("No Theme") { select("") }
+                    Button(.init("No Theme", bundle: .module)) { select("") }
                 }
             }
             if !selected.isEmpty, TerminalThemes.theme(named: selected) == nil {
-                Text("“\(selected)” is not a theme Rayon has, so it is not applied.").foregroundStyle(.red).font(.caption)
+                Text("“\(selected)” is not a theme Rayon has, so it is not applied.", bundle: .module).foregroundStyle(.red).font(.caption)
             }
-            TextField("Search \(TerminalThemes.all.count) themes", text: $search)
+            TextField(String(localized: "Search \(TerminalThemes.all.count) themes", bundle: .module), text: $search)
                 .textFieldStyle(.roundedBorder)
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 8)], spacing: 8) {
@@ -156,7 +156,7 @@ struct PaletteEditor: View {
     var body: some View {
         let overrides = settings.paletteOverrides
         VStack(alignment: .leading, spacing: 8) {
-            Toggle("Show all 256 colors", isOn: $showsAll)
+            Toggle(.init("Show all 256 colors", bundle: .module), isOn: $showsAll)
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 190), spacing: 8)], alignment: .leading, spacing: 6) {
                 ForEach(0 ..< (showsAll ? 256 : 16), id: \.self) { index in
                     HStack(spacing: 6) {
@@ -164,10 +164,10 @@ struct PaletteEditor: View {
                         ColorControl(
                             effective: settings.effectivePalette(index, dark: scheme == .dark),
                             value: overrides[index],
-                            title: "Color \(index)"
+                            title: String(localized: "Color \(index)", bundle: .module)
                         ) { settings.setPalette(index, $0) }
                         Button { settings.setPalette(index, nil) } label: {
-                            Label("Reset Color \(index)", systemImage: "arrow.counterclockwise")
+                            Label(.init("Reset Color \(index)", bundle: .module), systemImage: "arrow.counterclockwise")
                         }
                         .labelStyle(.iconOnly)
                         .buttonStyle(.borderless)

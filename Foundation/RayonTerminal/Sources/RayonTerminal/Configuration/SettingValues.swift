@@ -38,7 +38,7 @@ enum FontFeatureValue {
         for item in value.split(separator: ",") where !item.allSatisfy({ $0 == " " || $0 == "\t" }) {
             guard isFeature(item) else {
                 let shown = item.trimmingCharacters(in: .whitespaces)
-                throw ConfigError("font-feature \"\(shown)\" is not an OpenType feature; use a four-letter tag such as liga, -liga, ss07 or cv01=2")
+                throw ConfigError(String(localized: "font-feature \"\(shown)\" is not an OpenType feature; use a four-letter tag such as liga, -liga, ss07 or cv01=2", bundle: .module))
             }
         }
     }
@@ -71,13 +71,12 @@ enum FontFeatureValue {
 /// Ghostty's durations: `1h30m`, `250ms`.
 enum DurationValue {
     static let units = ["ns", "us", "ms", "s", "m", "h", "d", "y"]
-    static let names = ["ns": "nanosecond", "us": "microsecond", "ms": "millisecond", "s": "second", "m": "minute", "h": "hour", "d": "day", "y": "year"]
 
     static func parse(_ source: String, allowEmpty: Bool) throws -> [(Int, String)] {
         var remaining = source.trimmingCharacters(in: .whitespacesAndNewlines)
         if remaining.isEmpty {
             if allowEmpty { return [] }
-            throw ConfigError("A duration is required")
+            throw ConfigError(String(localized: "A duration is required", bundle: .module))
         }
         var result: [(Int, String)] = []
         var seen: Set<String> = []
@@ -85,13 +84,13 @@ enum DurationValue {
             remaining = remaining.trimmingCharacters(in: .whitespaces)
             if remaining.isEmpty { break }
             let digits = remaining.prefix { $0.isASCII && $0.isNumber }
-            guard !digits.isEmpty, let number = Int(digits) else { throw ConfigError("Expected a whole number") }
+            guard !digits.isEmpty, let number = Int(digits) else { throw ConfigError(String(localized: "Expected a whole number", bundle: .module)) }
             remaining.removeFirst(digits.count)
             // The longest unit first: "ms" before "m".
             guard let unit = units.sorted(by: { $0.count > $1.count }).first(where: { remaining.hasPrefix($0) }) else {
-                throw ConfigError("Missing or unknown unit (ns, us, ms, s, m, h, d, y)")
+                throw ConfigError(String(localized: "Missing or unknown unit (ns, us, ms, s, m, h, d, y)", bundle: .module))
             }
-            guard seen.insert(unit).inserted else { throw ConfigError("\(unit) appears twice") }
+            guard seen.insert(unit).inserted else { throw ConfigError(String(localized: "\(unit) appears twice", bundle: .module)) }
             remaining.removeFirst(unit.count)
             result.append((number, unit))
         }
@@ -99,7 +98,21 @@ enum DurationValue {
     }
 
     static func describe(_ segments: [(Int, String)]) -> String {
-        segments.map { "\($0.0) \(names[$0.1] ?? $0.1)\($0.0 == 1 ? "" : "s")" }.joined(separator: ", ")
+        segments.map { describe($0.0, $0.1) }.joined(separator: ", ")
+    }
+
+    private static func describe(_ count: Int, _ unit: String) -> String {
+        switch unit {
+        case "ns": String(localized: "\(count) nanoseconds", bundle: .module)
+        case "us": String(localized: "\(count) microseconds", bundle: .module)
+        case "ms": String(localized: "\(count) milliseconds", bundle: .module)
+        case "s": String(localized: "\(count) seconds", bundle: .module)
+        case "m": String(localized: "\(count) minutes", bundle: .module)
+        case "h": String(localized: "\(count) hours", bundle: .module)
+        case "d": String(localized: "\(count) days", bundle: .module)
+        case "y": String(localized: "\(count) years", bundle: .module)
+        default: "\(count) \(unit)"
+        }
     }
 }
 

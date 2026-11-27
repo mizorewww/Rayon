@@ -19,7 +19,7 @@ struct GhosttyConfigText: Equatable, Sendable {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
             if trimmed.isEmpty || trimmed.hasPrefix("#") { return nil }
             guard let entry = Self.entry(trimmed) else {
-                throw ConfigError("Line \(index + 1): expected key = value")
+                throw ConfigError(String(localized: "Line \(index + 1): expected key = value", bundle: .module))
             }
             return entry
         }

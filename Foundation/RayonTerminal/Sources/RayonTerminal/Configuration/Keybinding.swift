@@ -27,7 +27,7 @@ struct Keybinding: Equatable {
 
     init() {}
     init(_ text: String) {
-        guard let eq = text.firstIndex(of: "=") else { errors = ["Missing '=' between trigger and action"]; return }
+        guard let eq = text.firstIndex(of: "=") else { errors = [String(localized: "Missing '=' between trigger and action", bundle: .module)]; return }
         var trigger = String(text[..<eq]).filter { !$0.isWhitespace }
         while let colon = trigger.firstIndex(of: ":"), ["all", "global", "unconsumed", "performable"].contains(String(trigger[..<colon])) {
             prefixes.append(String(trigger[..<colon])); trigger = String(trigger[trigger.index(after: colon)...])
@@ -37,27 +37,27 @@ struct Keybinding: Equatable {
         if let colon = tail.firstIndex(of: ":") {
             action = String(tail[..<colon]); argument = String(tail[tail.index(after: colon)...])
         } else { action = tail }
-        if steps.count > 1 && prefixes.contains(where: { $0 == "all" || $0 == "global" }) { errors.append("Global/all bindings cannot be sequences") }
+        if steps.count > 1 && prefixes.contains(where: { $0 == "all" || $0 == "global" }) { errors.append(String(localized: "Global/all bindings cannot be sequences", bundle: .module)) }
         for step in steps {
             let (mods, key) = Self.splitStep(step)
-            if mods.count > 4 || mods.contains(where: { !["super", "ctrl", "shift", "alt"].contains($0) }) { errors.append("Invalid modifiers in \(step)") }
-            if key.isEmpty || !(key.unicodeScalars.count == 1 || key.hasPrefix("physical:") || KeybindingCatalog.shared.keys.contains(key)) { errors.append("Invalid key: \(key)") }
+            if mods.count > 4 || mods.contains(where: { !["super", "ctrl", "shift", "alt"].contains($0) }) { errors.append(String(localized: "Invalid modifiers in \(step)", bundle: .module)) }
+            if key.isEmpty || !(key.unicodeScalars.count == 1 || key.hasPrefix("physical:") || KeybindingCatalog.shared.keys.contains(key)) { errors.append(String(localized: "Invalid key: \(key)", bundle: .module)) }
         }
         guard let definition = KeybindingCatalog.shared.actions.first(where: { $0.name == action }) else {
-            errors.append("Unknown action: \(action)"); return
+            errors.append(String(localized: "Unknown action: \(action)", bundle: .module)); return
         }
         let arg = argument ?? ""
         switch definition.type {
-        case "none": if !arg.isEmpty { errors.append("This action takes no argument") }
-        case "free", "text": if argument == nil && definition.allowEmpty != true { errors.append("An argument is required") }
-        case "enum": if !(argument == nil && definition.allowEmpty == true) && !(definition.options ?? []).contains(arg) { errors.append("Choose a valid action argument") }
+        case "none": if !arg.isEmpty { errors.append(String(localized: "This action takes no argument", bundle: .module)) }
+        case "free", "text": if argument == nil && definition.allowEmpty != true { errors.append(String(localized: "An argument is required", bundle: .module)) }
+        case "enum": if !(argument == nil && definition.allowEmpty == true) && !(definition.options ?? []).contains(arg) { errors.append(String(localized: "Choose a valid action argument", bundle: .module)) }
         case "number", "integer", "unsignedInteger":
-            guard let n = Double(arg), n.isFinite else { errors.append("A numeric argument is required"); return }
-            if definition.type != "number" && n.rounded() != n { errors.append("An integer is required") }
-            if definition.type == "unsignedInteger" && n < (definition.min ?? 0) { errors.append("Argument is below its minimum") }
+            guard let n = Double(arg), n.isFinite else { errors.append(String(localized: "A numeric argument is required", bundle: .module)); return }
+            if definition.type != "number" && n.rounded() != n { errors.append(String(localized: "An integer is required", bundle: .module)) }
+            if definition.type == "unsignedInteger" && n < (definition.min ?? 0) { errors.append(String(localized: "Argument is below its minimum", bundle: .module)) }
         case "resize":
             let parts = arg.components(separatedBy: ",")
-            if parts.count != 2 || !["up", "down", "left", "right"].contains(parts[0]) || Int(parts.last ?? "").map({ $0 >= 0 }) != true { errors.append("Use direction,offset (for example right,10)") }
+            if parts.count != 2 || !["up", "down", "left", "right"].contains(parts[0]) || Int(parts.last ?? "").map({ $0 >= 0 }) != true { errors.append(String(localized: "Use direction,offset (for example right,10)", bundle: .module)) }
         default: break
         }
     }

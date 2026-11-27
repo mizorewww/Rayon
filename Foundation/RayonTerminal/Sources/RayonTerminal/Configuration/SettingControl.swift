@@ -29,8 +29,8 @@ enum SettingControlKind {
     init(_ setting: Setting) {
         let widget = setting.widget
         switch setting.key {
-        case "font-family": self = .fontFamily(placeholder: "Built-in (JetBrains Mono)"); return
-        case "font-family-bold", "font-family-italic", "font-family-bold-italic": self = .fontFamily(placeholder: "Same as the main font"); return
+        case "font-family": self = .fontFamily(placeholder: String(localized: "Built-in (JetBrains Mono)", bundle: .module)); return
+        case "font-family-bold", "font-family-italic", "font-family-bold-italic": self = .fontFamily(placeholder: String(localized: "Same as the main font", bundle: .module)); return
         case "font-style", "font-style-bold", "font-style-italic", "font-style-bold-italic": self = .fontStyle; return
         case "font-feature": self = .fontFeatures; return
         case "font-variation", "font-variation-bold", "font-variation-italic", "font-variation-bold-italic": self = .fontVariations; return
@@ -48,15 +48,15 @@ enum SettingControlKind {
         case "color": self = .color(presets: [])
         case "custom-color": self = .color(presets: widget?.presets ?? [])
         case "feature-list": self = .flags(widget?.features ?? [])
-        case "dual-number": self = .pair(labels: widget?.labels ?? ["First", "Second"])
+        case "dual-number": self = .pair(labels: widget?.labels ?? [String(localized: "First", bundle: .module), String(localized: "Second", bundle: .module)])
         case "scroll-multiplier": self = .scrollSpeed
         case "duration": self = .duration(allowEmpty: widget?.allowEmpty == true)
         case "number-units": self = .length
         case "theme": self = .theme
         case "palette": self = .palette
-        case "repeatable-text": self = .list(placeholder: widget?.placeholder ?? "Value")
+        case "repeatable-text": self = .list(placeholder: widget?.placeholder ?? String(localized: "Value", bundle: .module))
         default:
-            self = setting.repeatable == true ? .list(placeholder: widget?.placeholder ?? "Value") : .text(placeholder: widget?.placeholder ?? "Not set")
+            self = setting.repeatable == true ? .list(placeholder: widget?.placeholder ?? String(localized: "Value", bundle: .module)) : .text(placeholder: widget?.placeholder ?? String(localized: "Not set", bundle: .module))
         }
     }
 
@@ -83,7 +83,8 @@ struct SettingRow: View {
         if case .shortcuts = kind {
             // The list itself is the Keyboard page; a search result points there.
             LabeledContent {
-                Text("\(settings.shortcuts.filter { KeybindingNames.applies(Keybinding($0)) }.count) shortcuts")
+                let count = settings.shortcuts.filter { KeybindingNames.applies(Keybinding($0)) }.count
+                Text("\(count) shortcuts", bundle: .module)
                     .foregroundStyle(.secondary)
             } label: {
                 label
@@ -133,7 +134,7 @@ struct SettingRow: View {
             HStack(spacing: 6) {
                 Text(title)
                 if setting.deprecated != nil {
-                    Text("Deprecated").font(.caption).foregroundStyle(.orange)
+                    Text("Deprecated", bundle: .module).font(.caption).foregroundStyle(.orange)
                 }
             }
             let summary = SettingsLayout.summary(setting)
@@ -141,24 +142,24 @@ struct SettingRow: View {
                 Text(summary).font(.caption).foregroundStyle(.secondary).lineLimit(3)
             }
         }
-        .help("Ghostty setting: \(setting.key)")
+        .help(.init("Ghostty setting: \(setting.key)", bundle: .module))
     }
 
     @ViewBuilder private var accessories: some View {
         if settings.isSet(setting.key) {
             Button { settings.reset(setting.key) } label: {
-                Label("Reset to Default", systemImage: "arrow.counterclockwise")
+                Label(.init("Reset to Default", bundle: .module), systemImage: "arrow.counterclockwise")
             }
             .labelStyle(.iconOnly)
             .buttonStyle(.borderless)
-            .help("Reset \(SettingsLayout.title(setting)) to its default")
+            .help(.init("Reset \(SettingsLayout.title(setting)) to its default", bundle: .module))
         }
         Button { showsHelp = true } label: {
-            Label("About \(setting.name)", systemImage: "info.circle")
+            Label(.init("About \(setting.name)", bundle: .module), systemImage: "info.circle")
         }
         .labelStyle(.iconOnly)
         .buttonStyle(.borderless)
-        .help("About \(setting.name)")
+        .help(.init("About \(setting.name)", bundle: .module))
         .popover(isPresented: $showsHelp) { SettingHelp(setting: setting) }
     }
 }
@@ -178,12 +179,12 @@ private struct SettingHelp: View {
                         .font(.callout).foregroundStyle(.secondary)
                 }
                 if let platform = setting.platform {
-                    Text("Platforms: \(platform.joined(separator: ", "))").font(.caption).foregroundStyle(.secondary)
+                    Text("Platforms: \(platform.joined(separator: ", "))", bundle: .module).font(.caption).foregroundStyle(.secondary)
                 }
                 if let since = setting.since {
-                    Text("Since Ghostty \(since)").font(.caption).foregroundStyle(.secondary)
+                    Text("Since Ghostty \(since)", bundle: .module).font(.caption).foregroundStyle(.secondary)
                 }
-                Link("Ghostty documentation", destination: Setting.documentationURL(setting.key))
+                Link(destination: Setting.documentationURL(setting.key)) { Text("Ghostty documentation", bundle: .module) }
             }
             .padding()
             .frame(maxWidth: 420, alignment: .leading)
@@ -216,12 +217,14 @@ struct SettingControl: View {
         case let .number(min, max, step, presets):
             HStack(spacing: 6) {
                 if !presets.isEmpty {
-                    Menu("Presets") {
+                    Menu {
                         ForEach(presets) { preset in Button(preset.name) { set(preset.value) } }
+                    } label: {
+                        Text("Presets", bundle: .module)
                     }
                     .fixedSize()
                 }
-                CommitField(setting.widget?.placeholder ?? "Default", text: value, width: 90) { set($0) }
+                CommitField(setting.widget?.placeholder ?? String(localized: "Default", bundle: .module), text: value, width: 90) { set($0) }
                 Stepper(setting.name, onIncrement: { nudge(+1) }, onDecrement: { nudge(-1) })
                     .labelsHidden()
             }
@@ -244,7 +247,7 @@ struct SettingControl: View {
         case let .pair(labels):
             PairEditor(value: value, labels: labels, scroll: false, fallback: []) { set($0) }
         case .scrollSpeed:
-            PairEditor(value: value, labels: ["Trackpad", "Wheel"], scroll: true,
+            PairEditor(value: value, labels: [String(localized: "Trackpad", bundle: .module), String(localized: "Wheel", bundle: .module)], scroll: true,
                        fallback: PairValue.parse(setting.defaultValue.values.first ?? "", scroll: true).values) { set($0) }
         case let .duration(allowEmpty):
             DurationEditor(value: value, allowEmpty: allowEmpty) { set($0) }
@@ -277,9 +280,9 @@ struct SettingControl: View {
 
     private func rangeHelp(_ min: Double?, _ max: Double?) -> String {
         switch (min, max) {
-        case let (min?, max?): "From \(min.configText) to \(max.configText)"
-        case let (min?, nil): "At least \(min.configText)"
-        case let (nil, max?): "At most \(max.configText)"
+        case let (min?, max?): String(localized: "From \(min.configText) to \(max.configText)", bundle: .module)
+        case let (min?, nil): String(localized: "At least \(min.configText)", bundle: .module)
+        case let (nil, max?): String(localized: "At most \(max.configText)", bundle: .module)
         default: setting.name
         }
     }
@@ -291,7 +294,7 @@ struct SettingControl: View {
                 Text(name).tag(option.value)
             }
             if !options.contains(where: { $0.value == value }) {
-                Text(value.isEmpty ? "Default" : value).tag(value)
+                Text(value.isEmpty ? String(localized: "Default", bundle: .module) : value).tag(value)
             }
         }
         .labelsHidden()
@@ -323,11 +326,11 @@ private struct ListEditor: View {
                     }
                     .multilineTextAlignment(.leading)
                     Button { var next = values; next.swapAt(index, index - 1); settings.set(key, next) } label: {
-                        Label("Move Up", systemImage: "arrow.up")
+                        Label(.init("Move Up", bundle: .module), systemImage: "arrow.up")
                     }
                     .disabled(index == 0)
                     Button(role: .destructive) { var next = values; next.remove(at: index); settings.set(key, next) } label: {
-                        Label("Remove", systemImage: "minus.circle")
+                        Label(.init("Remove", bundle: .module), systemImage: "minus.circle")
                     }
                 }
                 .labelStyle(.iconOnly)
@@ -356,7 +359,7 @@ struct AddValueField: View {
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
                 #endif
-            Button("Add", systemImage: "plus", action: commit)
+            Button(.init("Add", bundle: .module), systemImage: "plus", action: commit)
                 .disabled(text.trimmingCharacters(in: .whitespaces).isEmpty)
         }
     }
@@ -421,11 +424,11 @@ private struct PairEditor: View {
                 Toggle(isOn: Binding(get: { parsed.linked }, set: { linked in
                     set(PairValue.render(parts[0], parts[1], linked: linked, scroll: false))
                 })) {
-                    Label(parsed.linked ? "Linked" : "Separate", systemImage: parsed.linked ? "link" : "link.badge.plus")
+                    Label(parsed.linked ? String(localized: "Linked", bundle: .module) : String(localized: "Separate", bundle: .module), systemImage: parsed.linked ? "link" : "link.badge.plus")
                 }
                 .toggleStyle(.button)
                 .labelStyle(.iconOnly)
-                .help(parsed.linked ? "One value for both; turn off to set them separately" : "Use one value for both")
+                .help(parsed.linked ? String(localized: "One value for both; turn off to set them separately", bundle: .module) : String(localized: "Use one value for both", bundle: .module))
             }
             Text(labels[1]).font(.caption).foregroundStyle(.secondary)
             CommitField(labels[1], text: parts[1], width: 50) {
@@ -443,7 +446,7 @@ private struct DurationEditor: View {
 
     var body: some View {
         VStack(alignment: .trailing, spacing: 2) {
-            CommitField("e.g. 1h30m", text: value, width: 120, monospaced: true) { set($0) }
+            CommitField(String(localized: "e.g. 1h30m", bundle: .module), text: value, width: 120, monospaced: true) { set($0) }
             switch Result(catching: { try DurationValue.parse(value, allowEmpty: allowEmpty) }) {
             case let .success(segments):
                 if !segments.isEmpty { Text(DurationValue.describe(segments)).font(.caption).foregroundStyle(.secondary) }
@@ -462,10 +465,10 @@ private struct LengthEditor: View {
     var body: some View {
         let parsed = LengthValue.parse(value)
         HStack(spacing: 6) {
-            CommitField("Default", text: parsed.number, width: 70) { set(LengthValue.render($0, percent: parsed.percent)) }
-            Picker("Unit", selection: Binding(get: { parsed.percent }, set: { set(LengthValue.render(parsed.number, percent: $0)) })) {
-                Text("pt").tag(false)
-                Text("%").tag(true)
+            CommitField(String(localized: "Default", bundle: .module), text: parsed.number, width: 70) { set(LengthValue.render($0, percent: parsed.percent)) }
+            Picker(.init("Unit", bundle: .module), selection: Binding(get: { parsed.percent }, set: { set(LengthValue.render(parsed.number, percent: $0)) })) {
+                Text("pt", bundle: .module).tag(false)
+                Text(verbatim: "%").tag(true)
             }
             .labelsHidden()
             .pickerStyle(.segmented)
@@ -489,13 +492,13 @@ private struct BytesEditor: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            TextField("MB", value: Binding(get: { megabytes }, set: { set(megabytes: $0) }), format: .number.precision(.fractionLength(0 ... 1)))
+            TextField(String(localized: "MB", bundle: .module), value: Binding(get: { megabytes }, set: { set(megabytes: $0) }), format: .number.precision(.fractionLength(0 ... 1)))
                 .labelsHidden()
                 .multilineTextAlignment(.trailing)
                 .frame(width: 80)
-            Stepper("Megabytes", onIncrement: { set(megabytes: megabytes + 1) }, onDecrement: { set(megabytes: megabytes - 1) })
+            Stepper(.init("Megabytes", bundle: .module), onIncrement: { set(megabytes: megabytes + 1) }, onDecrement: { set(megabytes: megabytes - 1) })
                 .labelsHidden()
-            Text("MB").foregroundStyle(.secondary)
+            Text("MB", bundle: .module).foregroundStyle(.secondary)
         }
     }
 }

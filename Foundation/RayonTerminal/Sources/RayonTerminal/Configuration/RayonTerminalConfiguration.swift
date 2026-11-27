@@ -28,7 +28,7 @@ enum RayonTerminalConfiguration {
             try apply(TerminalSettings.shared.applied, to: controller)
             appliedFontSize = TerminalSettings.shared.applied.values("font-size").last.flatMap(Double.init)
         } catch {
-            TerminalSettings.shared.issue = "config.ghostty was not applied: \(error.localizedDescription)"
+            TerminalSettings.shared.issue = String(localized: "config.ghostty was not applied: \(error.localizedDescription)", bundle: .module)
         }
         return controller
     }()
@@ -156,7 +156,7 @@ enum RayonTerminalConfiguration {
         }
         let theme = try TerminalTheme(light: configuration(false), dark: configuration(true))
         if target.theme != theme, !target.setTheme(theme) {
-            throw ConfigError(target.lastConfigurationIssue ?? "Ghostty did not accept the configuration")
+            throw ConfigError(target.lastConfigurationIssue ?? String(localized: "Ghostty did not accept the configuration", bundle: .module))
         }
         if shared {
             appliedFontSize = config.values("font-size").last.flatMap(Double.init)

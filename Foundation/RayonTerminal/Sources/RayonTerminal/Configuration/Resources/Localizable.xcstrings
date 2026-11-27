@@ -1,0 +1,582 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@ (%@ pt)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ (%2$@ pt)"
+          }
+        }
+      }
+    },
+    "%@ (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ (%2$@)"
+          }
+        }
+      }
+    },
+    "%@ appears twice" : {},
+    "%@ has no OpenType features to switch." : {},
+    "%@ is not a variable font." : {},
+    "%@ · on by default" : {},
+    "%lld" : {},
+    "%lld days" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld day"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld days"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld hours" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hour"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld hours"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld microseconds" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld microsecond"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld microseconds"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld milliseconds" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld millisecond"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld milliseconds"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld minutes" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld minute"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld minutes"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld nanoseconds" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld nanosecond"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld nanoseconds"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld of Ghostty's shortcuts are for windows, tabs and splits, which Rayon manages itself; they are not shown." : {},
+    "%lld seconds" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld second"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld seconds"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld shortcuts" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld shortcut"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld shortcuts"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "%lld years" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld year"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld years"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "1" : {},
+    "A duration is required" : {},
+    "A numeric argument is required" : {},
+    "A value that follows the cell under it" : {},
+    "About %@" : {},
+    "Action" : {},
+    "Add" : {},
+    "Add Fallback" : {},
+    "Add Rule" : {},
+    "Add Shortcut" : {},
+    "Add Step" : {},
+    "Advanced" : {},
+    "Also make cells with their own background color translucent." : {},
+    "Also send the keys to the program" : {},
+    "Always" : {},
+    "Always extend edge cells" : {},
+    "Amount" : {},
+    "An argument is required" : {},
+    "An integer is required" : {},
+    "Appearance" : {},
+    "Apply opacity to colored cells" : {},
+    "Arabic" : {},
+    "Argument is below its minimum" : {},
+    "Arrows" : {},
+    "At least %@" : {},
+    "At most %@" : {},
+    "Auto" : {},
+    "Back" : {},
+    "Background color" : {},
+    "Background opacity" : {},
+    "Balance padding" : {},
+    "Bar" : {},
+    "Bar thickness" : {},
+    "Below 1, the window behind shows through the terminal background." : {},
+    "Blink" : {},
+    "Blinking" : {},
+    "Block" : {},
+    "Bold and Italic" : {},
+    "Bold font" : {},
+    "Bold italic font" : {},
+    "Bold italic style" : {},
+    "Bold italic variation axes" : {},
+    "Bold style" : {},
+    "Bold variation axes" : {},
+    "Box drawing and blocks" : {},
+    "Braille" : {},
+    "Built-in (JetBrains Mono)" : {},
+    "CJK punctuation and full-width forms" : {},
+    "Cancel" : {},
+    "Cell Metrics" : {},
+    "Character Ranges" : {},
+    "Character Variants" : {},
+    "Character variant %lld" : {},
+    "Characters" : {},
+    "Chinese, Japanese and Korean characters" : {},
+    "Choose a category" : {},
+    "Choose a font…" : {},
+    "Choose a valid action argument" : {},
+    "Choose a variable font under Font to adjust its axes." : {},
+    "Choose an installed font" : {},
+    "Choose…" : {},
+    "Clear Screen" : {},
+    "Clipboard" : {},
+    "Color" : {},
+    "Color %lld" : {},
+    "Color of the cursor itself." : {},
+    "Colors" : {},
+    "Command" : {},
+    "Compatibility" : {},
+    "Control" : {},
+    "Copy" : {},
+    "Copy Link" : {},
+    "Copy Title" : {},
+    "Copy and Paste" : {},
+    "Cursor" : {},
+    "Custom Ranges…" : {},
+    "Cyrillic" : {},
+    "Dark" : {},
+    "Default" : {},
+    "Delete" : {},
+    "Delete Next Word" : {},
+    "Delete Previous Word" : {},
+    "Delete Shortcut" : {},
+    "Delete to End of Line" : {},
+    "Delete to Start of Line" : {},
+    "Deprecated" : {},
+    "Detect links" : {},
+    "Devanagari" : {},
+    "Disabled (use regular)" : {},
+    "Dismiss" : {},
+    "Do Nothing" : {},
+    "Draw specific Unicode ranges, such as icons, with another font." : {},
+    "Draw text with a heavier stroke, like Terminal on macOS." : {},
+    "Edit" : {},
+    "Editing" : {},
+    "Edit…" : {},
+    "Emoji" : {},
+    "End" : {},
+    "End Key Sequence" : {},
+    "End of line" : {},
+    "Expected a whole number" : {},
+    "Extend Selection" : {},
+    "Extend edge cells" : {},
+    "Fallback" : {},
+    "Features and Variations" : {},
+    "Fill" : {},
+    "First" : {},
+    "Fixed session title" : {},
+    "Font" : {},
+    "Font for character ranges" : {},
+    "Forward" : {},
+    "From %@ to %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "From %1$@ to %2$@"
+          }
+        }
+      }
+    },
+    "Function Keys" : {},
+    "Ghostty App" : {},
+    "Ghostty Syntax" : {},
+    "Ghostty did not accept the configuration" : {},
+    "Ghostty documentation" : {},
+    "Ghostty setting: %@" : {},
+    "Ghostty syntax" : {},
+    "Global/all bindings cannot be sequences" : {},
+    "Glyphs" : {},
+    "Greek" : {},
+    "Hebrew" : {},
+    "Height" : {},
+    "Height of the cursor, in points or percent." : {},
+    "Hexadecimal code points or ranges, separated by commas: U+E000-U+F8FF,U+1F600" : {},
+    "Hide the terminal preview" : {},
+    "Hollow" : {},
+    "Home" : {},
+    "Horizontal padding" : {},
+    "How much heavier strokes are drawn while thickening is on." : {},
+    "Images" : {},
+    "Insert" : {},
+    "Invalid key: %@" : {},
+    "Invalid modifiers in %@" : {},
+    "Italic font" : {},
+    "Italic style" : {},
+    "Italic variation axes" : {},
+    "Japanese kana" : {},
+    "Jump to Next Prompt" : {},
+    "Jump to Previous Prompt" : {},
+    "Jump to Prompt" : {},
+    "Key" : {},
+    "Key Handling" : {},
+    "Keyboard" : {},
+    "Keypad" : {},
+    "Keypad %@" : {},
+    "Keys" : {},
+    "Keys, step %lld" : {},
+    "Korean Hangul" : {},
+    "Letters" : {},
+    "Ligatures" : {},
+    "Ligatures (contextual alternates)" : {},
+    "Light" : {},
+    "Line %lld: expected key = value" : {},
+    "Linked" : {},
+    "MB" : {},
+    "Make Text Bigger" : {},
+    "Make Text Smaller" : {},
+    "Make a sequence: press the first keys, release, then the next" : {},
+    "Mathematical operators" : {},
+    "Megabytes" : {},
+    "Memory" : {},
+    "Memory kept for images shown in the terminal." : {},
+    "Memory kept for lines that have scrolled off screen." : {},
+    "Missing '=' between trigger and action" : {},
+    "Missing or unknown unit (ns, us, ms, s, m, h, d, y)" : {},
+    "Monospaced fonts only" : {},
+    "More" : {},
+    "Mouse" : {},
+    "Mouse & Clipboard" : {},
+    "Move Back a Word" : {},
+    "Move Forward a Word" : {},
+    "Move Up" : {},
+    "Move to End of Line" : {},
+    "Move to Start of Line" : {},
+    "Multiplies trackpad (precise) and mouse wheel (line) scrolling." : {},
+    "Navigation" : {},
+    "Nerd Font icons" : {},
+    "Never" : {},
+    "Next category" : {},
+    "No Theme" : {},
+    "No installed font matches." : {},
+    "No theme: the colors below apply." : {},
+    "Not set" : {},
+    "Numbers" : {},
+    "Off (programs can opt in)" : {},
+    "On (programs can opt out)" : {},
+    "One value for both; turn off to set them separately" : {},
+    "Only the terminal's settings are reset; Rayon's own are kept." : {},
+    "Only when the action can run" : {},
+    "Opacity" : {},
+    "OpenType features" : {},
+    "Option" : {},
+    "Option-click at a prompt to move the cursor there." : {},
+    "Option-click moves the cursor" : {},
+    "Other" : {},
+    "Other feature, e.g. ss07 or -liga" : {},
+    "Padding" : {},
+    "Page Down" : {},
+    "Page Up" : {},
+    "Page down" : {},
+    "Page up" : {},
+    "Palette" : {},
+    "Paste" : {},
+    "Paste Selection" : {},
+    "Plain and HTML" : {},
+    "Plain text" : {},
+    "Platforms: %@" : {},
+    "Points" : {},
+    "Powerline symbols" : {},
+    "Presets" : {},
+    "Press keys…" : {},
+    "Press the shortcut on the keyboard" : {},
+    "Preview" : {},
+    "Previous category" : {},
+    "Punctuation" : {},
+    "Rayon's terminal does not use these: they belong to the Ghostty app, or Rayon sets them itself. They are kept in config.ghostty, so the file also works in Ghostty." : {},
+    "Record" : {},
+    "Redo" : {},
+    "Remove" : {},
+    "Remove %@" : {},
+    "Remove Default Shortcut" : {},
+    "Remove Fallback" : {},
+    "Remove Rule" : {},
+    "Remove Step" : {},
+    "Reset" : {},
+    "Reset %@ to its default" : {},
+    "Reset Color %lld" : {},
+    "Reset Terminal" : {},
+    "Reset Terminal Settings…" : {},
+    "Reset Text Size" : {},
+    "Reset every terminal setting to its default" : {},
+    "Reset every terminal setting to its default?" : {},
+    "Reset to Default" : {},
+    "Restore" : {},
+    "Restore Defaults…" : {},
+    "Restore the default shortcuts?" : {},
+    "Same as the main font" : {},
+    "Same keys as another shortcut" : {},
+    "Save" : {},
+    "Scroll Down a Page" : {},
+    "Scroll Up a Page" : {},
+    "Scroll by Lines" : {},
+    "Scroll by Part of a Page" : {},
+    "Scroll speed" : {},
+    "Scroll to Bottom" : {},
+    "Scroll to Row" : {},
+    "Scroll to Selection" : {},
+    "Scroll to Top" : {},
+    "Scrollback" : {},
+    "Scrolling" : {},
+    "Search %lld themes" : {},
+    "Search fonts" : {},
+    "Search settings" : {},
+    "Search shortcuts" : {},
+    "Second" : {},
+    "Select All" : {},
+    "Selection" : {},
+    "Send Control Sequence" : {},
+    "Send Cursor Key" : {},
+    "Send Escape Sequence" : {},
+    "Send to Terminal" : {},
+    "Separate" : {},
+    "Separate themes for light and dark appearance" : {},
+    "Sequence" : {},
+    "Set Text Size" : {},
+    "Settings" : {},
+    "Shape" : {},
+    "Share config.ghostty" : {},
+    "Shift" : {},
+    "Shortcut" : {},
+    "Shortcuts" : {},
+    "Show %@" : {},
+    "Show a terminal preview above the settings" : {},
+    "Show all 256 colors" : {},
+    "Show config.ghostty in Finder" : {},
+    "Since Ghostty %@" : {},
+    "Size" : {},
+    "Slashed zero" : {},
+    "Space" : {},
+    "Space between the text and the left and right edges, in points." : {},
+    "Space between the text and the top and bottom edges, in points." : {},
+    "Spread leftover space evenly around the text." : {},
+    "Start of line" : {},
+    "Steady" : {},
+    "Style" : {},
+    "Styles installed for %@" : {},
+    "Styles of the built-in font" : {},
+    "Stylistic Sets" : {},
+    "Stylistic set %lld" : {},
+    "Terminal" : {},
+    "Terminal preview" : {},
+    "Text" : {},
+    "Text Size" : {},
+    "Text and Background" : {},
+    "Text size in points. ⌘+ and ⌘− change it for one session." : {},
+    "Text to type (\\n, \\x1b…)" : {},
+    "Text under the cursor" : {},
+    "Text with terminal styling" : {},
+    "Thai" : {},
+    "The file the terminal settings are kept in" : {},
+    "The typeface for terminal text, then fallbacks for characters it lacks." : {},
+    "Theme" : {},
+    "These are the built-in font's features; choose a font under Font to see its own." : {},
+    "Thicken strokes" : {},
+    "Thickening amount" : {},
+    "This action takes no argument" : {},
+    "Toggle Mouse Reporting" : {},
+    "Toggle Read-Only" : {},
+    "Trackpad" : {},
+    "Transparency" : {},
+    "Turn ligatures and stylistic alternates on or off." : {},
+    "Type Text" : {},
+    "Underline" : {},
+    "Undo" : {},
+    "Undo the last terminal setting change" : {},
+    "Unit" : {},
+    "Unknown action: %@" : {},
+    "Use direction,offset (for example right,10)" : {},
+    "Use one value for both" : {},
+    "Use this instead of the title the remote shell sets." : {},
+    "Used for characters the font does not have" : {},
+    "Using %@" : {},
+    "Value" : {},
+    "Variation axes" : {},
+    "Vertical padding" : {},
+    "Weight, width or slant of a variable font." : {},
+    "Wheel" : {},
+    "When" : {},
+    "Whether the cursor blinks; programs can still ask for either." : {},
+    "Which of the font's styles regular text uses." : {},
+    "Width of the bar and hollow-block cursor, in points or percent." : {},
+    "Window" : {},
+    "config.ghostty is not UTF-8 text, so it was not read." : {},
+    "config.ghostty was not applied: %@" : {},
+    "e.g. 1h30m" : {},
+    "font-feature \"%@\" is not an OpenType feature; use a four-letter tag such as liga, -liga, ss07 or cv01=2" : {},
+    "pt" : {},
+    "then" : {},
+    "use" : {},
+    "“%@” is not a theme Rayon has, so it is not applied." : {},
+    "⌘-click URLs in terminal output to open them." : {}
+  },
+  "version" : "1.0"
+}

@@ -107,16 +107,16 @@ private struct SettingsShell: View {
             }
             .toolbar {
                 ToolbarItemGroup(placement: .navigation) {
-                    Button { navigation.step(-1) } label: { Label("Back", systemImage: "chevron.left") }
+                    Button { navigation.step(-1) } label: { Label(.init("Back", bundle: .module), systemImage: "chevron.left") }
                         .disabled(!navigation.canGoBack)
-                        .help("Previous category")
-                    Button { navigation.step(1) } label: { Label("Forward", systemImage: "chevron.right") }
+                        .help(.init("Previous category", bundle: .module))
+                    Button { navigation.step(1) } label: { Label(.init("Forward", bundle: .module), systemImage: "chevron.right") }
                         .disabled(!navigation.canGoForward)
-                        .help("Next category")
+                        .help(.init("Next category", bundle: .module))
                 }
                 ToolbarItemGroup(placement: .primaryAction) { tools }
             }
-            .searchable(text: $search, placement: .toolbar, prompt: "Search settings")
+            .searchable(text: $search, placement: .toolbar, prompt: Text("Search settings", bundle: .module))
             .frame(minWidth: 960, minHeight: 560)
         }
     #else
@@ -142,8 +142,8 @@ private struct SettingsShell: View {
                     }
                 }
             }
-            .searchable(text: $search, prompt: "Search settings")
-            .navigationTitle("Settings")
+            .searchable(text: $search, prompt: Text("Search settings", bundle: .module))
+            .navigationTitle(.init("Settings", bundle: .module))
             .toolbar { ToolbarItem(placement: .primaryAction) { moreMenu } }
         }
 
@@ -151,7 +151,7 @@ private struct SettingsShell: View {
             Menu {
                 tools
             } label: {
-                Label("More", systemImage: "ellipsis.circle")
+                Label(.init("More", bundle: .module), systemImage: "ellipsis.circle")
             }
         }
     #endif
@@ -166,7 +166,7 @@ private struct SettingsShell: View {
             CategoryPage(category: selected, showsPreview: $showsPreview)
                 .id(selected.id)
         } else {
-            ContentUnavailableView("Choose a category", systemImage: "slider.horizontal.3")
+            ContentUnavailableView(String(localized: "Choose a category", bundle: .module), systemImage: "slider.horizontal.3")
         }
     }
 
@@ -297,7 +297,7 @@ struct SearchResults: View {
     func sections(_ results: [(SettingsLayout.Category, [(SettingsLayout.Group, [String])])]) -> some View {
         ForEach(results, id: \.0.id) { category, groups in
             Section {
-                Button("Show \(category.title)", systemImage: category.icon) { show(category.id) }
+                Button(.init("Show \(category.title)", bundle: .module), systemImage: category.icon) { show(category.id) }
             }
             ForEach(groups, id: \.0.id) { group, keys in
                 GroupSection(
@@ -323,7 +323,7 @@ struct IssueBar: View {
                     .symbolRenderingMode(.multicolor)
                     .textSelection(.enabled)
                 Spacer()
-                Button { settings.issue = nil } label: { Label("Dismiss", systemImage: "xmark") }
+                Button { settings.issue = nil } label: { Label(.init("Dismiss", bundle: .module), systemImage: "xmark") }
                     .labelStyle(.iconOnly)
                     .buttonStyle(.borderless)
             }

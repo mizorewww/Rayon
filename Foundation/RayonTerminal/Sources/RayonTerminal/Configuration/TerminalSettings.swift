@@ -69,7 +69,7 @@ public final class TerminalSettings {
         }
     }
 
-    private static let unreadableIssue = "config.ghostty is not UTF-8 text, so it was not read."
+    private static let unreadableIssue = String(localized: "config.ghostty is not UTF-8 text, so it was not read.", bundle: .module)
 
     private static func modificationDate(of url: URL) -> Date? {
         (try? FileManager.default.attributesOfItem(atPath: url.path))?[.modificationDate] as? Date
@@ -94,7 +94,7 @@ public final class TerminalSettings {
             try RayonTerminalConfiguration.apply(next)
             issue = nil
         } catch {
-            issue = "config.ghostty was not applied: \(error.localizedDescription)"
+            issue = String(localized: "config.ghostty was not applied: \(error.localizedDescription)", bundle: .module)
         }
         applied = next
         config = next

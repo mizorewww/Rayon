@@ -100,31 +100,31 @@ public struct TerminalSettingsTools: View {
 
     public var body: some View {
         let _ = settings.revision
-        Button { settings.undo() } label: { Label("Undo", systemImage: "arrow.uturn.backward") }
+        Button { settings.undo() } label: { Label(.init("Undo", bundle: .module), systemImage: "arrow.uturn.backward") }
             .disabled(!settings.undoManager.canUndo)
-            .help("Undo the last terminal setting change")
-        Button { settings.redo() } label: { Label("Redo", systemImage: "arrow.uturn.forward") }
+            .help(.init("Undo the last terminal setting change", bundle: .module))
+        Button { settings.redo() } label: { Label(.init("Redo", bundle: .module), systemImage: "arrow.uturn.forward") }
             .disabled(!settings.undoManager.canRedo)
-            .help("Redo")
-        Toggle(isOn: $showsPreview.animation()) { Label("Preview", systemImage: "rectangle.topthird.inset.filled") }
+            .help(.init("Redo", bundle: .module))
+        Toggle(isOn: $showsPreview.animation()) { Label(.init("Preview", bundle: .module), systemImage: "rectangle.topthird.inset.filled") }
             .disabled(!previewAvailable)
-            .help(showsPreview ? "Hide the terminal preview" : "Show a terminal preview above the settings")
+            .help(showsPreview ? String(localized: "Hide the terminal preview", bundle: .module) : String(localized: "Show a terminal preview above the settings", bundle: .module))
         #if os(macOS)
             Button { NSWorkspace.shared.activateFileViewerSelecting([settings.fileURL]) } label: {
-                Label("Show config.ghostty in Finder", systemImage: "doc.text.magnifyingglass")
+                Label(.init("Show config.ghostty in Finder", bundle: .module), systemImage: "doc.text.magnifyingglass")
             }
             .disabled(!FileManager.default.fileExists(atPath: settings.fileURL.path))
-            .help("The file the terminal settings are kept in")
+            .help(.init("The file the terminal settings are kept in", bundle: .module))
         #else
             if FileManager.default.fileExists(atPath: settings.fileURL.path) {
-                ShareLink(item: settings.fileURL) { Label("Share config.ghostty", systemImage: "square.and.arrow.up") }
+                ShareLink(item: settings.fileURL) { Label(.init("Share config.ghostty", bundle: .module), systemImage: "square.and.arrow.up") }
             }
         #endif
         Button(role: .destructive) { confirmingReset = true } label: {
-            Label("Reset Terminal Settings…", systemImage: "arrow.counterclockwise")
+            Label(.init("Reset Terminal Settings…", bundle: .module), systemImage: "arrow.counterclockwise")
         }
         .disabled(!resetAvailable)
-        .help("Reset every terminal setting to its default")
+        .help(.init("Reset every terminal setting to its default", bundle: .module))
     }
 }
 
@@ -133,10 +133,10 @@ public extension View {
     /// applied, and the confirmation `TerminalSettingsTools`' Reset asks for.
     func terminalSettingsChrome(confirmingReset: Binding<Bool>) -> some View {
         safeAreaInset(edge: .bottom) { IssueBar() }
-            .confirmationDialog("Reset every terminal setting to its default?", isPresented: confirmingReset) {
-                Button("Reset", role: .destructive) { TerminalSettings.shared.resetAll() }
+            .confirmationDialog(Text("Reset every terminal setting to its default?", bundle: .module), isPresented: confirmingReset) {
+                Button(.init("Reset", bundle: .module), role: .destructive) { TerminalSettings.shared.resetAll() }
             } message: {
-                Text("Only the terminal's settings are reset; Rayon's own are kept.")
+                Text("Only the terminal's settings are reset; Rayon's own are kept.", bundle: .module)
             }
     }
 }

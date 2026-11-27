@@ -125,7 +125,7 @@ enum FontLibrary {
         var order: [String] = []
         if let font = font(of: family), let types = CTFontCopyFeatures(font) as? [[CFString: Any]] {
             for type in types {
-                let typeName = type[kCTFontFeatureTypeNameKey] as? String ?? "Other"
+                let typeName = type[kCTFontFeatureTypeNameKey] as? String ?? String(localized: "Other", bundle: .module)
                 for selector in type[kCTFontFeatureTypeSelectorsKey] as? [[CFString: Any]] ?? [] {
                     guard let tag = selector[kCTFontOpenTypeFeatureTag] as? String else { continue }
                     let value = (selector[kCTFontOpenTypeFeatureValue] as? NSNumber)?.intValue ?? 1
@@ -156,18 +156,18 @@ enum FontLibrary {
     /// "cv01"–"cv99" and "ss01"–"ss99" get their own groups.
     private static func featureGroup(tag: String, fallback: String) -> String {
         guard tag.count == 4, tag.dropFirst(2).allSatisfy({ $0.isASCII && $0.isNumber }) else { return fallback }
-        if tag.hasPrefix("cv") { return "Character Variants" }
-        if tag.hasPrefix("ss") { return "Stylistic Sets" }
+        if tag.hasPrefix("cv") { return String(localized: "Character Variants", bundle: .module) }
+        if tag.hasPrefix("ss") { return String(localized: "Stylistic Sets", bundle: .module) }
         return fallback
     }
 
     /// Ghostty's built-in JetBrains Mono is not installed, so its features are listed here.
     static let builtInFeatures: [Feature] = [
-        Feature(tag: "calt", name: "Ligatures (contextual alternates)", group: "Ligatures", defaultOn: true),
-        Feature(tag: "zero", name: "Slashed zero", group: "Characters", defaultOn: false),
+        Feature(tag: "calt", name: String(localized: "Ligatures (contextual alternates)", bundle: .module), group: String(localized: "Ligatures", bundle: .module), defaultOn: true),
+        Feature(tag: "zero", name: String(localized: "Slashed zero", bundle: .module), group: String(localized: "Characters", bundle: .module), defaultOn: false),
     ] + (1 ... 20).map { index in
-        Feature(tag: String(format: "ss%02d", index), name: "Stylistic set \(index)", group: "Stylistic Sets", defaultOn: false)
+        Feature(tag: String(format: "ss%02d", index), name: String(localized: "Stylistic set \(index)", bundle: .module), group: String(localized: "Stylistic Sets", bundle: .module), defaultOn: false)
     } + (1 ... 20).map { index in
-        Feature(tag: String(format: "cv%02d", index), name: "Character variant \(index)", group: "Character Variants", defaultOn: false)
+        Feature(tag: String(format: "cv%02d", index), name: String(localized: "Character variant \(index)", bundle: .module), group: String(localized: "Character Variants", bundle: .module), defaultOn: false)
     }
 }

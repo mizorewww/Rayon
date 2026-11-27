@@ -25,10 +25,10 @@ struct ColorControl: View {
                         Button(preset.name) { set(preset.value) }
                     }
                 } label: {
-                    Text(presets.first { $0.value == value }?.name ?? "Presets")
+                    Text(presets.first { $0.value == value }?.name ?? String(localized: "Presets", bundle: .module))
                 }
                 .fixedSize()
-                .help("A value that follows the cell under it")
+                .help(.init("A value that follows the cell under it", bundle: .module))
             }
             CommitField("#RRGGBB", text: value ?? effective, width: 84, monospaced: true) { set($0) }
             // Taken when the picker closes: a value set while it is open would
