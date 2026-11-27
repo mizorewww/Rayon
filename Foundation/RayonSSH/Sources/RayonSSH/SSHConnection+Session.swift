@@ -4,7 +4,10 @@
 //
 //  Shells and commands on session channels. A command's exit status is
 //  what the server reported; a command that ends without one, is killed by
-//  a signal or runs out of time is an error, never a success.
+//  a signal or runs out of time is an error, never a success. A command
+//  this side gives up on is sent SIGTERM; one on a pseudo-terminal also
+//  gets SIGHUP when the server releases the terminal, for servers that
+//  ignore signal requests.
 //
 
 import Foundation
@@ -29,10 +32,13 @@ public extension SSHConnection {
     }
 
     /// Runs `command`, handing its output over as it arrives, and returns
-    /// its exit status. The next output is read once `output` returns.
+    /// its exit status. The next output is read once `output` returns. On
+    /// `pseudoTerminal` the output comes as a terminal shows it, stderr
+    /// mixed in.
     func execute(
         _ command: String,
         timeout: Duration? = nil,
+        pseudoTerminal: Bool = false,
         output: @escaping @Sendable (_ chunk: ByteBuffer, _ isError: Bool) async -> Void
     ) async throws -> Int32 {
         // The timeout counts from here, opening the channel included.
@@ -40,6 +46,17 @@ public extension SSHConnection {
         let session = try await openSession(timeout: timeout)
         let run: @Sendable () async throws -> Int32 = {
             try await session.executeThenClose { inbound, _ in
+                if pseudoTerminal {
+                    try await session.channel.triggerUserOutboundEvent(SSHChannelRequestEvent.PseudoTerminalRequest(
+                        wantReply: true,
+                        term: "xterm-256color",
+                        terminalCharacterWidth: 120,
+                        terminalRowHeight: 40,
+                        terminalPixelWidth: 0,
+                        terminalPixelHeight: 0,
+                        terminalModes: SSHTerminalModes([:])
+                    )).get()
+                }
                 try await session.channel.triggerUserOutboundEvent(
                     SSHChannelRequestEvent.ExecRequest(command: command, wantReply: true)
                 ).get()
@@ -61,8 +78,10 @@ public extension SSHConnection {
             }
         }
         // The server only confirms a close once the command has ended, so
-        // a timed-out or cancelled command is abandoned, not waited for.
+        // a timed-out or cancelled command is abandoned, not waited for;
+        // closing alone leaves a command without a terminal running.
         return try await abandoning(run, after: timeout.map { $0 - (ContinuousClock.now - start) }) {
+            session.channel.triggerUserOutboundEvent(SSHChannelRequestEvent.SignalRequest(signal: "TERM"), promise: nil)
             session.channel.close(promise: nil)
         }
     }

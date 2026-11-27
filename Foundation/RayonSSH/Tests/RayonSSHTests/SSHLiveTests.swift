@@ -299,6 +299,32 @@ final class SSHLiveTests: XCTestCase {
         await connection.close()
     }
 
+    /// A stopped command ends on the server: by SIGTERM, or, when it
+    /// ignores that as some servers ignore signal requests, by the SIGHUP of
+    /// its pseudo-terminal going away.
+    func testAStoppedCommandEndsOnTheServer() async throws {
+        let connection = try await connect([.password(password)])
+        for (command, pseudoTerminal) in [("sleep 120", false), ("trap '' TERM; sleep 121", true)] {
+            let sleeper = command.components(separatedBy: "; ").last!
+            let run = Task { try await connection.execute(command, pseudoTerminal: pseudoTerminal) { _, _ in } }
+            var running = ""
+            for _ in 0 ..< 50 where running.isEmpty {
+                try await Task.sleep(for: .milliseconds(100))
+                running = try await String(decoding: connection.execute("pgrep -fx '\(sleeper)'").output, as: UTF8.self)
+            }
+            XCTAssertFalse(running.isEmpty, "\(sleeper) never started")
+            run.cancel()
+            _ = try? await run.value
+            var left = running
+            for _ in 0 ..< 50 where !left.isEmpty {
+                try await Task.sleep(for: .milliseconds(100))
+                left = try await String(decoding: connection.execute("pgrep -fx '\(sleeper)'").output, as: UTF8.self)
+            }
+            XCTAssertEqual(left, "", "\(sleeper) outlived its stop")
+        }
+        await connection.close()
+    }
+
     // MARK: Shell
 
     func testShellEchoesAndResizes() async throws {

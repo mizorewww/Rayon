@@ -3,14 +3,15 @@
 # Runs RayonSSH's live tests against two throwaway sshd containers — a
 # server and, on a private network behind it, a ProxyJump target — and
 # removes them afterwards. Needs Docker. Arguments go to `swift test`;
-# SSH_LIVE_TESTS=<regex> runs only the matching tests.
+# SSH_LIVE_TESTS=<regex> runs only the matching tests; SSH_LIVE_NAME names
+# the containers.
 
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PACKAGE="$(cd "$HERE/../.." && pwd)"
 WORK="$(mktemp -d)"
-NAME="rayon-ssh-test-$$"
+NAME="${SSH_LIVE_NAME:-rayon-ssh-test-$$}"
 
 cleanup() {
     docker rm -f "$NAME-server" "$NAME-target" >/dev/null 2>&1 || true
