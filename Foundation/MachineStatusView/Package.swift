@@ -26,8 +26,7 @@ let package = Package(
         .target(
             name: "MachineStatusView",
             dependencies: ["MachineStatus", "RayonModule", "RayonSSH"],
-            resources: [.process("Resources")],
-            swiftSettings: [.swiftLanguageMode(.v5)]
+            resources: [.process("Resources")]
         ),
         .testTarget(
             name: "MachineStatusViewTests",
