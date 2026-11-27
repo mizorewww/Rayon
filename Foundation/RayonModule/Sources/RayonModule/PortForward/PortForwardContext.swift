@@ -9,12 +9,14 @@
 //
 
 import Foundation
-import os
 import RayonSSH
 import Logger
 
-public class PortForwardContext: ObservableObject, Identifiable, @unchecked Sendable {
-    public var id = UUID()
+/// The session's state lives on the main actor; each round awaits the
+/// connection and the forward off it.
+@MainActor
+public class PortForwardContext: ObservableObject, Identifiable {
+    public nonisolated let id = UUID()
     public let info: RDPortForward
     public let machine: RDMachine
 
@@ -34,21 +36,21 @@ public class PortForwardContext: ObservableObject, Identifiable, @unchecked Send
         case terminated = "terminated"
     }
 
-    /// Written from the lifecycle thread; views observe the backend's
-    /// per-forward record fed by the handler below, not this directly.
+    /// Views observe the backend's per-forward record fed by the handler
+    /// below, not this directly.
     @Published public private(set) var lifecycle: Lifecycle = .awaitingConnect
 
-    /// Lifecycle sink for the owning backend, called from the lifecycle thread.
+    /// Lifecycle sink for the owning backend.
     public var lifecycleHandler: ((Lifecycle) -> Void)?
 
-    /// Called once on the main thread after the lifecycle exits, so the
-    /// backend can drop the context and the switch goes back off.
+    /// Called once after the lifecycle exits, so the backend can drop the
+    /// context and the switch goes back off.
     public var terminationHandler: ((PortForwardContext) -> Void)?
 
     /// Backoff before reconnecting after a round ends on its own.
     public var reconnectDelay: TimeInterval = 3
 
-    private let task = OSAllocatedUnfairLock<Task<Void, Never>?>(initialState: nil)
+    private var task: Task<Void, Never>?
 
     public init(info: RDPortForward, machine: RDMachine) {
         self.info = info
@@ -56,28 +58,24 @@ public class PortForwardContext: ObservableObject, Identifiable, @unchecked Send
     }
 
     func putLifecycle(_ state: Lifecycle) {
-        onMainThread { [weak self] in
-            self?.lifecycle = state
-        }
+        lifecycle = state
         lifecycleHandler?(state)
     }
 
-    /// Starts the lifecycle in the background and returns immediately.
+    /// Starts the lifecycle and returns immediately.
     public func begin() {
-        task.withLock { task in
-            guard task == nil else { return }
-            task = Task.detached { await self.runLifecycle() }
-        }
+        guard task == nil else { return }
+        task = Task { await self.runLifecycle() }
     }
 
     /// Stops the session: a running round is cut off and a pending
     /// reconnect returns at once.
     public func terminate() {
-        task.withLock { $0 }?.cancel()
+        task?.cancel()
     }
 
     public var closed: Bool {
-        task.withLock { $0?.isCancelled ?? false }
+        task?.isCancelled ?? false
     }
 
     private func runLifecycle() async {
@@ -89,8 +87,7 @@ public class PortForwardContext: ObservableObject, Identifiable, @unchecked Send
             try? await Task.sleep(for: .seconds(reconnectDelay))
         }
         putLifecycle(.terminated)
-        let handler = terminationHandler
-        onMainThread { handler?(self) }
+        terminationHandler?(self)
     }
 
     /// One connection running the forward until it drops or is cancelled.
@@ -137,7 +134,9 @@ public class PortForwardContext: ObservableObject, Identifiable, @unchecked Send
             } else {
                 try await connection.runRemoteForward(
                     bindPort: info.bindPort, targetHost: info.targetHost, targetPort: info.targetPort
-                ) { [weak self] in self?.putLifecycle(.forwardRunning) }
+                ) { [weak self] in
+                    Task { @MainActor in self?.putLifecycle(.forwardRunning) }
+                }
             }
         } catch {
             Logger.network.infoFile("port forward \(info.id) ended: \(error)")

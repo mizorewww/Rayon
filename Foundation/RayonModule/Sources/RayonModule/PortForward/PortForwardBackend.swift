@@ -39,9 +39,7 @@ public final class PortForwardBackend: ObservableObject {
             self?.putStatus(for: pid, with: state)
         }
         context.terminationHandler = { [weak self] context in
-            MainActor.assumeIsolated {
-                self?.endLifecycle(for: context)
-            }
+            self?.endLifecycle(for: context)
         }
         container.append(context)
         context.begin()
@@ -49,12 +47,8 @@ public final class PortForwardBackend: ObservableObject {
         onCreated?()
     }
 
-    public nonisolated func putStatus(for pid: RDPortForward.ID, with state: PortForwardContext.Lifecycle) {
-        onMainThread { [weak self] in
-            MainActor.assumeIsolated {
-                self?.lastStatus[pid] = state
-            }
-        }
+    public func putStatus(for pid: RDPortForward.ID, with state: PortForwardContext.Lifecycle) {
+        lastStatus[pid] = state
     }
 
     private func endLifecycle(for context: PortForwardContext) {
