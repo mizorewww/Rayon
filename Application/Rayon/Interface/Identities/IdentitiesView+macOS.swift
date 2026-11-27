@@ -128,7 +128,7 @@
                         .foregroundStyle(.rxInkSecondary)
                 }
                 Spacer()
-                Text("\(usage) server\(usage == 1 ? "" : "s")")
+                Text("\(usage) servers")
                     .font(.system(size: 12).monospacedDigit())
                     .foregroundStyle(.rxInkSecondary)
             }
@@ -158,7 +158,7 @@
         static func duplicate(_ id: RDIdentity.ID) {
             guard var copy = RayonStore.shared.identity(id) else { return }
             copy.id = UUID()
-            copy.comment = copy.comment.isEmpty ? String(localized: "Copy") : String(localized: "\(copy.comment) (copy)")
+            copy.comment = copy.comment.isEmpty ? String(localized: "Copy (identity comment)", defaultValue: "Copy", comment: "The comment of a duplicated identity that had none") : String(localized: "\(copy.comment) (copy)")
             RayonStore.shared.save(copy)
         }
 

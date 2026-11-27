@@ -444,7 +444,7 @@
                     ScrollView {
                         VStack(alignment: .leading, spacing: RX.Space.s3) {
                             if !openTabs.isEmpty {
-                                RXSectionHeader("Open Terminals")
+                                RXSectionHeader(LocalizedStringResource("Open Terminals (section)", defaultValue: "Open Terminals", comment: "Header over the terminal tabs already open"))
                                     .padding(.horizontal, RX.Space.s2)
                                 RXDividedStack {
                                     ForEach(openTabs) { tab in

@@ -157,7 +157,7 @@
                 } else {
                     ScrollView(.vertical, showsIndicators: false) {
                         VStack(alignment: .leading, spacing: RX.Space.s2) {
-                            CapsLabel("\(fileList.count) item\(fileList.count == 1 ? "" : "s")")
+                            CapsLabel("\(fileList.count) items")
                                 .padding(.leading, RX.Space.s2)
                             RXDividedStack {
                                 ForEach(fileList) { file in

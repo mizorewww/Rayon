@@ -74,11 +74,15 @@ struct TelemetryReportsSheet: View {
         Telemetry.json(pending + (lastSent.map { [$0] } ?? []))
     }
 
+    private var lead: String {
+        let waiting = lastSent == nil
+            ? String(localized: "\(pending.count) reports waiting.")
+            : String(localized: "\(pending.count) reports waiting, then the last one sent.")
+        return Telemetry.sendingAllowed ? waiting : waiting + " " + String(localized: "This build does not send them.")
+    }
+
     var body: some View {
-        SheetScaffold(
-            "What's Sent",
-            lead: "\(pending.count) report\(pending.count == 1 ? "" : "s") waiting\(lastSent == nil ? "" : ", then the last one sent"). \(Telemetry.sendingAllowed ? "" : "This build does not send them.")"
-        ) {
+        SheetScaffold("What's Sent", lead: "\(lead)") {
             ScrollView {
                 Text(json)
                     .font(.rxCode)
