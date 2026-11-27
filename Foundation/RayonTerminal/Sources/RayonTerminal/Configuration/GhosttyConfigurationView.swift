@@ -39,87 +39,23 @@ public final class ConfigNavigation: ObservableObject {
     }
 }
 
-/// Rows the app supplies for a group in `SettingsLayout` (General,
-/// Connection, About), so its preferences share Settings without coupling
-/// this package to RayonStore.
-public struct ConfigHostSettingsSection: Identifiable {
-    public let id: String
-    let keywords: String
-    let content: AnyView
-
-    @MainActor public init(id: String, keywords: String, @ViewBuilder content: () -> some View) {
-        self.id = id
-        self.keywords = keywords
-        self.content = AnyView(content())
-    }
-}
-
-/// All of Settings: the categories in a sidebar list, the selected one as a
-/// form, the live terminal preview above the terminal's categories, and
-/// search across every setting. The categories, their order and groups come
-/// from `SettingsLayout`; Ghostty settings are drawn from the catalog, the
-/// app's rows from `hostSections`.
+/// The terminal's settings on their own, for the configuration preview:
+/// the categories in a list, the selected one as a form with the live
+/// terminal preview, and search across every setting. Rayon's Settings
+/// arranges the same parts (`TerminalSettingsPage` and the rest) itself.
 public struct GhosttyConfigurationView: View {
-    @StateObject private var ownNavigation: ConfigNavigation
-    private let externalNavigation: ConfigNavigation?
-    private let embedded: Bool
-    /// False while the app keeps Settings out of sight: it then adds nothing
-    /// to the window toolbar.
-    private let active: Bool
-    private let hostSections: [String: ConfigHostSettingsSection]
-    private let onApplied: ((Double?) -> Void)?
+    @StateObject private var navigation = ConfigNavigation("text")
 
-    public init(
-        embedded: Bool = false,
-        hostSections: [ConfigHostSettingsSection] = [],
-        navigation: ConfigNavigation? = nil,
-        active: Bool = true,
-        onApplied: ((Double?) -> Void)? = nil
-    ) {
-        self.hostSections = Dictionary(hostSections.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        externalNavigation = navigation
-        _ownNavigation = StateObject(wrappedValue: ConfigNavigation(hostSections.isEmpty ? "text" : "general"))
-        self.embedded = embedded
-        self.active = active
-        self.onApplied = onApplied
-    }
+    public init() {}
 
     public var body: some View {
-        SettingsShell(
-            navigation: externalNavigation ?? ownNavigation,
-            categories: categories,
-            hostSections: hostSections,
-            embedded: embedded,
-            active: active
-        )
-        .onAppear {
-            if let onApplied {
-                TerminalSettings.shared.onFontSizeChange = { onApplied($0) }
-            }
-        }
-    }
-
-    /// Categories with something to show: app categories need their rows.
-    private var categories: [SettingsLayout.Category] {
-        SettingsLayout.categories.filter { category in
-            category.groups.contains { group in
-                group.items.contains { item in
-                    switch item {
-                    case let .setting(key): SettingCatalog.shared.setting(key) != nil
-                    case let .host(id): hostSections[id] != nil
-                    }
-                }
-            }
-        }
+        SettingsShell(navigation: navigation, categories: SettingsLayout.categories)
     }
 }
 
 private struct SettingsShell: View {
     @ObservedObject var navigation: ConfigNavigation
     let categories: [SettingsLayout.Category]
-    let hostSections: [String: ConfigHostSettingsSection]
-    let embedded: Bool
-    let active: Bool
     private var settings: TerminalSettings {
         .shared
     }
@@ -157,17 +93,10 @@ private struct SettingsShell: View {
                     search = ""
                     navigation.go(id)
                 })) {
-                    ForEach([SettingsLayout.Category.Section.app, .terminal, .info], id: \.self) { section in
-                        let members = categories.filter { $0.section == section }
-                        if !members.isEmpty {
-                            Section(section.rawValue) {
-                                ForEach(members) { category in
-                                    Label(category.title, systemImage: category.icon)
-                                        .badge(changedCount(category))
-                                        .tag(category.id)
-                                }
-                            }
-                        }
+                    ForEach(categories) { category in
+                        Label(category.title, systemImage: category.icon)
+                            .badge(changedCount(category))
+                            .tag(category.id)
                     }
                 }
                 .listStyle(.sidebar)
@@ -177,51 +106,37 @@ private struct SettingsShell: View {
                     .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
             }
             .toolbar {
-                if active {
-                    ToolbarItemGroup(placement: .navigation) {
-                        Button { navigation.step(-1) } label: { Label("Back", systemImage: "chevron.left") }
-                            .disabled(!navigation.canGoBack)
-                            .help("Previous category")
-                        Button { navigation.step(1) } label: { Label("Forward", systemImage: "chevron.right") }
-                            .disabled(!navigation.canGoForward)
-                            .help("Next category")
-                    }
-                    ToolbarItemGroup(placement: .primaryAction) { tools }
+                ToolbarItemGroup(placement: .navigation) {
+                    Button { navigation.step(-1) } label: { Label("Back", systemImage: "chevron.left") }
+                        .disabled(!navigation.canGoBack)
+                        .help("Previous category")
+                    Button { navigation.step(1) } label: { Label("Forward", systemImage: "chevron.right") }
+                        .disabled(!navigation.canGoForward)
+                        .help("Next category")
                 }
+                ToolbarItemGroup(placement: .primaryAction) { tools }
             }
-            .modifier(SearchField(text: $search, active: active))
-            .onChange(of: active) {
-                _, now in if !now {
-                    search = ""
-                }
-            }
-            .frame(minWidth: embedded ? 700 : 960, minHeight: 560)
+            .searchable(text: $search, placement: .toolbar, prompt: "Search settings")
+            .frame(minWidth: 960, minHeight: 560)
         }
     #else
         private var content: some View {
             Group {
                 if search.isEmpty {
                     List {
-                        ForEach([SettingsLayout.Category.Section.app, .terminal, .info], id: \.self) { section in
-                            let members = categories.filter { $0.section == section }
-                            if !members.isEmpty {
-                                Section(section.rawValue) {
-                                    ForEach(members) { category in
-                                        NavigationLink {
-                                            CategoryPage(category: category, hostSections: hostSections, showsPreview: $showsPreview)
-                                                .navigationTitle(category.title)
-                                                .toolbar { ToolbarItem(placement: .primaryAction) { moreMenu } }
-                                        } label: {
-                                            Label(category.title, systemImage: category.icon)
-                                                .badge(changedCount(category))
-                                        }
-                                    }
-                                }
+                        ForEach(categories) { category in
+                            NavigationLink {
+                                CategoryPage(category: category, showsPreview: $showsPreview)
+                                    .navigationTitle(category.title)
+                                    .toolbar { ToolbarItem(placement: .primaryAction) { moreMenu } }
+                            } label: {
+                                Label(category.title, systemImage: category.icon)
+                                    .badge(changedCount(category))
                             }
                         }
                     }
                 } else {
-                    SearchResults(query: search, categories: categories, hostSections: hostSections) { category in
+                    SearchResults(query: search, categories: categories) { category in
                         search = ""
                         navigation.go(category)
                     }
@@ -243,12 +158,12 @@ private struct SettingsShell: View {
 
     @ViewBuilder private var detail: some View {
         if !search.isEmpty {
-            SearchResults(query: search, categories: categories, hostSections: hostSections) { category in
+            SearchResults(query: search, categories: categories) { category in
                 search = ""
                 navigation.go(category)
             }
         } else if let selected {
-            CategoryPage(category: selected, hostSections: hostSections, showsPreview: $showsPreview)
+            CategoryPage(category: selected, showsPreview: $showsPreview)
                 .id(selected.id)
         } else {
             ContentUnavailableView("Choose a category", systemImage: "slider.horizontal.3")
@@ -260,7 +175,7 @@ private struct SettingsShell: View {
             showsPreview: $showsPreview,
             confirmingReset: $confirmReset,
             previewAvailable: (selected?.previews ?? false) && search.isEmpty,
-            resetAvailable: selected?.section == .terminal || !search.isEmpty
+            resetAvailable: true
         )
     }
 
@@ -269,28 +184,11 @@ private struct SettingsShell: View {
     }
 }
 
-#if os(macOS)
-    private struct SearchField: ViewModifier {
-        @Binding var text: String
-        let active: Bool
-
-        func body(content: Content) -> some View {
-            if active {
-                content.searchable(text: $text, placement: .toolbar, prompt: "Search settings")
-            } else {
-                content
-            }
-        }
-    }
-#endif
-
 // MARK: - Pages
 
-/// One category as a form: its groups as sections, the app's rows and
-/// Ghostty settings alike, with the terminal preview above when it helps.
+/// One category as a form: its groups as sections, with the terminal preview above when it helps.
 struct CategoryPage: View {
     let category: SettingsLayout.Category
-    let hostSections: [String: ConfigHostSettingsSection]
     @Binding var showsPreview: Bool
     var header: AnyView?
 
@@ -308,7 +206,7 @@ struct CategoryPage: View {
                 }
                 header
                 ForEach(category.groups) { group in
-                    GroupSection(group: group, keys: group.keys, hostSections: hostSections)
+                    GroupSection(group: group, keys: group.keys)
                 }
             }
             .formStyle(.grouped)
@@ -316,26 +214,18 @@ struct CategoryPage: View {
     }
 }
 
-/// A group: the app's rows, then its Ghostty settings.
+/// A group of Ghostty settings.
 private struct GroupSection: View {
     let group: SettingsLayout.Group
     let keys: [String]
-    let hostSections: [String: ConfigHostSettingsSection]
     var query = ""
 
     var body: some View {
-        let hosts = group.items.compactMap { item -> ConfigHostSettingsSection? in
-            if case let .host(id) = item {
-                return hostSections[id]
-            }
-            return nil
-        }
         let settings = keys.compactMap { SettingCatalog.shared.setting($0) }
         if keys == ["keybind"], query.isEmpty || SearchResults.shortcutsMatch(query) {
             KeybindingList(query: query)
-        } else if !hosts.isEmpty || !settings.isEmpty {
+        } else if !settings.isEmpty {
             Section {
-                ForEach(hosts) { $0.content }
                 ForEach(settings) { SettingRow(setting: $0, query: query) }
             } header: {
                 Text(group.title)
@@ -348,12 +238,11 @@ private struct GroupSection: View {
     }
 }
 
-/// Every setting and app group matching all the words typed, under their
+/// Every setting matching all the words typed, under their
 /// categories, each with a way to its category.
 struct SearchResults: View {
     let query: String
     let categories: [SettingsLayout.Category]
-    let hostSections: [String: ConfigHostSettingsSection]
     let show: (String) -> Void
 
     private var tokens: [Substring] {
@@ -387,12 +276,8 @@ struct SearchResults: View {
     var results: [(SettingsLayout.Category, [(SettingsLayout.Group, [String])])] {
         categories.compactMap { category -> (SettingsLayout.Category, [(SettingsLayout.Group, [String])])? in
             let groups = category.groups.compactMap { group -> (SettingsLayout.Group, [String])? in
-                let hostMatch = group.items.contains { item in
-                    guard case let .host(id) = item, let host = hostSections[id] else { return false }
-                    return matches("\(category.title) \(group.title) \(host.keywords)")
-                }
                 let keys = group.keys.filter { settingMatches($0, in: category, group) }
-                return hostMatch || !keys.isEmpty ? (group, keys) : nil
+                return keys.isEmpty ? nil : (group, keys)
             }
             return groups.isEmpty ? nil : (category, groups)
         }
@@ -416,15 +301,8 @@ struct SearchResults: View {
             }
             ForEach(groups, id: \.0.id) { group, keys in
                 GroupSection(
-                    group: SettingsLayout.Group(group.id, "\(category.title) › \(group.title)", group.items),
+                    group: SettingsLayout.Group(group.id, "\(category.title) › \(group.title)", keys: group.keys),
                     keys: keys,
-                    hostSections: group.items.contains {
-                        if case .host = $0 {
-                            true
-                        } else {
-                            false
-                        }
-                    } ? hostSections : [:],
                     query: query
                 )
             }

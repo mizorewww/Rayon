@@ -1,68 +1,48 @@
 import Foundation
 
-/// How Settings is organised. Rayon's own preferences and the Ghostty settings
-/// Rayon applies share one list of categories, ordered from what people change
-/// most (General, the terminal's text and colours) to what they rarely touch
-/// (Advanced, About). Each category holds titled groups; a group lists catalog
-/// keys or a block of rows supplied by the app (`ConfigHostSettingsSection`).
-/// Settings that take no effect inside Rayon close the list, grouped as
-/// Ghostty's documentation groups them, so every option stays reachable.
-struct SettingsLayout {
-    enum Item: Hashable {
-        /// A Ghostty setting, by catalog key.
-        case setting(String)
-        /// Rows supplied by the app, by `ConfigHostSettingsSection.id`.
-        case host(String)
-    }
-
+/// How the terminal's settings are organised: categories ordered from what
+/// people change most (the text and colours) to what they rarely touch
+/// (Advanced). Each category holds titled groups of catalog keys. Settings
+/// that take no effect inside Rayon close the list, grouped as Ghostty's
+/// documentation groups them, so every option stays reachable. The app
+/// places the categories in its own Settings.
+enum SettingsLayout {
     struct Group: Identifiable {
         let id: String
         let title: String
-        let items: [Item]
+        let keys: [String]
         var footer: String?
 
-        init(_ id: String, _ title: String, _ items: [Item], footer: String? = nil) {
+        init(_ id: String, _ title: String, keys: [String], footer: String? = nil) {
             self.id = id
             self.title = title
-            self.items = items
+            self.keys = keys
             self.footer = footer
-        }
-
-        init(_ id: String, _ title: String, keys: [String], footer: String? = nil) {
-            self.init(id, title, keys.map(Item.setting), footer: footer)
-        }
-
-        var keys: [String] {
-            items.compactMap { item in
-                if case let .setting(key) = item { return key }
-                return nil
-            }
         }
     }
 
     struct Category: Identifiable {
-        enum Section: String { case app = "Rayon", terminal = "Terminal", info = "" }
-
         let id: String
         let title: String
         let icon: String
-        let section: Section
         let groups: [Group]
         /// Said above the category's settings.
         var note: String?
 
         /// Ghostty keys in this category.
-        var keys: [String] { groups.flatMap(\.keys) }
+        var keys: [String] {
+            groups.flatMap(\.keys)
+        }
 
         /// Shows the live terminal preview with it.
-        var previews: Bool { section == .terminal && id != "keyboard" && id != Self.ghosttyID }
+        var previews: Bool {
+            id != "keyboard" && id != Self.ghosttyID
+        }
 
         static let ghosttyID = "ghostty"
     }
 
-    static let categories: [Category] = rayonCategories.filter { $0.section != .info }
-        + [ghosttyCategory]
-        + rayonCategories.filter { $0.section == .info }
+    static let categories: [Category] = rayonCategories + [ghosttyCategory]
 
     /// Every option Rayon's terminal does not use, in Ghostty's documentation order.
     private static let ghosttyCategory: Category = {
@@ -76,27 +56,13 @@ struct SettingsLayout {
             }
         }
         return Category(
-            id: Category.ghosttyID, title: "Ghostty App", icon: "app.dashed", section: .terminal, groups: groups,
+            id: Category.ghosttyID, title: "Ghostty App", icon: "app.dashed", groups: groups,
             note: "Rayon's terminal does not use these: they belong to the Ghostty app, or Rayon sets them itself. They are kept in config.ghostty, so the file also works in Ghostty."
         )
     }()
 
     private static let rayonCategories: [Category] = [
-        Category(id: "general", title: "General", icon: "gearshape", section: .app, groups: [
-            Group("appearance", "Appearance", [.host("general.appearance")]),
-            Group("sessions", "Sessions", [.host("general.sessions")]),
-            Group("recent", "Recent", [.host("general.recent")]),
-            Group("sync", "iCloud Sync", [.host("general.sync")]),
-            // App-specific: the iOS app's container and log. A group shows only
-            // when the app supplies its rows.
-            Group("data", "Data", [.host("general.data")]),
-        ]),
-        Category(id: "connection", title: "Connection", icon: "network", section: .app, groups: [
-            Group("ssh", "SSH", [.host("connection.ssh")]),
-            Group("uuremote", "NetEase UU Remote", [.host("connection.uuremote")]),
-            Group("monitor", "Monitor", [.host("connection.monitor")]),
-        ]),
-        Category(id: "text", title: "Text", icon: "textformat", section: .terminal, groups: [
+        Category(id: "text", title: "Text", icon: "textformat", groups: [
             Group("font", "Font", keys: ["font-family", "font-style", "font-size", "font-thicken", "font-thicken-strength"]),
             Group("styles", "Bold and Italic", keys: [
                 "font-family-bold", "font-style-bold", "font-family-italic", "font-style-italic",
@@ -113,52 +79,51 @@ struct SettingsLayout {
                 "adjust-overline-position", "adjust-overline-thickness", "adjust-box-thickness",
             ]),
         ]),
-        Category(id: "colors", title: "Colors", icon: "paintpalette", section: .terminal, groups: [
+        Category(id: "colors", title: "Colors", icon: "paintpalette", groups: [
             Group("theme", "Theme", keys: ["theme"]),
             Group("base", "Text and Background", keys: ["foreground", "background", "bold-color", "minimum-contrast"]),
             Group("selection", "Selection", keys: ["selection-foreground", "selection-background"]),
             Group("palette", "Palette", keys: ["palette"]),
         ]),
-        Category(id: "cursor", title: "Cursor", icon: "character.cursor.ibeam", section: .terminal, groups: [
+        Category(id: "cursor", title: "Cursor", icon: "character.cursor.ibeam", groups: [
             Group("shape", "Shape", keys: ["cursor-style", "cursor-style-blink", "adjust-cursor-thickness", "adjust-cursor-height"]),
             Group("color", "Color", keys: ["cursor-color", "cursor-text", "cursor-opacity"]),
         ]),
-        Category(id: "window", title: "Window", icon: "macwindow", section: .terminal, groups: [
+        Category(id: "window", title: "Window", icon: "macwindow", groups: [
             Group("transparency", "Transparency", keys: ["background-opacity", "background-opacity-cells"]),
             Group("padding", "Padding", keys: ["window-padding-x", "window-padding-y", "window-padding-balance", "window-padding-color"]),
         ]),
-        Category(id: "input", title: "Mouse & Clipboard", icon: "cursorarrow.click", section: .terminal, groups: [
-            // Copy on Select is the app's own row (`terminal.copyOnSelect`): a
-            // touch selection never passes through Ghostty's `copy-on-select`.
-            Group("copy", "Copy and Paste", [.host("terminal.copyOnSelect")] + [
+        Category(id: "input", title: "Mouse & Clipboard", icon: "cursorarrow.click", groups: [
+            // Copy on Select is the app's own row: a touch selection never
+            // passes through Ghostty's `copy-on-select`.
+            Group("copy", "Copy and Paste", keys: [
                 "clipboard-trim-trailing-spaces", "selection-clear-on-copy",
                 "selection-clear-on-typing", "clipboard-paste-protection", "clipboard-paste-bracketed-safe",
-            ].map(Item.setting)),
+            ]),
             Group("mouse", "Mouse", keys: ["mouse-scroll-multiplier", "mouse-hide-while-typing", "mouse-shift-capture", "cursor-click-to-move", "link-url"]),
         ]),
-        Category(id: "keyboard", title: "Keyboard", icon: "keyboard", section: .terminal, groups: [
+        Category(id: "keyboard", title: "Keyboard", icon: "keyboard", groups: [
             Group("keybinds", "Shortcuts", keys: ["keybind"]),
         ]),
-        Category(id: "advanced", title: "Advanced", icon: "slider.horizontal.3", section: .terminal, groups: [
+        Category(id: "advanced", title: "Advanced", icon: "slider.horizontal.3", groups: [
             Group("memory", "Memory", keys: ["scrollback-limit", "image-storage-limit"]),
             Group("compatibility", "Compatibility", keys: ["title", "enquiry-response", "vt-kam-allowed"]),
-        ]),
-        Category(id: "about", title: "About", icon: "info.circle", section: .info, groups: [
-            Group("Rayon", "Rayon", [.host("about.Rayon")]),
-            Group("acknowledgements", "Acknowledgements", [.host("about.acknowledgements")]),
         ]),
     ]
 
     static let categoryOfKey: [String: Category] = {
         var result: [String: Category] = [:]
         for category in categories {
-            for key in category.keys where result[key] == nil { result[key] = category }
+            for key in category.keys where result[key] == nil {
+                result[key] = category
+            }
         }
         return result
     }()
 
-
-    static func category(_ id: String) -> Category? { categories.first { $0.id == id } }
+    static func category(_ id: String) -> Category? {
+        categories.first { $0.id == id }
+    }
 
     // MARK: Wording
 

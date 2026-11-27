@@ -15,7 +15,6 @@ public struct TerminalSettingsCategory: Identifiable, Hashable, Sendable {
 
     /// Every terminal category, in the order Settings lists them.
     public static let all: [TerminalSettingsCategory] = SettingsLayout.categories
-        .filter { $0.section == .terminal }
         .map { TerminalSettingsCategory(id: $0.id, title: $0.title, icon: $0.icon) }
 
     var layout: SettingsLayout.Category? {
@@ -48,7 +47,7 @@ public struct TerminalSettingsPage<Header: View>: View {
 
     public var body: some View {
         if let layout = category.layout {
-            CategoryPage(category: layout, hostSections: [:], showsPreview: $showsPreview, header: AnyView(header))
+            CategoryPage(category: layout, showsPreview: $showsPreview, header: AnyView(header))
         }
     }
 }
@@ -67,8 +66,7 @@ public struct TerminalSettingsSearchSections: View {
     public init(query: String, show: @escaping (String) -> Void) {
         search = SearchResults(
             query: query,
-            categories: SettingsLayout.categories.filter { $0.section == .terminal },
-            hostSections: [:],
+            categories: SettingsLayout.categories,
             show: show
         )
     }
