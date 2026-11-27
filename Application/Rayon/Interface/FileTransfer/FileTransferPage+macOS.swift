@@ -15,68 +15,19 @@
 
     struct FileTransferPage: View {
         @ObservedObject var context: FileTransferContext
+        @StateObject private var browser: FileBrowser
         @EnvironmentObject var store: RayonStore
         @AppSetting(AppSettings.serverRedaction) private var redaction
 
-        @State private var filter = ""
-        @State private var selection: FileTransferContext.RemoteFile?
-        @State private var prompt: FilePrompt?
         @State private var dropTargeted = false
         @State private var pointerHistory = FolderHistoryPointer()
 
-        /// The whole folder in the table's order: folders first, then by name.
-        /// Sorted when the folder changes, not on every redraw: a transfer's
-        /// progress redraws the page many times a second.
-        @State private var sorted: [FileTransferContext.RemoteFile] = []
-        /// What the table shows: `sorted`, less what the filter leaves out.
-        @State private var files: [FileTransferContext.RemoteFile] = []
-        /// Counts the folder listings, so a slow sort of an old one is dropped.
-        @State private var listing = 0
-
-        nonisolated static func sort(_ list: [FileTransferContext.RemoteFile]) -> [FileTransferContext.RemoteFile] {
-            list.sorted(using: RemoteFileComparator(.name))
+        init(context: FileTransferContext) {
+            self.context = context
+            _browser = StateObject(wrappedValue: FileBrowser(context: context))
         }
 
-        private func show(sorted list: [FileTransferContext.RemoteFile]) {
-            sorted = list
-            // A reload reads every file anew; one that is gone is no longer chosen.
-            if let chosen = selection { selection = list.first { $0.id == chosen.id } }
-            applyFilter()
-        }
-
-        /// Filtering keeps the order, so typing in the filter never sorts.
-        private func applyFilter() {
-            let needle = filter.lowercased()
-            files = needle.isEmpty ? sorted : sorted.filter { $0.name.lowercased().contains(needle) }
-        }
-
-        private func arrange(_ list: [FileTransferContext.RemoteFile]) {
-            listing += 1
-            // A long folder is sorted off the main thread; a short one takes less
-            // than a frame, and showing it at once avoids a flash of the old one.
-            guard list.count > 1000 else { return show(sorted: Self.sort(list)) }
-            let expected = listing
-            DispatchQueue.global(qos: .userInitiated).async {
-                let result = Self.sort(list)
-                DispatchQueue.main.async {
-                    if listing == expected { show(sorted: result) }
-                }
-            }
-        }
-
-        var busy: Bool { context.processConnection || context.isProgressRunning }
-
-        /// The Go menu's actions on this page.
-        private var commands: FileBrowserCommandActions {
-            let ready = !busy && context.connected
-            return FileBrowserCommandActions(
-                back: ready && context.canGoBack ? { context.goBack() } : nil,
-                forward: ready && context.canGoForward ? { context.goForward() } : nil,
-                enclosingFolder: ready && context.currentUrl.pathComponents.count > 1 ? { goUp() } : nil,
-                goToFolder: ready ? { prompt = .goTo } : nil,
-                reload: ready ? { context.loadCurrentFileList() } : nil
-            )
-        }
+        var busy: Bool { browser.busy }
 
         var body: some View {
             PageScaffold(
@@ -85,23 +36,23 @@
                     "Download",
                     systemImage: "arrow.down.doc",
                     primary: true,
-                    isEnabled: selection != nil && !busy && context.connected
+                    isEnabled: !browser.selection.isEmpty && browser.ready
                 ) {
-                    if let selection { download(selection) }
+                    browser.download(browser.selectedFiles)
                 }
             ) {
                 ToolbarAction("Back", systemImage: "chevron.left") { context.goBack() }
                     .disabled(!context.canGoBack || busy || !context.connected)
                 ToolbarAction("Forward", systemImage: "chevron.right") { context.goForward() }
                     .disabled(!context.canGoForward || busy || !context.connected)
-                ToolbarAction("Enclosing Folder", systemImage: "arrow.up") { goUp() }
-                    .disabled(context.currentUrl.pathComponents.count <= 1 || busy || !context.connected)
-                ToolbarAction("Go to Folder", systemImage: "arrow.turn.down.right") { prompt = .goTo }
+                ToolbarAction("Enclosing Folder", systemImage: "arrow.up") { browser.goUp() }
+                    .disabled(!browser.canGoUp || busy || !context.connected)
+                ToolbarAction("Go to Folder", systemImage: "arrow.turn.down.right") { browser.ask(.goTo) }
                     .disabled(busy || !context.connected)
             } trailing: {
                 ToolbarAction("Reload", systemImage: "arrow.clockwise") { context.loadCurrentFileList() }
                     .disabled(busy || !context.connected)
-                ToolbarAction("New Folder", systemImage: "folder.badge.plus") { prompt = .newFolder }
+                ToolbarAction("New Folder", systemImage: "folder.badge.plus") { browser.ask(.newFolder) }
                     .disabled(busy || !context.connected)
                 ToolbarAction("Upload", systemImage: "arrow.up.doc") { upload() }
                     .disabled(busy || !context.connected)
@@ -112,14 +63,14 @@
                 VStack(alignment: .leading, spacing: RX.Space.s2) {
                     PageTitle(redaction == .all ? "File Transfer" : "\(context.machine.name)", subtitle: "\(subtitle)")
                     HStack(spacing: RX.Space.s3) {
-                        Breadcrumb(url: context.currentUrl) { path in
+                        FolderBreadcrumb(url: context.currentUrl) { path in
                             context.navigate(path: path)
                         }
                         .disabled(busy || !context.connected)
                         Spacer(minLength: RX.Space.s2)
                         // In the page, not the toolbar: this page stays mounted while
                         // hidden, and a toolbar search field would stay with it.
-                        RXSearchField("Filter this folder", text: $filter, width: 200)
+                        RXSearchField("Filter this folder", text: $browser.filter, width: 200)
                     }
                 }
             } content: {
@@ -151,11 +102,11 @@
                         fileTable
                     }
                     if context.isProgressRunning, !context.processConnection {
-                        transferCard
+                        TransferCard(context: context)
                     }
                 }
             }
-            .onDrop(of: [.fileURL], isTargeted: $dropTargeted, perform: handleDrop)
+            .onDrop(of: [.fileURL], isTargeted: $dropTargeted, perform: browser.upload(dropped:))
             .overlay {
                 if dropTargeted {
                     RoundedRectangle(cornerRadius: RX.Radius.card, style: .continuous)
@@ -170,21 +121,18 @@
                         .allowsHitTesting(false)
                 }
             }
-            .focusedSceneValue(\.fileBrowserCommands, commands)
-            .sheet(item: $prompt) { prompt in
-                FilePromptSheet(prompt: prompt, context: context) { self.prompt = nil }
+            .focusedSceneValue(\.fileBrowserCommands, browser.commands)
+            .sheet(item: $browser.prompt) { prompt in
+                FilePromptSheet(prompt: prompt, browser: browser) { browser.prompt = nil }
             }
-            .onChange(of: context.currentDir) { _ in selection = nil }
-            .onReceive(context.$currentFileList) { arrange($0) }
-            .onChange(of: filter) { _ in applyFilter() }
             // The mouse's back and forward buttons, and a swipe, step through
             // the folders while this page is on screen.
             .onAppear { pointerHistory.update(active: true, context: context) }
             .onDisappear { pointerHistory.update(active: false, context: context) }
             #if DEBUG
                 .onReceive(NotificationCenter.default.publisher(for: .benchFiles)) { note in
-                    if let index = note.userInfo?["select"] as? Int, files.indices.contains(index) { selection = files[index] }
-                    if let text = note.userInfo?["filter"] as? String { filter = text }
+                    if let index = note.userInfo?["select"] as? Int, browser.files.indices.contains(index) { browser.selection = [browser.files[index].id] }
+                    if let text = note.userInfo?["filter"] as? String { browser.filter = text }
                 }
             #endif
                 .serverToolSwitcher(machine: context.machine.id, current: .files)
@@ -198,25 +146,18 @@
 
         var fileTable: some View {
             VStack(spacing: 0) {
-                if files.isEmpty {
+                if browser.files.isEmpty {
                     EmptyStateView(
-                        filter.isEmpty ? "Empty folder" : "No matches",
+                        browser.filter.isEmpty ? "Empty folder" : "No matches",
                         systemImage: "folder",
                         message: ""
                     )
                     Spacer(minLength: 0)
                 } else {
-                    FileTable(
-                        files: files,
-                        folder: context.currentDir,
-                        selection: selection?.id,
-                        select: { id in selection = files.first { $0.id == id } },
-                        open: open,
-                        menu: menu(for:)
-                    )
+                    FileTable(browser: browser)
                     // The Table's NSTableView takes drags over its rows before
                     // the page's drop area sees them.
-                    .onDrop(of: [.fileURL], isTargeted: $dropTargeted, perform: handleDrop)
+                    .onDrop(of: [.fileURL], isTargeted: $dropTargeted, perform: browser.upload(dropped:))
                 }
             }
             .padding(RX.Space.s2)
@@ -224,76 +165,6 @@
             .background(Color.clear.rxCard(padding: 0))
             .disabled(busy)
             .opacity(busy ? 0.6 : 1)
-        }
-
-        @ViewBuilder
-        func menu(for file: FileTransferContext.RemoteFile) -> some View {
-            if file.isFolder {
-                Button("Open") { open(file) }
-            } else {
-                Button("Edit") { edit(file) }
-            }
-            Button("Download…") { download(file) }
-            Divider()
-            Button("Rename…") { prompt = .rename(file.name) }
-            Button("Copy Name") { Pasteboard.copy(file.name) }
-            Button("Copy Path") {
-                Pasteboard.copy(context.currentUrl.appendingPathComponent(file.name).path)
-            }
-            Divider()
-            Button("Delete…", role: .destructive) { delete(file) }
-        }
-
-        // MARK: Transfer card
-
-        var transferCard: some View {
-            let total = context.totalProgress
-            let current = context.currentProgress
-            let fraction: Double? = total.totalUnitCount > 0
-                ? total.fractionCompleted
-                : (current.totalUnitCount > 0 ? current.fractionCompleted : nil)
-            var detail: [String] = []
-            if total.totalUnitCount > 1 {
-                detail.append(String(localized: "\(total.completedUnitCount) of \(total.totalUnitCount)"))
-            }
-            if context.currentSpeed > 0 {
-                detail.append(RXFormat.rateString(Double(context.currentSpeed)))
-            }
-            let name = context.currentProcessingFile.isEmpty
-                ? (context.currentHint.isEmpty ? String(localized: "Working…") : context.currentHint)
-                : URL(fileURLWithPath: context.currentProcessingFile).lastPathComponent
-            return VStack(alignment: .leading, spacing: RX.Space.s2) {
-                CardHead("Transfer")
-                ProgressRowView(
-                    title: name,
-                    detail: detail.joined(separator: " · "),
-                    fraction: fraction,
-                    cancel: context.currentProgressCancelable && context.continueCurrentProgress
-                        ? { context.continueCurrentProgress = false }
-                        : nil
-                )
-            }
-            .rxCard()
-        }
-
-        // MARK: Actions
-
-        func goUp() {
-            context.navigate(path: context.currentUrl.deletingLastPathComponent().path)
-        }
-
-        func open(_ file: FileTransferContext.RemoteFile) {
-            if file.isFolder {
-                context.navigate(path: context.currentUrl.appendingPathComponent(file.name).path)
-            } else if FileTransferContext.isEditable(file) {
-                edit(file)
-            } else {
-                download(file)
-            }
-        }
-
-        func edit(_ file: FileTransferContext.RemoteFile) {
-            AppRouter.shared.openEditor(context: context, path: context.currentUrl.appendingPathComponent(file.name).path)
         }
 
         func upload() {
@@ -309,54 +180,6 @@
             ) { urls in
                 if !urls.isEmpty { context.upload(urls: urls) }
             }
-        }
-
-        func download(_ file: FileTransferContext.RemoteFile) {
-            let remote = context.currentUrl.appendingPathComponent(file.name)
-            OpenPanel.present(
-                message: "Choose where to save \(file.name)",
-                prompt: "Download Here",
-                directory: nil,
-                canChooseFiles: false,
-                canChooseDirectories: true,
-                allowsMultipleSelection: false,
-                canCreateDirectories: true,
-                showsHiddenFiles: false
-            ) { urls in
-                if let url = urls.first { context.download(from: [remote], toDir: url) }
-            }
-        }
-
-        func delete(_ file: FileTransferContext.RemoteFile) {
-            let item = context.currentUrl.appendingPathComponent(file.name)
-            Indicator.confirm(
-                message: "Delete \(file.name)?",
-                informative: file.fstat.isDirectory
-                    ? "The folder and everything in it is deleted from the server. This cannot be undone."
-                    : "The file is deleted from the server. This cannot be undone.",
-                confirmTitle: "Delete",
-                destructive: true
-            ) { confirmed in
-                if confirmed { context.delete(items: [item]) }
-            }
-        }
-
-        func handleDrop(_ providers: [NSItemProvider]) -> Bool {
-            guard context.connected, !busy else { return false }
-            let matching = providers.filter { $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) }
-            // Say no to a drop with nothing we can take, so it lands elsewhere.
-            guard !matching.isEmpty else { return false }
-            Task {
-                var urls: [URL] = []
-                for provider in matching {
-                    let url = await withCheckedContinuation { (loaded: CheckedContinuation<URL?, Never>) in
-                        _ = provider.loadObject(ofClass: URL.self) { url, _ in loaded.resume(returning: url) }
-                    }
-                    if let url { urls.append(url) }
-                }
-                if !urls.isEmpty { context.upload(urls: urls) }
-            }
-            return true
         }
     }
 
@@ -402,102 +225,20 @@
         }
     }
 
-    /// The current remote folder: one clickable segment per folder, the last in `ink` semibold.
-    /// Long paths collapse middle segments into "…".
-    struct Breadcrumb: View {
-        let url: URL
-        let navigate: (String) -> Void
-
-        var body: some View {
-            let components = url.pathComponents
-            let indices = Array(components.indices)
-            let shown: [Int?] = indices.count > 5
-                ? [indices[0], nil] + indices.suffix(3).map { Optional($0) }
-                : indices.map { Optional($0) }
-            HStack(spacing: 2) {
-                ForEach(Array(shown.enumerated()), id: \.offset) { position, index in
-                    if position > 0 {
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 9, weight: .semibold))
-                            .foregroundStyle(.rxInkTertiary)
-                    }
-                    if let index {
-                        let isLast = index == components.count - 1
-                        Button {
-                            navigate(path(upTo: index))
-                        } label: {
-                            Text(components[index])
-                                .font(.system(size: 13, weight: isLast ? .semibold : .regular))
-                                .foregroundStyle(isLast ? Color.rxInk : Color.rxInkSecondary)
-                                .lineLimit(1)
-                                .padding(.horizontal, 4)
-                                .frame(height: 24)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(isLast)
-                    } else {
-                        Text("…").foregroundStyle(.rxInkSecondary)
-                    }
-                }
-            }
-            .layoutPriority(1)
-        }
-
-        func path(upTo index: Int) -> String {
-            let components = url.pathComponents.prefix(index + 1)
-            guard components.count > 1 else { return "/" }
-            return "/" + components.dropFirst().joined(separator: "/")
-        }
-    }
-
     // MARK: - Prompts
-
-    enum FilePrompt: Identifiable {
-        case goTo
-        case newFolder
-        case rename(String)
-
-        var id: String {
-            switch self {
-            case .goTo: return "goto"
-            case .newFolder: return "folder"
-            case let .rename(name): return "rename-\(name)"
-            }
-        }
-    }
 
     /// Go to Folder, New Folder and Rename as small sheets.
     private struct FilePromptSheet: View {
         let prompt: FilePrompt
-        @ObservedObject var context: FileTransferContext
+        @ObservedObject var browser: FileBrowser
         let close: () -> Void
 
         @State private var text = ""
 
-        var title: LocalizedStringResource {
-            switch prompt {
-            case .goTo: return "Go to Folder"
-            case .newFolder: return "New Folder"
-            case .rename: return "Rename"
-            }
-        }
-
-        var error: String? {
-            switch prompt {
-            case .goTo:
-                return text.hasPrefix("/") || text.isEmpty ? nil : String(localized: "Use an absolute path starting with /.")
-            case .newFolder, .rename:
-                if text.isEmpty { return nil }
-                if !text.isValidAsFilename { return String(localized: "That name contains characters a file name cannot have.") }
-                if case let .rename(original) = prompt, original == text { return nil }
-                if context.currentFileList.contains(where: { $0.name == text }) { return String(localized: "“\(text)” already exists in this folder.") }
-                return nil
-            }
-        }
+        var error: String? { browser.problem(with: text, for: prompt) }
 
         var body: some View {
-            SheetScaffold(title) {
+            SheetScaffold(prompt.title) {
                 RXField(prompt.label, error: error) {
                     TextField(String(localized: prompt.placeholder), text: $text)
                         .textFieldStyle(.roundedBorder)
@@ -516,82 +257,13 @@
                     .disabled(text.isEmpty || error != nil)
             }
             .frame(width: 420)
-            .onAppear {
-                switch prompt {
-                case .goTo: text = context.currentDir
-                case .newFolder: text = ""
-                case let .rename(name): text = name
-                }
-            }
+            .onAppear { text = browser.initialText(for: prompt) }
         }
 
         func confirm() {
             guard !text.isEmpty, error == nil else { return }
-            switch prompt {
-            case .goTo:
-                context.navigate(path: text)
-            case .newFolder:
-                context.createFolder(with: text)
-            case let .rename(original):
-                if original != text {
-                    let base = context.currentUrl
-                    context.rename(from: base.appendingPathComponent(original), to: base.appendingPathComponent(text))
-                }
-            }
+            browser.perform(prompt, with: text)
             close()
-        }
-    }
-
-    private extension FilePrompt {
-        var label: LocalizedStringResource {
-            switch self {
-            case .goTo: return "Path"
-            case .newFolder, .rename: return "Name"
-            }
-        }
-
-        var placeholder: LocalizedStringResource {
-            switch self {
-            case .goTo: return "/var/log"
-            case .newFolder: return "untitled folder"
-            case .rename: return "Name"
-            }
-        }
-
-        var confirmTitle: LocalizedStringResource {
-            switch self {
-            case .goTo: return "Go"
-            case .newFolder: return "Create"
-            case .rename: return "Rename"
-            }
-        }
-
-        var isPath: Bool {
-            if case .goTo = self { return true }
-            return false
-        }
-    }
-
-    enum FileTransferSessionActions {
-        /// Closes a server's SFTP session, and with it the editor that works over it.
-        @MainActor
-        static func close(_ context: FileTransferContext) {
-            let unsaved = EditorCenter.shared.workspaces.first { $0.id == context.id }?.hasUnsavedChanges == true
-            if context.isProgressRunning || unsaved {
-                Indicator.confirm(
-                    message: "Close the file transfer on \(context.machine.name)?",
-                    informative: unsaved
-                        ? "Files open in the editor have changes that are not saved. They are lost if you close."
-                        : "A transfer is still running and will be interrupted.",
-                    confirmTitle: unsaved ? "Discard Changes" : "Close",
-                    destructive: true,
-                    skippable: !unsaved
-                ) { confirmed in
-                    if confirmed { FileTransferManager.shared.end(for: context.id) }
-                }
-            } else {
-                FileTransferManager.shared.end(for: context.id)
-            }
         }
     }
 

@@ -13,38 +13,21 @@
 
     struct FileTransferView: View {
         @ObservedObject var context: FileTransferContext
+        @StateObject private var browser: FileBrowser
         @Environment(\.dismiss) private var dismiss
         @Environment(\.inServerWorkspace) private var inServerWorkspace
 
         @State var openFilePicker: Bool = false
-        @State var searchKey: String = ""
-        /// The editor, when it is shown over Files.
         @State private var dropTargeted = false
-        /// The folder in the order the list shows it: folders first, then by
-        /// name. Sorted when the folder changes, not on every redraw.
-        @State private var sorted: [FileTransferContext.RemoteFile] = []
+        /// Select chooses several files for Download or Delete.
+        @State private var editMode: EditMode = .inactive
 
-        var fileList: [FileTransferContext.RemoteFile] {
-            if searchKey.isEmpty {
-                return sorted
-            }
-            let key = searchKey.lowercased()
-            return sorted.filter { $0.name.lowercased().contains(key) }
+        init(context: FileTransferContext) {
+            self.context = context
+            _browser = StateObject(wrappedValue: FileBrowser(context: context))
         }
 
-        var busy: Bool { context.processConnection || context.isProgressRunning }
-
-        /// The Go menu's actions, for an iPad's hardware keyboard.
-        private var commands: FileBrowserCommandActions {
-            let ready = !busy && context.connected
-            return FileBrowserCommandActions(
-                back: ready && context.canGoBack ? { context.goBack() } : nil,
-                forward: ready && context.canGoForward ? { context.goForward() } : nil,
-                enclosingFolder: ready && context.currentUrl.pathComponents.count > 1 ? { goUp() } : nil,
-                goToFolder: ready ? { goToFolder() } : nil,
-                reload: ready ? { context.loadCurrentFileList() } : nil
-            )
-        }
+        var busy: Bool { browser.busy }
 
         var body: some View {
             Group {
@@ -54,9 +37,15 @@
                     VStack(spacing: RX.Space.s3) {
                         mainView
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        bottomToolbar
-                            .disabled(context.processConnection)
-                            .disabled(context.isProgressRunning)
+                        Group {
+                            if editMode.isEditing {
+                                selectionBar
+                            } else {
+                                bottomToolbar
+                            }
+                        }
+                        .disabled(context.processConnection)
+                        .disabled(context.isProgressRunning)
                         hintView
                     }
                 }
@@ -76,9 +65,8 @@
                     context.upload(urls: urls)
                 }
             }
-            .onReceive(context.$currentFileList) { sorted = $0.sorted(using: RemoteFileComparator(.name)) }
             // iPad: files dragged in from Files or another app are uploaded here.
-            .onDrop(of: [.item], isTargeted: $dropTargeted, perform: handleDrop)
+            .onDrop(of: [.item], isTargeted: $dropTargeted, perform: browser.upload(dropped:))
             .overlay {
                 if dropTargeted {
                     RoundedRectangle(cornerRadius: RX.Radius.card, style: .continuous)
@@ -93,7 +81,11 @@
                         .allowsHitTesting(false)
                 }
             }
-            .focusedSceneValue(\.fileBrowserCommands, commands)
+            .focusedSceneValue(\.fileBrowserCommands, browser.commands)
+            .environment(\.editMode, $editMode)
+            .onChange(of: context.connected) { _, connected in
+                if !connected { editMode = .inactive }
+            }
         }
 
         var mainView: some View {
@@ -126,28 +118,9 @@
         }
 
         var progressView: some View {
-            let total = context.totalProgress
-            let current = context.currentProgress
-            let fraction: Double? = total.totalUnitCount > 0
-                ? total.fractionCompleted
-                : (current.totalUnitCount > 0 ? current.fractionCompleted : nil)
-            let name = context.currentProcessingFile.isEmpty
-                ? (context.currentHint.isEmpty ? String(localized: "Working…") : context.currentHint)
-                : URL(fileURLWithPath: context.currentProcessingFile).lastPathComponent
-            return VStack(alignment: .leading, spacing: RX.Space.s2) {
-                CardHead("Transfer")
-                ProgressRowView(
-                    title: name,
-                    detail: context.currentSpeed > 0 ? RXFormat.rateString(Double(context.currentSpeed)) : "",
-                    fraction: fraction,
-                    cancel: context.currentProgressCancelable && context.continueCurrentProgress
-                        ? { context.continueCurrentProgress = false }
-                        : nil
-                )
-            }
-            .rxCard()
-            .frame(maxHeight: .infinity, alignment: .top)
-            .padding(.top, RX.Space.s3)
+            TransferCard(context: context)
+                .frame(maxHeight: .infinity, alignment: .top)
+                .padding(.top, RX.Space.s3)
         }
 
         var fileListView: some View {
@@ -155,25 +128,45 @@
                 if context.currentFileList.isEmpty {
                     EmptyStateView("Empty folder", systemImage: "folder")
                 } else {
-                    ScrollView(.vertical, showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: RX.Space.s2) {
-                            CapsLabel("\(fileList.count) items")
-                                .padding(.leading, RX.Space.s2)
-                            RXDividedStack {
-                                ForEach(fileList) { file in
-                                    RemoteFileElement(file: file, context: context) { path in
-                                        edit(path: path)
-                                    }
-                                }
+                    List(selection: $browser.selection) {
+                        Section {
+                            ForEach(browser.files) { file in
+                                RemoteFileRow(file: file, browser: browser)
                             }
-                            .rxCard(padding: RX.Space.s2)
+                        } header: {
+                            Text("\(browser.files.count) items")
                         }
-                        .padding(.top, RX.Space.s3)
                     }
-                    .searchable(text: $searchKey)
+                    .listStyle(.insetGrouped)
+                    .scrollContentBackground(.hidden)
+                    .searchable(text: $browser.filter)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+
+        /// While selecting: choose all, and what can be done to the chosen files.
+        var selectionBar: some View {
+            let chosen = browser.selectedFiles
+            let allChosen = !browser.files.isEmpty && chosen.count == browser.files.count
+            return HStack {
+                Button(allChosen ? "Deselect All" : "Select All") {
+                    browser.selection = allChosen ? [] : Set(browser.files.map(\.id))
+                }
+                .disabled(browser.files.isEmpty)
+                Spacer()
+                Button { browser.download(chosen) } label: {
+                    Label("Download", systemImage: "arrow.down.doc")
+                }
+                .disabled(chosen.isEmpty)
+                Button { browser.delete(chosen) } label: {
+                    Label("Delete…", systemImage: "trash")
+                }
+                .tint(.rxDanger)
+                .disabled(chosen.isEmpty)
+            }
+            .buttonStyle(.rx(size: .small))
+            .frame(maxWidth: .infinity)
         }
 
         /// Where the list is, and the way up or elsewhere. What can be done to
@@ -193,19 +186,21 @@
                     }
                     .buttonStyle(.rx(size: .small))
                     .disabled(!context.connected || !context.canGoForward)
-                    Button { goUp() } label: {
+                    Button { browser.goUp() } label: {
                         Label("Up", systemImage: "arrow.up")
                     }
                     .buttonStyle(.rx(size: .small))
-                    .disabled(!context.connected || context.currentUrl.pathComponents.count <= 1)
-                    Button { goToFolder() } label: {
+                    .disabled(!context.connected || !browser.canGoUp)
+                    Button { browser.ask(.goTo) } label: {
                         Label("Go to…", systemImage: "arrow.right")
                     }
                     .buttonStyle(.rx(size: .small))
                     .disabled(!context.connected)
                     Divider().frame(height: 20)
-                    pathItems
-                        .disabled(!context.connected)
+                    FolderBreadcrumb(url: context.currentUrl) { path in
+                        context.navigate(path: path)
+                    }
+                    .disabled(!context.connected)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -215,14 +210,24 @@
         /// Upload, beside them.
         @ToolbarContentBuilder var actionsToolbar: some ToolbarContent {
             ToolbarItemGroup(placement: .primaryAction) {
-                if context.connected {
+                if context.connected, !context.currentFileList.isEmpty {
+                    // "Cancel", like Photos: the page's own Done, beside it, closes Files.
+                    Button(editMode.isEditing ? "Cancel" : "Select") {
+                        withAnimation {
+                            editMode = editMode.isEditing ? .inactive : .active
+                            if !editMode.isEditing { browser.selection = [] }
+                        }
+                    }
+                    .disabled(busy && !editMode.isEditing)
+                }
+                if context.connected, !editMode.isEditing {
                     Button { openFilePicker = true } label: {
                         Label("Upload", systemImage: "arrow.up.doc")
                     }
                     .disabled(busy)
                 }
                 Menu {
-                    Button { newFolder() } label: {
+                    Button { browser.ask(.newFolder) } label: {
                         Label("New Folder…", systemImage: "folder.badge.plus")
                     }
                     .disabled(!context.connected || busy)
@@ -234,8 +239,11 @@
                         Label("Refresh", systemImage: "arrow.clockwise")
                     }
                     .disabled(!context.connected || busy)
-                    Button { show(EditorCenter.shared.workspace(for: context)) } label: {
+                    Button { browser.showEditor() } label: {
                         Label("Open Editor", systemImage: "square.and.pencil")
+                    }
+                    Section {
+                        sortMenu
                     }
                     Section {
                         Button { FilesApp.showDocuments() } label: {
@@ -260,18 +268,27 @@
             }
         }
 
-        func newFolder() {
-            Indicator.input(
-                title: "New Folder",
-                message: "",
-                placeholder: "Folder Name",
-                text: ""
-            ) { name in
-                guard name.isValidAsFilename else {
-                    Indicator.error(String(localized: "Invalid Filename"))
-                    return
+        /// The column the list sorts by and which way, as the Mac's table headers.
+        var sortMenu: some View {
+            let current = browser.sortOrder.first ?? RemoteFileComparator(.name)
+            return Menu {
+                Picker("Sort By", selection: Binding(
+                    get: { current.field },
+                    set: { browser.sortOrder = [RemoteFileComparator($0, order: current.order)] }
+                )) {
+                    ForEach(RemoteFileComparator.Field.allCases, id: \.self) { field in
+                        Text(field.title).tag(field)
+                    }
                 }
-                context.createFolder(with: name)
+                Picker("Order", selection: Binding(
+                    get: { current.order },
+                    set: { browser.sortOrder = [RemoteFileComparator(current.field, order: $0)] }
+                )) {
+                    Text("Ascending").tag(SortOrder.forward)
+                    Text("Descending").tag(SortOrder.reverse)
+                }
+            } label: {
+                Label("Sort By", systemImage: "arrow.up.arrow.down")
             }
         }
 
@@ -284,216 +301,45 @@
             }
         }
 
-        var pathItems: some View {
-            HStack(spacing: 4) {
-                ForEach(0 ..< context.currentUrl.pathComponents.count, id: \.self) { idx in
-                    Button {
-                        rollToPath(with: idx)
-                    } label: {
-                        Text(context.currentUrl.pathComponents[idx])
-                            .font(.system(size: 13, weight: idx == context.currentUrl.pathComponents.count - 1 ? .semibold : .regular))
-                            .foregroundStyle(idx == context.currentUrl.pathComponents.count - 1 ? Color.rxInk : Color.rxInkSecondary)
-                            .frame(height: 28)
-                    }
-                    .buttonStyle(.plain)
-                    if idx != context.currentUrl.pathComponents.count - 1 {
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 9, weight: .semibold))
-                            .foregroundStyle(.rxInkTertiary)
-                    }
-                }
-            }
-        }
-
-        func goUp() {
-            context.navigate(path: context.currentUrl.deletingLastPathComponent().path)
-        }
-
-        func goToFolder() {
-            Indicator.input(
-                title: "Go to Folder",
-                message: "",
-                placeholder: "/var/log",
-                text: context.currentDir
-            ) { path in
-                guard !path.isEmpty, path.hasPrefix("/") else {
-                    Indicator.error(String(localized: "Use an absolute path starting with /."))
-                    return
-                }
-                context.navigate(path: path)
-            }
-        }
-
-        /// Opens the file in the server's editor, over Files.
-        func edit(path: String) {
-            let workspace = EditorCenter.shared.workspace(for: context)
-            workspace.open(path: path)
-            show(workspace)
-        }
-
-        /// The server's page switches to its editor.
-        func show(_ workspace: EditorWorkspace) {
-            SessionNavigation.shared.reveal(.server(workspace.context.machine.id), tool: .editor)
-        }
-
-        func handleDrop(_ providers: [NSItemProvider]) -> Bool {
-            guard context.connected, !busy, !providers.isEmpty else { return false }
-            let staging = FileManager.default.temporaryDirectory
-                .appendingPathComponent("Upload-\(UUID().uuidString)", isDirectory: true)
-            try? FileManager.default.createDirectory(at: staging, withIntermediateDirectories: true)
-            Task {
-                var urls: [URL] = []
-                for provider in providers {
-                    let copy = await withCheckedContinuation { (loaded: CheckedContinuation<URL?, Never>) in
-                        // The file given is removed when the handler returns: it is
-                        // copied out first.
-                        _ = provider.loadFileRepresentation(forTypeIdentifier: UTType.item.identifier) { url, _ in
-                            guard let url else { return loaded.resume(returning: nil) }
-                            let copy = staging.appendingPathComponent(url.lastPathComponent)
-                            loaded.resume(returning: (try? FileManager.default.copyItem(at: url, to: copy)) != nil ? copy : nil)
-                        }
-                    }
-                    if let copy { urls.append(copy) }
-                }
-                if !urls.isEmpty { context.upload(urls: urls) }
-            }
-            return true
-        }
-
-        func rollToPath(with index: Int) {
-            var url = context.currentUrl
-            let cnt = index + 1
-            while url.pathComponents.count > cnt, !url.pathComponents.isEmpty {
-                url.deleteLastPathComponent()
-            }
-            context.navigate(path: url.path)
-        }
-
-        struct RemoteFileElement: View {
+        /// A file in the list: tap opens it, a swipe downloads, renames or
+        /// deletes it, and its menu has the rest. While selecting, a tap
+        /// chooses it.
+        struct RemoteFileRow: View {
             let file: FileTransferContext.RemoteFile
-            @ObservedObject var context: FileTransferContext
-            let edit: (String) -> Void
-
-            private var tooLargeToEdit: Bool {
-                (file.fstat.size ?? 0) > FileTransferContext.editableSizeLimit
-            }
+            @ObservedObject var browser: FileBrowser
+            @Environment(\.editMode) private var editMode
 
             var body: some View {
-                Button {
-                    open()
-                } label: {
-                    content
-                }
-                .buttonStyle(.plain)
-                .contextMenu { actions }
-            }
-
-            /// A folder opens; a text file opens in the editor; anything else
-            /// shows its actions.
-            private func open() {
-                let path = context.currentUrl.appendingPathComponent(file.name).path
-                if file.isFolder {
-                    context.navigate(path: path)
-                } else if FileTransferContext.isEditable(file) {
-                    edit(path)
-                } else {
-                    download()
-                }
-            }
-
-            private func download() {
-                let remoteUrl = context.currentUrl.appendingPathComponent(file.name)
-                let documentDir = FileManager
-                    .default
-                    .urls(for: .documentDirectory, in: .userDomainMask)[0]
-                context.download(from: [remoteUrl], toDir: documentDir)
-            }
-
-            @ViewBuilder private var actions: some View {
-                if !file.isFolder {
-                    Section {
-                        Button {
-                            edit(context.currentUrl.appendingPathComponent(file.name).path)
-                        } label: {
-                            Label(tooLargeToEdit ? "Too Large to Edit" : "Edit", systemImage: "square.and.pencil")
-                        }
-                        .disabled(tooLargeToEdit)
+                Group {
+                    if editMode?.wrappedValue.isEditing == true {
+                        content
+                    } else {
+                        Button { browser.open(file) } label: { content }
+                            .buttonStyle(.plain)
                     }
                 }
-                if file.isFolder {
-                    Section {
-                        Button {
-                            let path = context.currentUrl.appendingPathComponent(file.name).path
-                            context.navigate(path: path)
-                        } label: {
-                            Label("Open", systemImage: "arrow.right")
-                        }
+                .contextMenu { FileActionsMenu(browser: browser, files: [file]) }
+                .swipeActions(edge: .leading) {
+                    Button { browser.download([file]) } label: {
+                        Label("Download", systemImage: "arrow.down.doc")
                     }
+                    .tint(.rxAccent)
                 }
-                Section {
-                    Button {
-                        Pasteboard.copy(file.name)
-                    } label: {
-                        Label("Copy Name", systemImage: "doc.on.doc")
-                    }
-                    Button {
-                        let path = context.currentUrl.appendingPathComponent(file.name).path
-                        Pasteboard.copy(path)
-                    } label: {
-                        Label("Copy Path", systemImage: "link")
-                    }
-                }
-                Section {
-                    Button {
-                        Indicator.input(
-                            title: "Rename",
-                            message: "",
-                            placeholder: "New File Name",
-                            text: file.name
-                        ) { newValue in
-                            guard newValue.isValidAsFilename else {
-                                Indicator.error(String(localized: "Invalid Filename"))
-                                return
-                            }
-                            let base = context.currentUrl
-                            context.rename(
-                                from: base.appendingPathComponent(file.name),
-                                to: base.appendingPathComponent(newValue)
-                            )
-                        }
-                    } label: {
-                        Label("Rename", systemImage: "pencil")
-                    }
-                }
-                Section {
-                    Button {
-                        download()
-                    } label: {
-                        Label("Download", systemImage: "arrow.down")
-                    }
-                }
-                Section {
-                    Button(role: .destructive) {
-                        let item = context.currentUrl.appendingPathComponent(file.name)
-                        Indicator.confirm(
-                            message: "Delete \(file.name)?",
-                            informative: file.fstat.isDirectory
-                                ? "The folder and everything in it is deleted from the server. This cannot be undone."
-                                : "The file is deleted from the server. This cannot be undone.",
-                            confirmTitle: "Delete",
-                            destructive: true
-                        ) { y in
-                            if y { context.delete(items: [item]) }
-                        }
-                    } label: {
+                // Not a destructive role: that removes the row before Delete is confirmed.
+                .swipeActions(edge: .trailing) {
+                    Button { browser.delete([file]) } label: {
                         Label("Delete…", systemImage: "trash")
+                    }
+                    .tint(.rxDanger)
+                    Button { browser.ask(.rename(file.name)) } label: {
+                        Label("Rename…", systemImage: "pencil")
                     }
                 }
             }
 
             var content: some View {
                 HStack(spacing: RX.Space.s3) {
-                    Image(systemName: sfAvatar)
+                    Image(systemName: file.symbol)
                         .foregroundStyle(file.isFolder ? Color.rxAccent : Color.rxInkSecondary)
                         .frame(width: 24)
                     VStack(alignment: .leading, spacing: 2) {
@@ -507,81 +353,30 @@
                             .lineLimit(1)
                     }
                     Spacer()
-                    Menu {
-                        actions
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .foregroundStyle(.rxInkTertiary)
-                            .frame(width: 32, height: 32)
-                            .contentShape(Rectangle())
+                    if editMode?.wrappedValue.isEditing != true {
+                        Menu {
+                            FileActionsMenu(browser: browser, files: [file])
+                        } label: {
+                            Image(systemName: "ellipsis")
+                                .foregroundStyle(.rxInkTertiary)
+                                .frame(width: 32, height: 32)
+                                .contentShape(Rectangle())
+                        }
+                        .accessibilityLabel("Actions for \(file.name)")
                     }
-                    .accessibilityLabel("Actions for \(file.name)")
                 }
-                .padding(.horizontal, RX.Space.s2)
-                .frame(minHeight: 48)
+                .frame(minHeight: 40)
                 .contentShape(Rectangle())
-            }
-
-            var sfAvatar: String {
-                if file.isFolder {
-                    return "folder"
-                }
-                if file.fstat.isLink {
-                    return "link"
-                }
-                return "doc"
-            }
-
-            var size: String {
-                RXFormat.bytesString(Double(file.fstat.size ?? 0))
             }
 
             /// Size (for a file), modified, permissions and owner, as the Mac's columns.
             var detail: String {
                 var parts: [String] = []
-                if !file.isFolder { parts.append(size) }
-                if let modified = file.fstat.modificationDate {
-                    parts.append(Self.dateFormatter.string(from: modified))
-                }
+                if !file.isFolder { parts.append(file.sizeText) }
+                if file.fstat.modificationDate != nil { parts.append(file.modifiedText) }
                 parts.append(file.fstat.permissionDescription)
-                parts.append(file.fstat.ownerUID == 0 ? "root" : String(file.fstat.ownerUID))
+                parts.append(file.ownerText)
                 return parts.joined(separator: " · ")
-            }
-
-            @MainActor static let dateFormatter: DateFormatter = {
-                let formatter = DateFormatter()
-                formatter.dateStyle = .medium
-                formatter.timeStyle = .short
-                formatter.doesRelativeDateFormatting = true
-                return formatter
-            }()
-        }
-    }
-
-    enum FileTransferSessionActions {
-        /// Closes a server's SFTP session, and with it the editor that works
-        /// over it, asking first when a transfer runs or a file is unsaved.
-        @MainActor
-        static func close(_ context: FileTransferContext, then: @escaping () -> Void = {}) {
-            let unsaved = EditorCenter.shared.workspaces.first { $0.id == context.id }?.hasUnsavedChanges == true
-            let end = {
-                FileTransferManager.shared.end(for: context.id)
-                then()
-            }
-            if context.isProgressRunning || unsaved {
-                Indicator.confirm(
-                    message: "Close the file transfer on \(context.machine.name)?",
-                    informative: unsaved
-                        ? "Files open in the editor have changes that are not saved. They are lost if you close."
-                        : "A transfer is still running and will be interrupted.",
-                    confirmTitle: unsaved ? "Discard Changes" : "Close",
-                    destructive: true,
-                    skippable: !unsaved
-                ) { confirmed in
-                    if confirmed { MainActor.assumeIsolated { end() } }
-                }
-            } else {
-                end()
             }
         }
     }

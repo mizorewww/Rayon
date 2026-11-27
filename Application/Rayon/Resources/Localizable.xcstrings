@@ -1113,6 +1113,22 @@
         }
       }
     },
+    "Ascending" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "升序"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "升冪"
+          }
+        }
+      }
+    },
     "Ask before closing a session" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1653,6 +1669,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "選取“%@”的儲存位置"
+          }
+        }
+      }
+    },
+    "Choose where to save %lld items" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Choose where to save %lld item"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Choose where to save %lld items"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择 %lld 个项目的保存位置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選擇 %lld 個項目的儲存位置"
           }
         }
       }
@@ -2972,6 +3022,40 @@
         }
       }
     },
+    "Delete %lld items?" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld item?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld items?"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除 %lld 个项目？"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除 %lld 個項目？"
+          }
+        }
+      }
+    },
     "Delete %lld servers?" : {
       "localizations" : {
         "en" : {
@@ -3274,6 +3358,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在部署公鑰"
+          }
+        }
+      }
+    },
+    "Descending" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "降序"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "降冪"
           }
         }
       }
@@ -4494,22 +4594,6 @@
         }
       }
     },
-    "Folder Name" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "文件夹名称"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "資料夾名稱"
-          }
-        }
-      }
-    },
     "Folder name" : {
       "localizations" : {
         "zh-Hans" : {
@@ -5518,22 +5602,6 @@
         }
       }
     },
-    "Invalid Filename" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "无效的文件名"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "無效的檔名"
-          }
-        }
-      }
-    },
     "Issues" : {
       "localizations" : {
         "zh-Hans" : {
@@ -5674,6 +5742,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "只有匯入整個 .ssh 資料夾時才會載入金鑰。"
+          }
+        }
+      }
+    },
+    "Kind" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "种类"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "種類"
           }
         }
       }
@@ -6390,22 +6474,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "從不傳送：伺服器位址、使用者名稱、金鑰、命令、檔案或終端內容。"
-          }
-        }
-      }
-    },
-    "New File Name" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新文件名"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新檔名"
           }
         }
       }
@@ -7551,6 +7619,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "可選。將金鑰部署到伺服器時需要。"
+          }
+        }
+      }
+    },
+    "Order" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顺序"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "順序"
           }
         }
       }
@@ -9247,6 +9331,22 @@
         }
       }
     },
+    "Select" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選擇"
+          }
+        }
+      }
+    },
     "Select All" : {
       "localizations" : {
         "zh-Hans" : {
@@ -9931,6 +10031,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "部分檔案有未儲存的更改。如果關閉編輯器，這些更改將丟失。"
+          }
+        }
+      }
+    },
+    "Sort By" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "排序方式"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "排序方式"
           }
         }
       }
@@ -10691,6 +10807,22 @@
         }
       }
     },
+    "The file is deleted from the server. This cannot be undone." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "该文件将从服务器上删除。此操作无法撤销。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "該檔案將從伺服器上刪除。此操作無法還原。"
+          }
+        }
+      }
+    },
     "The folder and everything in it is deleted from the server. This cannot be undone." : {
       "localizations" : {
         "zh-Hans" : {
@@ -10719,6 +10851,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "構建此副本所用的 git 提交；原始碼有未提交的更改時顯示“-dirty”。"
+          }
+        }
+      }
+    },
+    "The items, and everything in the folders among them, are deleted from the server. This cannot be undone." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "这些项目以及其中文件夹里的所有内容都将从服务器上删除。此操作无法撤销。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這些項目以及其中資料夾裡的所有內容都將從伺服器上刪除。此操作無法還原。"
           }
         }
       }
