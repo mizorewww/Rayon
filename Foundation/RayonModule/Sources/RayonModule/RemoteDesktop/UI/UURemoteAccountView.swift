@@ -121,6 +121,16 @@ public struct UURemoteAccountView: View {
             ForEach(account.desktopDevices, id: \.deviceID) { device in
                 deviceRow(device)
             }
+            if account.removedDeviceCount > 0 {
+                HStack {
+                    Text("Deleted from Rayon: \(account.removedDeviceCount) devices. They stay on the account.", bundle: .module)
+                        .font(.rxHelp)
+                        .foregroundStyle(Color.rxInkSecondary)
+                    Spacer()
+                    Button(.init("Show Again", bundle: .module)) { account.restoreRemovedDevices() }
+                        .buttonStyle(.rx(.plain, size: .small))
+                }
+            }
             if let failure = account.refreshError {
                 Text(failure)
                     .font(.rxHelp)

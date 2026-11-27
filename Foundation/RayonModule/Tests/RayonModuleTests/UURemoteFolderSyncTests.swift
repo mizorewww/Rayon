@@ -72,6 +72,33 @@ final class UURemoteFolderSyncTests: XCTestCase {
         XCTAssertEqual(machines.map(\.uuDeviceID), ["d1"])
     }
 
+    /// A device whose server the person deleted stays out of the folder,
+    /// and a device hidden after it became a server leaves it.
+    func testADeletedDevicesServerDoesNotComeBack() {
+        var machines: [RDMachine] = []
+        apply([device("d1", "Mac"), device("d2", "PC")], to: &machines)
+        let deleted = Set(machines.filter { $0.uuDeviceID == "d2" }.map(\.id))
+        let leaving = UURemoteFolderSync.devicesLeaving(deleted, of: machines)
+        XCTAssertEqual(leaving, ["d2"])
+        machines.removeAll { deleted.contains($0.id) }
+        apply([device("d1", "Mac"), device("d2", "PC")], hidden: leaving, to: &machines)
+        XCTAssertEqual(machines.map(\.uuDeviceID), ["d1"])
+        apply([device("d1", "Mac"), device("d2", "PC")], hidden: ["d1", "d2"], to: &machines)
+        XCTAssertEqual(machines, [])
+    }
+
+    /// Deleting one of two servers bound to a device keeps the device, and
+    /// deleting an SSH server hides nothing.
+    func testADeviceLeavesOnlyWithItsLastServer() {
+        let managed = UURemoteFolderSync.makeMachine(for: device("d1", "Mac"), folder: folder)
+        var own = UURemoteFolderSync.makeMachine(for: device("d1", "Mac"), folder: nil)
+        own.id = UUID()
+        let ssh = RDMachine(remoteAddress: "10.0.0.2", remotePort: "22", name: "box")
+        XCTAssertEqual(UURemoteFolderSync.devicesLeaving([managed.id], of: [managed, own, ssh]), [])
+        XCTAssertEqual(UURemoteFolderSync.devicesLeaving([managed.id, own.id], of: [managed, own, ssh]), ["d1"])
+        XCTAssertEqual(UURemoteFolderSync.devicesLeaving([ssh.id], of: [managed, own, ssh]), [])
+    }
+
     func testOnlyUUServersAreUUDevices() {
         var ssh = RDMachine(remoteAddress: "10.0.0.2", remotePort: "22", name: "box")
         ssh.remoteDesktopProtocol = .uuRemote

@@ -67,6 +67,9 @@ public enum AppSettings {
     /// The UU device ids Rayon signed in as, from every device: the service
     /// lists each sign-in as a Windows host, which Rayon does not show.
     public static let uuRemoteSignIns = SettingKey("uuRemote.signIns", default: [String](), scope: .synced)
+    /// UU devices whose server the person deleted. They stay on the account,
+    /// which Rayon cannot remove a device from, and Rayon no longer lists them.
+    public static let uuRemoteRemovedDevices = SettingKey("uuRemote.removedDevices", default: [String](), scope: .synced)
 
     // MARK: Menu bar
 
@@ -101,7 +104,7 @@ public enum AppSettings {
         terminalFontSize, terminalCopiesOnSelect, terminalSharesClipboard,
         editorWrapsLines,
         remoteDesktopTouchMode, remoteDesktopGestureHintsShown,
-        uuRemoteSignIns,
+        uuRemoteSignIns, uuRemoteRemovedDevices,
         menuBarServers,
         syncEnabled, syncsServers, syncsIdentities, syncsSnippets, syncsPortForwards, syncsTerminalSettings, syncsAppSettings,
         telemetryLevel, telemetryNoticeShown,

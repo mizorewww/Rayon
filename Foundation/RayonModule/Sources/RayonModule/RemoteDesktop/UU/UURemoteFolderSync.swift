@@ -97,4 +97,11 @@ public enum UURemoteFolderSync {
         machine.uuDeviceAlias = device.alias
     }
 
+    /// The UU devices that leave Rayon with `deleted`: a device whose last
+    /// server goes. Its folder would otherwise make it a server again.
+    public static func devicesLeaving(_ deleted: Set<RDMachine.ID>, of machines: [RDMachine]) -> Set<String> {
+        let leaving = Set(machines.filter { deleted.contains($0.id) && $0.isUURemoteDevice }.map(\.uuDeviceID))
+        let staying = Set(machines.filter { !deleted.contains($0.id) }.map(\.uuDeviceID))
+        return leaving.subtracting(staying)
+    }
 }

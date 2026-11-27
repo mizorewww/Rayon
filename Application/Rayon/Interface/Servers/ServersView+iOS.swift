@@ -350,14 +350,21 @@
 
         @MainActor
         static func delete(_ machine: RDMachine.ID) {
-            let name = (RayonStore.shared.machine(machine) ?? RDMachine()).name
+            let read = RayonStore.shared.machine(machine) ?? RDMachine()
+            let informative: LocalizedStringResource
+            if read.isUURemoteDevice {
+                informative = "This cannot be undone. The device stays on your UU Remote account, which Rayon cannot remove it from; Rayon stops listing it."
+            } else {
+                informative = "This cannot be undone."
+            }
             Indicator.confirm(
-                message: "Delete \(name)?",
-                informative: "This cannot be undone.",
+                message: "Delete \(read.name)?",
+                informative: informative,
                 confirmTitle: "Delete",
                 destructive: true
             ) { confirmed in
                 guard confirmed else { return }
+                UURemoteAccount.shared.forgetDevices(ofDeleting: [machine])
                 if let session = MonitorCenter.shared.session(for: machine) {
                     MonitorCenter.shared.end(session.id)
                 }

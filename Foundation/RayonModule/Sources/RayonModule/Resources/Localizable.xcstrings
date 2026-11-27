@@ -1482,6 +1482,40 @@
         }
       }
     },
+    "Deleted from Rayon: %lld devices. They stay on the account." : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Deleted from Rayon: %lld device. It stays on the account."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Deleted from Rayon: %lld devices. They stay on the account."
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已从 Rayon 删除 %lld 台设备，它们仍在账号中。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已從 Rayon 刪除 %lld 臺裝置，它們仍在帳號中。"
+          }
+        }
+      }
+    },
     "Deleting..." : {
       "localizations" : {
         "zh-Hans" : {
@@ -3834,6 +3868,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Shell 已結束（退出碼 %lld）"
+          }
+        }
+      }
+    },
+    "Show Again" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新显示"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新顯示"
           }
         }
       }

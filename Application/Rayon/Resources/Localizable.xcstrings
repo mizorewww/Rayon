@@ -8195,6 +8195,22 @@
         }
       }
     },
+    "Port forwards through it stop working. A UU Remote device stays on your UU Remote account, which Rayon cannot remove it from; Rayon stops listing it." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "经由它的端口转发将停止工作。UU 远程设备仍会留在你的 UU 远程账号中，Rayon 无法将其从账号移除，只会不再列出它。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "經由它的連接埠轉送將停止運作。UU 遠端裝置仍會留在你的 UU 遠端帳號中，Rayon 無法將其從帳號移除，只會不再列出它。"
+          }
+        }
+      }
+    },
     "Preview Layout" : {
       "localizations" : {
         "zh-Hans" : {
@@ -11545,6 +11561,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "此操作無法撤銷。"
+          }
+        }
+      }
+    },
+    "This cannot be undone. The device stays on your UU Remote account, which Rayon cannot remove it from; Rayon stops listing it." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此操作无法撤销。该设备仍会留在你的 UU 远程账号中，Rayon 无法将其从账号移除，只会不再列出它。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此操作無法復原。該裝置仍會留在你的 UU 遠端帳號中，Rayon 無法將其從帳號移除，只會不再列出它。"
           }
         }
       }

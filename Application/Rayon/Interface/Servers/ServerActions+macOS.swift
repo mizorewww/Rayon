@@ -50,13 +50,20 @@
             let message: LocalizedStringResource = machines.count == 1
                 ? (store.machine(machines[0]).map { "Delete \($0.name)?" } ?? "Delete this server?")
                 : "Delete \(machines.count) servers?"
+            let informative: LocalizedStringResource
+            if machines.contains(where: { store.machine($0)?.isUURemoteDevice == true }) {
+                informative = "Port forwards through it stop working. A UU Remote device stays on your UU Remote account, which Rayon cannot remove it from; Rayon stops listing it."
+            } else {
+                informative = "Port forwards through it stop working."
+            }
             Indicator.confirm(
                 message: message,
-                informative: "Port forwards through it stop working.",
+                informative: informative,
                 confirmTitle: "Delete",
                 destructive: true
             ) { confirmed in
                 guard confirmed else { return }
+                UURemoteAccount.shared.forgetDevices(ofDeleting: machines)
                 for machine in machines {
                     if let session = MonitorCenter.shared.session(for: machine) {
                         MonitorCenter.shared.end(session.id)

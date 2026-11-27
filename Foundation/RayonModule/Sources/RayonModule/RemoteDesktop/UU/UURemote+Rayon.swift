@@ -31,9 +31,10 @@ public extension UURemoteAccount {
             account?.syncFolder()
         }
         hiddenDevicesWatch = AppSettings.uuRemoteSignIns.publisher
-            .sink { [weak account] signIns in
+            .combineLatest(AppSettings.uuRemoteRemovedDevices.publisher)
+            .sink { [weak account] signIns, removed in
                 MainActor.assumeIsolated {
-                    account?.hiddenDeviceIDs = Set(signIns)
+                    account?.hiddenDeviceIDs = Set(signIns + removed)
                     account?.syncFolder()
                 }
             }
@@ -49,6 +50,28 @@ public extension UURemoteAccount {
         let id = credentials.deviceID
         guard !id.isEmpty, !AppSettings.uuRemoteSignIns.value.contains(id) else { return }
         AppSettings.uuRemoteSignIns.set(AppSettings.uuRemoteSignIns.value + [id])
+    }
+
+    /// Call before deleting servers: a UU device whose last server goes is
+    /// no longer listed. UU Remote offers no way to remove a device from
+    /// the account, so it stays there, and the folder would otherwise make
+    /// it a server again.
+    @MainActor func forgetDevices(ofDeleting machines: [RDMachine.ID], store: RayonStore = .shared) {
+        let leaving = UURemoteFolderSync.devicesLeaving(Set(machines), of: store.machines)
+        guard !leaving.isEmpty else { return }
+        let removed = AppSettings.uuRemoteRemovedDevices.value
+        AppSettings.uuRemoteRemovedDevices.set(removed + leaving.subtracting(removed).sorted())
+    }
+
+    /// The devices whose server the person deleted, listed again.
+    @MainActor func restoreRemovedDevices() {
+        AppSettings.uuRemoteRemovedDevices.set([])
+    }
+
+    /// How many devices the person removed that the account still has.
+    @MainActor var removedDeviceCount: Int {
+        let removed = Set(AppSettings.uuRemoteRemovedDevices.value)
+        return devices.filter { removed.contains($0.deviceID) }.count
     }
 
     /// "1 desktop device", "3 desktop devices".
