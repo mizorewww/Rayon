@@ -9,26 +9,48 @@
 
 import CoreGraphics
 import Foundation
+import Synchronization
 
-final class VNCRFBDriver: RemoteDesktopDriver, @unchecked Sendable {
+final class VNCRFBDriver: RemoteDesktopDriver {
     private let machine: RDMachine
-    private weak var session: RemoteDesktopSession?
-    private var client: VNCRFBClient?
-    private var tunnel: VNCSSHTunnel?
-    private var worker: Task<Void, Never>?
-    private let stateLock = NSLock()
-    private var stopped = false
+    private weak let session: RemoteDesktopSession?
+
+    /// What `stop` must reach, set as the bootstrap makes it.
+    private struct Parts {
+        var client: VNCRFBClient?
+        var tunnel: VNCSSHTunnel?
+        var worker: Task<Void, Never>?
+        var stopped = false
+    }
+
+    private let parts = Mutex(Parts())
+
     /// Cursor + framebuffer state, touched by both the input calls (main
-    /// actor) and the client delegate (reader thread).
-    private let cursorLock = NSLock()
-    /// The last cursor shape reported; its x,y hold the hotspot in pixels.
-    private var cursorShape: RemoteCursorInfo?
-    /// The pointer's last normalized position; the remote cursor follows
-    /// it (the host does not report cursor moves itself).
-    private var pointerX = 0.0
-    private var pointerY = 0.0
-    /// The remote framebuffer's pixel size, learned from frame updates.
-    private var framebufferSize: CGSize = .zero
+    /// actor) and the client delegate (the session task).
+    private struct Pointer {
+        /// The last cursor shape reported; its x,y hold the hotspot in pixels.
+        var shape: RemoteCursorInfo?
+        /// The pointer's last normalized position; the remote cursor follows
+        /// it (the host does not report cursor moves itself).
+        var x = 0.0
+        var y = 0.0
+        /// The remote framebuffer's pixel size, learned from frame updates.
+        var framebufferSize: CGSize = .zero
+
+        /// The cursor at the pointer, or nil if there is no shape or
+        /// framebuffer yet.
+        var cursor: RemoteCursorInfo? {
+            guard let shape, framebufferSize.width > 0, framebufferSize.height > 0 else { return nil }
+            var cursor = shape
+            // shape.x/shape.y are the hotspot in cursor-image pixels, so the
+            // image's top-left lands at pointer − hotspot (all normalized).
+            cursor.x = x - shape.x / framebufferSize.width
+            cursor.y = y - shape.y / framebufferSize.height
+            return cursor
+        }
+    }
+
+    private let pointer = Mutex(Pointer())
 
     init(machine: RDMachine, session: RemoteDesktopSession) {
         self.machine = machine
@@ -39,16 +61,16 @@ final class VNCRFBDriver: RemoteDesktopDriver, @unchecked Sendable {
 
     func start(session: RemoteDesktopSession) {
         let worker = Task { await bootstrap() }
-        stateLock.withLock {
-            stopped = false
-            self.worker = worker
+        parts.withLock {
+            $0.stopped = false
+            $0.worker = worker
         }
     }
 
     func stop() {
-        let (worker, tunnel, client) = stateLock.withLock {
-            stopped = true
-            return (self.worker, self.tunnel, self.client)
+        let (worker, tunnel, client) = parts.withLock {
+            $0.stopped = true
+            return ($0.worker, $0.tunnel, $0.client)
         }
         worker?.cancel()
         tunnel?.stop()
@@ -56,11 +78,7 @@ final class VNCRFBDriver: RemoteDesktopDriver, @unchecked Sendable {
     }
 
     private var currentClient: VNCRFBClient? {
-        stateLock.withLock { client }
-    }
-
-    private func isStopped() -> Bool {
-        stateLock.withLock { stopped }
+        parts.withLock { $0.client }
     }
 
     private func bootstrap() async {
@@ -71,9 +89,9 @@ final class VNCRFBDriver: RemoteDesktopDriver, @unchecked Sendable {
                 machine: machine,
                 targetPort: UInt16(machine.vncPort) ?? 5900
             )
-            let proceed = stateLock.withLock { () -> Bool in
-                guard !stopped else { return false }
-                self.tunnel = tunnel
+            let proceed = parts.withLock { parts -> Bool in
+                guard !parts.stopped else { return false }
+                parts.tunnel = tunnel
                 return true
             }
             guard proceed else { return }
@@ -100,9 +118,9 @@ final class VNCRFBDriver: RemoteDesktopDriver, @unchecked Sendable {
             ),
             delegate: self
         )
-        let proceed = stateLock.withLock { () -> Bool in
-            guard !stopped else { return false }
-            self.client = client
+        let proceed = parts.withLock { parts -> Bool in
+            guard !parts.stopped else { return false }
+            parts.client = client
             return true
         }
         guard proceed else {
@@ -162,25 +180,12 @@ final class VNCRFBDriver: RemoteDesktopDriver, @unchecked Sendable {
     /// Records the pointer position and re-emits the cursor overlay at
     /// pointer − hotspot, all in normalized framebuffer coordinates.
     private func updateCursorPosition(normalizedX: Double, normalizedY: Double) {
-        let cursor = cursorLock.withLock { () -> RemoteCursorInfo? in
-            pointerX = normalizedX
-            pointerY = normalizedY
-            return cursorAtCurrentPointer()
+        let cursor = pointer.withLock { pointer in
+            pointer.x = normalizedX
+            pointer.y = normalizedY
+            return pointer.cursor
         }
         if let cursor { session?.reportCursor(cursor) }
-    }
-
-    /// The cursor at the tracked pointer position, or nil if there is no
-    /// shape or framebuffer yet. Call while `cursorLock` is held.
-    private func cursorAtCurrentPointer() -> RemoteCursorInfo? {
-        guard let shape = cursorShape,
-              framebufferSize.width > 0, framebufferSize.height > 0 else { return nil }
-        var cursor = shape
-        // shape.x/shape.y are the hotspot in cursor-image pixels, so the
-        // image's top-left lands at pointer − hotspot (all normalized).
-        cursor.x = pointerX - shape.x / framebufferSize.width
-        cursor.y = pointerY - shape.y / framebufferSize.height
-        return cursor
     }
 }
 
@@ -192,14 +197,14 @@ extension VNCRFBDriver: VNCRFBClientDelegate {
     }
 
     func client(_: VNCRFBClient, didUpdateFrame picture: RemoteDesktopPicture?, size: CGSize, desktopName: String?) {
-        cursorLock.withLock { framebufferSize = size }
+        pointer.withLock { $0.framebufferSize = size }
         session?.reportFrame(picture, size: size, desktopName: desktopName)
     }
 
     func client(_: VNCRFBClient, didUpdateCursor cursor: RemoteCursorInfo?) {
-        let positioned = cursorLock.withLock { () -> RemoteCursorInfo? in
-            cursorShape = cursor
-            return cursorAtCurrentPointer()
+        let positioned = pointer.withLock { pointer in
+            pointer.shape = cursor
+            return pointer.cursor
         }
         if let positioned { session?.reportCursor(positioned) }
     }
