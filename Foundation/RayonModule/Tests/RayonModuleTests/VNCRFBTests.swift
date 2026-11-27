@@ -620,11 +620,11 @@ final class VNCRFBTests: XCTestCase {
         }
     }
 
-    private func serverInitData(width: Int, height: Int, name: String) -> Data {
+    private func serverInitData(width: Int, height: Int, name: String, format: VNCPixelFormat = .clientRequested) -> Data {
         var data = Data()
         data.appendU16BE(UInt16(width))
         data.appendU16BE(UInt16(height))
-        data.append(VNCPixelFormat.clientRequested.wire)
+        data.append(format.wire)
         data.appendU32BE(UInt32(name.utf8.count))
         data.append(contentsOf: name.utf8)
         return data
@@ -677,6 +677,30 @@ final class VNCRFBTests: XCTestCase {
         // SetEncodings (4 + 7x4), and two FramebufferUpdateRequests (10+10).
         let expected: Int = 12 + 1 + 16 + 1 + 20 + (4 + 7 * 4) + 10 + 10
         XCTAssertEqual(channel.written.count, expected)
+    }
+
+    /// A server whose own format is a colour map is fine: the client asks
+    /// for true colour before any pixel comes.
+    func testAColourMapServerFormatIsAccepted() async throws {
+        var server = Data()
+        server.append(VNCWire.banner(major: 3, minor: 8))
+        server.append(1)
+        server.append(VNCWire.SecurityType.none.rawValue)
+        server.appendU32BE(0) // security result OK
+        let colourMap = VNCPixelFormat(bitsPerPixel: 8, depth: 8, bigEndian: false, trueColour: false, redMax: 0, greenMax: 0, blueMax: 0, redShift: 0, greenShift: 0, blueShift: 0)
+        server.append(serverInitData(width: 4, height: 2, name: "palette", format: colourMap))
+        let channel = MemoryChannel(Array(server))
+        let delegate = RecordingDelegate()
+        let client = VNCRFBClient(configuration: .init(host: "ignored", port: 0, password: "", shared: true, transport: channel), delegate: delegate)
+        await client.run()
+        XCTAssertTrue(delegate.phases.contains(.connected), "\(delegate.phases)")
+        XCTAssertEqual(delegate.size, CGSize(width: 4, height: 2))
+        // The SetPixelFormat it sent asks for the client's true colour.
+        let written = channel.written
+        let setPixelFormat = 12 + 1 + 1
+        guard written.count >= setPixelFormat + 20 else { return XCTFail("no SetPixelFormat sent") }
+        XCTAssertEqual(written[setPixelFormat], 0)
+        XCTAssertEqual(Data(written[(setPixelFormat + 4) ..< (setPixelFormat + 20)]), VNCPixelFormat.clientRequested.wire)
     }
 
     /// RFB 3.3 and 3.7 send no SecurityResult after security type None:

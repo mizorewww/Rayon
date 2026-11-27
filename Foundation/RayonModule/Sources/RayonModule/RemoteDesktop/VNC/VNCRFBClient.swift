@@ -225,12 +225,10 @@ final class VNCRFBClient: Sendable {
         guard let serverInit = VNCWire.parseServerInit(data: initData) else {
             throw RemoteDesktopFailure("The server sent a malformed init message.")
         }
-        guard serverInit.pixelFormat.translator() != nil else {
-            throw RemoteDesktopFailure("The server's pixel format (\(serverInit.pixelFormat.bitsPerPixel)bpp, depth \(serverInit.pixelFormat.depth)) is unsupported.")
-        }
         try resizeFramebuffer(width: serverInit.width, height: serverInit.height)
 
-        // From here on the server emits `clientRequested` pixels.
+        // From here on the server emits `clientRequested` pixels, whatever
+        // its own format (a colour map included) was.
         transport.send(VNCWire.setPixelFormat(.clientRequested))
         transport.send(VNCWire.setEncodings(VNCWire.clientEncodings))
         requestUpdate(incremental: false)
