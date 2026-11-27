@@ -107,6 +107,16 @@ enum KeybindingNames {
         groups.first { $0.actions.contains(action) }?.title ?? "Other"
     }
 
+    /// What a shortcut is found by: its keys, what it does and its line.
+    static func searchText(_ binding: Keybinding, raw: String) -> String {
+        "\(trigger(binding)) \(summary(binding)) \(raw)"
+    }
+
+    /// Whether `text` holds every word of `query`, in any order and case.
+    static func contains(_ text: String, every query: String) -> Bool {
+        query.split(whereSeparator: \.isWhitespace).allSatisfy { text.localizedCaseInsensitiveContains($0) }
+    }
+
     static func applies(_ binding: Keybinding) -> Bool {
         RayonTerminalConfiguration.supportedActions.contains(binding.action)
             && !binding.prefixes.contains("global") && !binding.prefixes.contains("all")
@@ -161,6 +171,8 @@ extension TerminalSettings {
 /// The Keyboard page: every shortcut Rayon's terminal takes, grouped by what
 /// it does, with Add, Edit, Delete and Restore Defaults.
 struct KeybindingList: View {
+    /// Settings search: only the shortcuts with every word of it show.
+    var query = ""
     private var settings: TerminalSettings { .shared }
     @State private var editing: Editing?
     @State private var filter = ""
@@ -178,9 +190,10 @@ struct KeybindingList: View {
         let parsed = entries.map(Keybinding.init)
         let counts = Dictionary(parsed.map { ($0.canonical, 1) }, uniquingKeysWith: +)
         let visible = parsed.indices.filter { index in
-            KeybindingNames.applies(parsed[index]) && (filter.isEmpty
-                || "\(KeybindingNames.trigger(parsed[index])) \(KeybindingNames.summary(parsed[index])) \(entries[index])"
-                .localizedCaseInsensitiveContains(filter))
+            let text = KeybindingNames.searchText(parsed[index], raw: entries[index])
+            return KeybindingNames.applies(parsed[index])
+                && (filter.isEmpty || text.localizedCaseInsensitiveContains(filter))
+                && KeybindingNames.contains(text, every: query)
         }
         let hidden = parsed.filter { !KeybindingNames.applies($0) }.count
         Section {

@@ -336,8 +336,8 @@ private struct GroupSection: View {
             return nil
         }
         let settings = keys.compactMap { SettingCatalog.shared.setting($0) }
-        if keys == ["keybind"], query.isEmpty {
-            KeybindingList()
+        if keys == ["keybind"], query.isEmpty || SearchResults.shortcutsMatch(query) {
+            KeybindingList(query: query)
         } else if !hosts.isEmpty || !settings.isEmpty {
             Section {
                 ForEach(hosts) { $0.content }
@@ -366,7 +366,16 @@ private struct SearchResults: View {
         return tokens.allSatisfy { text.contains($0) }
     }
 
+    /// Whether a shortcut in use answers `query` by its keys or its action.
+    static func shortcutsMatch(_ query: String) -> Bool {
+        TerminalSettings.shared.shortcuts.contains { raw in
+            let binding = Keybinding(raw)
+            return KeybindingNames.applies(binding) && KeybindingNames.contains(KeybindingNames.searchText(binding, raw: raw), every: query)
+        }
+    }
+
     private func settingMatches(_ key: String, in category: SettingsLayout.Category, _ group: SettingsLayout.Group) -> Bool {
+        if key == "keybind", Self.shortcutsMatch(query) { return true }
         guard let setting = SettingCatalog.shared.setting(key) else { return false }
         let options = (setting.widget?.options ?? []).map { SettingsLayout.optionName(key, value: $0.value, fallback: $0.name) }
         return matches(([setting.key, setting.name, setting.plainDescription, SettingsLayout.title(setting),
