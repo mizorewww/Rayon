@@ -2,7 +2,7 @@
 //  Controls.swift
 //  RayonDesign
 //
-//  Buttons, segmented controls, text fields and search fields. Every control is 28pt tall.
+//  Buttons, segmented controls and text fields. Every control is 28pt tall.
 //
 
 import SwiftUI
@@ -249,45 +249,6 @@ public struct RXValueField: View {
                     .fill(Color.primary.opacity(0.04))
             )
             .textSelection(.enabled)
-    }
-}
-
-/// A 28pt filter field at the left of a toolbar. Filters the current list live.
-public struct RXSearchField: View {
-    let prompt: LocalizedStringResource
-    @Binding var text: String
-    let width: CGFloat?
-
-    public init(_ prompt: LocalizedStringResource, text: Binding<String>, width: CGFloat? = 220) {
-        self.prompt = prompt
-        _text = text
-        self.width = width
-    }
-
-    public var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 12))
-                .foregroundStyle(.rxInkSecondary)
-            TextField(String(localized: prompt), text: $text)
-                .textFieldStyle(.plain)
-                .font(.rxBody)
-                .disableAutocorrection(true)
-            if !text.isEmpty {
-                Button {
-                    text = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.rxInkSecondary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(Text("Clear search", bundle: .module))
-            }
-        }
-        .padding(.horizontal, 10)
-        .frame(width: width, height: RX.controlHeight)
-        .background(Capsule().fill(Color.primary.opacity(0.06)))
     }
 }
 

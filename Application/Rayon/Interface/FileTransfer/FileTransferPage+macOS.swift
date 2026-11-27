@@ -33,6 +33,8 @@
         var body: some View {
             PageScaffold(
                 scrolls: false,
+                search: $browser.filter,
+                searchPrompt: "Filter this folder",
                 primary: ToolbarAction(
                     "Download",
                     systemImage: "arrow.down.doc",
@@ -63,16 +65,10 @@
             } header: {
                 VStack(alignment: .leading, spacing: RX.Space.s2) {
                     PageTitle(redaction == .all ? "File Transfer" : "\(context.machine.name)", subtitle: "\(subtitle)")
-                    HStack(spacing: RX.Space.s3) {
-                        FolderBreadcrumb(url: context.currentUrl) { path in
-                            context.navigate(path: path)
-                        }
-                        .disabled(busy || !context.connected)
-                        Spacer(minLength: RX.Space.s2)
-                        // In the page, not the toolbar: this page stays mounted while
-                        // hidden, and a toolbar search field would stay with it.
-                        RXSearchField("Filter this folder", text: $browser.filter, width: 200)
+                    FolderBreadcrumb(url: context.currentUrl) { path in
+                        context.navigate(path: path)
                     }
+                    .disabled(busy || !context.connected)
                 }
             } content: {
                 VStack(spacing: RX.Space.s4) {

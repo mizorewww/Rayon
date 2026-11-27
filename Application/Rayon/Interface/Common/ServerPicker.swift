@@ -37,10 +37,10 @@ struct ServerPicker: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             #if os(macOS)
-                RXSearchField("Search servers", text: $searchText, width: nil)
-                    .padding([.horizontal, .top], RX.Space.s4)
-                    .padding(.bottom, RX.Space.s2)
-                table
+                // The stack gives the sheet a bar for the system's search field.
+                NavigationStack {
+                    table.searchable(text: $searchText, placement: .toolbar, prompt: Text("Search servers"))
+                }
             #else
                 list
             #endif

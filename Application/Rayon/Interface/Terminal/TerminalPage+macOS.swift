@@ -819,11 +819,6 @@
 
                 Hairline()
 
-                RXSearchField("Filter snippets", text: $filter, width: nil)
-                    .padding(RX.Space.s2)
-
-                Hairline()
-
                 if snippets.isEmpty {
                     VStack(spacing: RX.Space.s2) {
                         Text(store.snippets.isEmpty ? "No snippets saved" : "No matches")
@@ -878,6 +873,8 @@
                 }
             }
             .rxCardChrome()
+            // While the drawer is open, the window's toolbar filters it.
+            .searchable(text: $filter, placement: .toolbar, prompt: Text("Filter snippets"))
         }
     }
 

@@ -191,13 +191,19 @@
             searchText.isEmpty || "local terminal".contains(searchText.lowercased())
         }
 
+        // The stack gives the sheet a bar for the system's search field.
         var body: some View {
+            NavigationStack {
+                sheet.searchable(text: $searchText, placement: .toolbar, prompt: Text("Search terminals and servers"))
+            }
+        }
+
+        private var sheet: some View {
             SheetScaffold(
                 "Split with Server",
                 lead: "Show another terminal beside this one, from any server. Three panes or more are laid out as a grid."
             ) {
                 VStack(alignment: .leading, spacing: RX.Space.s3) {
-                    RXSearchField("Search terminals and servers", text: $searchText, width: nil)
                     ScrollView {
                         VStack(alignment: .leading, spacing: RX.Space.s3) {
                             if !openTabs.isEmpty {
