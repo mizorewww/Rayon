@@ -4,11 +4,14 @@
 //
 //  A server that accepts the connection and then says nothing is given
 //  the connection's timeout, one slow to sign in is given all of it, and a
-//  cancelled connect ends at once.
+//  cancelled connect ends at once. Citadel's sign-in ends when its
+//  channel closes, even with no login timeout.
 //
 
+@preconcurrency import Citadel
 import NIOCore
 import NIOPosix
+import os
 @testable import RayonSSH
 import XCTest
 
@@ -85,5 +88,31 @@ final class SSHTimeoutTests: XCTestCase {
             } catch is CancellationError {}
             XCTAssertLessThan(ContinuousClock.now - cancelled, .seconds(1))
         }
+    }
+
+    /// Rayon turns Citadel's login timeout off and keeps its own deadline,
+    /// so an abandoned sign-in whose channel closed must still end, or its
+    /// task and handshake state stay alive.
+    func testCitadelsSignInEndsWhenItsChannelClosesWithoutALoginTimeout() async throws {
+        let channel = try await ClientBootstrap(group: MultiThreadedEventLoopGroup.singleton)
+            .connect(host: "127.0.0.1", port: silent.localAddress!.port!).get()
+        var settings = SSHClientSettings(
+            host: "127.0.0.1", port: 22,
+            authenticationMethod: { .passwordBased(username: "u", password: "p") },
+            hostKeyValidator: .acceptAnything()
+        )
+        settings.loginTimeout = nil
+        let ended = OSAllocatedUnfairLock(initialState: false)
+        let signingIn = Task { [settings] in
+            _ = try? await withTaskExecutorPreference(EventLoopTaskExecutor(channel.eventLoop)) {
+                try await SSHClient.connect(on: channel, settings: settings)
+            }
+            ended.withLock { $0 = true }
+        }
+        try await Task.sleep(for: .milliseconds(300))
+        try await channel.close()
+        try await Task.sleep(for: .seconds(2))
+        signingIn.cancel()
+        XCTAssertTrue(ended.withLock { $0 }, "Citadel kept waiting to sign in on a closed channel")
     }
 }

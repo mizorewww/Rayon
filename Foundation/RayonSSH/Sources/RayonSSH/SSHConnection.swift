@@ -202,9 +202,9 @@ public actor SSHConnection {
         // The handshake and sign-in get the connection's timeout, extended
         // by the time the agent waits for the person, and end when the
         // task is cancelled. Citadel's own 10 seconds would cut off a slow
-        // server or a Touch ID prompt, so it is turned off, and a closed
-        // channel (one through a jump host waits for the bastion to
-        // confirm) does not end Citadel's wait, so this does not wait for
+        // server or a Touch ID prompt, so it is turned off. Citadel's wait
+        // ends once the channel is closed, but closing one through a jump
+        // host waits for the bastion to confirm, so this does not wait for
         // Citadel. The deadline is kept off the channel's event loop,
         // which a sign request to the agent holds.
         settings.loginTimeout = nil

@@ -12,9 +12,10 @@ let package = Package(
     ],
     dependencies: [
         // Citadel 0.12.0 (0.12.1 moved its swift-nio-ssh pin to an unvetted
-        // third-party fork) with the login timeout left to the caller,
-        // listDirectory closing the handle it opens, and an lstat.
-        .package(url: "https://github.com/mizorewww/Citadel.git", revision: "2f469512a57fe9e49fd51de6170499022cbba2af"),
+        // third-party fork) with the login timeout left to the caller, a
+        // sign-in that ends when its channel closes, listDirectory closing
+        // the handle it opens, and an lstat.
+        .package(url: "https://github.com/mizorewww/Citadel.git", revision: "d5c5e2365009392e8ff39b1a06c2821b5eba8184"),
         // Citadel's swift-nio-ssh fork (0.3.5) with apple/swift-nio-ssh#144
         // applied (data arriving on a channel this side has closed adjusted
         // the closed channel's window and trapped), and a child channel's
