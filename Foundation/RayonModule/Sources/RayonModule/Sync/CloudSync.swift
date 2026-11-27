@@ -103,6 +103,13 @@ public actor CloudSync {
             publish(.unavailable)
             return
         }
+        // Its engine state lies beside the database: until that opens, the
+        // engine would start over without it. `CloudSyncModel` applies the
+        // preferences again once it does.
+        guard storage.openIfNeeded() else {
+            publish(.failed(storage.openProblem ?? "The database cannot be opened."))
+            return
+        }
         let tables = new.syncedTables
         if Self.needsRefetch(covered: loadScopes(), syncing: tables) {
             // A kind let in again: what other devices changed while it was

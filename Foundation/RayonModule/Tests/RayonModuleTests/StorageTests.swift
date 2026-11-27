@@ -366,6 +366,45 @@ final class StorageTests: XCTestCase {
         XCTAssertEqual(try check.getValue(from: StatementPragma().pragma(.userVersion))?.intValue, 999)
     }
 
+    /// Only a damaged database is moved aside. One that cannot be opened
+    /// for another reason (here permissions; on iOS, protected data before
+    /// the first unlock) is left where it is, says so, takes no writes, and
+    /// opens once it can.
+    func testOnlyADamagedDatabaseIsMovedAside() throws {
+        let damaged = test.directory.appendingPathComponent("damaged/database.db")
+        try FileManager.default.createDirectory(at: damaged.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try Data(repeating: 0x41, count: 8192).write(to: damaged)
+        let fresh = RayonStorage.open(at: damaged, secrets: test.secrets)
+        XCTAssertNil(fresh.openProblem)
+        XCTAssertNoThrow(try fresh.save(RDSnippet(name: "new", code: "true")))
+        fresh.close()
+        let names = try FileManager.default.contentsOfDirectory(atPath: damaged.deletingLastPathComponent().path)
+        XCTAssertTrue(names.contains { $0.contains("unreadable") })
+
+        let url = test.directory.appendingPathComponent("locked/database.db")
+        let first = try RayonStorage(databaseURL: url, secrets: test.secrets)
+        let snippet = try first.save(RDSnippet(name: "uptime", code: "uptime"))
+        first.close()
+        try FileManager.default.setAttributes([.posixPermissions: 0], ofItemAtPath: url.path)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: url.path) }
+
+        let locked = RayonStorage.open(at: url, secrets: test.secrets)
+        defer { locked.close() }
+        XCTAssertEqual(locked.databaseURL, url)
+        XCTAssertNotNil(locked.openProblem)
+        XCTAssertEqual(locked.records(RDSnippet.self), [])
+        XCTAssertThrowsError(try locked.save(RDSnippet(name: "lost", code: "true")))
+        let lockedNames = try FileManager.default.contentsOfDirectory(atPath: url.deletingLastPathComponent().path)
+        XCTAssertFalse(lockedNames.contains { $0.contains("unreadable") })
+
+        try FileManager.default.setAttributes([.posixPermissions: 0o644], ofItemAtPath: url.path)
+        let opened = expectation(forNotification: RayonStorage.didOpen, object: locked)
+        XCTAssertEqual(locked.records(RDSnippet.self).map(\.id), [snippet.id])
+        wait(for: [opened], timeout: 1)
+        XCTAssertNil(locked.openProblem)
+        XCTAssertNoThrow(try locked.save(RDSnippet(name: "later", code: "true")))
+    }
+
     /// A database from before host keys knew which release saved them
     /// keeps its keys, none of them taken for one an old release saved.
     func testKnownHostsGainTheirLegacyMarker() throws {

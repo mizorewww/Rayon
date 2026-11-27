@@ -127,7 +127,8 @@ extension RayonStorage {
     func mergeRemote<T: StoredRecord>(_ remote: T) throws -> MergeOutcome {
         // A save here in between would be overwritten, and its queued
         // upload taken off the queue.
-        try writes.withLock { _ in try mergeRemoteLocked(remote) }
+        try requireOpen()
+        return try writes.withLock { _ in try mergeRemoteLocked(remote) }
     }
 
     private func mergeRemoteLocked<T: StoredRecord>(_ remote: T) throws -> MergeOutcome {

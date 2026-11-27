@@ -22,16 +22,15 @@ public final class RayonStore: ObservableObject {
     public static let shared: RayonStore = {
         let storage = RayonStorage.shared
         let store: RayonStore
-        if let problem = storage.openProblem {
+        if storage.openProblem != nil {
             // The previous version's data is left for the database it
             // belongs in.
             store = RayonStore(storage: storage)
-            store.launchProblem = problem
         } else {
             let legacy = LegacyStoreImport.runIfNeeded(into: storage)
             storage.purgeTombstones()
             store = RayonStore(storage: storage)
-            if case let .blocked(reason) = legacy { store.launchProblem = reason }
+            if case let .blocked(reason) = legacy { store.importProblem = reason }
         }
         store.publishesWorkerSnapshot = true
         store.updateWorkerSnapshot()
@@ -42,8 +41,13 @@ public final class RayonStore: ObservableObject {
     var publishesWorkerSnapshot = false
 
     /// What the user must know at launch: the database is a newer
-    /// version's, or the previous version's data could not be brought over.
-    public private(set) var launchProblem: String?
+    /// version's or cannot be opened yet, or the previous version's data
+    /// could not be brought over.
+    public var launchProblem: String? {
+        storage.openProblem ?? importProblem
+    }
+
+    private var importProblem: String?
 
     public nonisolated let storage: RayonStorage
 

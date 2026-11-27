@@ -29,25 +29,75 @@ public final class RayonStorage: Sendable {
     /// on a version another one is replacing.
     let writes = Mutex(())
     public let databaseURL: URL
-    /// Why the app's own database is not the one open, when it is not; the
-    /// apps tell the user.
-    public let openProblem: String?
+    /// Why the app's own database is not the one open (a newer version's).
+    private let replacedProblem: String?
+    /// Whether the database is still to open: it could not be at launch.
+    private let isClosed: Mutex<Bool>
+
+    /// Posted when a database that could not be opened at launch opened.
+    public static let didOpen = Notification.Name("me.mizorewww.rayon.storage.didOpen")
 
     public convenience init(databaseURL: URL, secrets: SecretStore = .shared) throws {
         try self.init(databaseURL: databaseURL, secrets: secrets, openProblem: nil)
     }
 
-    init(databaseURL: URL, secrets: SecretStore = .shared, openProblem: String?) throws {
-        self.databaseURL = databaseURL
-        self.openProblem = openProblem
+    convenience init(databaseURL: URL, secrets: SecretStore = .shared, openProblem: String?) throws {
+        self.init(unopenedAt: databaseURL, secrets: secrets, replacedProblem: openProblem, closed: false)
+        try prepare()
+    }
+
+    private init(unopenedAt url: URL, secrets: SecretStore, replacedProblem: String?, closed: Bool) {
+        databaseURL = url
+        self.replacedProblem = replacedProblem
+        isClosed = Mutex(closed)
         self.secrets = secrets
+        db = Database(at: url.path)
+        db.setAutoBackup(enable: true)
+    }
+
+    private func prepare() throws {
         try FileManager.default.createDirectory(
             at: databaseURL.deletingLastPathComponent(),
             withIntermediateDirectories: true
         )
-        db = Database(at: databaseURL.path)
-        db.setAutoBackup(enable: true)
         try DBMigration.migrate(db)
+    }
+
+    /// Why the app's own database is not open, when it is not; the apps
+    /// tell the user.
+    public var openProblem: String? {
+        if let replacedProblem { return replacedProblem }
+        guard isClosed.withLock({ $0 }) else { return nil }
+        return "Rayon cannot open its database right now, so your servers are not shown. Nothing was changed: they appear once it opens."
+    }
+
+    /// Opens the database `open(at:)` could not, if it can now; whether it
+    /// is open. Reading the records tries it, so the store reading them
+    /// again (once the device is unlocked) is all it takes.
+    @discardableResult
+    public func openIfNeeded() -> Bool {
+        let opened: Bool? = isClosed.withLock { closed in
+            guard closed else { return nil }
+            guard (try? prepare()) != nil else { return false }
+            closed = false
+            return true
+        }
+        guard let opened else { return true }
+        if opened {
+            Logger.database.infoFile("opened the database at \(databaseURL.path)")
+            NotificationCenter.default.post(name: Self.didOpen, object: self)
+        }
+        return opened
+    }
+
+    struct Closed: LocalizedError {
+        let errorDescription: String?
+    }
+
+    /// Writes wait for the database to open: one not migrated yet must not
+    /// take rows.
+    func requireOpen() throws {
+        guard openIfNeeded() else { throw Closed(errorDescription: openProblem) }
     }
 
     /// Where the app keeps its database: its own Application Support folder,
@@ -59,10 +109,20 @@ public final class RayonStorage: Sendable {
             .appending(path: "database.db")
     }
 
-    /// A database that cannot be opened is moved aside, kept for recovery,
-    /// and a new one is made in its place. One a newer Rayon wrote is left
-    /// as it is, for that version, and this one runs on an empty database
-    /// that is not kept.
+    /// Whether the error says the file is damaged (SQLite's CORRUPT and
+    /// NOTADB): only then is it moved aside.
+    static func isDamage(_ error: any Error) -> Bool {
+        guard let error = error as? WCDBError else { return false }
+        return error.code == .Corrupt || error.code == .NotADatabase
+    }
+
+    /// A damaged database is moved aside, kept for recovery, and a new one
+    /// is made in its place. One a newer Rayon wrote is left as it is, for
+    /// that version, and this one runs on an empty database that is not
+    /// kept. One that cannot be opened for any other reason (protected
+    /// data unavailable, when iOS launches the app in the background before
+    /// the first unlock; permissions; a full disk) is left as it is too,
+    /// and opened once it can be (`openIfNeeded`).
     static func open(at url: URL, secrets: SecretStore = .shared) -> RayonStorage {
         do {
             return try RayonStorage(databaseURL: url, secrets: secrets)
@@ -80,8 +140,8 @@ public final class RayonStorage: Sendable {
             } catch {
                 fatalError("unable to create a database at \(scratch.path): \(error)")
             }
-        } catch {
-            Logger.database.errorFile("unable to open the database at \(url.path): \(error.localizedDescription)")
+        } catch where isDamage(error) {
+            Logger.database.errorFile("the database at \(url.path) is damaged: \(error.localizedDescription)")
             let aside = url.deletingPathExtension()
                 .appendingPathExtension("unreadable-\(Int(Date().timeIntervalSince1970)).db")
             try? FileManager.default.moveItem(at: url, to: aside)
@@ -90,6 +150,9 @@ public final class RayonStorage: Sendable {
             } catch {
                 fatalError("unable to create a database at \(url.path): \(error)")
             }
+        } catch {
+            Logger.database.errorFile("unable to open the database at \(url.path) for now: \(error.localizedDescription)")
+            return RayonStorage(unopenedAt: url, secrets: secrets, replacedProblem: nil, closed: true)
         }
     }
 
@@ -108,6 +171,7 @@ private let modifiedColumn = Column(named: "modified")
 public extension RayonStorage {
     /// Every record of the kind that is not deleted.
     func records<T: StoredRecord>(_: T.Type) -> [T] {
+        guard openIfNeeded() else { return [] }
         do {
             let rows: [T] = try db.getObjects(fromTable: T.tableName, where: removedColumn == false)
             return rows.map(withSecrets)
@@ -127,7 +191,8 @@ public extension RayonStorage {
     /// device's own fields alone does neither. Returns the record as written.
     @discardableResult
     func save<T: StoredRecord>(_ record: T, changed: Date? = nil) throws -> T {
-        try writes.withLock { _ in try saveLocked(record, changed: changed) }
+        try requireOpen()
+        return try writes.withLock { _ in try saveLocked(record, changed: changed) }
     }
 
     private func saveLocked<T: StoredRecord>(_ record: T, changed: Date?) throws -> T {
@@ -187,6 +252,7 @@ public extension RayonStorage {
     /// Marks the records deleted, forgets their secrets and queues the
     /// deletions for iCloud.
     func delete<T: StoredRecord>(_: T.Type, ids: [UUID]) throws {
+        try requireOpen()
         try writes.withLock { _ in try deleteLocked(T.self, ids: ids) }
     }
 
@@ -277,6 +343,7 @@ extension RayonStorage {
     /// and queues them for iCloud, all in one transaction: when anything
     /// fails, nothing is kept, the secrets written to the keychain included.
     func insertMissing(_ write: (RecordInserter) throws -> Void) throws {
+        try requireOpen()
         try writes.withLock { _ in try insertMissingLocked(write) }
     }
 

@@ -44,6 +44,14 @@ public final class CloudSyncModel: ObservableObject {
             MainActor.assumeIsolated { self?.status = status }
         })
         observers.append(NotificationCenter.default.addObserver(
+            forName: RayonStorage.didOpen, object: store.storage, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let preferences = self?.preferences else { return }
+                Task { await CloudSync.shared.apply(preferences) }
+            }
+        })
+        observers.append(NotificationCenter.default.addObserver(
             forName: RayonStorage.didMergeRemoteChanges, object: nil, queue: .main
         ) { [weak store] _ in
             MainActor.assumeIsolated { store?.reload() }
