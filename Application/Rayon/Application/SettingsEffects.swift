@@ -28,5 +28,10 @@ enum SettingsEffects {
         AppSettings.terminalSharesClipboard.publisher
             .sink { enabled in MainActor.assumeIsolated { RayonTerminalView.setClipboardSharing(enabled) } }
             .store(in: &subscriptions)
+        // One font size: the terminal's Size setting also sets the size
+        // sessions start from and ⌘+ and ⌘− change.
+        TerminalSettings.shared.onFontSizeChange = { size in
+            AppSettings.terminalFontSize.set(Int(size.rounded()))
+        }
     }
 }

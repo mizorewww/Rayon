@@ -15,7 +15,9 @@
     /// A backup file to save: written to a temporary file first, then handed
     /// to the Files app.
     struct BackupDocument: FileDocument {
-        static var readableContentTypes: [UTType] { [.data] }
+        static var readableContentTypes: [UTType] {
+            [.data]
+        }
 
         let data: Data
 
@@ -46,12 +48,14 @@
         case folder
         case file
 
-        var id: Self { self }
+        var id: Self {
+            self
+        }
 
         var contentTypes: [UTType] {
             switch self {
-            case .folder: return [.folder]
-            case .file: return [.item]
+            case .folder: [.folder]
+            case .file: [.item]
             }
         }
     }
@@ -62,7 +66,11 @@
         @MainActor
         static func importSSHConfig(from url: URL, source: SSHConfigSource) {
             let accessing = url.startAccessingSecurityScopedResource()
-            defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+            defer {
+                if accessing {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
             let configURL = source == .folder ? url.appendingPathComponent("config") : url
             guard let text = try? String(contentsOf: configURL, encoding: .utf8) else {
                 UIBridge.presentError(with: source == .folder
@@ -87,7 +95,11 @@
         /// A copy of a picked file the app may read for as long as it needs.
         static func readableCopy(of url: URL) throws -> URL {
             let accessing = url.startAccessingSecurityScopedResource()
-            defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+            defer {
+                if accessing {
+                    url.stopAccessingSecurityScopedResource()
+                }
+            }
             let copy = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
             try FileManager.default.copyItem(at: url, to: copy)
             return copy
@@ -139,7 +151,11 @@
 
         func body(content: Content) -> some View {
             content.fileImporter(
-                isPresented: Binding(get: { source != nil }, set: { if !$0 { source = nil } }),
+                isPresented: Binding(get: { source != nil }, set: {
+                    if !$0 {
+                        source = nil
+                    }
+                }),
                 allowedContentTypes: source?.contentTypes ?? [.item]
             ) { result in
                 let picked = source ?? .file
@@ -172,14 +188,24 @@
         }
     }
 
-    /// Settings rows: export and import a backup and the settings; import an
-    /// OpenSSH config.
-    struct DataBackupRows: View {
+    /// Settings › General › Data: backups of the data and of the settings,
+    /// the OpenSSH config importer, the app's container and its log.
+    struct DataSettings: View {
         var body: some View {
-            RXDividedStack {
-                BackupRow()
-                PreferencesRow()
-                SSHConfigRow()
+            BackupRow()
+            PreferencesRow()
+            SSHConfigRow()
+            LabeledContent {
+                Button("Show") { UIBridge.openFileContainer() }
+            } label: {
+                Text("App container")
+                Text("Files the app keeps, in the Files app.")
+            }
+            NavigationLink {
+                LogView()
+            } label: {
+                Text("App log")
+                Text("Diagnostics for reporting a problem.")
             }
         }
     }
@@ -194,10 +220,7 @@
         @State private var wrongPassword = false
 
         var body: some View {
-            RXFormRow(
-                "Backup",
-                description: "Servers, identities, snippets, port forwards, folders and known host keys in one file. With passwords and keys, the file is protected by a password."
-            ) {
+            LabeledContent {
                 Menu {
                     Button {
                         choosingExport = true
@@ -212,8 +235,10 @@
                 } label: {
                     Text("Backup")
                 }
-                .buttonStyle(.rx(size: .small))
                 .fixedSize()
+            } label: {
+                Text("Backup")
+                Text("Servers, identities, snippets, port forwards, folders and known host keys in one file. With passwords and keys, the file is protected by a password.")
             }
             .sheet(isPresented: $choosingExport) {
                 BackupExportForm { includeSecrets, password in
@@ -232,7 +257,11 @@
                 }
             }
             .fileExporter(
-                isPresented: Binding(get: { exportDocument != nil }, set: { if !$0 { exportDocument = nil } }),
+                isPresented: Binding(get: { exportDocument != nil }, set: {
+                    if !$0 {
+                        exportDocument = nil
+                    }
+                }),
                 document: exportDocument,
                 contentType: .data,
                 defaultFilename: "Rayon.\(DataBackup.fileExtension)"
@@ -266,11 +295,17 @@
             }
             .alert(
                 "Backup Password",
-                isPresented: Binding(get: { locked != nil }, set: { if !$0 { locked = nil } })
+                isPresented: Binding(get: { locked != nil }, set: {
+                    if !$0 {
+                        locked = nil
+                    }
+                })
             ) {
                 SecureField("Password", text: $password)
                 Button("Cancel", role: .cancel) {
-                    if let locked { try? FileManager.default.removeItem(at: locked) }
+                    if let locked {
+                        try? FileManager.default.removeItem(at: locked)
+                    }
                     locked = nil
                 }
                 Button("Import") {
@@ -340,10 +375,7 @@
         @State private var importing = false
 
         var body: some View {
-            RXFormRow(
-                "Settings",
-                description: "Rayon's settings, apart from the data, to bring to another device."
-            ) {
+            LabeledContent {
                 Menu {
                     Button {
                         do {
@@ -362,11 +394,17 @@
                 } label: {
                     Text("Settings")
                 }
-                .buttonStyle(.rx(size: .small))
                 .fixedSize()
+            } label: {
+                Text("Settings")
+                Text("Rayon's settings, apart from the data, to bring to another device.")
             }
             .fileExporter(
-                isPresented: Binding(get: { exportDocument != nil }, set: { if !$0 { exportDocument = nil } }),
+                isPresented: Binding(get: { exportDocument != nil }, set: {
+                    if !$0 {
+                        exportDocument = nil
+                    }
+                }),
                 document: exportDocument,
                 contentType: .data,
                 defaultFilename: "Rayon.\(PreferencesBackup.fileExtension)"
@@ -389,17 +427,16 @@
         @State private var source: SSHConfigSource?
 
         var body: some View {
-            RXFormRow(
-                "OpenSSH config",
-                description: "Import Host entries, IdentityFile keys, and ProxyJump links from an OpenSSH config. Pick the whole .ssh folder so the keys it names load too."
-            ) {
+            LabeledContent {
                 Menu {
                     SSHConfigImportMenuItems(source: $source)
                 } label: {
                     Text("Import")
                 }
-                .buttonStyle(.rx(size: .small))
                 .fixedSize()
+            } label: {
+                Text("OpenSSH config")
+                Text("Import Host entries, IdentityFile keys, and ProxyJump links from an OpenSSH config. Pick the whole .ssh folder so the keys it names load too.")
             }
             .sshConfigImporter($source)
         }

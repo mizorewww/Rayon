@@ -171,7 +171,7 @@
             case .identities: IdentityView()
             case .snippets: SnippetView()
             case .desktops: RemoteDesktopsView()
-            case .settings: SettingView()
+            case .settings: SettingsView()
             case let .session(owner):
                 if SessionDirectory.isOpen(owner) {
                     ServerWorkspaceView(owner: owner).id(owner)
@@ -282,7 +282,7 @@
                     .rxListRow()
                 } header: { RXSectionHeader("Manage") }
                 Section {
-                    NavigationLink { SettingView() } label: { moreRow("Settings", "gearshape") }
+                    NavigationLink { SettingsView() } label: { moreRow("Settings", "gearshape") }
                         .rxListRow()
                     NavigationLink { LogView() } label: { moreRow("Logs", "doc.text.magnifyingglass") }
                         .rxListRow()
