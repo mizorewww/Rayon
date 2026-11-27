@@ -162,6 +162,47 @@ final class CloudSyncMappingTests: XCTestCase {
         XCTAssertEqual(storage.row(RDMachine.self, id: machine.id)?.removed, true)
     }
 
+    /// A change from another device that cannot be merged now (the
+    /// keychain refuses its secrets) keeps no system fields, or the version
+    /// here would be sent over it, and is merged again later.
+    func testAChangeThatFailsToMergeIsRetried() async throws {
+        var server = RDMachine(remoteAddress: "10.0.0.1", remotePort: "22", name: "web")
+        server.vncPassword = "vnc"
+        server = try storage.save(server)
+        var refusing = test.secrets
+        refusing.refusedAccounts = [server.secretAccount]
+        let locked = try RayonStorage(databaseURL: storage.databaseURL, secrets: refusing)
+        defer { locked.close() }
+        var remote = server
+        remote.name = "renamed there"
+        remote.vncPassword = "changed"
+        remote.modified = server.modified.addingTimeInterval(60)
+        let ck = try CloudRecordCoding.ckRecord(for: remote, systemFields: nil)
+        let name = ck.recordID.recordName
+
+        let sync = CloudSync(storage: locked)
+        await sync.apply(CloudSyncPreferences(isOn: true))
+        let took = await sync.receive(ck)
+        XCTAssertFalse(took)
+        XCTAssertNil(storage.systemFields(for: name))
+        let failed = await sync.failedMerges
+        XCTAssertEqual(failed, [name])
+        // It is still to merge after a relaunch.
+        let relaunched = await CloudSync(storage: locked).failedMerges
+        XCTAssertEqual(relaunched, [name])
+
+        // Unlocked, the retry takes it.
+        let unlocked = CloudSync(storage: storage)
+        await unlocked.apply(CloudSyncPreferences(isOn: true))
+        let tookNow = await unlocked.receive(ck)
+        XCTAssertTrue(tookNow)
+        XCTAssertNotNil(storage.systemFields(for: name))
+        let left = await unlocked.failedMerges
+        XCTAssertEqual(left, [])
+        XCTAssertEqual(storage.record(RDMachine.self, id: server.id)?.name, "renamed there")
+        XCTAssertEqual(storage.record(RDMachine.self, id: server.id)?.vncPassword, "changed")
+    }
+
     func testTheScopeDecidesWhatSyncs() {
         var preferences = CloudSyncPreferences(isOn: true, identities: false)
         XCTAssertTrue(preferences.syncs(table: RDMachine.tableName))

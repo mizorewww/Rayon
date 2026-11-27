@@ -35,9 +35,16 @@ public actor CloudSync {
     private var preferences = CloudSyncPreferences()
     private var lastSync: Date?
     private var observer: (any NSObjectProtocol)?
+    /// Records fetched from iCloud that could not be merged here (the
+    /// keychain locked, say), by record name; fetched and merged again
+    /// after each fetch. The engine's change token is past them already.
+    private(set) var failedMerges: Set<String>
+    private let retryURL: URL
 
     init(storage: RayonStorage) {
         self.storage = storage
+        retryURL = storage.databaseURL.deletingLastPathComponent().appendingPathComponent("sync-retry.json")
+        failedMerges = (try? JSONDecoder().decode(Set<String>.self, from: Data(contentsOf: retryURL))) ?? []
     }
 
     private var stateURL: URL {
@@ -210,12 +217,25 @@ public actor CloudSync {
 
     private func saveState(_ state: CKSyncEngine.State.Serialization?) {
         guard let state else {
+            // Without a change token everything is fetched again, the
+            // records that failed to merge among it.
             try? FileManager.default.removeItem(at: stateURL)
             try? FileManager.default.removeItem(at: scopesURL)
+            setFailedMerges([])
             return
         }
         guard let data = try? JSONEncoder().encode(state) else { return }
         try? data.write(to: stateURL, options: .atomic)
+    }
+
+    private func setFailedMerges(_ names: Set<String>) {
+        guard names != failedMerges else { return }
+        failedMerges = names
+        if names.isEmpty {
+            try? FileManager.default.removeItem(at: retryURL)
+        } else {
+            try? JSONEncoder().encode(names).write(to: retryURL, options: .atomic)
+        }
     }
 
     private func publish(_ status: Status) {
@@ -259,22 +279,58 @@ public actor CloudSync {
 
     // MARK: - Receiving
 
-    /// Writes a record from iCloud here, when its kind syncs.
+    /// Writes a record from iCloud here, when its kind syncs; whether
+    /// that changed what is here. Its system fields are kept only once it
+    /// is merged: with them, the version here would be sent over the one it
+    /// failed to take. One that fails is merged again later.
     func receive(_ ck: CKRecord) -> Bool {
-        guard let (table, _) = RayonStorage.parse(recordName: ck.recordID.recordName),
+        let name = ck.recordID.recordName
+        guard let (table, _) = RayonStorage.parse(recordName: name),
               preferences.syncs(table: table)
-        else { return false }
-        storage.setSystemFields(CloudRecordCoding.encode(systemFields: ck), for: ck.recordID.recordName)
+        else {
+            setFailedMerges(failedMerges.subtracting([name]))
+            return false
+        }
         do {
             let record = try CloudRecordCoding.decode(ck)
             func merge<T: StoredRecord>(_ record: T) throws -> Bool {
                 try storage.mergeRemote(record) == .tookRemote
             }
-            return try merge(record)
+            let took = try merge(record)
+            storage.setSystemFields(CloudRecordCoding.encode(systemFields: ck), for: name)
+            setFailedMerges(failedMerges.subtracting([name]))
+            return took
         } catch {
-            Logger.syncEngine.errorFile("could not take \(ck.recordID.recordName): \(error.localizedDescription)")
+            Logger.syncEngine.errorFile("could not take \(name), retrying after the next fetch: \(error.localizedDescription)")
+            setFailedMerges(failedMerges.union([name]))
             return false
         }
+    }
+
+    /// Fetches the records that failed to merge and merges them again.
+    private func retryFailedMerges(in database: CKDatabase) async {
+        guard !failedMerges.isEmpty else { return }
+        let ids = failedMerges.map { CKRecord.ID(recordName: $0, zoneID: CloudRecordCoding.zoneID) }
+        let results: [CKRecord.ID: Result<CKRecord, any Error>]
+        do {
+            results = try await database.records(for: ids)
+        } catch {
+            Logger.syncEngine.errorFile("fetching records to merge again failed: \(error.localizedDescription)")
+            return
+        }
+        var changed = false
+        for (id, result) in results {
+            switch result {
+            case let .success(record):
+                changed = receive(record) || changed
+            case let .failure(error as CKError) where error.code == .unknownItem:
+                // Deleted there since: the deletion comes with a fetch.
+                setFailedMerges(failedMerges.subtracting([id.recordName]))
+            case .failure:
+                break
+            }
+        }
+        if changed { notifyMerged() }
     }
 
     private func notifyMerged() {
@@ -313,6 +369,9 @@ public actor CloudSync {
                 try? storage.enqueueEverything()
             }
 
+        case .didFetchChanges:
+            Task { await retryFailedMerges(in: engine.database) }
+
         case let .fetchedRecordZoneChanges(changes):
             var changed = false
             for modification in changes.modifications {
@@ -323,6 +382,7 @@ public actor CloudSync {
                       preferences.syncs(table: table)
                 else { continue }
                 storage.removeForSync(table: table, id: id)
+                setFailedMerges(failedMerges.subtracting([deletion.recordID.recordName]))
                 changed = true
             }
             if changed { notifyMerged() }
@@ -344,10 +404,11 @@ public actor CloudSync {
                 switch failure.error.code {
                 case .serverRecordChanged:
                     // Another device saved it first: merge theirs, and send
-                    // ours again on top of it if ours is newer.
+                    // ours again on top of it if ours is newer. Theirs not
+                    // merged, ours waits, or it would replace theirs.
                     if let server = failure.error.serverRecord {
                         changed = receive(server) || changed
-                        retry.append(.saveRecord(id))
+                        if !failedMerges.contains(id.recordName) { retry.append(.saveRecord(id)) }
                     }
                 case .zoneNotFound:
                     zoneMissing = true
