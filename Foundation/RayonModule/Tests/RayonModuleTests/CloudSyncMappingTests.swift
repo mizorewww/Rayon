@@ -149,6 +149,31 @@ final class CloudSyncMappingTests: XCTestCase {
         XCTAssertEqual(storage.row(RDMachine.self, id: machine.id)?.removed, true)
     }
 
+    /// An iCloud account change forgets what the last account had seen
+    /// but sends nothing to the new one: sync waits, across a relaunch,
+    /// until the user resumes it or turns it off.
+    func testAnAccountChangeSendsNothingUntilTheUserSaysSo() async throws {
+        let machine = try storage.save(RDMachine(remoteAddress: "a", remotePort: "22", name: "a"))
+        storage.dequeue(table: RDMachine.tableName, id: machine.id, sentModified: machine.modified)
+        let name = RayonStorage.recordName(table: RDMachine.tableName, id: machine.id)
+        storage.setSystemFields(Data([1]), for: name)
+
+        let sync = CloudSync(storage: storage)
+        await sync.pauseForAccountChange()
+
+        XCTAssertTrue(storage.pendingUploads().isEmpty)
+        XCTAssertNil(storage.systemFields(for: name))
+        let relaunched = CloudSync(storage: storage)
+        await relaunched.apply(CloudSyncPreferences(isOn: true))
+        let paused = await relaunched.isPausedForAccountChange
+        XCTAssertTrue(paused)
+        XCTAssertTrue(storage.pendingUploads().isEmpty)
+
+        await relaunched.apply(CloudSyncPreferences(isOn: false))
+        let pausedAfterOff = await relaunched.isPausedForAccountChange
+        XCTAssertFalse(pausedAfterOff)
+    }
+
     /// A change from another device that cannot be merged now (the
     /// keychain refuses its secrets) keeps no system fields, or the version
     /// here would be sent over it, and is merged again later.

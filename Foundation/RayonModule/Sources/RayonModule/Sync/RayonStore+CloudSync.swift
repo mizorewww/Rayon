@@ -62,6 +62,12 @@ public final class CloudSyncModel: ObservableObject {
         Task { await CloudSync.shared.apply(preferences) }
     }
 
+    /// After the iCloud account changed: sync this device's data with the
+    /// account signed in now.
+    public func resumeWithCurrentAccount() {
+        Task { await CloudSync.shared.resumeWithCurrentAccount() }
+    }
+
     public func syncNow() {
         Task { await CloudSync.shared.syncNow() }
     }
@@ -82,7 +88,7 @@ public final class CloudSyncModel: ObservableObject {
     public var canSyncNow: Bool {
         switch status {
         case .idle, .failed, .noAccount: return true
-        case .off, .unavailable, .syncing: return false
+        case .off, .unavailable, .accountChanged, .syncing: return false
         }
     }
 
@@ -92,6 +98,7 @@ public final class CloudSyncModel: ObservableObject {
         case .off: return "Off"
         case .unavailable: return "This build is not signed for iCloud."
         case .noAccount: return "Sign in to iCloud to sync."
+        case .accountChanged: return "Paused: the iCloud account changed. Nothing has been sent to the account signed in now."
         case .syncing: return "Syncing…"
         case let .idle(lastSync?): return "Synced \(lastSync.formatted(.relative(presentation: .named)))"
         case .idle(nil): return "Up to date"

@@ -84,6 +84,16 @@ A profile made before the App ID had the container lists none; Xcode makes a
 new one when the build is signed with `-allowProvisioningUpdates` or from the
 Signing & Capabilities tab.
 
+## Account changes
+
+When the iCloud account is signed out or another one signs in, sync pauses:
+Rayon forgets what the last account had seen and sends nothing, so one
+person's servers, passwords and keys never go to another's account unasked.
+**Settings > General** then says the account changed and offers **Sync with
+This Account**, which merges this device's data with the new account's and
+sends it there; turning sync off keeps everything on the device only. The
+pause outlasts a relaunch.
+
 ## Trying it
 
 1. Sign in to iCloud on the Mac and the iPhone or iPad with the same Apple

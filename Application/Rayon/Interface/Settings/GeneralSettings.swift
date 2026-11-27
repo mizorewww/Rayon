@@ -89,7 +89,14 @@ struct CloudSyncSettings: View {
             Text("Sync with iCloud")
             Text(sync.preferences.isOn ? sync.statusText : "Keep your data the same on every device signed in to your iCloud account. Passwords and keys travel end-to-end encrypted.")
         }
-        if sync.preferences.isOn, sync.status != .unavailable {
+        if sync.preferences.isOn, sync.status == .accountChanged {
+            LabeledContent {
+                Button("Sync with This Account") { sync.resumeWithCurrentAccount() }
+            } label: {
+                Text("iCloud account")
+                Text("Merge this device's servers, identities and settings with the account signed in now, and send them to it. Or turn sync off to keep them here only.")
+            }
+        } else if sync.preferences.isOn, sync.status != .unavailable {
             LabeledContent {
                 Button("Sync Now") { sync.syncNow() }
                     .disabled(!sync.canSyncNow)

@@ -24,6 +24,10 @@ public actor CloudSync {
         case unavailable
         /// No iCloud account is signed in, or it cannot be used now.
         case noAccount
+        /// The iCloud account was signed out or changed: nothing is sent
+        /// until the user agrees to sync this device's data with the one
+        /// signed in now.
+        case accountChanged
         case syncing
         case idle(lastSync: Date?)
         case failed(String)
@@ -59,6 +63,16 @@ public actor CloudSync {
         storage.databaseURL.deletingLastPathComponent().appendingPathComponent("sync-scopes.json")
     }
 
+    /// Present while sync waits for the user after an account change; it
+    /// outlives a relaunch, so the new account never gets the data unasked.
+    private var accountChangeURL: URL {
+        storage.databaseURL.deletingLastPathComponent().appendingPathComponent("sync-account-changed")
+    }
+
+    var isPausedForAccountChange: Bool {
+        FileManager.default.fileExists(atPath: accountChangeURL.path)
+    }
+
     /// Whether this build may use CloudKit: without the entitlement,
     /// touching a container ends the app.
     public nonisolated static var isAvailable: Bool {
@@ -92,7 +106,13 @@ public actor CloudSync {
             // everything again.
             storage.forgetSyncState()
             saveState(nil)
+            // Turning sync on again is the user's choice of this account.
+            try? FileManager.default.removeItem(at: accountChangeURL)
             publish(.off)
+            return
+        }
+        guard !isPausedForAccountChange else {
+            publish(.accountChanged)
             return
         }
         guard Self.isAvailable else {
@@ -182,6 +202,27 @@ public actor CloudSync {
         storage.forgetSyncState()
         saveState(nil)
         publish(.off)
+    }
+
+    /// After an account change, the user's go-ahead: this device's data is
+    /// merged with what the account signed in now has, and sent to it.
+    public func resumeWithCurrentAccount() async {
+        try? FileManager.default.removeItem(at: accountChangeURL)
+        // Without engine state the engine starts as a sign-in, which
+        // queues everything.
+        await apply(preferences)
+    }
+
+    /// Another account, or none, is signed in: what the last one had seen
+    /// is forgotten, and sync stops until the user says to go on, rather
+    /// than sending every server, password and key to whoever signed in.
+    func pauseForAccountChange() {
+        Logger.syncEngine.infoFile("iCloud account changed; sync paused until the user resumes it")
+        stop()
+        storage.removeAllSystemFields()
+        saveState(nil)
+        FileManager.default.createFile(atPath: accountChangeURL.path, contents: nil)
+        publish(.accountChanged)
     }
 
     /// Fetches and sends now, instead of when the system gets to it.
@@ -388,12 +429,7 @@ public actor CloudSync {
                 try? storage.enqueueEverything()
                 Task { await syncNow() }
             case .signOut, .switchAccounts:
-                // Another account has none of these: forget what the last
-                // one had seen and send everything to the next.
-                storage.removeAllSystemFields()
-                saveState(nil)
-                try? storage.enqueueEverything()
-                Task { await syncNow() }
+                pauseForAccountChange()
             @unknown default:
                 break
             }
