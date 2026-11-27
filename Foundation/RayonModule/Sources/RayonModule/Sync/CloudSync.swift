@@ -427,7 +427,12 @@ public actor CloudSync {
             switch change.changeType {
             case .signIn:
                 try? storage.enqueueEverything()
-                Task { await syncNow() }
+                // Detached: a task started here inherits the engine's marker
+                // of this callback, and fetchChanges awaited under it traps
+                // ("Cannot await a call into CKSyncEngine from within a
+                // delegate callback"). An engine without saved state, as on
+                // the first launch after 2.8, starts with this event.
+                Task.detached { await self.syncNow() }
             case .signOut, .switchAccounts:
                 pauseForAccountChange()
             @unknown default:
