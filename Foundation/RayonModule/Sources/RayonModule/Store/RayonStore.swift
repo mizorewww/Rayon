@@ -20,6 +20,9 @@ import Logger
 @MainActor
 public final class RayonStore: ObservableObject {
     public static let shared: RayonStore = {
+        // Before the store reads a setting (it trims the recent list to
+        // the recent limit).
+        LegacySettingsImport.run()
         let storage = RayonStorage.shared
         let store: RayonStore
         if storage.openProblem != nil {
