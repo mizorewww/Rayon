@@ -30,7 +30,10 @@ struct HomeBackdrop: View {
             glow
             if !reduceMotion {
                 TimelineView(.animation(minimumInterval: 1.0 / 30, paused: paused)) { timeline in
-                    Canvas { context, size in
+                    // Drawn off the main thread: drawn on it, the Canvas
+                    // allocated and filled a window-sized surface there each
+                    // time Home opened, while the page slid in.
+                    Canvas(rendersAsynchronously: true) { context, size in
                         draw(in: &context, size: size, at: timeline.date.timeIntervalSinceReferenceDate)
                     }
                 }
