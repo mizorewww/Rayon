@@ -217,6 +217,9 @@
                         open: open,
                         menu: menu(for:)
                     )
+                    // The Table's NSTableView takes drags over its rows before
+                    // the page's drop area sees them.
+                    .onDrop(of: [.fileURL], isTargeted: $dropTargeted, perform: handleDrop)
                 }
             }
             .padding(RX.Space.s2)
