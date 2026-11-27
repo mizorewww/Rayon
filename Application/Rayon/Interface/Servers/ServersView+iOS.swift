@@ -48,12 +48,6 @@
                         }
                         ForEach(store.serverGroups(matching: searchKey)) { group in
                             Section {
-                                if group.machines.isEmpty {
-                                    Text(store.folder(named: group.name)?.isLinked == true ? "No desktop devices on the account" : "Empty — move servers here from their menu")
-                                        .font(.footnote)
-                                        .foregroundStyle(.rxInkSecondary)
-                                        .rxListRow()
-                                }
                                 ForEach(group.machines) { machine in
                                     ServerListRow(machine: machine.id)
                                         .rxListRow()

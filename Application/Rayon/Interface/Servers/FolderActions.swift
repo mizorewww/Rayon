@@ -140,6 +140,12 @@ struct FolderHeader: View {
                     .lineLimit(1)
                     .textCase(nil)
             }
+            if count == 0 {
+                Text(folder?.isLinked == true ? "No desktop devices on the account" : "Empty — move servers here from their menu")
+                    .foregroundStyle(.rxInkSecondary)
+                    .lineLimit(1)
+                    .textCase(nil)
+            }
             Spacer()
             if !name.isEmpty {
                 Menu {
