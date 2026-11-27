@@ -26,9 +26,30 @@ public extension UURemoteAccount {
             storage: UUKeychainCredentialStorage(service: "me.mizorewww.rayon.uu-remote"),
             clientName: clientName
         )
-        account.onDevicesRefreshed = { [weak account] _ in account?.syncFolder() }
+        account.onDevicesRefreshed = { [weak account] _ in
+            account?.noteSignIn()
+            account?.syncFolder()
+        }
+        hiddenDevicesWatch = AppSettings.uuRemoteSignIns.publisher
+            .sink { [weak account] signIns in
+                MainActor.assumeIsolated {
+                    account?.hiddenDeviceIDs = Set(signIns)
+                    account?.syncFolder()
+                }
+            }
         return account
     }()
+
+    @MainActor private static var hiddenDevicesWatch: AnyCancellable?
+
+    /// Rayon's sign-in is a device on the account, listed as a Windows
+    /// host; every Rayon signed in to it knows the id and does not show it.
+    /// Its name would say so too, until someone renames it.
+    @MainActor private func noteSignIn() {
+        let id = credentials.deviceID
+        guard !id.isEmpty, !AppSettings.uuRemoteSignIns.value.contains(id) else { return }
+        AppSettings.uuRemoteSignIns.set(AppSettings.uuRemoteSignIns.value + [id])
+    }
 
     /// "1 desktop device", "3 desktop devices".
     nonisolated static func deviceCount(_ count: Int) -> String {
@@ -50,6 +71,7 @@ public extension UURemoteAccount {
             devices: devices,
             folder: folder.id,
             ownDeviceID: credentials.deviceID,
+            hidden: hiddenDeviceIDs,
             machines: store.machines
         )
         for machine in changes.save {

@@ -62,6 +62,12 @@ public enum AppSettings {
     /// How many times the touch gestures were explained.
     public static let remoteDesktopGestureHintsShown = SettingKey("remoteDesktop.gestureHintsShown", default: 0, scope: .deviceLocal)
 
+    // MARK: UU Remote
+
+    /// The UU device ids Rayon signed in as, from every device: the service
+    /// lists each sign-in as a Windows host, which Rayon does not show.
+    public static let uuRemoteSignIns = SettingKey("uuRemote.signIns", default: [String](), scope: .synced)
+
     // MARK: Menu bar
 
     /// The servers shown in the Mac's menu bar.
@@ -95,6 +101,7 @@ public enum AppSettings {
         terminalFontSize, terminalCopiesOnSelect, terminalSharesClipboard,
         editorWrapsLines,
         remoteDesktopTouchMode, remoteDesktopGestureHintsShown,
+        uuRemoteSignIns,
         menuBarServers,
         syncEnabled, syncsServers, syncsIdentities, syncsSnippets, syncsPortForwards, syncsTerminalSettings, syncsAppSettings,
         telemetryLevel, telemetryNoticeShown,

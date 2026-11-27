@@ -19,8 +19,8 @@ final class UURemoteFolderSyncTests: XCTestCase {
     private let folder = UUID()
 
     /// Applies the changes the way the store does.
-    private func apply(_ devices: [UUDeviceInfo], ownDeviceID: String = "", to machines: inout [RDMachine]) {
-        let changes = UURemoteFolderSync.changes(devices: devices, folder: folder, ownDeviceID: ownDeviceID, machines: machines)
+    private func apply(_ devices: [UUDeviceInfo], ownDeviceID: String = "", hidden: Set<String> = [], to machines: inout [RDMachine]) {
+        let changes = UURemoteFolderSync.changes(devices: devices, folder: folder, ownDeviceID: ownDeviceID, hidden: hidden, machines: machines)
         for machine in changes.save {
             if let index = machines.firstIndex(where: { $0.id == machine.id }) {
                 machines[index] = machine
@@ -61,6 +61,14 @@ final class UURemoteFolderSyncTests: XCTestCase {
     func testRayonItselfIsNotAServer() {
         var machines: [RDMachine] = []
         apply([device("me", "Rayon", platform: 1), device("d1", "Mac")], ownDeviceID: "me", to: &machines)
+        XCTAssertEqual(machines.map(\.uuDeviceID), ["d1"])
+    }
+
+    /// Rayon's sign-in on another device, renamed so its name no longer
+    /// says Rayon, is known by its id.
+    func testRayonsOtherSignInsAreNotServersWhateverTheirName() {
+        var machines: [RDMachine] = []
+        apply([device("other", "Office PC", platform: 1), device("d1", "Mac")], hidden: ["other"], to: &machines)
         XCTAssertEqual(machines.map(\.uuDeviceID), ["d1"])
     }
 

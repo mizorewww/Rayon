@@ -60,14 +60,18 @@ public enum UURemoteFolderSync {
 
     /// The servers to save and to delete so that the ones in `folder`
     /// follow `devices`. `ownDeviceID` is the device Rayon signed in as,
-    /// which is not a server.
+    /// and `hidden` its other sign-ins and the devices the person removed:
+    /// none of them is a server.
     public static func changes(
         devices: [UUDeviceInfo],
         folder: RDFolder.ID,
         ownDeviceID: String = "",
+        hidden: Set<String> = [],
         machines: [RDMachine]
     ) -> (save: [RDMachine], delete: [RDMachine.ID]) {
-        let desktops = devices.filter { $0.isComputer && !$0.isRegistration(of: UURemoteAccount.clientName) && $0.deviceID != ownDeviceID }
+        let desktops = devices.filter {
+            $0.isComputer && !$0.isRegistration(of: UURemoteAccount.clientName) && $0.deviceID != ownDeviceID && !hidden.contains($0.deviceID)
+        }
         let present = Set(desktops.map(\.deviceID))
         var save: [RDMachine] = []
         for device in desktops {
@@ -92,4 +96,5 @@ public enum UURemoteFolderSync {
         if machine.name == oldAlias, !device.alias.isEmpty { machine.name = device.alias }
         machine.uuDeviceAlias = device.alias
     }
+
 }
