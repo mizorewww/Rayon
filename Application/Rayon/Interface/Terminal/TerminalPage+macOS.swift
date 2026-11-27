@@ -1015,13 +1015,15 @@
         }
     }
 
-    enum TerminalSessionActions {
+    extension TerminalSessionActions {
+        /// Closes the tab; the server's last tab is replaced by a new
+        /// terminal to it.
         @MainActor
         static func closeTab(_ context: TerminalManager.Context) {
             let manager = TerminalManager.shared
             let keepsSession = context.machine.isUURemoteDevice
             let replace = context.tabSiblings.count == 1 && !keepsSession
-            let perform = {
+            let perform = { @MainActor in
                 guard manager.sessionContexts.contains(where: { $0.id == context.id }) else { return }
                 if replace, let fresh = openReplacement(for: context) {
                     AppRouter.shared.route = .terminal(fresh.id)
@@ -1030,20 +1032,13 @@
                 }
                 manager.closeSession(withContextID: context.id)
             }
-            if manager.sessionAlive(forContext: context.id), !keepsSession {
-                UIBridge.requiresConfirmation(
-                    message: "Close this terminal tab?",
-                    informative: replace
-                        ? "Its session on \(context.displayName) ends, and a new terminal to the same server opens in its place."
-                        : "Its session on \(context.displayName) ends.",
-                    confirmTitle: "Close Tab",
-                    destructive: true
-                ) { confirmed in
-                    if confirmed { MainActor.assumeIsolated { perform() } }
-                }
-            } else {
-                perform()
-            }
+            confirmClose(
+                context,
+                informative: replace
+                    ? "Its session on \(context.displayName) ends, and a new terminal to the same server opens in its place."
+                    : nil,
+                then: perform
+            )
         }
 
         @MainActor
@@ -1065,21 +1060,9 @@
         @MainActor
         static func close(_ context: TerminalManager.Context) {
             let manager = TerminalManager.shared
-            let perform = {
+            confirmClose(context) {
                 showNeighbour(of: context)
                 manager.closeSession(withContextID: context.id)
-            }
-            if manager.sessionAlive(forContext: context.id), !context.machine.isUURemoteDevice {
-                UIBridge.requiresConfirmation(
-                    message: "Close this terminal tab?",
-                    informative: "Its session on \(context.displayName) ends.",
-                    confirmTitle: "Close Tab",
-                    destructive: true
-                ) { confirmed in
-                    if confirmed { MainActor.assumeIsolated { perform() } }
-                }
-            } else {
-                perform()
             }
         }
 

@@ -90,27 +90,12 @@
         }
     }
 
-    /// Closing terminal tabs, with the Mac's confirmation: a live session asks
-    /// first, except on a UU Remote device, whose session outlives its tab and
-    /// can be resumed.
-    enum TerminalSessionActions {
+    extension TerminalSessionActions {
         @MainActor
-        static func close(_ context: TerminalManager.Context, then: @escaping () -> Void = {}) {
-            let manager = TerminalManager.shared
-            let perform = {
-                manager.closeSession(withContextID: context.id)
+        static func close(_ context: TerminalManager.Context, then: @escaping @MainActor () -> Void = {}) {
+            confirmClose(context) {
+                TerminalManager.shared.closeSession(withContextID: context.id)
                 then()
-            }
-            if manager.sessionAlive(forContext: context.id), !context.machine.isUURemoteDevice {
-                UIBridge.requiresConfirmation(
-                    message: "Close this terminal tab?",
-                    informative: "Its session on \(context.displayName) ends.",
-                    confirmTitle: "Close Tab"
-                ) { confirmed in
-                    if confirmed { MainActor.assumeIsolated { perform() } }
-                }
-            } else {
-                perform()
             }
         }
     }

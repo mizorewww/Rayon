@@ -88,6 +88,7 @@
 		C489818FBEF2F12602C88624 /* RayonUtil+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 942DABEC7925BEBD536CD478 /* RayonUtil+iOS.swift */; };
 		CDF2CF1328B8EA5BA88266B7 /* RayonEditor in Frameworks */ = {isa = PBXBuildFile; productRef = 1F9D3E0CB0D3A8B5CC89EBFE /* RayonEditor */; };
 		CFA6A5F671852D006E689C55 /* PortForwardView+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = A14E60EDE590AD0C28643352 /* PortForwardView+macOS.swift */; };
+		D001746A42CCB07D68A973D2 /* TerminalSessionActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = F23D3C8E150F61373705E80C /* TerminalSessionActions.swift */; };
 		D52F3C99987D87F91063F030 /* RemoteDesktopPage+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 950037C40D23B72981F9865C /* RemoteDesktopPage+macOS.swift */; };
 		D8CAFB1638E85094BF10215C /* UURemoteSessionList.swift in Sources */ = {isa = PBXBuildFile; fileRef = F603B55585172E30DD6B2202 /* UURemoteSessionList.swift */; };
 		D9A96FC6380B5BD2E9DDFB0A /* RayonTerminal in Frameworks */ = {isa = PBXBuildFile; productRef = 08929048713DE59C22E8E2D1 /* RayonTerminal */; };
@@ -200,6 +201,7 @@
 		E54BE7E40D29FE857801EC1F /* SettingsView+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingsView+macOS.swift"; sourceTree = "<group>"; };
 		E54E20A564F4D21E1E74C519 /* RayonTerminal */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RayonTerminal; path = ../../Foundation/RayonTerminal; sourceTree = SOURCE_ROOT; };
 		E6293DC9A28B290B8453B5E3 /* UURemoteAccountSheet+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UURemoteAccountSheet+macOS.swift"; sourceTree = "<group>"; };
+		F23D3C8E150F61373705E80C /* TerminalSessionActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalSessionActions.swift; sourceTree = "<group>"; };
 		F297FFE2C535664CC3F0AF4F /* SettingView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingView+iOS.swift"; sourceTree = "<group>"; };
 		F303FA061D1A76E58FCA4BA2 /* View+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+iOS.swift"; sourceTree = "<group>"; };
 		F603B55585172E30DD6B2202 /* UURemoteSessionList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UURemoteSessionList.swift; sourceTree = "<group>"; };
@@ -258,6 +260,7 @@
 				5EFD99DAA5D4CCE8E4C25C66 /* TerminalManager+iOS.swift */,
 				B5411ED54CA239E8AC5E6847 /* TerminalManager+macOS.swift */,
 				574BCE00636C1AD0B3E7D306 /* TerminalPage+macOS.swift */,
+				F23D3C8E150F61373705E80C /* TerminalSessionActions.swift */,
 				72B120F9F98EB23F7148DC36 /* TerminalTabs+iOS.swift */,
 				7959B28D199CD97714A95617 /* TerminalView+iOS.swift */,
 				F603B55585172E30DD6B2202 /* UURemoteSessionList.swift */,
@@ -733,6 +736,7 @@
 				2FE34FFC04BAF7DDCAC07C1D /* TerminalManager+iOS.swift in Sources */,
 				6B336A3320B9136DB0015DC5 /* TerminalManager+macOS.swift in Sources */,
 				50EECDBE1396B28BF067EFA2 /* TerminalPage+macOS.swift in Sources */,
+				D001746A42CCB07D68A973D2 /* TerminalSessionActions.swift in Sources */,
 				4A2538F7D51D2869CCD95EFC /* TerminalTabs+iOS.swift in Sources */,
 				947B0069349D1F17624536E1 /* TerminalView+iOS.swift in Sources */,
 				2DCA97AB0926EC416622BF82 /* UIBridge+iOS.swift in Sources */,
