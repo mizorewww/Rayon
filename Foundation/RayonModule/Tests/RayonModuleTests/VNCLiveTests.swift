@@ -16,20 +16,24 @@ import CoreGraphics
 import CoreImage
 import ImageIO
 import RayonSSH
+import Synchronization
 import XCTest
 
 final class VNCLiveTests: XCTestCase {
-    private final class Recorder: VNCRFBClientDelegate, @unchecked Sendable {
-        private let lock = NSLock()
-        private var phases: [RemoteDesktopPhase] = []
-        private var frames = 0
-        private var lastPicture: RemoteDesktopPicture?
+    private final class Recorder: VNCRFBClientDelegate {
+        private struct Record {
+            var phases: [RemoteDesktopPhase] = []
+            var frames = 0
+            var lastPicture: RemoteDesktopPicture?
+        }
+
+        private let record = Mutex(Record())
         let connected = XCTestExpectation(description: "connected")
         let framed = XCTestExpectation(description: "a decoded frame")
         let ended = XCTestExpectation(description: "failed or closed")
 
         func client(_: VNCRFBClient, didChangePhase phase: RemoteDesktopPhase, hint _: String?) {
-            lock.withLock { phases.append(phase) }
+            record.withLock { $0.phases.append(phase) }
             switch phase {
             case .connected: connected.fulfill()
             case .failed, .closed: ended.fulfill()
@@ -39,10 +43,10 @@ final class VNCLiveTests: XCTestCase {
 
         func client(_: VNCRFBClient, didUpdateFrame picture: RemoteDesktopPicture?, size _: CGSize, desktopName _: String?) {
             guard let picture else { return }
-            let first = lock.withLock { () -> Bool in
-                frames += 1
-                lastPicture = picture
-                return frames == 1
+            let first = record.withLock { record in
+                record.frames += 1
+                record.lastPicture = picture
+                return record.frames == 1
             }
             if first { framed.fulfill() }
         }
@@ -51,16 +55,16 @@ final class VNCLiveTests: XCTestCase {
         func client(_: VNCRFBClient, didReceiveClipboard _: String) {}
 
         var failure: String? {
-            lock.withLock {
-                phases.lazy.compactMap { phase -> String? in
+            record.withLock {
+                $0.phases.lazy.compactMap { phase -> String? in
                     if case let .failed(reason) = phase { return reason }
                     return nil
                 }.first
             }
         }
 
-        var picture: RemoteDesktopPicture? { lock.withLock { lastPicture } }
-        var frameCount: Int { lock.withLock { frames } }
+        var picture: RemoteDesktopPicture? { record.withLock { $0.lastPicture } }
+        var frameCount: Int { record.withLock { $0.frames } }
     }
 
     private func server() throws -> (host: String, port: UInt16, password: String) {

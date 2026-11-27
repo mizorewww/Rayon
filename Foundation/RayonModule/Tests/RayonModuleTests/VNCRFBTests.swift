@@ -12,26 +12,30 @@ import BigInt
 import CoreGraphics
 import CoreVideo
 import CryptoKit
+import Synchronization
 import XCTest
 import zlib
 
 /// A transport that replays a fixed buffer and records what is sent; the
 /// decoders read through the same `VNCReader` as over the network.
-private final class MemoryChannel: VNCTransport, @unchecked Sendable {
-    var buffer: [UInt8]
-    var written: [UInt8] = []
+private final class MemoryChannel: VNCTransport {
+    private let state: Mutex<(buffer: [UInt8], written: [UInt8])>
 
-    init(_ buffer: [UInt8] = []) { self.buffer = buffer }
+    init(_ buffer: [UInt8] = []) { state = Mutex((buffer, [])) }
+
+    var written: [UInt8] { state.withLock { $0.written } }
 
     func receive(maximumLength: Int) async throws -> Data {
-        guard !buffer.isEmpty else { throw VNCStreamError.endOfStream }
-        let count = min(maximumLength, buffer.count)
-        defer { buffer.removeFirst(count) }
-        return Data(buffer.prefix(count))
+        try state.withLock { state in
+            guard !state.buffer.isEmpty else { throw VNCStreamError.endOfStream }
+            let count = min(maximumLength, state.buffer.count)
+            defer { state.buffer.removeFirst(count) }
+            return Data(state.buffer.prefix(count))
+        }
     }
 
     func send(_ data: Data) {
-        written.append(contentsOf: data)
+        state.withLock { $0.written.append(contentsOf: data) }
     }
 
     func close() {}
@@ -584,25 +588,35 @@ final class VNCRFBTests: XCTestCase {
 
     // MARK: Full handshake over a memory channel
 
-    private final class RecordingDelegate: VNCRFBClientDelegate, @unchecked Sendable {
-        var phases: [RemoteDesktopPhase] = []
-        var size: CGSize = .zero
-        var desktopName: String?
-        var clipboards: [String] = []
+    private final class RecordingDelegate: VNCRFBClientDelegate {
+        private struct Record {
+            var phases: [RemoteDesktopPhase] = []
+            var size: CGSize = .zero
+            var desktopName: String?
+            var clipboards: [String] = []
+        }
+
+        private let record = Mutex(Record())
+        var phases: [RemoteDesktopPhase] { record.withLock { $0.phases } }
+        var size: CGSize { record.withLock { $0.size } }
+        var desktopName: String? { record.withLock { $0.desktopName } }
+        var clipboards: [String] { record.withLock { $0.clipboards } }
 
         func client(_: VNCRFBClient, didChangePhase phase: RemoteDesktopPhase, hint _: String?) {
-            phases.append(phase)
+            record.withLock { $0.phases.append(phase) }
         }
 
         func client(_: VNCRFBClient, didUpdateFrame _: RemoteDesktopPicture?, size: CGSize, desktopName: String?) {
-            self.size = size
-            if let desktopName { self.desktopName = desktopName }
+            record.withLock { record in
+                record.size = size
+                if let desktopName { record.desktopName = desktopName }
+            }
         }
 
         func client(_: VNCRFBClient, didUpdateCursor _: RemoteCursorInfo?) {}
 
         func client(_: VNCRFBClient, didReceiveClipboard text: String) {
-            clipboards.append(text)
+            record.withLock { $0.clipboards.append(text) }
         }
     }
 
