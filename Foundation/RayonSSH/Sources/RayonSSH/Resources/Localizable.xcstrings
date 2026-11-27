@@ -1,7 +1,281 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "\"%@\" is not a private key Rayon can read." : {
 
+    },
+    "\"%@\" is not an SSH agent socket." : {
+
+    },
+    "%@ did not answer the WebSocket upgrade in time." : {
+
+    },
+    "%@ is more than %lld folders deep." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ is more than %2$lld folders deep."
+          }
+        }
+      }
+    },
+    "%@ keys are not supported. Use an Ed25519, ECDSA or RSA key." : {
+
+    },
+    "Could not listen on port %lld (%@)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Could not listen on port %1$lld (%2$@)."
+          }
+        }
+      }
+    },
+    "Could not open a socket for the SSH agent." : {
+
+    },
+    "Could not reach the SSH agent at %@ (%@)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Could not reach the SSH agent at %1$@ (%2$@)."
+          }
+        }
+      }
+    },
+    "DSA keys are not supported. Use an Ed25519, ECDSA or RSA key." : {
+
+    },
+    "Encrypted PKCS#8 keys are not supported. Convert the key with `ssh-keygen -p -f <key>`, which writes OpenSSH format." : {
+
+    },
+    "Keys encrypted with %@ are not supported. Re-encrypt it with `ssh-keygen -p -Z aes256-ctr -f <key>`." : {
+
+    },
+    "Malformed RSA public key." : {
+
+    },
+    "Malformed RSA signature." : {
+
+    },
+    "No event loop for the WebSocket to %@." : {
+
+    },
+    "Not a SOCKS5 CONNECT request." : {
+
+    },
+    "PEM keys encrypted with %@ are not supported." : {
+
+    },
+    "Port %lld is already in use on this device." : {
+
+    },
+    "PuTTY keys (.ppk) are not supported. Export the key in OpenSSH format from PuTTYgen." : {
+
+    },
+    "TLS failed: %@" : {
+
+    },
+    "The PEM key could not be read. Rayon reads RSA and ECDSA keys in PEM." : {
+
+    },
+    "The SSH agent did not list its keys." : {
+
+    },
+    "The SSH agent did not sign with the key." : {
+
+    },
+    "The SSH agent holds no keys." : {
+
+    },
+    "The SSH agent refused the request." : {
+
+    },
+    "The SSH agent sent a malformed reply." : {
+
+    },
+    "The SSH agent signed with another algorithm than %@." : {
+
+    },
+    "The SSH agent stopped answering." : {
+
+    },
+    "The SSH agent's list of keys is malformed." : {
+
+    },
+    "The command ended without an exit status." : {
+
+    },
+    "The command timed out." : {
+
+    },
+    "The command was killed by SIG%@." : {
+
+    },
+    "The connection closed." : {
+
+    },
+    "The connection to %@ closed (%@)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The connection to %1$@ closed (%2$@)."
+          }
+        }
+      }
+    },
+    "The connection to %@ failed (%@)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The connection to %1$@ failed (%2$@)."
+          }
+        }
+      }
+    },
+    "The key is encrypted with an unknown key derivation (%@)." : {
+
+    },
+    "The key's passphrase is derived with %u bcrypt rounds; at most %u are supported." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The key's passphrase is derived with %1$u bcrypt rounds; at most %2$u are supported."
+          }
+        }
+      }
+    },
+    "The private key could not be decrypted." : {
+
+    },
+    "The private key could not be decrypted. Check the identity's password, which is the key's passphrase." : {
+
+    },
+    "The private key is damaged or incomplete." : {
+
+    },
+    "The private key is protected by a passphrase. Enter it as the identity's password." : {
+
+    },
+    "The server did not accept any of the credentials." : {
+
+    },
+    "The server did not open a channel in time." : {
+
+    },
+    "The server did not start SFTP (%@)." : {
+
+    },
+    "The server refused a pseudo-terminal or a shell." : {
+
+    },
+    "The server refused to open a channel (%@)." : {
+
+    },
+    "The server refused to run the command." : {
+
+    },
+    "The server would not start a shell (%@)." : {
+
+    },
+    "The server's host key has changed. Saved: %@ %@. Offered: %@ %@. If the server was reinstalled or its keys were replaced, forget its host key and connect again. If not, something may be intercepting the connection." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The server's host key has changed. Saved: %1$@ %2$@. Offered: %3$@ %4$@. If the server was reinstalled or its keys were replaced, forget its host key and connect again. If not, something may be intercepting the connection."
+          }
+        }
+      }
+    },
+    "The server's host key is not known yet (%@ %@)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The server's host key is not known yet (%1$@ %2$@)."
+          }
+        }
+      }
+    },
+    "The tunnel to %@:%lld could not be used (%@)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The tunnel to %1$@:%2$lld could not be used (%3$@)."
+          }
+        }
+      }
+    },
+    "This does not look like a private key." : {
+
+    },
+    "Timed out signing in to %@." : {
+
+    },
+    "Unable to connect to %@:%lld (%@)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Unable to connect to %1$@:%2$lld (%3$@)."
+          }
+        }
+      }
+    },
+    "Unable to reach %@ (%@)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Unable to reach %1$@ (%2$@)."
+          }
+        }
+      }
+    },
+    "connection refused; nothing is listening on that port" : {
+
+    },
+    "the SSH session broke off (%@)" : {
+
+    },
+    "the connection closed" : {
+
+    },
+    "the connection was aborted" : {
+
+    },
+    "the host cannot be reached" : {
+
+    },
+    "the host name could not be found" : {
+
+    },
+    "the network cannot reach the host" : {
+
+    },
+    "the network is down" : {
+
+    },
+    "the port is already in use" : {
+
+    },
+    "the server did not answer in time" : {
+
+    },
+    "the server reset the connection" : {
+
+    },
+    "the system did not allow the connection" : {
+
+    }
   },
   "version" : "1.0"
 }
