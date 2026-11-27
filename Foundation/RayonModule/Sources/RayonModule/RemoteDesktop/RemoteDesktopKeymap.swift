@@ -10,10 +10,6 @@
 
 import Foundation
 
-#if canImport(UIKit)
-    import UIKit
-#endif
-
 enum RemoteDesktopKeymap {
     /// `UIKeyboardHIDUsage.rawValue` -> Carbon virtual keycode, for keys
     /// that do not reliably produce `characters` (arrows, function keys,
@@ -148,11 +144,13 @@ enum RemoteDesktopKeymap {
         54: 0x5C, // VK_RWIN
     ]
 
-    /// The Carbon virtual keycode for a UIKit `UIKey`, or nil when the key
-    /// is not in the table (callers then rely on `characters`).
-    #if canImport(UIKit)
-        static func carbonKeyCode(for key: UIKey) -> UInt16? {
-            carbonForHID[Int(key.keyCode.rawValue)]
-        }
-    #endif
+    /// What a hardware key sends as a key: its physical key in Carbon terms
+    /// (what UU takes) and the KeySym of the text it types without
+    /// modifiers (what VNC takes). Nil for a key outside the table, which
+    /// can only be typed as text.
+    static func stroke(hidUsage: Int, charactersIgnoringModifiers characters: String, isDown: Bool) -> RemoteDesktopKeyStroke? {
+        guard let keyCode = carbonForHID[hidUsage] else { return nil }
+        let keySym = VNCKeySyms.keySym(forKeyCode: keyCode, characters: characters)
+        return RemoteDesktopKeyStroke(keyCode: keyCode, keySym: keySym, characters: characters, isDown: isDown)
+    }
 }

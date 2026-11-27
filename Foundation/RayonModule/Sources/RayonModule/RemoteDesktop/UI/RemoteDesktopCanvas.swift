@@ -107,6 +107,8 @@ public final class RemoteDesktopCanvasView: UIView {
     /// hardware keys itself and is no text input, so focusing it never
     /// shows a keyboard.
     private let keyboardProxy = RemoteDesktopKeyboardProxy()
+    /// The held hardware key being repeated.
+    private var keyRepeat: (press: UIPress, task: Task<Void, Never>)?
     #if os(iOS) && !targetEnvironment(macCatalyst)
         private var pointerInteraction: UIPointerInteraction?
         private let dragFeedback = UIImpactFeedbackGenerator(style: .light)
@@ -495,7 +497,7 @@ public final class RemoteDesktopCanvasView: UIView {
         /// input, so no software keyboard comes with it.
         public override func didMoveToWindow() {
             super.didMoveToWindow()
-            guard window != nil else { return }
+            guard window != nil else { return stopKeyRepeat() }
             DispatchQueue.main.async { [weak self] in self?.takeKeyFocus() }
         }
     #endif
@@ -508,40 +510,64 @@ public final class RemoteDesktopCanvasView: UIView {
     }
 
     public override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-        if !forwardPresses(presses, isDown: true) { super.pressesBegan(presses, with: event) }
+        let unhandled = presses.filter { !hardwareKey($0, isDown: true) }
+        if !unhandled.isEmpty { super.pressesBegan(unhandled, with: event) }
     }
 
     public override func pressesEnded(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-        if !forwardPresses(presses, isDown: false) { super.pressesEnded(presses, with: event) }
+        let unhandled = presses.filter { !hardwareKey($0, isDown: false) }
+        if !unhandled.isEmpty { super.pressesEnded(unhandled, with: event) }
     }
 
-    /// Sends the keys among `presses`; false when there were none.
-    func forwardPresses(_ presses: Set<UIPress>, isDown: Bool) -> Bool {
-        var handled = false
-        for press in presses {
-            guard let key = press.key else { continue }
-            handled = true
-            forwardKey(key, isDown: isDown)
-        }
-        return handled
+    /// A press the system took back (the app went away, a gesture won)
+    /// still lets go of its key on the host.
+    public override func pressesCancelled(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
+        let unhandled = presses.filter { !hardwareKey($0, isDown: false) }
+        if !unhandled.isEmpty { super.pressesCancelled(unhandled, with: event) }
     }
 
-    /// Turns a `UIKey` into either typed text (printable keys without
-    /// Ctrl/Alt/Command, so IME-composed characters land intact on the
-    /// host) or a key event both drivers understand.
-    private func forwardKey(_ key: UIKey, isDown: Bool) {
-        guard let session else { return }
-        let characters = key.characters
-        let modifiers = key.modifierFlags
-        if !characters.isEmpty,
-           !modifiers.contains(.control), !modifiers.contains(.command), !modifiers.contains(.alternate)
-        {
-            if isDown { session.typeText(characters) }
-            return
+    /// Sends a hardware key down or up as the key it is, so the host sees
+    /// it held, with its modifiers, as from a keyboard of its own; a key
+    /// outside the keymap can still type its text. False for a press that
+    /// is no key.
+    func hardwareKey(_ press: UIPress, isDown: Bool) -> Bool {
+        guard let key = press.key else { return false }
+        let usage = Int(key.keyCode.rawValue)
+        let isModifier = usage == 0x39 || (0xE0 ... 0xE7).contains(usage)
+        // Only the last key repeats, as on every desktop; a modifier going
+        // down leaves the repeat alone.
+        if isDown, !isModifier { stopKeyRepeat() }
+        if !isDown, press === keyRepeat?.press { stopKeyRepeat() }
+        guard let stroke = RemoteDesktopKeymap.stroke(hidUsage: usage, charactersIgnoringModifiers: key.charactersIgnoringModifiers, isDown: isDown) else {
+            if isDown, VNCKeySyms.keySym(forCharacter: key.characters) != nil { session?.typeText(key.characters) }
+            return true
         }
-        let keyCode = RemoteDesktopKeymap.carbonKeyCode(for: key) ?? UInt16(truncatingIfNeeded: key.keyCode.rawValue)
-        let keySym = VNCKeySyms.keySym(forKeyCode: keyCode, characters: characters)
-        session.keyPressed(keyCode: keyCode, keySym: keySym, characters: characters, isDown: isDown)
+        session?.sendKeys([stroke])
+        if isDown, !isModifier, !key.modifierFlags.contains(.command) { startKeyRepeat(press, stroke) }
+        return true
+    }
+
+    /// UIKit reports a held key once; the repeat is the text system's,
+    /// which these keys never reach. The host repeats a key whose down
+    /// comes again (RFB leaves the repeat to the client), so a held key
+    /// sends its down again, at AppKit's default rate: iPadOS shows no
+    /// app the user's own.
+    private func startKeyRepeat(_ press: UIPress, _ stroke: RemoteDesktopKeyStroke) {
+        let task = Task { @MainActor [weak self] in
+            do {
+                try await Task.sleep(for: .milliseconds(400))
+                while let session = self?.session {
+                    session.sendKeys([stroke])
+                    try await Task.sleep(for: .milliseconds(50))
+                }
+            } catch {}
+        }
+        keyRepeat = (press, task)
+    }
+
+    private func stopKeyRepeat() {
+        keyRepeat?.task.cancel()
+        keyRepeat = nil
     }
 
     // MARK: - Software keyboard
@@ -660,11 +686,18 @@ private final class RemoteDesktopKeyboardProxy: UIView, UIKeyInput, UITextInputT
     #endif
 
     override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-        if canvas?.forwardPresses(presses, isDown: true) != true { super.pressesBegan(presses, with: event) }
+        let unhandled = presses.filter { canvas?.hardwareKey($0, isDown: true) != true }
+        if !unhandled.isEmpty { super.pressesBegan(unhandled, with: event) }
     }
 
     override func pressesEnded(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-        if canvas?.forwardPresses(presses, isDown: false) != true { super.pressesEnded(presses, with: event) }
+        let unhandled = presses.filter { canvas?.hardwareKey($0, isDown: false) != true }
+        if !unhandled.isEmpty { super.pressesEnded(unhandled, with: event) }
+    }
+
+    override func pressesCancelled(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
+        let unhandled = presses.filter { canvas?.hardwareKey($0, isDown: false) != true }
+        if !unhandled.isEmpty { super.pressesCancelled(unhandled, with: event) }
     }
 
     var hasText: Bool { true }
