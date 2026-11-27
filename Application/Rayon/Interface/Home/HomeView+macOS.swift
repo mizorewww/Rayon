@@ -4,7 +4,7 @@
 //
 //  Start page, laid out as the first Rayon had it: the app icon, Quick Connect
 //  (the typed command read back as user, host and port) and the version, over
-//  a slowly drifting colour wash. The server tiles are on Dashboard.
+//  a soft glow with drifting dots. The server tiles are on Dashboard.
 //
 
 #if os(macOS)
