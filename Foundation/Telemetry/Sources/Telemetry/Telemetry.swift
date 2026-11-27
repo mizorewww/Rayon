@@ -57,14 +57,13 @@ public final class Telemetry {
     /// Shown once, inline, after the region is known.
     public var showsNotice: Bool { region != nil && !noticeShown }
 
-    /// Debug builds, preview runs and a build without a real endpoint queue
-    /// reports but never send them.
+    /// Debug builds and preview runs queue reports but never send them.
     public nonisolated static var sendingAllowed: Bool {
         #if DEBUG
             return false
         #else
             let preview = ProcessInfo.processInfo.environment.keys.contains { $0.hasPrefix("RAYON_PREVIEW_") }
-            return TelemetryEndpoint.isConfigured && !preview
+            return !preview
         #endif
     }
 

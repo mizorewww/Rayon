@@ -1,6 +1,6 @@
 # Rayon telemetry
 
-Status: implemented (2026-11-27) in `Foundation/Telemetry` (client), `Server/Telemetry` (Worker + D1) and Settings › About › Diagnostics & Usage; not yet sending: the endpoint host in `TelemetryEndpoint` is a placeholder until the domain is chosen, and §5 lists where the build differs from this plan. The user-facing setting is a 0–3 slider, default 2 (outside EEA/UK/CH). Every level must stay "Not Linked to You" and "Not Used to Track You" on the App Store label. Any change to what is sent must update this document, the privacy manifests and the App Store label together.
+Status: implemented (2026-11-27) in `Foundation/Telemetry` (client), `Server/Telemetry` (Worker + D1) and Settings › About › Diagnostics & Usage; the Worker is deployed at `https://telemetry.kfcv50.today` and Release builds send to it; §5 lists where the build differs from this plan. The user-facing setting is a 0–3 slider, default 2 (outside EEA/UK/CH). Every level must stay "Not Linked to You" and "Not Used to Track You" on the App Store label. Any change to what is sent must update this document, the privacy manifests and the App Store label together.
 
 ## Research and recommendation
 
@@ -345,7 +345,7 @@ Assume 30k daily active devices, 70 % at level ≥ 2. That is about 21k requests
 - `Foundation/Telemetry`: the report (`TelemetryReport*.swift`, enums, `Bool` and bucketed `Int` only), the MetricKit subscriber and scrubber, the on-device counters (`TelemetryCollector`), the queue in `Application Support/Telemetry/pending` and the sender. `Telemetry.shared` holds the level, stored under `telemetry.level` in this device's defaults. That key is outside `me.mizorewww.rayon.*`, so neither `AppSettingsSync` nor the preferences backup carries it. The tests pin the JSON in `Tests/TelemetryTests/Fixtures/report-sample.json` and every enum case in `report-enums.json`.
 - `RayonModule` re-exports Telemetry and records events at `RDMachine.connectSSH` (outcome, sign-in method, latency), `TerminalManager`, `FileTransferManager`, `FileTransferContext.upload/download`, `EditorWorkspace.open`, `PortForwardBackend`, `RemoteDesktopManager` and `BatchSnippetExecContext`. `MachineStatusView` records monitor opens and the remote OS family from `uname -s`.
 - The app: `Interface/Settings/DiagnosticsSettings.swift` (the slider, the notice card on Home, "View What's Sent…", the privacy policy sheet) and `Application/TelemetrySnapshot+Rayon.swift`. The privacy policy is bundled from `Resources/Privacy/PrivacyPolicy-{en,zh-Hans,zh-Hant}.md`. `Resources/AppStore/PrivacyPolicy` is a copy of the English text for App Store Connect; keep the two identical.
-- `Server/Telemetry`: the Worker. Its README has the deploy steps.
+- `Server/Telemetry`: the Worker, deployed with `cf` as `rayon-telemetry` on the custom domain `telemetry.kfcv50.today` with D1 database `rayon-telemetry` (APAC). Its README has the deploy commands. `TelemetryEndpoint.url` points the app at it.
 
 ### 5.2 Differences from §4
 

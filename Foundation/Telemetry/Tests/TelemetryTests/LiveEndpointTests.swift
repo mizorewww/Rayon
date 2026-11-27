@@ -2,9 +2,12 @@
 //  LiveEndpointTests.swift
 //  TelemetryTests
 //
-//  Posts the sample reports with the app's own sender to a running Worker:
+//  Posts one sample report (level 3, one crash) with the app's own sender
+//  to a running Worker:
 //  TELEMETRY_LIVE_ENDPOINT=http://127.0.0.1:8787/v1/reports swift test --filter LiveEndpoint
-//  (see Server/Telemetry/README.md). With TELEMETRY_LIVE_QUEUE set to an
+//  (see Server/Telemetry/README.md). Its app version, and its crash's, is
+//  0.0.0, which no release has, so its rows are easy to find and delete on a live
+//  database. With TELEMETRY_LIVE_QUEUE set to an
 //  app's Application Support/Telemetry/pending, it sends those real reports
 //  instead, as a Release build would (a Debug build marks them "debug",
 //  which the Worker refuses). Skipped otherwise.
@@ -18,11 +21,14 @@ final class LiveEndpointTests: XCTestCase {
         guard let endpoint = ProcessInfo.processInfo.environment["TELEMETRY_LIVE_ENDPOINT"].flatMap(URL.init(string:)) else {
             throw XCTSkip("TELEMETRY_LIVE_ENDPOINT is not set")
         }
-        var reports = [Samples.full, Samples.crashOnly].map { report in
-            var report = report
-            report.nonce = UUID()
-            return report
+        var sample = Samples.full
+        sample.nonce = UUID()
+        let unreleased = TelemetryReport.Version(parsing: "0.0.0", keepPatch: true)!
+        sample.appVersion = unreleased
+        for index in sample.diagnostics.indices {
+            sample.diagnostics[index].appVersion = unreleased
         }
+        var reports = [sample]
         if let queue = ProcessInfo.processInfo.environment["TELEMETRY_LIVE_QUEUE"] {
             reports = TelemetryQueue(root: URL(fileURLWithPath: queue).deletingLastPathComponent()).entries().map { entry in
                 var report = entry.report

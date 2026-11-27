@@ -40,8 +40,7 @@ final class LevelTests: XCTestCase {
         XCTAssertEqual(DiagnosticScrubber.osVersion("iPhone OS 18.1 (22B83)")?.description, "18.1")
     }
 
-    func testThePlaceholderEndpointSendsNothing() {
-        XCTAssertFalse(TelemetryEndpoint.isConfigured)
+    func testDebugBuildsSendNothing() {
         XCTAssertFalse(Telemetry.sendingAllowed)
     }
 }
