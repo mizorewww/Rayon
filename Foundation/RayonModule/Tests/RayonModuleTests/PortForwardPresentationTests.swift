@@ -38,6 +38,10 @@ final class PortForwardPresentationTests: XCTestCase {
             presentation = PortForwardPresentation(state: .failedAuthenticate, running: running)
             XCTAssertEqual(presentation.status, .danger)
             XCTAssertEqual(presentation.text, "Could not sign in")
+
+            presentation = PortForwardPresentation(state: .portInUse, running: running)
+            XCTAssertEqual(presentation.status, .danger)
+            XCTAssertEqual(presentation.text, "Port in use")
         }
     }
 

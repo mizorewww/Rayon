@@ -663,13 +663,8 @@ final class SSHLiveTests: XCTestCase {
     func testLocalForwardCarries100MBUnderBackpressure() async throws {
         let connection = try await connect([.password(password)])
         let bindPort = try Self.freePort()
-        let listening = expectation(description: "listening")
-        let forward = Task {
-            try await connection.runLocalForward(bindPort: bindPort, targetHost: "127.0.0.1", targetPort: 9000) {
-                listening.fulfill()
-            }
-        }
-        await fulfillment(of: [listening], timeout: 10)
+        let listener = try await SSHForwardListener.local(port: bindPort, targetHost: "127.0.0.1", targetPort: 9000)
+        let forward = Task { try await connection.runForward(listener) }
         let total = 100 * 1024 * 1024
         let (sent, received) = try await Self.echo(total: total, through: bindPort, slowReader: true)
         XCTAssertEqual(received, sent)
@@ -823,11 +818,8 @@ final class SSHLiveTests: XCTestCase {
     func testDynamicForwardSpeaksSOCKS5() async throws {
         let connection = try await connect([.password(password)])
         let bindPort = try Self.freePort()
-        let listening = expectation(description: "listening")
-        let forward = Task {
-            try await connection.runDynamicForward(bindPort: bindPort) { listening.fulfill() }
-        }
-        await fulfillment(of: [listening], timeout: 10)
+        let listener = try await SSHForwardListener.dynamic(port: bindPort)
+        let forward = Task { try await connection.runForward(listener) }
         let client = try await Self.dial(port: bindPort)
         try await client.executeThenClose { inbound, outbound in
             var reader = inbound.makeAsyncIterator()

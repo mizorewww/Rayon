@@ -26,6 +26,8 @@ public enum SSHError: Error, Sendable, Equatable, LocalizedError {
     case noExitStatus
     /// The connection closed.
     case disconnected
+    /// A forward could not listen: another program has the port.
+    case portInUse(Int)
 
     public var errorDescription: String? {
         switch self {
@@ -49,6 +51,8 @@ public enum SSHError: Error, Sendable, Equatable, LocalizedError {
             "The command ended without an exit status."
         case .disconnected:
             "The connection closed."
+        case let .portInUse(port):
+            "Port \(port) is already in use on this device."
         }
     }
 }

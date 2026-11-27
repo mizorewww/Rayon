@@ -29,6 +29,7 @@ public class PortForwardContext: ObservableObject, Identifiable, @unchecked Send
         case forwardStopped = "forward stopped"
         case failedConnect = "failed connect"
         case failedAuthenticate = "failed authenticate"
+        case portInUse = "port in use"
         case terminating = "terminating"
         case terminated = "terminated"
     }
@@ -94,35 +95,48 @@ public class PortForwardContext: ObservableObject, Identifiable, @unchecked Send
 
     /// One connection running the forward until it drops or is cancelled.
     /// Signs in as the terminal and the files do: with the server's own
-    /// identity, else with the automatic ones.
+    /// identity, else with the automatic ones. A forward that listens on
+    /// this side listens first, so a port in use costs no sign-in.
     private func runRound(reconnecting: Bool) async {
         putLifecycle(.awaitingConnect)
+        let listener: SSHForwardListener?
+        do {
+            switch info.forwardOrientation {
+            case .listenRemote:
+                listener = nil
+            case .listenLocal:
+                listener = try await .local(port: info.bindPort, targetHost: info.targetHost, targetPort: info.targetPort)
+            case .dynamicSOCKS:
+                listener = try await .dynamic(port: info.bindPort)
+            }
+        } catch SSHError.portInUse {
+            putLifecycle(.portInUse)
+            return
+        } catch {
+            Logger.network.infoFile("port forward \(info.id) could not listen: \(error.localizedDescription)")
+            putLifecycle(.forwardStopped)
+            return
+        }
         let lease: SSHLease
         do {
             lease = try await SSHConnectionPool.shared.lease(for: machine, background: reconnecting)
-        } catch let failure as RDMachine.SSHFailure {
-            putLifecycle(failure.unreachable ? .failedConnect : .failedAuthenticate)
-            return
         } catch {
-            putLifecycle(.failedConnect)
+            await listener?.close()
+            let failure = error as? RDMachine.SSHFailure
+            putLifecycle(failure?.unreachable == false ? .failedAuthenticate : .failedConnect)
             return
         }
         defer { lease.release() }
         putLifecycle(.openingChannel)
         let connection = lease.connection
-        let running: @Sendable () -> Void = { [weak self] in self?.putLifecycle(.forwardRunning) }
         do {
-            switch info.forwardOrientation {
-            case .listenRemote:
+            if let listener {
+                putLifecycle(.forwardRunning)
+                try await connection.runForward(listener)
+            } else {
                 try await connection.runRemoteForward(
-                    bindPort: info.bindPort, targetHost: info.targetHost, targetPort: info.targetPort, onListening: running
-                )
-            case .listenLocal:
-                try await connection.runLocalForward(
-                    bindPort: info.bindPort, targetHost: info.targetHost, targetPort: info.targetPort, onListening: running
-                )
-            case .dynamicSOCKS:
-                try await connection.runDynamicForward(bindPort: info.bindPort, onListening: running)
+                    bindPort: info.bindPort, targetHost: info.targetHost, targetPort: info.targetPort
+                ) { [weak self] in self?.putLifecycle(.forwardRunning) }
             }
         } catch {
             Logger.network.infoFile("port forward \(info.id) ended: \(error.localizedDescription)")

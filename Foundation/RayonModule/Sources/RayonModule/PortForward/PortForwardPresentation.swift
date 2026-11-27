@@ -25,6 +25,8 @@ public struct PortForwardPresentation: Equatable {
             (status, text) = (.danger, "Could not connect")
         case .failedAuthenticate:
             (status, text) = (.danger, "Could not sign in")
+        case .portInUse:
+            (status, text) = (.danger, "Port in use")
         case .forwardStopped:
             (status, text) = running ? (.danger, "Forward ended") : (.off, "Stopped")
         case .terminating, .terminated, .none:

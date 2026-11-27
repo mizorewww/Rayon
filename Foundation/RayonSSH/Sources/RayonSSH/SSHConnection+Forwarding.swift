@@ -8,35 +8,95 @@
 //  both close once both directions are done.
 //
 
+import Network
 import NIOCore
 import NIOSSH
 import NIOTransportServices
 
-public extension SSHConnection {
-    /// Listens on `127.0.0.1:bindPort` and forwards each connection to
-    /// `targetHost:targetPort` as the server sees it. Runs until cancelled
-    /// or until the connection closes.
-    nonisolated func runLocalForward(
-        bindPort: Int,
-        targetHost: String,
-        targetPort: Int,
-        onListening: @escaping @Sendable () -> Void = {}
-    ) async throws {
-        let listener = try await Self.listen(port: bindPort) { channel in
+/// A port on this side listening for a forward, `ssh -L` or `ssh -D`.
+/// It is bound before signing in, so that a port already in use costs no
+/// connection; connections it takes meanwhile wait for the forward.
+public struct SSHForwardListener: Sendable {
+    fileprivate enum Kind: Sendable {
+        case local(NIOAsyncChannel<NIOAsyncChannel<ByteBuffer, ByteBuffer>, Never>, targetHost: String, targetPort: Int)
+        case dynamic(NIOAsyncChannel<PendingSOCKS, Never>)
+    }
+
+    fileprivate let kind: Kind
+
+    /// Listens on `127.0.0.1:port` for connections forwarded to
+    /// `targetHost:targetPort` as the server sees it.
+    public static func local(port: Int, targetHost: String, targetPort: Int) async throws -> SSHForwardListener {
+        let clients = try await listen(port: port) { channel in
             try NIOAsyncChannel<ByteBuffer, ByteBuffer>(wrappingChannelSynchronously: channel, configuration: .init(isOutboundHalfClosureEnabled: true))
         }
-        onListening()
+        return SSHForwardListener(kind: .local(clients, targetHost: targetHost, targetPort: targetPort))
+    }
+
+    /// Listens on `127.0.0.1:port` as a SOCKS5 proxy whose CONNECT
+    /// requests are made from the server.
+    public static func dynamic(port: Int) async throws -> SSHForwardListener {
+        let clients = try await listen(port: port) { channel in
+            let target = channel.eventLoop.makePromise(of: SOCKS5Handshake.Target.self)
+            try channel.pipeline.syncOperations.addHandler(SOCKS5Handshake(target: target))
+            return PendingSOCKS(channel: channel, target: target.futureResult)
+        }
+        return SSHForwardListener(kind: .dynamic(clients))
+    }
+
+    /// Stops listening, for a listener no forward will run on.
+    public func close() async {
+        switch kind {
+        case let .local(clients, _, _): try? await clients.executeThenClose { _ in }
+        case let .dynamic(clients): try? await clients.executeThenClose { _ in }
+        }
+    }
+
+    private static func listen<Output: Sendable>(
+        port: Int,
+        _ wrap: @escaping @Sendable (Channel) throws -> Output
+    ) async throws -> NIOAsyncChannel<Output, Never> {
+        do {
+            return try await NIOTSListenerBootstrap(group: NIOTSEventLoopGroup.singleton)
+                .childChannelOption(ChannelOptions.allowRemoteHalfClosure, value: true)
+                .bind(host: "127.0.0.1", port: port) { channel in
+                    channel.eventLoop.makeCompletedFuture { try wrap(channel) }
+                }
+        } catch NWError.posix(.EADDRINUSE) {
+            throw SSHError.portInUse(port)
+        } catch {
+            throw SSHError.connectionFailed("Could not listen on port \(port) (\(SSHTransport.describe(error))).")
+        }
+    }
+}
+
+public extension SSHConnection {
+    /// Forwards each connection `listener` takes through the server. Runs
+    /// until cancelled or until the connection closes; the listener
+    /// closes with it.
+    nonisolated func runForward(_ listener: SSHForwardListener) async throws {
         try await untilClosed {
-            try await listener.executeThenClose { clients in
-                try await withThrowingDiscardingTaskGroup { group in
-                    for try await client in clients {
-                        group.addTask {
-                            do {
-                                let remote = try await self.openDirectTCPIP(host: targetHost, port: targetPort)
-                                await Self.bridge(client, remote)
-                            } catch {
-                                try? await client.channel.close()
+            switch listener.kind {
+            case let .local(clients, targetHost, targetPort):
+                try await clients.executeThenClose { clients in
+                    try await withThrowingDiscardingTaskGroup { group in
+                        for try await client in clients {
+                            group.addTask {
+                                do {
+                                    let remote = try await self.openDirectTCPIP(host: targetHost, port: targetPort)
+                                    await Self.bridge(client, remote)
+                                } catch {
+                                    try? await client.channel.close()
+                                }
                             }
+                        }
+                    }
+                }
+            case let .dynamic(clients):
+                try await clients.executeThenClose { clients in
+                    try await withThrowingDiscardingTaskGroup { group in
+                        for try await client in clients {
+                            group.addTask { await self.serveSOCKS(client) }
                         }
                     }
                 }
@@ -87,27 +147,7 @@ public extension SSHConnection {
         }
     }
 
-    /// A SOCKS5 proxy on `127.0.0.1:bindPort` whose CONNECT requests are
-    /// made from the server (`ssh -D`).
-    nonisolated func runDynamicForward(bindPort: Int, onListening: @escaping @Sendable () -> Void = {}) async throws {
-        let listener = try await Self.listen(port: bindPort) { channel in
-            let target = channel.eventLoop.makePromise(of: SOCKS5Handshake.Target.self)
-            try channel.pipeline.syncOperations.addHandler(SOCKS5Handshake(target: target))
-            return PendingSOCKS(channel: channel, target: target.futureResult)
-        }
-        onListening()
-        try await untilClosed {
-            try await listener.executeThenClose { clients in
-                try await withThrowingDiscardingTaskGroup { group in
-                    for try await client in clients {
-                        group.addTask { await self.serveSOCKS(client) }
-                    }
-                }
-            }
-        }
-    }
-
-    private nonisolated func serveSOCKS(_ client: PendingSOCKS) async {
+    fileprivate nonisolated func serveSOCKS(_ client: PendingSOCKS) async {
         let channel = client.channel
         do {
             let target = try await client.target.get()
@@ -154,21 +194,6 @@ public extension SSHConnection {
         }
     }
 
-    private static func listen<Output: Sendable>(
-        port: Int,
-        _ wrap: @escaping @Sendable (Channel) throws -> Output
-    ) async throws -> NIOAsyncChannel<Output, Never> {
-        do {
-            return try await NIOTSListenerBootstrap(group: NIOTSEventLoopGroup.singleton)
-                .childChannelOption(ChannelOptions.allowRemoteHalfClosure, value: true)
-                .bind(host: "127.0.0.1", port: port) { channel in
-                    channel.eventLoop.makeCompletedFuture { try wrap(channel) }
-                }
-        } catch {
-            throw SSHError.connectionFailed("Could not listen on port \(port) (\(SSHTransport.describe(error))).")
-        }
-    }
-
     static func connect(host: String, port: Int) async throws -> NIOAsyncChannel<ByteBuffer, ByteBuffer> {
         try await NIOTSConnectionBootstrap(group: NIOTSEventLoopGroup.singleton)
             .channelOption(ChannelOptions.allowRemoteHalfClosure, value: true)
@@ -201,7 +226,7 @@ public extension SSHConnection {
     }
 }
 
-private struct PendingSOCKS: Sendable {
+fileprivate struct PendingSOCKS: Sendable {
     let channel: Channel
     let target: EventLoopFuture<SOCKS5Handshake.Target>
 }
