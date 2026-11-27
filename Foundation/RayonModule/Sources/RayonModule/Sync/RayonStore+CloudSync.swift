@@ -81,7 +81,7 @@ public final class CloudSyncModel: ObservableObject {
     /// Whether "Sync Now" has something to do.
     public var canSyncNow: Bool {
         switch status {
-        case .idle, .failed: return true
+        case .idle, .failed, .noAccount: return true
         case .off, .unavailable, .syncing: return false
         }
     }
@@ -91,6 +91,7 @@ public final class CloudSyncModel: ObservableObject {
         switch status {
         case .off: return "Off"
         case .unavailable: return "This build is not signed for iCloud."
+        case .noAccount: return "Sign in to iCloud to sync."
         case .syncing: return "Syncing…"
         case let .idle(lastSync?): return "Synced \(lastSync.formatted(.relative(presentation: .named)))"
         case .idle(nil): return "Up to date"

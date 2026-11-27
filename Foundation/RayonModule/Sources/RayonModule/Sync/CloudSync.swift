@@ -22,6 +22,8 @@ public actor CloudSync {
         case off
         /// The build is not signed for iCloud.
         case unavailable
+        /// No iCloud account is signed in, or it cannot be used now.
+        case noAccount
         case syncing
         case idle(lastSync: Date?)
         case failed(String)
@@ -192,6 +194,12 @@ public actor CloudSync {
     /// Fetches and sends now, instead of when the system gets to it.
     public func syncNow() async {
         guard let engine else { return }
+        // Signed out, the engine waits for a sign-in, which it reports as
+        // an account change; fetching now would only fail.
+        guard await (try? CKContainer(identifier: Self.containerIdentifier).accountStatus()) == .available else {
+            publish(.noAccount)
+            return
+        }
         publish(.syncing)
         do {
             try await engine.fetchChanges()
@@ -379,12 +387,14 @@ public actor CloudSync {
             switch change.changeType {
             case .signIn:
                 try? storage.enqueueEverything()
+                Task { await syncNow() }
             case .signOut, .switchAccounts:
                 // Another account has none of these: forget what the last
                 // one had seen and send everything to the next.
                 storage.removeAllSystemFields()
                 saveState(nil)
                 try? storage.enqueueEverything()
+                Task { await syncNow() }
             @unknown default:
                 break
             }
