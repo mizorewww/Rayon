@@ -40,7 +40,7 @@ final class VNCSSHTunnel: Sendable {
                 return SSHChannelTransport(stream: stream, lease: lease)
             } catch {
                 lease.release()
-                throw RemoteDesktopFailure("The SSH server would not forward to VNC port \(port) (\(error.localizedDescription)).")
+                throw RemoteDesktopFailure(String(localized: "The SSH server would not forward to VNC port \(port) (\(error.localizedDescription)).", bundle: .module))
             }
         }
         opening.withLock { $0 = task }

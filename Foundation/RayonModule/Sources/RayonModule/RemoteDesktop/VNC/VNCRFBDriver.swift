@@ -84,7 +84,7 @@ final class VNCRFBDriver: RemoteDesktopDriver {
     private func bootstrap() async {
         var transport: VNCTransport?
         if machine.vncOverSSH {
-            reportPhase(.connecting("Opening the SSH tunnel"), hint: "Opening SSH tunnel…")
+            reportPhase(.connecting(String(localized: "Opening the SSH tunnel", bundle: .module)), hint: String(localized: "Opening SSH tunnel…", bundle: .module))
             let tunnel = VNCSSHTunnel(
                 machine: machine,
                 targetPort: UInt16(machine.vncPort) ?? 5900

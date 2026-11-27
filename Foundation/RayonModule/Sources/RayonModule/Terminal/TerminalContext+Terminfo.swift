@@ -25,7 +25,7 @@ extension TerminalContext {
             rememberTerminfo()
             return GhosttyTerminfo.terminalType
         case .installed:
-            putInformation("[i] Installed Ghostty's terminfo on this server (~/.terminfo), so programs there know this terminal.")
+            putInformation("[i] \(String(localized: "Installed Ghostty's terminfo on this server (~/.terminfo), so programs there know this terminal.", bundle: .module))")
             rememberTerminfo()
             return GhosttyTerminfo.terminalType
         case .failed:

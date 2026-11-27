@@ -24,13 +24,13 @@ public enum BackupError: LocalizedError, Equatable {
 
     public var errorDescription: String? {
         switch self {
-        case .notABackup: "This file is not a Rayon backup."
-        case .wrongKind: "This backup holds something else (data or settings) than what is being imported."
-        case .newerVersion: "This backup was made by a newer version of Rayon."
-        case .passwordRequired: "This backup is protected by a password."
-        case .wrongPassword: "The password is not the one this backup was protected with."
-        case let .damaged(detail): "The backup is damaged: \(detail)"
-        case .secretsUnavailable: "Some passwords and keys cannot be read from the keychain now. Unlock the device and try again."
+        case .notABackup: String(localized: "This file is not a Rayon backup.", bundle: .module)
+        case .wrongKind: String(localized: "This backup holds something else (data or settings) than what is being imported.", bundle: .module)
+        case .newerVersion: String(localized: "This backup was made by a newer version of Rayon.", bundle: .module)
+        case .passwordRequired: String(localized: "This backup is protected by a password.", bundle: .module)
+        case .wrongPassword: String(localized: "The password is not the one this backup was protected with.", bundle: .module)
+        case let .damaged(detail): String(localized: "The backup is damaged: \(detail)", bundle: .module)
+        case .secretsUnavailable: String(localized: "Some passwords and keys cannot be read from the keychain now. Unlock the device and try again.", bundle: .module)
         }
     }
 }
@@ -163,7 +163,7 @@ enum BackupArchive {
         guard encryption.kdf == "pbkdf2-sha256", !encryption.salt.isEmpty,
               (1 ... maxPBKDFRounds).contains(encryption.rounds)
         else {
-            throw BackupError.damaged("unknown key derivation")
+            throw BackupError.damaged(String(localized: "unknown key derivation", bundle: .module))
         }
         let passwordData = Data(password.utf8)
         var derived = Data(count: 32)
@@ -180,7 +180,7 @@ enum BackupArchive {
                 }
             }
         }
-        guard status == kCCSuccess else { throw BackupError.damaged("key derivation failed") }
+        guard status == kCCSuccess else { throw BackupError.damaged(String(localized: "key derivation failed", bundle: .module)) }
         return SymmetricKey(data: derived)
     }
 

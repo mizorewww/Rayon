@@ -102,9 +102,9 @@ public final class VNCDiscovery: ObservableObject {
         let denied = NWError.dns(DNSServiceErrorType(kDNSServiceErr_PolicyDenied))
         switch state {
         case .waiting(denied), .failed(denied):
-            failure = "Rayon may not look on the local network. Allow it in System Settings › Privacy & Security › Local Network."
+            failure = String(localized: "Rayon may not look on the local network. Allow it in System Settings › Privacy & Security › Local Network.", bundle: .module)
         case let .failed(error):
-            failure = "Could not look for screen-sharing hosts (\(error.localizedDescription))."
+            failure = String(localized: "Could not look for screen-sharing hosts (\(error.localizedDescription)).", bundle: .module)
         default:
             return
         }

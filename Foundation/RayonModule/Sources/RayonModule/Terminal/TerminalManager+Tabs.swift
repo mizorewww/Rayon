@@ -50,11 +50,11 @@ public enum TerminalSnapZone: Equatable, Sendable {
 
     public var title: String {
         switch self {
-        case .left: return "Split Left"
-        case .right: return "Split Right"
-        case .top: return "Split Top"
-        case .bottom: return "Split Bottom"
-        case .center: return "Single View (Ungroup)"
+        case .left: return String(localized: "Split Left", bundle: .module)
+        case .right: return String(localized: "Split Right", bundle: .module)
+        case .top: return String(localized: "Split Top", bundle: .module)
+        case .bottom: return String(localized: "Split Bottom", bundle: .module)
+        case .center: return String(localized: "Single View (Ungroup)", bundle: .module)
         }
     }
 
@@ -214,14 +214,14 @@ public extension TerminalManager.Context {
         case .command:
             if let command { return "\(command.username)@\(command.remoteAddress)" }
             return navigationTitle
-        case .local: return "Local Terminal"
+        case .local: return String(localized: "Local Terminal", bundle: .module)
         }
     }
 
     /// What the status line names this terminal by: the SSH target, the
     /// command, or the UU Remote device.
     var endpointDescription: String {
-        if remoteType == .local { return "Local Shell · \(ProcessInfo.processInfo.hostName)" }
+        if remoteType == .local { return String(localized: "Local Shell · \(ProcessInfo.processInfo.hostName)", bundle: .module) }
         if let command { return command.command }
         if machine.isUURemoteDevice { return "UU Remote · " + machine.name }
         return machine.getCommand(insertLeadingSSH: false)
@@ -231,8 +231,8 @@ public extension TerminalManager.Context {
     func reconnect() {
         guard closed else { return }
         DispatchQueue.global().async {
-            self.putInformation("[i] Reconnecting with the details from when this session started.")
-            self.putInformation("    If the server was edited, open a new terminal instead.")
+            self.putInformation("[i] \(String(localized: "Reconnecting with the details from when this session started.", bundle: .module))")
+            self.putInformation("    \(String(localized: "If the server was edited, open a new terminal instead.", bundle: .module))")
             self.processBootstrap()
         }
     }

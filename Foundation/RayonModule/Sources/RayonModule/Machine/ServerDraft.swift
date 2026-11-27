@@ -68,10 +68,10 @@ public struct ServerDraft: Equatable, Sendable {
 
         public var errorDescription: String? {
             switch self {
-            case .emptyAddress: "Enter the server's address."
-            case .invalidPort: "The port is a number from 1 to 65535."
-            case .noJumpServer: "Choose a jump server."
-            case .invalidVNCPort: "The VNC port is a number from 1 to 65535."
+            case .emptyAddress: String(localized: "Enter the server's address.", bundle: .module)
+            case .invalidPort: String(localized: "The port is a number from 1 to 65535.", bundle: .module)
+            case .noJumpServer: String(localized: "Choose a jump server.", bundle: .module)
+            case .invalidVNCPort: String(localized: "The VNC port is a number from 1 to 65535.", bundle: .module)
             }
         }
     }

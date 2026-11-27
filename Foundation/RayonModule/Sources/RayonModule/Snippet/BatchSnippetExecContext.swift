@@ -46,7 +46,7 @@ public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendabl
         for machine in machines {
             guard let object = RayonStore.workerMachine(for: machine) else {
                 Logger.app.errorFile("snippet run: machine \(machine) is malformed")
-                receivedBuffer[machine] = Data("\r\n[*] Malformed Machine Info\r\n".utf8)
+                receivedBuffer[machine] = Data("\r\n[*] \(String(localized: "Malformed Machine Info", bundle: .module))\r\n".utf8)
                 continue
             }
             buildNames[machine] = object.name
@@ -248,7 +248,7 @@ public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendabl
                 lockedAppendToBuffer("\r\n[E] \(failed)\r\n", for: machine)
                 failedMachines.insert(machine)
             } else {
-                lockedAppendToBuffer("\r\n[*] Execution completed\r\n", for: machine)
+                lockedAppendToBuffer("\r\n[*] \(String(localized: "Execution completed", bundle: .module))\r\n", for: machine)
             }
             if !completedMachines.contains(machine) {
                 completedMachines.append(machine)
@@ -269,7 +269,7 @@ public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendabl
     private func execute(on machine: RDMachine.ID) async -> String? {
         guard let remote = RayonStore.workerMachine(for: machine) else {
             Logger.app.errorFile("snippet run: machine \(machine) vanished mid-run")
-            return "The server no longer exists"
+            return String(localized: "The server no longer exists", bundle: .module)
         }
         let lease: SSHLease
         do {
@@ -278,16 +278,16 @@ public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendabl
             return error.localizedDescription.replacingOccurrences(of: "\n", with: "\r\n")
         }
         defer { lease.release() }
-        appendToBuffer("[*] Execute Begin\r\n", for: machine)
+        appendToBuffer("[*] \(String(localized: "Execute Begin", bundle: .module))\r\n", for: machine)
         do {
             let status = try await lease.connection.execute(snippet.code) { [weak self] chunk, _ in
                 self?.appendOutput(chunk, for: machine)
             }
-            return status == 0 ? nil : "Exited with status \(status)"
+            return status == 0 ? nil : String(localized: "Exited with status \(status)", bundle: .module)
         } catch is CancellationError {
-            return "Stopped"
+            return String(localized: "Stopped", bundle: .module)
         } catch {
-            return Task.isCancelled ? "Stopped" : error.localizedDescription
+            return Task.isCancelled ? String(localized: "Stopped", bundle: .module) : error.localizedDescription
         }
     }
 }

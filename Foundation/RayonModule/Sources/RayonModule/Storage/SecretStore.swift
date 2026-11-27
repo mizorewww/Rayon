@@ -17,7 +17,7 @@ public struct SecretStore: Sendable {
 
         public var errorDescription: String? {
             let message = SecCopyErrorMessageString(status, nil) as String? ?? "OSStatus \(status)"
-            return "The keychain refused the request: \(message)"
+            return String(localized: "The keychain refused the request: \(message)", bundle: .module)
         }
     }
 

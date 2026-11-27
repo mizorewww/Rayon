@@ -74,11 +74,9 @@ enum LegacyStoreImport {
             defaults.set(true, forKey: doneKey)
             return .nothingToImport
         }
-        let lead = "The servers, identities and snippets saved by the previous version of Rayon could not be opened"
-        let kept = "They are kept as they are, and Rayon tries again on its next launch."
         guard let master = masterKey(), !master.isEmpty else {
             Logger.database.errorFile("legacy import: the master key is not readable; trying again on the next launch")
-            return .blocked("\(lead): the key that protects them could not be read from the keychain. \(kept)")
+            return .blocked(String(localized: "The servers, identities and snippets saved by the previous version of Rayon could not be opened: the key that protects them could not be read from the keychain. They are kept as they are, and Rayon tries again on its next launch.", bundle: .module))
         }
         let opener = Opener(masterKey: master)
         let copies: [String]
@@ -86,7 +84,7 @@ enum LegacyStoreImport {
             copies = try importRecords(from: defaults, opener: opener, into: storage)
         } catch {
             Logger.database.errorFile("legacy import failed: \(error)")
-            return .blocked("\(lead) (\(error.localizedDescription)). \(kept)")
+            return .blocked(String(localized: "The servers, identities and snippets saved by the previous version of Rayon could not be opened (\(error.localizedDescription)). They are kept as they are, and Rayon tries again on its next launch.", bundle: .module))
         }
         for key in Key.sealed + Key.obsolete + copies {
             defaults.removeObject(forKey: key)
@@ -102,12 +100,16 @@ enum LegacyStoreImport {
         var errorDescription: String? {
             switch self {
             case let .unreadable(key):
-                let names = [
-                    Key.machines: "servers", Key.identities: "identities", Key.snippets: "snippets",
-                    Key.portForwards: "port forwards", Key.folders: "folders",
-                    Key.recent: "recent connections", Key.knownHosts: "host keys",
-                ]
-                return "its \(names[key] ?? key) could not be decrypted or read"
+                return switch key {
+                case Key.machines: String(localized: "its servers could not be decrypted or read", bundle: .module)
+                case Key.identities: String(localized: "its identities could not be decrypted or read", bundle: .module)
+                case Key.snippets: String(localized: "its snippets could not be decrypted or read", bundle: .module)
+                case Key.portForwards: String(localized: "its port forwards could not be decrypted or read", bundle: .module)
+                case Key.folders: String(localized: "its folders could not be decrypted or read", bundle: .module)
+                case Key.recent: String(localized: "its recent connections could not be decrypted or read", bundle: .module)
+                case Key.knownHosts: String(localized: "its host keys could not be decrypted or read", bundle: .module)
+                default: String(localized: "its \(key) could not be decrypted or read", bundle: .module)
+                }
             }
         }
     }

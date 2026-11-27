@@ -89,7 +89,7 @@ final class VNCRFBClient: Sendable {
         // However the session ends (a failure above all), its connection
         // goes with it.
         defer { state.withLock { $0.transport }?.close() }
-        report(phase: .connecting("Reaching \(configuration.host)"), hint: "Connecting…")
+        report(phase: .connecting(String(localized: "Reaching \(configuration.host)", bundle: .module)), hint: String(localized: "Connecting…", bundle: .module))
         do {
             let transport: VNCTransport = if let transport = configuration.transport {
                 transport
@@ -110,7 +110,7 @@ final class VNCRFBClient: Sendable {
             report(phase: .connected, hint: nil)
             try await readLoop(reader: reader, inflater: inflater, desktopName: desktopName)
             if !isStopped {
-                report(phase: .closed("The server closed the connection."))
+                report(phase: .closed(String(localized: "The server closed the connection.", bundle: .module)))
             }
         } catch let error as RemoteDesktopFailure {
             report(phase: .failed(error.message))
@@ -118,12 +118,12 @@ final class VNCRFBClient: Sendable {
             if isStopped { return }
             switch error {
             case .endOfStream:
-                report(phase: .closed("The server closed the connection."))
+                report(phase: .closed(String(localized: "The server closed the connection.", bundle: .module)))
             case let .failed(reason):
                 report(phase: .failed(reason))
             }
         } catch let error as VNCDecodeError {
-            report(phase: .failed("The server sent data this client cannot read (\(describe(error)))."))
+            report(phase: .failed(String(localized: "The server sent data this client cannot read (\(describe(error))).", bundle: .module)))
         } catch {
             if !isStopped {
                 report(phase: .failed(error.localizedDescription))
@@ -145,7 +145,7 @@ final class VNCRFBClient: Sendable {
         // Version banner.
         let banner = try await reader.read(exactly: 12)
         guard let version = VNCWire.parseBanner(banner) else {
-            throw RemoteDesktopFailure("The server is not speaking RFB.")
+            throw RemoteDesktopFailure(String(localized: "The server is not speaking RFB.", bundle: .module))
         }
         // Answer a version RFB defines: 3.8 for 3.8 or anything newer (a
         // later major included, Apple's 3.889 too), 3.7 for 3.7, and 3.3
@@ -160,7 +160,7 @@ final class VNCRFBClient: Sendable {
         let protocol38 = answerMinor >= 8
 
         // Security negotiation.
-        report(phase: .authenticating, hint: "Authenticating…")
+        report(phase: .authenticating, hint: String(localized: "Authenticating…", bundle: .module))
         var offered: [UInt8] = []
         if answerMinor == 3 {
             // 3.3 sends one u32 type directly; 0 means the connection is
@@ -168,14 +168,14 @@ final class VNCRFBClient: Sendable {
             let type = try await reader.read(exactly: 4).readU32BE(at: 0).clampedToUInt8()
             if type == 0 {
                 let reason = try await readReasonString(reader)
-                throw RemoteDesktopFailure(reason ?? "The server refused the connection.")
+                throw RemoteDesktopFailure(reason ?? String(localized: "The server refused the connection.", bundle: .module))
             }
             offered = [type]
         } else {
             let count = Int(try await reader.read(exactly: 1)[0])
             guard count > 0 else {
                 let reason = try await readReasonString(reader)
-                throw RemoteDesktopFailure(reason ?? "The server refused the connection.")
+                throw RemoteDesktopFailure(reason ?? String(localized: "The server refused the connection.", bundle: .module))
             }
             offered = Array(try await reader.read(exactly: count))
         }
@@ -194,7 +194,7 @@ final class VNCRFBClient: Sendable {
         case VNCWire.SecurityType.vncAuth.rawValue:
             let challenge = Array(try await reader.read(exactly: 16))
             guard let response = VNCDES.encryptChallenge(challenge, password: configuration.password) else {
-                throw RemoteDesktopFailure("Could not answer the VNC authentication challenge.")
+                throw RemoteDesktopFailure(String(localized: "Could not answer the VNC authentication challenge.", bundle: .module))
             }
             transport.send(Data(response))
         case VNCWire.SecurityType.appleRemoteDesktop.rawValue:
@@ -216,22 +216,22 @@ final class VNCRFBClient: Sendable {
             let result = try await reader.read(exactly: 4).readU32BE(at: 0)
             if result != 0 {
                 let reason = protocol38 ? try await readReasonString(reader) : nil
-                throw RemoteDesktopFailure(reason ?? "The VNC server rejected the credentials.")
+                throw RemoteDesktopFailure(reason ?? String(localized: "The VNC server rejected the credentials.", bundle: .module))
             }
         }
 
         // ClientInit / ServerInit.
         transport.send(VNCWire.clientInit(shared: configuration.shared))
-        report(phase: .connecting("Negotiating the framebuffer"), hint: "Negotiating…")
+        report(phase: .connecting(String(localized: "Negotiating the framebuffer", bundle: .module)), hint: String(localized: "Negotiating…", bundle: .module))
         // width(2) height(2) pixelformat(16) nameLen(4) + name
         var initData = try await reader.read(exactly: 24)
         let nameLength = Int(initData.readU32BE(at: 20))
         guard nameLength <= 64 * 1024 else {
-            throw RemoteDesktopFailure("The server sent a malformed init message.")
+            throw RemoteDesktopFailure(String(localized: "The server sent a malformed init message.", bundle: .module))
         }
         initData.append(try await reader.read(exactly: nameLength))
         guard let serverInit = VNCWire.parseServerInit(data: initData) else {
-            throw RemoteDesktopFailure("The server sent a malformed init message.")
+            throw RemoteDesktopFailure(String(localized: "The server sent a malformed init message.", bundle: .module))
         }
         try resizeFramebuffer(width: serverInit.width, height: serverInit.height)
 
@@ -256,25 +256,25 @@ final class VNCRFBClient: Sendable {
         guard !password.isEmpty else {
             if offered.contains(none) { return none }
             if offered.contains(apple), !username.isEmpty {
-                throw RemoteDesktopFailure("The Mac asks for the password of \(username). Set one on the server, or on its identity.")
+                throw RemoteDesktopFailure(String(localized: "The Mac asks for the password of \(username). Set one on the server, or on its identity.", bundle: .module))
             }
             if offered.contains(vncAuth) {
-                throw RemoteDesktopFailure("The VNC server asks for a password. Set one on the server, or on the identity it falls back to.")
+                throw RemoteDesktopFailure(String(localized: "The VNC server asks for a password. Set one on the server, or on the identity it falls back to.", bundle: .module))
             }
             if offered.contains(apple) {
-                throw RemoteDesktopFailure("The Mac asks for a user name and password. Set the VNC user name on the server, or give it an identity.")
+                throw RemoteDesktopFailure(String(localized: "The Mac asks for a user name and password. Set the VNC user name on the server, or give it an identity.", bundle: .module))
             }
-            throw RemoteDesktopFailure("The server offers no supported security type (\(offered.map(String.init).joined(separator: ", "))).")
+            throw RemoteDesktopFailure(String(localized: "The server offers no supported security type (\(offered.map(String.init).joined(separator: ", "))).", bundle: .module))
         }
         if offered.contains(apple), !username.isEmpty { return apple }
         if offered.contains(vncAuth) { return vncAuth }
         if offered.contains(apple) {
-            throw RemoteDesktopFailure("The Mac asks for a user name with the password. Set the VNC user name on the server, or give it an identity.")
+            throw RemoteDesktopFailure(String(localized: "The Mac asks for a user name with the password. Set the VNC user name on the server, or give it an identity.", bundle: .module))
         }
         if offered.contains(none) {
-            throw RemoteDesktopFailure("A password is set for this server, but it offered to connect without authentication. Refusing, as that is how a man in the middle would strip it; clear the password if the server really has none.")
+            throw RemoteDesktopFailure(String(localized: "A password is set for this server, but it offered to connect without authentication. Refusing, as that is how a man in the middle would strip it; clear the password if the server really has none.", bundle: .module))
         }
-        throw RemoteDesktopFailure("The server offers no supported security type (\(offered.map(String.init).joined(separator: ", "))).")
+        throw RemoteDesktopFailure(String(localized: "The server offers no supported security type (\(offered.map(String.init).joined(separator: ", "))).", bundle: .module))
     }
 
     /// A 3.8 reason string: u32 length + UTF-8 text; 3.3/3.7 send nothing.
@@ -319,14 +319,14 @@ final class VNCRFBClient: Sendable {
             case nil:
                 // Unknown message: there is no way to know its length, so
                 // the stream is unrecoverable.
-                throw RemoteDesktopFailure("The server sent an unknown message type \(type).")
+                throw RemoteDesktopFailure(String(localized: "The server sent an unknown message type \(type).", bundle: .module))
             }
         }
     }
 
     private func resizeFramebuffer(width: Int, height: Int) throws {
         guard width <= VNCFramebuffer.maximumDimension, height <= VNCFramebuffer.maximumDimension else {
-            throw RemoteDesktopFailure("The remote desktop is too large (\(width)×\(height)).")
+            throw RemoteDesktopFailure(String(localized: "The remote desktop is too large (\(width)×\(height)).", bundle: .module))
         }
         framebuffer.resize(width: width, height: height)
     }
@@ -338,7 +338,7 @@ final class VNCRFBClient: Sendable {
         for _ in 0 ..< count {
             let headerData = try await reader.read(exactly: VNCWire.RectangleHeader.wireLength)
             guard let header = VNCWire.RectangleHeader(wire: headerData) else {
-                throw RemoteDesktopFailure("The server sent a malformed rectangle.")
+                throw RemoteDesktopFailure(String(localized: "The server sent a malformed rectangle.", bundle: .module))
             }
             switch VNCWire.Encoding(rawValue: header.encoding) {
             case .desktopSize:

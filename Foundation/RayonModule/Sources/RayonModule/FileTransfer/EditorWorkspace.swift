@@ -101,7 +101,7 @@ public final class EditorDocument: ObservableObject, Identifiable {
                 isEdited = text != snapshot
                 if context.currentUrl.path == folder { context.loadCurrentFileList() }
             } catch {
-                let message = "Couldn't save \(name). \(error.localizedDescription)"
+                let message = String(localized: "Couldn't save \(name). \(error.localizedDescription)", bundle: .module)
                 if let onError {
                     onError(message)
                 } else {

@@ -154,7 +154,7 @@ public extension RayonStore {
                             username: username,
                             privateKey: loadedPriv,
                             publicKey: loadedPub,
-                            comment: "Imported from ssh_config (\(alias))",
+                            comment: String(localized: "Imported from ssh_config (\(alias))", bundle: .module),
                             group: "SSH Config"
                         )
                         if loadedPriv.isEmpty {
@@ -178,7 +178,7 @@ public extension RayonStore {
                     name: alias,
                     folderId: sshConfigFolder.id,
                     lastConnection: Date(timeIntervalSince1970: 0),
-                    comment: "Imported from ~/.ssh/config",
+                    comment: String(localized: "Imported from ~/.ssh/config", bundle: .module),
                     associatedIdentity: associatedIdentityID,
                     sshUsername: block.user ?? ""
                 )

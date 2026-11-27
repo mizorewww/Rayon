@@ -578,14 +578,14 @@ public final class RemoteDesktopCanvasView: UIView {
             UIBarButtonItem(title: title, style: .plain, target: self, action: selector)
         }
         bar.items = [
-            item("Esc", #selector(accessoryEscape)),
-            item("Tab", #selector(accessoryTab)),
+            item(String(localized: "Esc", bundle: .module), #selector(accessoryEscape)),
+            item(String(localized: "Tab", bundle: .module), #selector(accessoryTab)),
             item("◀︎", #selector(accessoryLeft)),
             item("▲", #selector(accessoryUp)),
             item("▼", #selector(accessoryDown)),
             item("▶︎", #selector(accessoryRight)),
             space,
-            item("Done", #selector(accessoryDone)),
+            item(String(localized: "Done", bundle: .module), #selector(accessoryDone)),
         ]
         return bar
     }()

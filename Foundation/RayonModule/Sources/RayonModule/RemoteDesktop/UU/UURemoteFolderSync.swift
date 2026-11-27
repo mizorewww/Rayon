@@ -47,7 +47,7 @@ public enum UURemoteFolderSync {
             remotePort: "22",
             name: device.alias.isEmpty ? device.deviceID : device.alias,
             folderId: folder,
-            comment: "\(UUDeviceInfo.platformName(device.platform)) device"
+            comment: String(localized: "\(UUDeviceInfo.platformName(device.platform)) device", bundle: .module)
         )
         machine.remoteDesktopProtocol = .uuRemote
         machine.uuDeviceID = device.deviceID

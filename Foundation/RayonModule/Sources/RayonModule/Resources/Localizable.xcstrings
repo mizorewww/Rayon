@@ -1,0 +1,1248 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "\"%@\" is not a host name Cloudflare can serve." : {
+
+    },
+    "%.0f%% loss" : {
+
+    },
+    "%.1f Mbps" : {
+
+    },
+    "%@ :port (SOCKS5) → server → any destination" : {
+
+    },
+    "%@ :port → server → target" : {
+
+    },
+    "%@ device" : {
+
+    },
+    "%@ did not accept a connection to port %u through UU Remote (%@). Turn on SSH on the device (on a Mac: System Settings › General › Sharing › Remote Login)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ did not accept a connection to port %2$u through UU Remote (%3$@). Turn on SSH on the device (on a Mac: System Settings › General › Sharing › Remote Login)."
+          }
+        }
+      }
+    },
+    "%@ from %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ from %2$@"
+          }
+        }
+      }
+    },
+    "%@ is not available in this build." : {
+
+    },
+    "%@ is protected by Cloudflare Access and asks to sign in. Add a service token to the server (Edit Server › Cloudflare Access): signing in with a browser is not supported yet." : {
+
+    },
+    "%@ presented a different host key than the one saved for it. Someone may be intercepting the connection. Only replace the saved key if you know the server was reinstalled or its keys were changed." : {
+
+    },
+    "%@ with %@ was not accepted." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ with %2$@ was not accepted."
+          }
+        }
+      }
+    },
+    "%@ with %@: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ with %2$@: %3$@"
+          }
+        }
+      }
+    },
+    "%@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@: %2$@"
+          }
+        }
+      }
+    },
+    "%lld Kbps" : {
+
+    },
+    "%lld desktop devices" : {
+
+    },
+    "%lld fps" : {
+
+    },
+    "%lld ms" : {
+
+    },
+    "%lld servers, %lld identities, %lld snippets, and %lld port forwards." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld servers, %2$lld identities, %3$lld snippets, and %4$lld port forwards."
+          }
+        }
+      }
+    },
+    "%lld servers, %lld identities, %lld snippets, and %lld port forwards; %lld could not be saved." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld servers, %2$lld identities, %3$lld snippets, and %4$lld port forwards; %5$lld could not be saved."
+          }
+        }
+      }
+    },
+    "+86" : {
+
+    },
+    "A code was sent to %@ %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "A code was sent to %1$@ %2$@."
+          }
+        }
+      }
+    },
+    "A password is set for this server, but it offered to connect without authentication. Refusing, as that is how a man in the middle would strip it; clear the password if the server really has none." : {
+
+    },
+    "Access token" : {
+
+    },
+    "Add Virtual Display" : {
+
+    },
+    "Alt+Tab" : {
+
+    },
+    "Another file transfer for this machine is already running" : {
+
+    },
+    "Applies when connected" : {
+
+    },
+    "Ask the host for a full refresh" : {
+
+    },
+    "Assist %@" : {
+
+    },
+    "Authenticating" : {
+
+    },
+    "Authenticating…" : {
+
+    },
+    "Auto" : {
+
+    },
+    "Backspace" : {
+
+    },
+    "Cancelled" : {
+
+    },
+    "Clipboard" : {
+
+    },
+    "Close" : {
+
+    },
+    "Close this session" : {
+
+    },
+    "Closed" : {
+
+    },
+    "Cloudflare Access did not accept the service token for %@. Check its Client ID and Secret, and that the application's policy allows it (Service Auth)." : {
+
+    },
+    "Code" : {
+
+    },
+    "Code from the SMS" : {
+
+    },
+    "Confirm the sign-in on the phone." : {
+
+    },
+    "Connect" : {
+
+    },
+    "Connect ID" : {
+
+    },
+    "Connected" : {
+
+    },
+    "Connecting" : {
+
+    },
+    "Connecting through UU Remote" : {
+
+    },
+    "Connecting..." : {
+
+    },
+    "Connecting…" : {
+
+    },
+    "Connection Closed" : {
+
+    },
+    "Control" : {
+
+    },
+    "Copied %lld characters from the remote clipboard" : {
+
+    },
+    "Could not answer the VNC authentication challenge." : {
+
+    },
+    "Could not connect" : {
+
+    },
+    "Could not connect to %@:%u (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Could not connect to %1$@:%2$u (%3$@)"
+          }
+        }
+      }
+    },
+    "Could not encrypt the Apple authentication credentials." : {
+
+    },
+    "Could not look for screen-sharing hosts (%@)." : {
+
+    },
+    "Could not open a Cloudflare tunnel to %@ (HTTP %lld)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Could not open a Cloudflare tunnel to %1$@ (HTTP %2$lld)."
+          }
+        }
+      }
+    },
+    "Could not open a Cloudflare tunnel to %@: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Could not open a Cloudflare tunnel to %1$@: %2$@"
+          }
+        }
+      }
+    },
+    "Could not reach %@ through UU Remote: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Could not reach %1$@ through UU Remote: %2$@"
+          }
+        }
+      }
+    },
+    "Could not sign in" : {
+
+    },
+    "Could not sign in to %@." : {
+
+    },
+    "Couldn't read %@" : {
+
+    },
+    "Couldn't save %@" : {
+
+    },
+    "Couldn't save %@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Couldn't save %1$@. %2$@"
+          }
+        }
+      }
+    },
+    "Creating Connection" : {
+
+    },
+    "Creating Folder %@..." : {
+
+    },
+    "Ctrl+Alt+Del" : {
+
+    },
+    "Dark" : {
+
+    },
+    "Delete Completed" : {
+
+    },
+    "Delete Folder" : {
+
+    },
+    "Delete and Sign Out" : {
+
+    },
+    "Delete failed" : {
+
+    },
+    "Delete the folder \"%@\"?" : {
+
+    },
+    "Delete ⌦" : {
+
+    },
+    "Deleting..." : {
+
+    },
+    "Desktop" : {
+
+    },
+    "Devices" : {
+
+    },
+    "Direct Touch" : {
+
+    },
+    "Disconnect" : {
+
+    },
+    "Display" : {
+
+    },
+    "Display %lld" : {
+
+    },
+    "Done" : {
+
+    },
+    "Download Completed" : {
+
+    },
+    "Download failed" : {
+
+    },
+    "Downloading..." : {
+
+    },
+    "Drag to move the pointer · tap to click · two fingers to scroll or right-click · three fingers for the keyboard" : {
+
+    },
+    "Drag to move the pointer, tap to click, hold then drag to drag" : {
+
+    },
+    "End" : {
+
+    },
+    "Esc" : {
+
+    },
+    "Execute Begin" : {
+
+    },
+    "Execution completed" : {
+
+    },
+    "Exited with status %d" : {
+
+    },
+    "F%lld" : {
+
+    },
+    "Failed" : {
+
+    },
+    "Failed to create folder" : {
+
+    },
+    "Failed to list %@" : {
+
+    },
+    "Failed to rename" : {
+
+    },
+    "Failed to setup file transfer protocol" : {
+
+    },
+    "Failed to start the local shell (%@)." : {
+
+    },
+    "Folder Created" : {
+
+    },
+    "For an access token you already have; most people sign in with the QR code." : {
+
+    },
+    "Forward ended" : {
+
+    },
+    "Frame Rate" : {
+
+    },
+    "Frame rate and image quality" : {
+
+    },
+    "Function Keys" : {
+
+    },
+    "Grid" : {
+
+    },
+    "HD · 2 Mbps" : {
+
+    },
+    "Hand off to the official UU Remote app" : {
+
+    },
+    "Hide Addresses" : {
+
+    },
+    "Hide Names and Addresses" : {
+
+    },
+    "Home" : {
+
+    },
+    "How a finger moves the pointer" : {
+
+    },
+    "Idle" : {
+
+    },
+    "If the server was edited, open a new terminal instead." : {
+
+    },
+    "Imported from ssh_config (%@)" : {
+
+    },
+    "Imported from ~/.ssh/config" : {
+
+    },
+    "Insert" : {
+
+    },
+    "Installed Ghostty's terminfo on this server (~/.terminfo), so programs there know this terminal." : {
+
+    },
+    "Invalid Forward" : {
+
+    },
+    "Invalid Info" : {
+
+    },
+    "Invalid VNC port %u" : {
+
+    },
+    "Join" : {
+
+    },
+    "Join someone's screen with the Connect ID and code their UU Remote shows." : {
+
+    },
+    "Jump host %@: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Jump host %1$@: %2$@"
+          }
+        }
+      }
+    },
+    "Key Pair" : {
+
+    },
+    "Key pair" : {
+
+    },
+    "Key pair · %@" : {
+
+    },
+    "Keyboard" : {
+
+    },
+    "Keys" : {
+
+    },
+    "Light" : {
+
+    },
+    "Listen local" : {
+
+    },
+    "Listen remote" : {
+
+    },
+    "Load Complete" : {
+
+    },
+    "Loading... %@" : {
+
+    },
+    "Local Shell · %@" : {
+
+    },
+    "Local Terminal" : {
+
+    },
+    "Local shell is only supported on macOS." : {
+
+    },
+    "Making a code…" : {
+
+    },
+    "Malformed Machine Info" : {
+
+    },
+    "More" : {
+
+    },
+    "Navigation" : {
+
+    },
+    "Negotiating the framebuffer" : {
+
+    },
+    "Negotiating…" : {
+
+    },
+    "New Folder" : {
+
+    },
+    "Next Display" : {
+
+    },
+    "No Banner" : {
+
+    },
+    "No SSH agent is running for this session (SSH_AUTH_SOCK is not set)." : {
+
+    },
+    "No credentials" : {
+
+    },
+    "No desktop devices on this account yet. Install UU Remote on a computer and sign in there with the same account." : {
+
+    },
+    "No identity to sign in with. Choose one for the server, or let an identity authenticate automatically." : {
+
+    },
+    "None" : {
+
+    },
+    "Not connected to the server." : {
+
+    },
+    "Off" : {
+
+    },
+    "Official App" : {
+
+    },
+    "Offline" : {
+
+    },
+    "Online" : {
+
+    },
+    "Open UU Remote on your phone." : {
+
+    },
+    "Open in UU Remote app" : {
+
+    },
+    "Open in UU Remote app (PiP)" : {
+
+    },
+    "Open remote terminal (uuyc-cli)" : {
+
+    },
+    "Opening SSH tunnel…" : {
+
+    },
+    "Opening connection" : {
+
+    },
+    "Opening the SSH tunnel" : {
+
+    },
+    "Original · 20 Mbps" : {
+
+    },
+    "Page Down" : {
+
+    },
+    "Page Up" : {
+
+    },
+    "Password" : {
+
+    },
+    "Pasteboard is empty" : {
+
+    },
+    "Phone number" : {
+
+    },
+    "Plain Key Pair" : {
+
+    },
+    "Plain Private Key" : {
+
+    },
+    "Port in use" : {
+
+    },
+    "Private Key" : {
+
+    },
+    "ProxyJump chain contains a loop." : {
+
+    },
+    "ProxyJump server is not selected." : {
+
+    },
+    "Pull remote clipboard" : {
+
+    },
+    "Push local clipboard" : {
+
+    },
+    "QR Code" : {
+
+    },
+    "Quality" : {
+
+    },
+    "Rayon cannot open its database right now, so your servers are not shown. Nothing was changed: they appear once it opens." : {
+
+    },
+    "Rayon has not connected to %@ before. Compare the key's fingerprint with the server's own (ssh-keygen -lf /etc/ssh/ssh_host_*_key.pub) before trusting it." : {
+
+    },
+    "Rayon may not look on the local network. Allow it in System Settings › Privacy & Security › Local Network." : {
+
+    },
+    "Rayon saved the %@ key of %@; the server now presents its %@ key, which Rayon has not seen. Servers have a key of each type, and this version of Rayon asks for Ed25519 first. Compare the key's fingerprint with the server's own (ssh-keygen -lf /etc/ssh/ssh_host_*_key.pub) before trusting it." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Rayon saved the %1$@ key of %2$@; the server now presents its %3$@ key, which Rayon has not seen. Servers have a key of each type, and this version of Rayon asks for Ed25519 first. Compare the key's fingerprint with the server's own (ssh-keygen -lf /etc/ssh/ssh_host_*_key.pub) before trusting it."
+          }
+        }
+      }
+    },
+    "Rayon signs out of UU Remote; the devices stay on the account." : {
+
+    },
+    "Re-authorize this device" : {
+
+    },
+    "Reaching %@" : {
+
+    },
+    "Ready" : {
+
+    },
+    "Reconnect" : {
+
+    },
+    "Reconnecting with the details from when this session started." : {
+
+    },
+    "Refresh" : {
+
+    },
+    "Refresh Code" : {
+
+    },
+    "Refresh Screen" : {
+
+    },
+    "Remote Assistance" : {
+
+    },
+    "Remote clipboard is empty" : {
+
+    },
+    "Remote desktop failed" : {
+
+    },
+    "Remove %@" : {
+
+    },
+    "Renamed Successfully" : {
+
+    },
+    "Renaming..." : {
+
+    },
+    "Replace Saved Key" : {
+
+    },
+    "Resumed the session on %@" : {
+
+    },
+    "Return" : {
+
+    },
+    "Running" : {
+
+    },
+    "SMS" : {
+
+    },
+    "SOCKS5 proxy" : {
+
+    },
+    "SSH Agent" : {
+
+    },
+    "Saved: %@\n%@\n\nOffered: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Saved: %1$@\n%2$@\n\nOffered: %3$@"
+          }
+        }
+      }
+    },
+    "Scanned. Confirm on the phone." : {
+
+    },
+    "Send" : {
+
+    },
+    "Send Code" : {
+
+    },
+    "Send a special key the local keyboard can not reach" : {
+
+    },
+    "Sending…" : {
+
+    },
+    "Sent %lld characters to the remote clipboard" : {
+
+    },
+    "Server :port → %@ → target" : {
+
+    },
+    "Servers you added to it by hand move to Default." : {
+
+    },
+    "Session closed" : {
+
+    },
+    "Shell ended" : {
+
+    },
+    "Shell ended (exit %lld)" : {
+
+    },
+    "Show Everything" : {
+
+    },
+    "Side by Side" : {
+
+    },
+    "Sign In" : {
+
+    },
+    "Sign Out" : {
+
+    },
+    "Sign in to iCloud to sync." : {
+
+    },
+    "Sign in with" : {
+
+    },
+    "Sign in, and the account's computers appear as servers in a folder of their own, kept up to date." : {
+
+    },
+    "Signed in" : {
+
+    },
+    "Signing in as %@ with %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Signing in as %1$@ with %2$@"
+          }
+        }
+      }
+    },
+    "Signing in…" : {
+
+    },
+    "Single View (Ungroup)" : {
+
+    },
+    "Software Keyboard" : {
+
+    },
+    "Some passwords and keys cannot be read from the keychain now. Unlock the device and try again." : {
+
+    },
+    "Split Bottom" : {
+
+    },
+    "Split Left" : {
+
+    },
+    "Split Right" : {
+
+    },
+    "Split Top" : {
+
+    },
+    "Stacked" : {
+
+    },
+    "Starting" : {
+
+    },
+    "Stopped" : {
+
+    },
+    "Switch display" : {
+
+    },
+    "Synced %@" : {
+
+    },
+    "Syncing…" : {
+
+    },
+    "System" : {
+
+    },
+    "Tab" : {
+
+    },
+    "Tap Scan, and point it at this code." : {
+
+    },
+    "Tap to click there · hold to right-click · two fingers to scroll · three fingers for the keyboard" : {
+
+    },
+    "Tap to click there, drag to drag, hold to right-click" : {
+
+    },
+    "Terminal" : {
+
+    },
+    "Text to send" : {
+
+    },
+    "The Mac asks for a user name and password. Set the VNC user name on the server, or give it an identity." : {
+
+    },
+    "The Mac asks for a user name with the password. Set the VNC user name on the server, or give it an identity." : {
+
+    },
+    "The Mac asks for the password of %@. Set one on the server, or on its identity." : {
+
+    },
+    "The SSH server would not forward to VNC port %lld (%@)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The SSH server would not forward to VNC port %1$lld (%2$@)."
+          }
+        }
+      }
+    },
+    "The UU Remote connection dropped, reconnecting" : {
+
+    },
+    "The UU Remote connection dropped." : {
+
+    },
+    "The VNC server asks for a password. Set one on the server, or on the identity it falls back to." : {
+
+    },
+    "The VNC server rejected the credentials." : {
+
+    },
+    "The backup is damaged: %@" : {
+
+    },
+    "The clipboard syncs itself while connected; these push and pull by hand" : {
+
+    },
+    "The code expired." : {
+
+    },
+    "The configured ProxyJump server no longer exists." : {
+
+    },
+    "The connection to %@ was lost." : {
+
+    },
+    "The database cannot be opened." : {
+
+    },
+    "The database is from a newer version of Rayon (schema %lld)." : {
+
+    },
+    "The device refused the terminal: %@ (%lld)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The device refused the terminal: %1$@ (%2$lld)"
+          }
+        }
+      }
+    },
+    "The host key of %@ was not trusted." : {
+
+    },
+    "The identity has neither a password nor a private key." : {
+
+    },
+    "The identity this server signs in with no longer exists." : {
+
+    },
+    "The keychain refused the request: %@" : {
+
+    },
+    "The password is not the one this backup was protected with." : {
+
+    },
+    "The proxy jumps go round in a circle: %@." : {
+
+    },
+    "The remote desktop is too large (%lld×%lld)." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "The remote desktop is too large (%1$lld×%2$lld)."
+          }
+        }
+      }
+    },
+    "The server closed the connection." : {
+
+    },
+    "The server is not speaking RFB." : {
+
+    },
+    "The server no longer exists" : {
+
+    },
+    "The server offers no supported security type (%@)." : {
+
+    },
+    "The server refused the connection." : {
+
+    },
+    "The server sent a malformed init message." : {
+
+    },
+    "The server sent a malformed rectangle." : {
+
+    },
+    "The server sent an unknown message type %u." : {
+
+    },
+    "The server sent an unusable Apple authentication key length (%lld)." : {
+
+    },
+    "The server sent data this client cannot read (%@)." : {
+
+    },
+    "The server sent unusable Apple authentication key parameters." : {
+
+    },
+    "The servers, identities and snippets saved by the previous version of Rayon could not be opened (%@). They are kept as they are, and Rayon tries again on its next launch." : {
+
+    },
+    "The servers, identities and snippets saved by the previous version of Rayon could not be opened: the key that protects them could not be read from the keychain. They are kept as they are, and Rayon tries again on its next launch." : {
+
+    },
+    "The shell ended (%@)." : {
+
+    },
+    "There is no SSH agent on iOS. Give the identity its private key instead." : {
+
+    },
+    "They are servers in the \"%@\" folder, kept up to date with the account." : {
+
+    },
+    "This backup holds something else (data or settings) than what is being imported." : {
+
+    },
+    "This backup is protected by a password." : {
+
+    },
+    "This backup was made by a newer version of Rayon." : {
+
+    },
+    "This build is not signed for iCloud." : {
+
+    },
+    "This file is %@; files up to %@ open in the editor. Download it instead." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "This file is %1$@; files up to %2$@ open in the editor. Download it instead."
+          }
+        }
+      }
+    },
+    "This file is not a Rayon backup." : {
+
+    },
+    "This file isn't UTF-8 text, so it can't be edited here. Download it instead." : {
+
+    },
+    "This server has no remote desktop configured." : {
+
+    },
+    "Three fingers: tap for the keyboard" : {
+
+    },
+    "Toggle the software keyboard" : {
+
+    },
+    "Token" : {
+
+    },
+    "Touch Gestures" : {
+
+    },
+    "Trackpad" : {
+
+    },
+    "True Colour (4:4:4)" : {
+
+    },
+    "Trust %@?" : {
+
+    },
+    "Trust and Connect" : {
+
+    },
+    "Two fingers: tap to right-click, drag to scroll, pinch to zoom" : {
+
+    },
+    "Type" : {
+
+    },
+    "Type Text" : {
+
+    },
+    "Type text on the remote host" : {
+
+    },
+    "UU Remote App" : {
+
+    },
+    "UU Remote account" : {
+
+    },
+    "UU Remote assistance session" : {
+
+    },
+    "UURemote app is not installed" : {
+
+    },
+    "UURemote.app is not installed" : {
+
+    },
+    "Ultra HD · 8 Mbps" : {
+
+    },
+    "Unknown" : {
+
+    },
+    "Unknown Bad Data" : {
+
+    },
+    "Unknown Command" : {
+
+    },
+    "Unknown Error" : {
+
+    },
+    "Unknown Key" : {
+
+    },
+    "Up to date" : {
+
+    },
+    "Upload Completed" : {
+
+    },
+    "Upload failed" : {
+
+    },
+    "Uploading..." : {
+
+    },
+    "User %@ with %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "User %1$@ with %2$@"
+          }
+        }
+      }
+    },
+    "Username Only" : {
+
+    },
+    "View Only" : {
+
+    },
+    "View only" : {
+
+    },
+    "View only: input stays local. Click to take control" : {
+
+    },
+    "Viewing" : {
+
+    },
+    "WARNING: the host key of %@ has changed" : {
+
+    },
+    "Waiting for the scan." : {
+
+    },
+    "Watch without sending mouse or keys" : {
+
+    },
+    "Win / Super" : {
+
+    },
+    "Your servers were last saved by a newer version of Rayon, so this one cannot open them. Update Rayon to see them; nothing changed until then is kept." : {
+
+    },
+    "it has no database" : {
+
+    },
+    "it has no settings" : {
+
+    },
+    "it is from an older version of Rayon" : {
+
+    },
+    "its %@ could not be decrypted or read" : {
+
+    },
+    "its database cannot be opened" : {
+
+    },
+    "its folders could not be decrypted or read" : {
+
+    },
+    "its host keys could not be decrypted or read" : {
+
+    },
+    "its identities could not be decrypted or read" : {
+
+    },
+    "its jumps lead back here" : {
+
+    },
+    "its passwords and keys cannot be read" : {
+
+    },
+    "its port forwards could not be decrypted or read" : {
+
+    },
+    "its recent connections could not be decrypted or read" : {
+
+    },
+    "its servers could not be decrypted or read" : {
+
+    },
+    "its snippets could not be decrypted or read" : {
+
+    },
+    "its terminal settings are not text" : {
+
+    },
+    "key derivation failed" : {
+
+    },
+    "over SSH" : {
+
+    },
+    "relay" : {
+
+    },
+    "the passwords of %@ %@ cannot be read" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "the passwords of %1$@ %2$@ cannot be read"
+          }
+        }
+      }
+    },
+    "unknown key derivation" : {
+
+    },
+    "uuyc-cli exited %d" : {
+
+    },
+    "uuyc-cli is only available on macOS" : {
+
+    },
+    "uuyc-cli not installed" : {
+
+    }
+  },
+  "version" : "1.0"
+}

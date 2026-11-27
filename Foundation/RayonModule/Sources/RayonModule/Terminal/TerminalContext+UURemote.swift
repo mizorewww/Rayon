@@ -16,7 +16,7 @@ extension TerminalContext {
     /// Wakes on typing, a resize, closing the tab, and the link ending or
     /// its connection closing; nothing else needs a look.
     func runUURemoteTerminal() {
-        putInformation("[*] Connecting through UU Remote")
+        putInformation("[*] \(String(localized: "Connecting through UU Remote", bundle: .module))")
         let finished = DispatchSemaphore(value: 0)
         let context = self
         let machine = machine
@@ -102,7 +102,7 @@ final class UUTerminalLink {
                 self.terminalID = id
                 context.uuSessionID = id
                 if attaching != nil {
-                    context.putInformation("[*] Resumed the session on \(self.machine.name)")
+                    context.putInformation("[*] \(String(localized: "Resumed the session on \(self.machine.name)", bundle: .module))")
                     let cols = Int(max(size.width, 8)), rows = Int(max(size.height, 8))
                     connection.resizeTerminal(cols: cols, rows: max(rows - 1, 8), sessionID: id)
                     connection.resizeTerminal(cols: cols, rows: rows, sessionID: id)
@@ -123,14 +123,15 @@ final class UUTerminalLink {
             if !text.isEmpty { context.surface.write(text) }
         case .openResponse:
             if let refusal = frame.openFailure {
-                context.putInformation("[!] The device refused the terminal: \(refusal.message) (\(refusal.code))")
+                context.putInformation("[!] \(String(localized: "The device refused the terminal: \(refusal.message) (\(refusal.code))", bundle: .module))")
                 context.uuSessionID = nil
                 finished.signal()
                 wake.signal()
             }
         case .exit:
-            let code = frame.exitCode.map { " (exit \($0))" } ?? ""
-            context.putInformation("\r\n[*] Shell ended\(code)")
+            let ended = frame.exitCode.map { String(localized: "Shell ended (exit \($0))", bundle: .module) }
+                ?? String(localized: "Shell ended", bundle: .module)
+            context.putInformation("\r\n[*] \(ended)")
             context.uuSessionID = nil
             finished.signal()
             wake.signal()
@@ -172,13 +173,13 @@ final class UUTerminalLink {
         // the desktop only comes back when it is opened again.
         let counts = dropped.purpose != .desktop
         guard context.uuSessionID != nil, !counts || resumes.count < Self.resumeLimit else {
-            context.putInformation("\r\n[!] The UU Remote connection dropped.")
+            context.putInformation("\r\n[!] \(String(localized: "The UU Remote connection dropped.", bundle: .module))")
             finished.signal()
             wake.signal()
             return
         }
         if counts { resumes.append(now) }
-        context.putInformation("\r\n[*] The UU Remote connection dropped, reconnecting")
+        context.putInformation("\r\n[*] \(String(localized: "The UU Remote connection dropped, reconnecting", bundle: .module))")
         Task { @MainActor [weak self, weak context] in
             try? await Task.sleep(nanoseconds: 1_000_000_000)
             guard let self, let context, !self.ended else { return }

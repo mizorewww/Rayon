@@ -105,9 +105,9 @@ public struct RDIdentity: StoredRecord {
 
     public func shortDescription() -> String {
         guard username.count > 0 else {
-            return "Unknown Error"
+            return String(localized: "Unknown Error", bundle: .module)
         }
-        var build = "User \(username) with \(getKeyType())"
+        var build = String(localized: "User \(username) with \(getKeyType())", bundle: .module)
         if group.count > 0 {
             build += " Group<\(group)>"
         }
@@ -119,25 +119,25 @@ public struct RDIdentity: StoredRecord {
 
     public func getKeyType() -> String {
         if useSSHAgent {
-            return "SSH Agent"
+            return String(localized: "SSH Agent", bundle: .module)
         } else if privateKey.count > 0, publicKey.count > 0 {
             if password.count > 0 {
-                return "Key Pair"
+                return String(localized: "Key Pair", bundle: .module)
             } else {
-                return "Plain Key Pair"
+                return String(localized: "Plain Key Pair", bundle: .module)
             }
         } else if privateKey.count > 0 {
             if password.count > 0 {
-                return "Private Key"
+                return String(localized: "Private Key", bundle: .module)
             } else {
-                return "Plain Private Key"
+                return String(localized: "Plain Private Key", bundle: .module)
             }
         } else if publicKey.count > 0 {
-            return "Unknown Key"
+            return String(localized: "Unknown Key", bundle: .module)
         } else if password.count > 0 {
-            return "Password"
+            return String(localized: "Password", bundle: .module)
         } else {
-            return "Username Only"
+            return String(localized: "Username Only", bundle: .module)
         }
     }
 
@@ -152,13 +152,13 @@ public struct RDIdentity: StoredRecord {
 public extension RDIdentity {
     /// "Key pair · ed25519", "Password", "SSH Agent" style description.
     var authDescription: String {
-        if useSSHAgent { return "SSH Agent" }
+        if useSSHAgent { return String(localized: "SSH Agent", bundle: .module) }
         if !privateKey.isEmpty {
-            if let type = keyAlgorithm { return "Key pair · \(type)" }
-            return "Key pair"
+            if let type = keyAlgorithm { return String(localized: "Key pair · \(type)", bundle: .module) }
+            return String(localized: "Key pair", bundle: .module)
         }
-        if !password.isEmpty { return "Password" }
-        return "No credentials"
+        if !password.isEmpty { return String(localized: "Password", bundle: .module) }
+        return String(localized: "No credentials", bundle: .module)
     }
 
     var keyAlgorithm: String? {

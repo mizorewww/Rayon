@@ -178,32 +178,32 @@ public struct RemoteDesktopStageView: View {
         case .connected:
             EmptyView()
         case .idle:
-            statusOverlay(symbol: "display", title: "Ready", detail: session.statusHint)
+            statusOverlay(symbol: "display", title: .init("Ready", bundle: .module), detail: session.statusHint)
         case let .connecting(detail):
             statusOverlay(
                 symbol: "arrow.triangle.2.circlepath",
-                title: "Connecting",
+                title: .init("Connecting", bundle: .module),
                 detail: session.statusHint.isEmpty ? detail : session.statusHint,
                 spinning: true
             )
         case .authenticating:
             statusOverlay(
                 symbol: "lock.shield",
-                title: "Authenticating",
+                title: .init("Authenticating", bundle: .module),
                 detail: session.statusHint,
                 spinning: true
             )
         case let .closed(reason):
             statusOverlay(
                 symbol: "display.trianglebadge.exclamationmark",
-                title: "Session closed",
+                title: .init("Session closed", bundle: .module),
                 detail: reason ?? session.statusHint,
                 reconnectable: true
             )
         case let .failed(message):
             statusOverlay(
                 symbol: "exclamationmark.triangle",
-                title: "Remote desktop failed",
+                title: .init("Remote desktop failed", bundle: .module),
                 detail: session.statusHint.isEmpty ? message : "\(message)\n\(session.statusHint)",
                 reconnectable: true
             )
@@ -213,7 +213,7 @@ public struct RemoteDesktopStageView: View {
     @ViewBuilder
     private func statusOverlay(
         symbol: String,
-        title: String,
+        title: LocalizedStringResource,
         detail: String,
         spinning: Bool = false,
         reconnectable: Bool = false
@@ -239,7 +239,7 @@ public struct RemoteDesktopStageView: View {
                         .padding(.horizontal, 40)
                 }
                 if reconnectable {
-                    Button("Reconnect") { session.connect() }
+                    Button(.init("Reconnect", bundle: .module)) { session.connect() }
                         .buttonStyle(.borderedProminent)
                 }
             }
@@ -290,9 +290,9 @@ public struct RemoteDesktopStageView: View {
             #endif
             if let onClose {
                 Button { onClose() } label: {
-                    Label("Close", systemImage: "xmark.circle").stageControl()
+                    Label(.init("Close", bundle: .module), systemImage: "xmark.circle").stageControl()
                 }
-                .help("Close this session")
+                .help(.init("Close this session", bundle: .module))
             }
         }
         .buttonStyle(.borderless)
@@ -319,7 +319,7 @@ public struct RemoteDesktopStageView: View {
                 }
                 // View only must show: input going nowhere looks broken.
                 if session.viewOnly {
-                    Label("View only", systemImage: "eye")
+                    Label(.init("View only", bundle: .module), systemImage: "eye")
                         .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(Color.rxAccent)
                         .lineLimit(1)
@@ -337,12 +337,12 @@ public struct RemoteDesktopStageView: View {
         /// The controls a finger needs at hand, each named under its symbol.
         @ViewBuilder private var touchControls: some View {
             Button { keyboardRequests += 1 } label: {
-                Label("Keyboard", systemImage: "keyboard").stageControl()
+                Label(.init("Keyboard", bundle: .module), systemImage: "keyboard").stageControl()
             }
             specialKeysMenu
             touchModeMenu
             Button { showsTextInput = true } label: {
-                Label("Type", systemImage: "textformat").stageControl()
+                Label(.init("Type", bundle: .module), systemImage: "textformat").stageControl()
             }
             .popover(isPresented: $showsTextInput) { textInputPopover }
             clipboardMenu
@@ -352,38 +352,38 @@ public struct RemoteDesktopStageView: View {
         private var moreMenu: some View {
             Menu {
                 if session.phase.isTerminal || session.phase == .idle {
-                    Button { session.connect() } label: { Label("Connect", systemImage: "play.circle") }
+                    Button { session.connect() } label: { Label(.init("Connect", bundle: .module), systemImage: "play.circle") }
                 } else {
-                    Button { session.disconnect() } label: { Label("Disconnect", systemImage: "stop.circle") }
+                    Button { session.disconnect() } label: { Label(.init("Disconnect", bundle: .module), systemImage: "stop.circle") }
                 }
-                Button { session.refresh() } label: { Label("Refresh Screen", systemImage: "arrow.clockwise") }
+                Button { session.refresh() } label: { Label(.init("Refresh Screen", bundle: .module), systemImage: "arrow.clockwise") }
                 Toggle(isOn: $session.viewOnly) {
-                    Label("View Only", systemImage: "eye")
+                    Label(.init("View Only", bundle: .module), systemImage: "eye")
                 }
                 if session.displays.count > 1 || session.canAddDisplays {
                     Menu {
                         displayChoices
                     } label: {
-                        Label("Display", systemImage: "rectangle.on.rectangle")
+                        Label(.init("Display", bundle: .module), systemImage: "rectangle.on.rectangle")
                     }
                 }
                 if session.protocolType == .uuRemote {
                     Menu {
                         qualityChoices
                     } label: {
-                        Label("Quality", systemImage: "slider.horizontal.3")
+                        Label(.init("Quality", bundle: .module), systemImage: "slider.horizontal.3")
                     }
                     Menu {
                         officialAppChoices
                     } label: {
-                        Label("UU Remote App", systemImage: "pip")
+                        Label(.init("UU Remote App", bundle: .module), systemImage: "pip")
                     }
                 }
                 Section {
-                    Button { showGestureHint(force: true) } label: { Label("Touch Gestures", systemImage: "hand.tap") }
+                    Button { showGestureHint(force: true) } label: { Label(.init("Touch Gestures", bundle: .module), systemImage: "hand.tap") }
                 }
             } label: {
-                Label("More", systemImage: "ellipsis.circle").stageControl()
+                Label(.init("More", bundle: .module), systemImage: "ellipsis.circle").stageControl()
             }
         }
 
@@ -394,8 +394,8 @@ public struct RemoteDesktopStageView: View {
             guard force || shown < 3 else { return }
             if !force { AppSettings.remoteDesktopGestureHintsShown.set(shown + 1) }
             let hint = switch touchMode {
-            case .trackpad: "Drag to move the pointer · tap to click · two fingers to scroll or right-click · three fingers for the keyboard"
-            case .direct: "Tap to click there · hold to right-click · two fingers to scroll · three fingers for the keyboard"
+            case .trackpad: String(localized: "Drag to move the pointer · tap to click · two fingers to scroll or right-click · three fingers for the keyboard", bundle: .module)
+            case .direct: String(localized: "Tap to click there · hold to right-click · two fingers to scroll · three fingers for the keyboard", bundle: .module)
             }
             flash(hint, for: 5)
         }
@@ -414,24 +414,24 @@ public struct RemoteDesktopStageView: View {
         viewOnlyButton
         specialKeysMenu
         Button { showsTextInput = true } label: {
-            Label("Type Text", systemImage: "textformat").stageControl()
+            Label(.init("Type Text", bundle: .module), systemImage: "textformat").stageControl()
         }
         .popover(isPresented: $showsTextInput) { textInputPopover }
         #if !targetEnvironment(macCatalyst)
             // A Mac has a keyboard; a touch screen shows one on request.
             Button { keyboardRequests += 1 } label: {
-                Label("Software Keyboard", systemImage: "keyboard").stageControl()
+                Label(.init("Software Keyboard", bundle: .module), systemImage: "keyboard").stageControl()
             }
-            .help("Toggle the software keyboard")
+            .help(.init("Toggle the software keyboard", bundle: .module))
         #endif
         #if os(iOS) && !targetEnvironment(macCatalyst)
             touchModeMenu
         #endif
         clipboardMenu
         Button { session.refresh() } label: {
-            Label("Refresh Screen", systemImage: "arrow.clockwise").stageControl()
+            Label(.init("Refresh Screen", bundle: .module), systemImage: "arrow.clockwise").stageControl()
         }
-        .help("Ask the host for a full refresh")
+        .help(.init("Ask the host for a full refresh", bundle: .module))
         #if !targetEnvironment(macCatalyst)
             if session.protocolType == .uuRemote { officialAppMenu }
         #endif
@@ -458,23 +458,23 @@ public struct RemoteDesktopStageView: View {
 
     private var phaseTitle: String {
         switch session.phase {
-        case .idle: "Idle"
-        case .connecting: "Connecting"
-        case .authenticating: "Authenticating"
-        case .connected: session.desktopName.isEmpty ? "Connected" : session.desktopName
-        case .closed: "Closed"
-        case .failed: "Failed"
+        case .idle: String(localized: "Idle", bundle: .module)
+        case .connecting: String(localized: "Connecting", bundle: .module)
+        case .authenticating: String(localized: "Authenticating", bundle: .module)
+        case .connected: session.desktopName.isEmpty ? String(localized: "Connected", bundle: .module) : session.desktopName
+        case .closed: String(localized: "Closed", bundle: .module)
+        case .failed: String(localized: "Failed", bundle: .module)
         }
     }
 
     private var metricsText: String {
         var parts: [String] = []
-        if session.fps > 0 { parts.append("\(session.fps) fps") }
-        if let rtt = session.rttMs { parts.append("\(rtt) ms") }
+        if session.fps > 0 { parts.append(String(localized: "\(session.fps) fps", bundle: .module)) }
+        if let rtt = session.rttMs { parts.append(String(localized: "\(rtt) ms", bundle: .module)) }
         if let network = session.network, session.phase == .connected {
             if let bits = network.bitsPerSecond { parts.append(Self.rate(bits)) }
-            if let loss = network.lossPercent, loss >= 0.5 { parts.append(String(format: "%.0f%% loss", loss)) }
-            if network.relayed { parts.append("relay") }
+            if let loss = network.lossPercent, loss >= 0.5 { parts.append(String(format: String(localized: "%.0f%% loss", bundle: .module), loss)) }
+            if network.relayed { parts.append(String(localized: "relay", bundle: .module)) }
         }
         if !session.statusHint.isEmpty, session.phase != .connected {
             parts.append(session.statusHint)
@@ -486,9 +486,9 @@ public struct RemoteDesktopStageView: View {
         Menu {
             displayChoices
         } label: {
-            Label("Display", systemImage: "rectangle.on.rectangle").stageControl()
+            Label(.init("Display", bundle: .module), systemImage: "rectangle.on.rectangle").stageControl()
         }
-        .help("Switch display")
+        .help(.init("Switch display", bundle: .module))
     }
 
     @ViewBuilder private var displayChoices: some View {
@@ -497,7 +497,7 @@ public struct RemoteDesktopStageView: View {
                     Button {
                         session.switchDisplay(display.id)
                     } label: {
-                        let title = display.name.isEmpty ? "Display \(display.id)" : display.name
+                        let title = display.name.isEmpty ? String(localized: "Display \(display.id)", bundle: .module) : display.name
                         if display.id == session.selectedDisplayID {
                             Label(title, systemImage: "checkmark")
                         } else {
@@ -508,7 +508,7 @@ public struct RemoteDesktopStageView: View {
             }
             if session.displays.count > 1 {
                 Button { session.nextDisplay() } label: {
-                    Label("Next Display", systemImage: "arrow.right.square")
+                    Label(.init("Next Display", bundle: .module), systemImage: "arrow.right.square")
                 }
                 .keyboardShortcut("n", modifiers: [.command, .option])
             }
@@ -517,13 +517,13 @@ public struct RemoteDesktopStageView: View {
                     Button {
                         session.addVirtualDisplay(width: Int(stagePixels.width), height: Int(stagePixels.height))
                     } label: {
-                        Label("Add Virtual Display", systemImage: "plus.rectangle.on.rectangle")
+                        Label(.init("Add Virtual Display", bundle: .module), systemImage: "plus.rectangle.on.rectangle")
                     }
                     ForEach(session.displays.filter(\.isVirtual)) { display in
                         Button(role: .destructive) {
                             session.removeVirtualDisplay(display.id)
                         } label: {
-                            Label("Remove \(display.name)", systemImage: "minus.rectangle")
+                            Label(.init("Remove \(display.name)", bundle: .module), systemImage: "minus.rectangle")
                         }
                         .disabled(session.displays.count < 2)
                     }
@@ -543,45 +543,45 @@ public struct RemoteDesktopStageView: View {
     /// "850 Kbps", "11.9 Mbps".
     private static func rate(_ bits: Int) -> String {
         bits >= 1_000_000
-            ? String(format: "%.1f Mbps", Double(bits) / 1_000_000)
-            : "\(max(bits / 1000, 0)) Kbps"
+            ? String(format: String(localized: "%.1f Mbps", bundle: .module), Double(bits) / 1_000_000)
+            : String(localized: "\(max(bits / 1000, 0)) Kbps", bundle: .module)
     }
 
     private var qualityMenu: some View {
         Menu {
             qualityChoices
         } label: {
-            Label("Quality", systemImage: "slider.horizontal.3").stageControl()
+            Label(.init("Quality", bundle: .module), systemImage: "slider.horizontal.3").stageControl()
         }
-        .help("Frame rate and image quality")
+        .help(.init("Frame rate and image quality", bundle: .module))
     }
 
     /// The official viewer's 画质 choices, as pickers: each shows its
     /// choice checked, and choosing one keeps the others.
     @ViewBuilder private var qualityChoices: some View {
-            Section("Frame Rate") {
-                Picker("Frame Rate", selection: streamBinding(\.fps)) {
+            Section(.init("Frame Rate", bundle: .module)) {
+                Picker(.init("Frame Rate", bundle: .module), selection: streamBinding(\.fps)) {
                     ForEach(RemoteDesktopStreamSettings.frameRates, id: \.self) { fps in
-                        Text("\(fps) fps").tag(fps)
+                        Text("\(fps) fps", bundle: .module).tag(fps)
                     }
                 }
                 .pickerStyle(.inline)
                 .labelsHidden()
             }
-            Section("Quality") {
-                Picker("Quality", selection: streamBinding(\.quality)) {
+            Section(.init("Quality", bundle: .module)) {
+                Picker(.init("Quality", bundle: .module), selection: streamBinding(\.quality)) {
                     ForEach(RemoteDesktopStreamSettings.qualities, id: \.value) { preset in
                         Text(preset.title).tag(preset.value)
                     }
                 }
                 .pickerStyle(.inline)
                 .labelsHidden()
-                Toggle("True Colour (4:4:4)", isOn: streamBinding(\.trueColor))
+                Toggle(.init("True Colour (4:4:4)", bundle: .module), isOn: streamBinding(\.trueColor))
             }
             // Locked, the host is still connected and takes the settings.
             if session.phase != .connected, session.phase != .authenticating {
                 Section {
-                    Text("Applies when connected")
+                    Text("Applies when connected", bundle: .module)
                 }
             }
     }
@@ -600,39 +600,39 @@ public struct RemoteDesktopStageView: View {
 
     private var specialKeysMenu: some View {
         Menu {
-            Button("Esc") { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.escape)) }
-            Button("Tab") { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.tab)) }
-            Button("Return") { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.return)) }
-            Button("Delete ⌦") { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.deleteForward)) }
+            Button(.init("Esc", bundle: .module)) { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.escape)) }
+            Button(.init("Tab", bundle: .module)) { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.tab)) }
+            Button(.init("Return", bundle: .module)) { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.return)) }
+            Button(.init("Delete ⌦", bundle: .module)) { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.deleteForward)) }
             Divider()
-            Button("Ctrl+Alt+Del") { send(RemoteDesktopSpecialKeys.ctrlAltDelete) }
-            Button("Alt+Tab") {
+            Button(.init("Ctrl+Alt+Del", bundle: .module)) { send(RemoteDesktopSpecialKeys.ctrlAltDelete) }
+            Button(.init("Alt+Tab", bundle: .module)) {
                 send(RemoteDesktopSpecialKeys.combo(
                     [RemoteDesktopSpecialKeys.alt],
                     RemoteDesktopSpecialKeys.tab
                 ))
             }
-            Button("Win / Super") { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.super)) }
+            Button(.init("Win / Super", bundle: .module)) { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.super)) }
             Divider()
-            Menu("Function Keys") {
+            Menu(.init("Function Keys", bundle: .module)) {
                 ForEach(1 ... 12, id: \.self) { n in
-                    Button("F\(n)") {
+                    Button(.init("F\(n)", bundle: .module)) {
                         send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.functionKey(n)))
                     }
                 }
             }
-            Menu("Navigation") {
-                Button("Home") { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.home)) }
-                Button("End") { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.end)) }
-                Button("Page Up") { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.pageUp)) }
-                Button("Page Down") { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.pageDown)) }
-                Button("Insert") { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.insert)) }
-                Button("Backspace") { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.backspace)) }
+            Menu(.init("Navigation", bundle: .module)) {
+                Button(.init("Home", bundle: .module)) { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.home)) }
+                Button(.init("End", bundle: .module)) { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.end)) }
+                Button(.init("Page Up", bundle: .module)) { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.pageUp)) }
+                Button(.init("Page Down", bundle: .module)) { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.pageDown)) }
+                Button(.init("Insert", bundle: .module)) { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.insert)) }
+                Button(.init("Backspace", bundle: .module)) { send(RemoteDesktopSpecialKeys.click(RemoteDesktopSpecialKeys.backspace)) }
             }
         } label: {
-            Label("Keys", systemImage: "command").stageControl()
+            Label(.init("Keys", bundle: .module), systemImage: "command").stageControl()
         }
-        .help("Send a special key the local keyboard can not reach")
+        .help(.init("Send a special key the local keyboard can not reach", bundle: .module))
     }
 
     private func send(_ strokes: [RemoteDesktopKeyStroke]) {
@@ -641,10 +641,10 @@ public struct RemoteDesktopStageView: View {
 
     private var viewOnlyButton: some View {
         Button { session.viewOnly.toggle() } label: {
-            Label(session.viewOnly ? "View Only" : "Control", systemImage: session.viewOnly ? "eye" : "cursorarrow.motionlines").stageControl()
+            Label(session.viewOnly ? LocalizedStringResource("View Only", bundle: .module) : LocalizedStringResource("Control", bundle: .module), systemImage: session.viewOnly ? "eye" : "cursorarrow.motionlines").stageControl()
                 .foregroundStyle(session.viewOnly ? Color.rxAccent : Color.rxInk)
         }
-        .help(session.viewOnly ? "View only: input stays local. Click to take control" : "Watch without sending mouse or keys")
+        .help(session.viewOnly ? LocalizedStringResource("View only: input stays local. Click to take control", bundle: .module) : LocalizedStringResource("Watch without sending mouse or keys", bundle: .module))
     }
 
     #if os(iOS) && !targetEnvironment(macCatalyst)
@@ -669,17 +669,17 @@ public struct RemoteDesktopStageView: View {
                 Section {
                     switch touchMode {
                     case .trackpad:
-                        Text("Drag to move the pointer, tap to click, hold then drag to drag")
+                        Text("Drag to move the pointer, tap to click, hold then drag to drag", bundle: .module)
                     case .direct:
-                        Text("Tap to click there, drag to drag, hold to right-click")
+                        Text("Tap to click there, drag to drag, hold to right-click", bundle: .module)
                     }
-                    Text("Two fingers: tap to right-click, drag to scroll, pinch to zoom")
-                    Text("Three fingers: tap for the keyboard")
+                    Text("Two fingers: tap to right-click, drag to scroll, pinch to zoom", bundle: .module)
+                    Text("Three fingers: tap for the keyboard", bundle: .module)
                 }
             } label: {
                 Label(touchMode.title, systemImage: touchMode.systemImage).stageControl()
             }
-            .help("How a finger moves the pointer")
+            .help(.init("How a finger moves the pointer", bundle: .module))
         }
     #endif
 
@@ -688,38 +688,38 @@ public struct RemoteDesktopStageView: View {
             Button {
                 let text = RemoteDesktopClipboard.read() ?? ""
                 guard !text.isEmpty else {
-                    flash("Pasteboard is empty")
+                    flash(String(localized: "Pasteboard is empty", bundle: .module))
                     return
                 }
                 session.pushClipboard(text)
-                flash("Sent \(text.count) characters to the remote clipboard")
+                flash(String(localized: "Sent \(text.count) characters to the remote clipboard", bundle: .module))
             } label: {
-                Label("Push local clipboard", systemImage: "doc.on.clipboard")
+                Label(.init("Push local clipboard", bundle: .module), systemImage: "doc.on.clipboard")
             }
             Button {
                 let text = session.remoteClipboard
                 guard !text.isEmpty else {
-                    flash("Remote clipboard is empty")
+                    flash(String(localized: "Remote clipboard is empty", bundle: .module))
                     return
                 }
                 RemoteDesktopClipboard.write(text)
-                flash("Copied \(text.count) characters from the remote clipboard")
+                flash(String(localized: "Copied \(text.count) characters from the remote clipboard", bundle: .module))
             } label: {
-                Label("Pull remote clipboard", systemImage: "clipboard")
+                Label(.init("Pull remote clipboard", bundle: .module), systemImage: "clipboard")
             }
         } label: {
-            Label("Clipboard", systemImage: "clipboard").stageControl()
+            Label(.init("Clipboard", bundle: .module), systemImage: "clipboard").stageControl()
         }
-        .help("The clipboard syncs itself while connected; these push and pull by hand")
+        .help(.init("The clipboard syncs itself while connected; these push and pull by hand", bundle: .module))
     }
 
     private var officialAppMenu: some View {
         Menu {
             officialAppChoices
         } label: {
-            Label("Official App", systemImage: "pip").stageControl()
+            Label(.init("Official App", bundle: .module), systemImage: "pip").stageControl()
         }
-        .help("Hand off to the official UU Remote app")
+        .help(.init("Hand off to the official UU Remote app", bundle: .module))
     }
 
     @ViewBuilder private var officialAppChoices: some View {
@@ -727,27 +727,27 @@ public struct RemoteDesktopStageView: View {
             // Mac Catalyst cannot exec uuyc-cli; the official app is opened
             // through its URL scheme or the CLI when it exists.
             if UULocalBridge.cliInstalled || UULocalBridge.officialAppInstalled {
-                Button("Open in UU Remote app") {
+                Button(.init("Open in UU Remote app", bundle: .module)) {
                     UULocalBridge.openControlInOfficialApp(for: session.machine)
                 }
                 if UULocalBridge.cliInstalled {
-                    Button("Open remote terminal (uuyc-cli)") {
+                    Button(.init("Open remote terminal (uuyc-cli)", bundle: .module)) {
                         try? UULocalBridge.cliTerminal(deviceID: session.machine.uuDeviceID)
                     }
                 }
             } else {
-                Text("UURemote.app is not installed")
+                Text("UURemote.app is not installed", bundle: .module)
             }
             #else
             if officialAppInstalled {
-                Button("Open in UU Remote app (PiP)") {
+                Button(.init("Open in UU Remote app (PiP)", bundle: .module)) {
                     UULocalBridge.openControlInOfficialApp(for: session.machine)
                 }
-                Button("Re-authorize this device") {
+                Button(.init("Re-authorize this device", bundle: .module)) {
                     UULocalBridge.openAuthorizeInOfficialApp(for: session.machine)
                 }
             } else {
-                Text("UURemote app is not installed")
+                Text("UURemote app is not installed", bundle: .module)
             }
             #endif
     }
@@ -756,29 +756,29 @@ public struct RemoteDesktopStageView: View {
         Group {
             if session.phase.isTerminal || session.phase == .idle {
                 Button { session.connect() } label: {
-                    Label("Connect", systemImage: "play.circle").stageControl()
+                    Label(.init("Connect", bundle: .module), systemImage: "play.circle").stageControl()
                 }
-                .help("Connect")
+                .help(.init("Connect", bundle: .module))
             } else {
                 Button { session.disconnect() } label: {
-                    Label("Disconnect", systemImage: "stop.circle").stageControl()
+                    Label(.init("Disconnect", bundle: .module), systemImage: "stop.circle").stageControl()
                 }
-                .help("Disconnect")
+                .help(.init("Disconnect", bundle: .module))
             }
         }
     }
 
     private var textInputPopover: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Type text on the remote host")
+            Text("Type text on the remote host", bundle: .module)
                 .font(.rxCaption)
                 .foregroundStyle(Color.rxInkSecondary)
             HStack {
-                TextField("Text to send", text: $textDraft)
+                TextField(String(localized: "Text to send", bundle: .module), text: $textDraft)
                     .textFieldStyle(.roundedBorder)
                     .frame(minWidth: 220)
                     .onSubmit { sendDraft() }
-                Button("Send") { sendDraft() }
+                Button(.init("Send", bundle: .module)) { sendDraft() }
                     .disabled(textDraft.isEmpty)
             }
         }

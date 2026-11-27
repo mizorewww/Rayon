@@ -151,12 +151,12 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
         }
         guard let made = RemoteDesktopDriverFactory.make(for: machine, session: self) else {
             phase = .failed(protocolType == .none
-                ? "This server has no remote desktop configured."
-                : "\(protocolType.displayName) is not available in this build.")
+                ? String(localized: "This server has no remote desktop configured.", bundle: .module)
+                : String(localized: "\(protocolType.displayName) is not available in this build.", bundle: .module))
             return
         }
         driver = made
-        phase = .connecting("Opening connection")
+        phase = .connecting(String(localized: "Opening connection", bundle: .module))
         made.start(session: self)
     }
 
@@ -535,7 +535,7 @@ public extension RemoteDesktopPhase {
 public extension RDMachine.RemoteDesktopProtocolType {
     var displayName: String {
         switch self {
-        case .none: return "None"
+        case .none: return String(localized: "None", bundle: .module)
         case .vnc: return "VNC"
         case .uuRemote: return "UU Remote"
         }

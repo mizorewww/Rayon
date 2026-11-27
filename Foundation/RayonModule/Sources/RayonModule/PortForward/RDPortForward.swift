@@ -93,15 +93,15 @@ public struct RDPortForward: StoredRecord {
 
     public func shortDescription() -> String {
         guard isValid() else {
-            return "Invalid Forward"
+            return String(localized: "Invalid Forward", bundle: .module)
         }
         switch forwardOrientation {
         case .listenLocal:
-            return "localhost:\(bindPort) -\(getMachineName() ?? "Unknown")-> \(targetHost):\(targetPort)"
+            return "localhost:\(bindPort) -\(getMachineName() ?? String(localized: "Unknown", bundle: .module))-> \(targetHost):\(targetPort)"
         case .listenRemote:
-            return "\(getMachineName() ?? "Unknown"):\(bindPort) -localhost-> \(targetHost):\(targetPort)"
+            return "\(getMachineName() ?? String(localized: "Unknown", bundle: .module)):\(bindPort) -localhost-> \(targetHost):\(targetPort)"
         case .dynamicSOCKS:
-            return "SOCKS5 localhost:\(bindPort) -\(getMachineName() ?? "Unknown")-> *"
+            return "SOCKS5 localhost:\(bindPort) -\(getMachineName() ?? String(localized: "Unknown", bundle: .module))-> *"
         }
     }
 

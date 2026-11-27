@@ -48,8 +48,8 @@ public struct HostKeyQuestion: Sendable {
 
     public var title: String {
         isWarning
-            ? "WARNING: the host key of \(host) has changed"
-            : "Trust \(host)?"
+            ? String(localized: "WARNING: the host key of \(host) has changed", bundle: .module)
+            : String(localized: "Trust \(host)?", bundle: .module)
     }
 
     /// The explanation, then the keys.
@@ -59,14 +59,13 @@ public struct HostKeyQuestion: Sendable {
 
     public var explanation: String {
         let name = port == 22 ? host : "\(host):\(port)"
-        let compare = "Compare the key's fingerprint with the server's own (ssh-keygen -lf /etc/ssh/ssh_host_*_key.pub) before trusting it."
         guard let saved else {
-            return "Rayon has not connected to \(name) before. " + compare
+            return String(localized: "Rayon has not connected to \(name) before. Compare the key's fingerprint with the server's own (ssh-keygen -lf /etc/ssh/ssh_host_*_key.pub) before trusting it.", bundle: .module)
         }
         guard isWarning else {
-            return "Rayon saved the \(saved.type) key of \(name); the server now presents its \(offered.type) key, which Rayon has not seen. Servers have a key of each type, and this version of Rayon asks for Ed25519 first. " + compare
+            return String(localized: "Rayon saved the \(saved.type) key of \(name); the server now presents its \(offered.type) key, which Rayon has not seen. Servers have a key of each type, and this version of Rayon asks for Ed25519 first. Compare the key's fingerprint with the server's own (ssh-keygen -lf /etc/ssh/ssh_host_*_key.pub) before trusting it.", bundle: .module)
         }
-        return "\(name) presented a different host key than the one saved for it. Someone may be intercepting the connection. Only replace the saved key if you know the server was reinstalled or its keys were changed."
+        return String(localized: "\(name) presented a different host key than the one saved for it. Someone may be intercepting the connection. Only replace the saved key if you know the server was reinstalled or its keys were changed.", bundle: .module)
     }
 
     /// The offered key's type and fingerprint, after the saved one's when
@@ -74,11 +73,11 @@ public struct HostKeyQuestion: Sendable {
     public var keys: String {
         let offeredKey = "\(offered.type)\n\(offered.fingerprint)"
         guard let saved, isWarning else { return offeredKey }
-        return "Saved: \(saved.type)\n\(saved.fingerprint)\n\nOffered: \(offeredKey)"
+        return String(localized: "Saved: \(saved.type)\n\(saved.fingerprint)\n\nOffered: \(offeredKey)", bundle: .module)
     }
 
     public var confirmTitle: String {
-        isWarning ? "Replace Saved Key" : "Trust and Connect"
+        isWarning ? String(localized: "Replace Saved Key", bundle: .module) : String(localized: "Trust and Connect", bundle: .module)
     }
 }
 

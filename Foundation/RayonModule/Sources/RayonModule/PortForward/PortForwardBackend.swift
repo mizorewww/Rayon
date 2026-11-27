@@ -28,7 +28,7 @@ public final class PortForwardBackend: ObservableObject {
               let mid = portFwd.usingMachine,
               let machine = RayonStore.shared.machine(mid)
         else {
-            onError?("Invalid Info")
+            onError?(String(localized: "Invalid Info", bundle: .module))
             return
         }
         let context = PortForwardContext(

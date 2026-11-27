@@ -19,7 +19,7 @@ final class VNCConnection: VNCTransport {
     /// Connects to `host:port`, failing after `timeout` seconds.
     static func connect(host: String, port: UInt16, timeout: TimeInterval) async throws -> VNCConnection {
         guard let endpointPort = NWEndpoint.Port(rawValue: port) else {
-            throw VNCStreamError.failed("Invalid VNC port \(port)")
+            throw VNCStreamError.failed(String(localized: "Invalid VNC port \(port)", bundle: .module))
         }
         let tcp = NWProtocolTCP.Options()
         tcp.connectionTimeout = Int(max(timeout, 1).rounded(.up))
@@ -47,7 +47,7 @@ final class VNCConnection: VNCTransport {
                         // `waiting` means no path or a refused connect;
                         // retrying silently would only hide the reason.
                         connection.cancel()
-                        finish(.failure(VNCStreamError.failed("Could not connect to \(host):\(port) (\(error.localizedDescription))")))
+                        finish(.failure(VNCStreamError.failed(String(localized: "Could not connect to \(host):\(port) (\(error.localizedDescription))", bundle: .module))))
                     case .cancelled:
                         finish(.failure(CancellationError()))
                     default:

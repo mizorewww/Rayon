@@ -48,10 +48,10 @@ public enum PreferencesBackup {
         let (_, files) = try BackupArchive.read(url, kind: .preferences, password: nil)
         guard let data = files[preferencesFile],
               let values = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
-        else { throw BackupError.damaged("it has no settings") }
+        else { throw BackupError.damaged(String(localized: "it has no settings", bundle: .module)) }
         // Older backups kept other keys, and the terminal among them.
-        guard let file = files[terminalFile] else { throw BackupError.damaged("it is from an older version of Rayon") }
-        guard let text = String(data: file, encoding: .utf8) else { throw BackupError.damaged("its terminal settings are not text") }
+        guard let file = files[terminalFile] else { throw BackupError.damaged(String(localized: "it is from an older version of Rayon", bundle: .module)) }
+        guard let text = String(data: file, encoding: .utf8) else { throw BackupError.damaged(String(localized: "its terminal settings are not text", bundle: .module)) }
         try terminal.load(text)
         var count = 0
         for key in keys {

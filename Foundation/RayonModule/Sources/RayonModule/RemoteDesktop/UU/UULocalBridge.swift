@@ -164,7 +164,7 @@ public enum UULocalBridge {
     public static func runCLI(_ arguments: [String], timeout: TimeInterval = 15) throws -> Data {
         #if os(macOS) && !targetEnvironment(macCatalyst)
             guard cliInstalled else {
-                throw CocoaError(.fileNoSuchFile, userInfo: [NSLocalizedDescriptionKey: "uuyc-cli not installed"])
+                throw CocoaError(.fileNoSuchFile, userInfo: [NSLocalizedDescriptionKey: String(localized: "uuyc-cli not installed", bundle: .module)])
             }
             let process = Process()
             process.executableURL = URL(fileURLWithPath: uuCLIPath)
@@ -176,11 +176,11 @@ public enum UULocalBridge {
             let data = pipe.fileHandleForReading.readDataToEndOfFile()
             process.waitUntilExit()
             guard process.terminationStatus == 0 else {
-                throw CocoaError(.executableLoad, userInfo: [NSLocalizedDescriptionKey: "uuyc-cli exited \(process.terminationStatus)"])
+                throw CocoaError(.executableLoad, userInfo: [NSLocalizedDescriptionKey: String(localized: "uuyc-cli exited \(process.terminationStatus)", bundle: .module)])
             }
             return data
         #else
-            throw CocoaError(.featureUnsupported, userInfo: [NSLocalizedDescriptionKey: "uuyc-cli is only available on macOS"])
+            throw CocoaError(.featureUnsupported, userInfo: [NSLocalizedDescriptionKey: String(localized: "uuyc-cli is only available on macOS", bundle: .module)])
         #endif
     }
 

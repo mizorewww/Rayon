@@ -13,8 +13,8 @@ public extension RDPortForward.ForwardOrientation {
     /// The kind, as a row's tag.
     var label: String {
         switch self {
-        case .listenLocal: return "Listen local"
-        case .listenRemote: return "Listen remote"
+        case .listenLocal: return String(localized: "Listen local", bundle: .module)
+        case .listenRemote: return String(localized: "Listen remote", bundle: .module)
         case .dynamicSOCKS: return "SOCKS5 (-D)"
         }
     }
@@ -22,9 +22,9 @@ public extension RDPortForward.ForwardOrientation {
     /// Where traffic goes, from `device` ("This Mac", "This iPhone").
     func flowDescription(device: String) -> String {
         switch self {
-        case .listenLocal: return "\(device) :port → server → target"
-        case .listenRemote: return "Server :port → \(device.prefix(1).lowercased() + device.dropFirst()) → target"
-        case .dynamicSOCKS: return "\(device) :port (SOCKS5) → server → any destination"
+        case .listenLocal: return String(localized: "\(device) :port → server → target", bundle: .module)
+        case .listenRemote: return String(localized: "Server :port → \(device.prefix(1).lowercased() + device.dropFirst()) → target", bundle: .module)
+        case .dynamicSOCKS: return String(localized: "\(device) :port (SOCKS5) → server → any destination", bundle: .module)
         }
     }
 }
@@ -32,7 +32,7 @@ public extension RDPortForward.ForwardOrientation {
 public extension RDPortForward {
     /// host:port, or what a SOCKS proxy reaches instead.
     var targetLabel: String {
-        if forwardOrientation == .dynamicSOCKS { return "SOCKS5 proxy" }
+        if forwardOrientation == .dynamicSOCKS { return String(localized: "SOCKS5 proxy", bundle: .module) }
         return targetHost.isEmpty ? "—" : "\(targetHost):\(targetPort)"
     }
 

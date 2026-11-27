@@ -24,11 +24,11 @@ public struct FolderDeletionPlan {
         unlinksAccount = account.isLoggedIn && folder.id == account.folder(store: store)?.id
         let count = store.machines(inFolder: folder.id).count
         var consequences: [String] = []
-        if unlinksAccount { consequences.append("Rayon signs out of UU Remote; the devices stay on the account.") }
-        if count > 0 { consequences.append("Servers you added to it by hand move to Default.") }
-        message = "Delete the folder \"\(folder.name)\"?"
+        if unlinksAccount { consequences.append(String(localized: "Rayon signs out of UU Remote; the devices stay on the account.", bundle: .module)) }
+        if count > 0 { consequences.append(String(localized: "Servers you added to it by hand move to Default.", bundle: .module)) }
+        message = String(localized: "Delete the folder \"\(folder.name)\"?", bundle: .module)
         informative = consequences.isEmpty ? nil : consequences.joined(separator: " ")
-        confirmTitle = unlinksAccount ? "Delete and Sign Out" : "Delete Folder"
+        confirmTitle = unlinksAccount ? String(localized: "Delete and Sign Out", bundle: .module) : String(localized: "Delete Folder", bundle: .module)
     }
 
     public func perform(store: RayonStore = .shared, account: UURemoteAccount = .shared) {

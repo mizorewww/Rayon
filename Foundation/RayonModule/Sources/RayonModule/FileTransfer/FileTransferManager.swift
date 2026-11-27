@@ -24,7 +24,7 @@ public class FileTransferManager: ObservableObject {
         if !force {
             for transfer in transfers where transfer.machine.id == machineId {
                 FileTransferInterface.uiHandler.requiresConfirmation(
-                    "Another file transfer for this machine is already running"
+                    String(localized: "Another file transfer for this machine is already running", bundle: .module)
                 ) { confirmed in
                     guard confirmed else {
                         return
@@ -35,7 +35,7 @@ public class FileTransferManager: ObservableObject {
             }
         }
         guard let machine = RayonStore.shared.machine(machineId) else {
-            FileTransferInterface.uiHandler.presentError("Unknown Bad Data")
+            FileTransferInterface.uiHandler.presentError(String(localized: "Unknown Bad Data", bundle: .module))
             return
         }
         let object = FileTransferContext(machine: machine, identity: RayonStore.shared.associatedIdentity(for: machine))

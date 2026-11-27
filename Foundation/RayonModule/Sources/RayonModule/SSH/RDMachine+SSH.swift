@@ -58,7 +58,7 @@ public extension RDMachine {
     ) async throws -> (SSHConnection, RDIdentity) {
         let identity = RayonStore.workerAssociatedIdentity(for: self)
         if associatedIdentity != nil, identity == nil {
-            throw SSHFailure(message: "The identity this server signs in with no longer exists.", unreachable: false)
+            throw SSHFailure(message: String(localized: "The identity this server signs in with no longer exists.", bundle: .module), unreachable: false)
         }
         return try await connectSSH(
             identity: identity,
@@ -88,10 +88,10 @@ public extension RDMachine {
             do {
                 credentials = try candidate.sshCredentials()
             } catch {
-                reasons.append("\(username) with \(candidate.signInDescription): \(error.localizedDescription)")
+                reasons.append(String(localized: "\(username) with \(candidate.signInDescription): \(error.localizedDescription)", bundle: .module))
                 continue
             }
-            hint?("[i] Signing in as \(username) with \(candidate.signInDescription)")
+            hint?("[i] \(String(localized: "Signing in as \(username) with \(candidate.signInDescription)", bundle: .module))")
             do {
                 let connection = try await connect(
                     username: username,
@@ -104,9 +104,9 @@ public extension RDMachine {
                 return (connection, candidate)
             } catch SSHError.authenticationFailed {
                 reachedServer = true
-                reasons.append("\(username) with \(candidate.signInDescription) was not accepted.")
+                reasons.append(String(localized: "\(username) with \(candidate.signInDescription) was not accepted.", bundle: .module))
             } catch let SSHError.agentUnavailable(reason) {
-                reasons.append("\(username) with \(candidate.signInDescription): \(reason)")
+                reasons.append(String(localized: "\(username) with \(candidate.signInDescription): \(reason)", bundle: .module))
             }
         }
         // When no identity got as far as the server (there were none, or
@@ -116,10 +116,10 @@ public extension RDMachine {
             try await reach(timeout: timeout, background: background, visited: visited)
         }
         guard !candidates.isEmpty else {
-            throw SSHFailure(message: "No identity to sign in with. Choose one for the server, or let an identity authenticate automatically.", unreachable: false)
+            throw SSHFailure(message: String(localized: "No identity to sign in with. Choose one for the server, or let an identity authenticate automatically.", bundle: .module), unreachable: false)
         }
         throw SSHFailure(
-            message: (["Could not sign in to \(name.isEmpty ? remoteAddress : name)."] + reasons).joined(separator: "\n"),
+            message: ([String(localized: "Could not sign in to \(name.isEmpty ? remoteAddress : name).", bundle: .module)] + reasons).joined(separator: "\n"),
             unreachable: false,
             outcome: reachedServer ? .authFailed : .other
         )
@@ -178,7 +178,7 @@ public extension RDMachine {
                 case let .unknownHostKey(key):
                     guard await HostKeyTrust.confirm(KnownHosts.shared.question(offering: key, host: host, port: port), background: background) else {
                         // Nothing mismatched: the person turned down a key never seen before.
-                        throw SSHFailure(message: "The host key of \(host) was not trusted.", unreachable: true)
+                        throw SSHFailure(message: String(localized: "The host key of \(host) was not trusted.", bundle: .module), unreachable: true)
                     }
                     KnownHosts.shared.trust(key, host: host, port: port)
                 case let .hostKeyChanged(offered, _):
@@ -210,7 +210,7 @@ public extension RDMachine {
             }
             let host = Self.cloudflareHostname(remoteAddress)
             guard !host.isEmpty else {
-                throw SSHFailure(message: "\"\(remoteAddress)\" is not a host name Cloudflare can serve.", unreachable: true)
+                throw SSHFailure(message: String(localized: "\"\(remoteAddress)\" is not a host name Cloudflare can serve.", bundle: .module), unreachable: true)
             }
             return .webSocket(SSHWebSocketEndpoint(host: host, headers: headers))
         case .uuRemote:
@@ -218,15 +218,15 @@ public extension RDMachine {
             return .socket { try await machine.openUUSSHStream(timeout: timeout) }
         case .proxyJump:
             guard let jumpID = proxyJumpMachineID else {
-                throw SSHFailure(message: "ProxyJump server is not selected.", unreachable: true)
+                throw SSHFailure(message: String(localized: "ProxyJump server is not selected.", bundle: .module), unreachable: true)
             }
             var visited = visited
             visited.insert(id)
             guard !visited.contains(jumpID), visited.count <= 5 else {
-                throw SSHFailure(message: "ProxyJump chain contains a loop.", unreachable: true)
+                throw SSHFailure(message: String(localized: "ProxyJump chain contains a loop.", bundle: .module), unreachable: true)
             }
             guard let bastion = RayonStore.workerMachine(for: jumpID) else {
-                throw SSHFailure(message: "The configured ProxyJump server no longer exists.", unreachable: true)
+                throw SSHFailure(message: String(localized: "The configured ProxyJump server no longer exists.", bundle: .module), unreachable: true)
             }
             do {
                 let (connection, _) = try await bastion.connectSSH(
@@ -239,7 +239,7 @@ public extension RDMachine {
                 )
                 return .jump(connection)
             } catch let failure as SSHFailure {
-                throw SSHFailure(message: "Jump host \(bastion.name): \(failure.message)", unreachable: true, outcome: failure.outcome)
+                throw SSHFailure(message: String(localized: "Jump host \(bastion.name): \(failure.message)", bundle: .module), unreachable: true, outcome: failure.outcome)
             }
         }
     }
@@ -256,15 +256,15 @@ public extension RDMachine {
     private func cloudflareReason(_ refusal: SSHWebSocketEndpoint.Refusal) -> String {
         let host = Self.cloudflareHostname(remoteAddress)
         let asksForSignIn = refusal.location?.contains("/cdn-cgi/access/") == true || [302, 401, 403].contains(refusal.status)
-        guard asksForSignIn else { return "Could not open a Cloudflare tunnel to \(host) (HTTP \(refusal.status))." }
+        guard asksForSignIn else { return String(localized: "Could not open a Cloudflare tunnel to \(host) (HTTP \(refusal.status)).", bundle: .module) }
         if !cloudflareServiceTokenID.isEmpty {
-            return "Cloudflare Access did not accept the service token for \(host). Check its Client ID and Secret, and that the application's policy allows it (Service Auth)."
+            return String(localized: "Cloudflare Access did not accept the service token for \(host). Check its Client ID and Secret, and that the application's policy allows it (Service Auth).", bundle: .module)
         }
-        return "\(host) is protected by Cloudflare Access and asks to sign in. Add a service token to the server (Edit Server › Cloudflare Access): signing in with a browser is not supported yet."
+        return String(localized: "\(host) is protected by Cloudflare Access and asks to sign in. Add a service token to the server (Edit Server › Cloudflare Access): signing in with a browser is not supported yet.", bundle: .module)
     }
 
     private func cloudflareReason(_ reason: String) -> String {
-        "Could not open a Cloudflare tunnel to \(Self.cloudflareHostname(remoteAddress)): \(reason)"
+        String(localized: "Could not open a Cloudflare tunnel to \(Self.cloudflareHostname(remoteAddress)): \(reason)", bundle: .module)
     }
 }
 
@@ -285,11 +285,11 @@ extension RDIdentity {
                 // The agent of the person's login session, as ssh and
                 // libssh2 find it; launchd sets it for every app.
                 guard let socket = environment["SSH_AUTH_SOCK"], !socket.isEmpty else {
-                    throw SSHFailure(message: "No SSH agent is running for this session (SSH_AUTH_SOCK is not set).", unreachable: false)
+                    throw SSHFailure(message: String(localized: "No SSH agent is running for this session (SSH_AUTH_SOCK is not set).", bundle: .module), unreachable: false)
                 }
                 return [.agent(SSHAgent(socketPath: socket))]
             #else
-                throw SSHFailure(message: "There is no SSH agent on iOS. Give the identity its private key instead.", unreachable: false)
+                throw SSHFailure(message: String(localized: "There is no SSH agent on iOS. Give the identity its private key instead.", bundle: .module), unreachable: false)
             #endif
         }
         if !privateKey.isEmpty {
@@ -298,14 +298,14 @@ extension RDIdentity {
         if !password.isEmpty {
             return [.password(password)]
         }
-        throw SSHFailure(message: "The identity has neither a password nor a private key.", unreachable: false)
+        throw SSHFailure(message: String(localized: "The identity has neither a password nor a private key.", bundle: .module), unreachable: false)
     }
 
     /// What the identity signs in with, for a status line: its key type
     /// and, when it has them, its group and comment.
     var signInDescription: String {
         var text = getKeyType()
-        if !group.isEmpty { text += " from \(group)" }
+        if !group.isEmpty { text = String(localized: "\(text) from \(group)", bundle: .module) }
         if !comment.isEmpty { text += " (\(comment))" }
         return text
     }

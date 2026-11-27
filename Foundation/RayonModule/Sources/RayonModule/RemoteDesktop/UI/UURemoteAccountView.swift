@@ -47,6 +47,14 @@ public struct UURemoteAccountView: View {
         case qr = "QR Code"
         case sms = "SMS"
         case token = "Token"
+
+        var title: LocalizedStringResource {
+            switch self {
+            case .qr: .init("QR Code", bundle: .module)
+            case .sms: .init("SMS", bundle: .module)
+            case .token: .init("Token", bundle: .module)
+            }
+        }
     }
 
     public var body: some View {
@@ -79,15 +87,15 @@ public struct UURemoteAccountView: View {
                 .font(.system(size: 34))
                 .foregroundStyle(Color.rxAccent)
             VStack(alignment: .leading, spacing: 2) {
-                Text(account.nickname.isEmpty ? "UU Remote account" : account.nickname)
+                Text(account.nickname.isEmpty ? String(localized: "UU Remote account", bundle: .module) : account.nickname)
                     .font(.rxBodyStrong)
                     .foregroundStyle(Color.rxInk)
-                Text("Signed in")
+                Text("Signed in", bundle: .module)
                     .font(.rxHelp)
                     .foregroundStyle(Color.rxInkSecondary)
             }
             Spacer()
-            Button("Sign Out", role: .destructive) { account.logout() }
+            Button(.init("Sign Out", bundle: .module), role: .destructive) { account.logout() }
                 .buttonStyle(.rx(.plain))
         }
         .rxCard()
@@ -97,17 +105,17 @@ public struct UURemoteAccountView: View {
     private var devicesCard: some View {
         VStack(alignment: .leading, spacing: RX.Space.s2) {
             HStack {
-                CardHead("Devices")
+                CardHead(String(localized: "Devices", bundle: .module))
                 Spacer()
                 Button {
                     run("refreshing") { try await account.refreshDevices() }
                 } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
+                    Label(.init("Refresh", bundle: .module), systemImage: "arrow.clockwise")
                 }
                 .buttonStyle(.rx(.plain, size: .small))
                 .disabled(busyAction == "refreshing")
             }
-            Text("They are servers in the \"\(account.folder()?.name ?? "UU Remote")\" folder, kept up to date with the account.")
+            Text("They are servers in the \"\(account.folder()?.name ?? "UU Remote")\" folder, kept up to date with the account.", bundle: .module)
                 .font(.rxHelp)
                 .foregroundStyle(Color.rxInkSecondary)
             ForEach(account.desktopDevices, id: \.deviceID) { device in
@@ -118,7 +126,7 @@ public struct UURemoteAccountView: View {
                     .font(.rxHelp)
                     .foregroundStyle(Color.rxDanger)
             } else if account.desktopDevices.isEmpty {
-                Text("No desktop devices on this account yet. Install UU Remote on a computer and sign in there with the same account.")
+                Text("No desktop devices on this account yet. Install UU Remote on a computer and sign in there with the same account.", bundle: .module)
                     .font(.rxHelp)
                     .foregroundStyle(Color.rxInkTertiary)
             }
@@ -134,18 +142,18 @@ public struct UURemoteAccountView: View {
                     .font(.rxBody)
                     .foregroundStyle(Color.rxInk)
                     .lineLimit(1)
-                Text("\(UUDeviceInfo.platformName(device.platform)) · \(device.isOnline ? "Online" : "Offline")")
+                Text("\(UUDeviceInfo.platformName(device.platform)) · \(device.isOnline ? String(localized: "Online", bundle: .module) : String(localized: "Offline", bundle: .module))", bundle: .module)
                     .font(.rxHelp)
                     .foregroundStyle(Color.rxInkSecondary)
                     .lineLimit(1)
             }
             Spacer()
             if let onOpenTerminal {
-                Button("Terminal") { onOpenTerminal(account.upsertMachine(for: device).id) }
+                Button(.init("Terminal", bundle: .module)) { onOpenTerminal(account.upsertMachine(for: device).id) }
                     .buttonStyle(.rx(.plain, size: .small))
                     .disabled(!device.isOnline)
             }
-            Button("Desktop") { connect(to: device) }
+            Button(.init("Desktop", bundle: .module)) { connect(to: device) }
                 .buttonStyle(.rx(size: .small))
                 .disabled(!device.isOnline)
         }
@@ -154,19 +162,19 @@ public struct UURemoteAccountView: View {
 
     private var assistCard: some View {
         VStack(alignment: .leading, spacing: RX.Space.s2) {
-            CardHead("Remote Assistance")
-            Text("Join someone's screen with the Connect ID and code their UU Remote shows.")
+            CardHead(String(localized: "Remote Assistance", bundle: .module))
+            Text("Join someone's screen with the Connect ID and code their UU Remote shows.", bundle: .module)
                 .font(.rxHelp)
                 .foregroundStyle(Color.rxInkSecondary)
             HStack(spacing: RX.Space.s2) {
-                TextField("Connect ID", text: $assistID)
+                TextField(String(localized: "Connect ID", bundle: .module), text: $assistID)
                     .textFieldStyle(.roundedBorder)
                     .font(.rxCode)
-                SecureField("Code", text: $assistCode)
+                SecureField(String(localized: "Code", bundle: .module), text: $assistCode)
                     .textFieldStyle(.roundedBorder)
                     .font(.rxCode)
                     .frame(width: 120)
-                Button("Join") { connectAssist() }
+                Button(.init("Join", bundle: .module)) { connectAssist() }
                     .buttonStyle(.rx)
                     .disabled(assistID.trimmingCharacters(in: .whitespaces).isEmpty || busyAction == "assist")
             }
@@ -180,13 +188,13 @@ public struct UURemoteAccountView: View {
         VStack(alignment: .leading, spacing: RX.Space.s4) {
             // The host's chrome names UU Remote; this says what signing in does.
             HStack {
-                Text("Sign in, and the account's computers appear as servers in a folder of their own, kept up to date.")
+                Text("Sign in, and the account's computers appear as servers in a folder of their own, kept up to date.", bundle: .module)
                     .font(.rxBody)
                     .foregroundStyle(Color.rxInkSecondary)
                 Spacer()
             }
-            Picker("Sign in with", selection: $loginMode) {
-                ForEach(LoginMode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            Picker(.init("Sign in with", bundle: .module), selection: $loginMode) {
+                ForEach(LoginMode.allCases, id: \.self) { Text($0.title).tag($0) }
             }
             .pickerStyle(.segmented)
             .labelsHidden()
@@ -219,15 +227,15 @@ public struct UURemoteAccountView: View {
                     ProgressView()
                 }
                 if account.qrLoginState == .expired {
-                    Button("Refresh Code") { generateQR() }
+                    Button(.init("Refresh Code", bundle: .module)) { generateQR() }
                         .buttonStyle(.rxPrimary)
                 }
             }
             .frame(width: 180, height: 180)
             VStack(alignment: .leading, spacing: RX.Space.s2) {
-                step(1, "Open UU Remote on your phone.")
-                step(2, "Tap Scan, and point it at this code.")
-                step(3, "Confirm the sign-in on the phone.")
+                step(1, .init("Open UU Remote on your phone.", bundle: .module))
+                step(2, .init("Tap Scan, and point it at this code.", bundle: .module))
+                step(3, .init("Confirm the sign-in on the phone.", bundle: .module))
                 Spacer(minLength: RX.Space.s2)
                 HStack(spacing: RX.Space.s2) {
                     if account.qrLoginState == .scanned || account.qrLoginState == .confirmed {
@@ -247,18 +255,18 @@ public struct UURemoteAccountView: View {
 
     private var qrStatus: String {
         switch account.qrLoginState {
-        case .idle, .generating: "Making a code…"
-        case .waiting: "Waiting for the scan."
-        case .scanned: "Scanned. Confirm on the phone."
-        case .confirmed: "Signing in…"
-        case .expired: "The code expired."
+        case .idle, .generating: String(localized: "Making a code…", bundle: .module)
+        case .waiting: String(localized: "Waiting for the scan.", bundle: .module)
+        case .scanned: String(localized: "Scanned. Confirm on the phone.", bundle: .module)
+        case .confirmed: String(localized: "Signing in…", bundle: .module)
+        case .expired: String(localized: "The code expired.", bundle: .module)
         case let .failed(reason): reason
         }
     }
 
-    private func step(_ number: Int, _ text: String) -> some View {
+    private func step(_ number: Int, _ text: LocalizedStringResource) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: RX.Space.s2) {
-            Text("\(number)")
+            Text(verbatim: "\(number)")
                 .font(.rxHelp.weight(.semibold))
                 .foregroundStyle(Color.rxOnAccent)
                 .frame(width: 18, height: 18)
@@ -276,33 +284,33 @@ public struct UURemoteAccountView: View {
     private var smsFields: some View {
         VStack(alignment: .leading, spacing: RX.Space.s2) {
             HStack(spacing: RX.Space.s2) {
-                TextField("+86", text: $phoneCountry)
+                TextField(String(localized: "+86", bundle: .module), text: $phoneCountry)
                     .textFieldStyle(.roundedBorder)
                     .font(.rxCode)
                     .frame(width: 64)
-                TextField("Phone number", text: $phoneNumber)
+                TextField(String(localized: "Phone number", bundle: .module), text: $phoneNumber)
                     .textFieldStyle(.roundedBorder)
                     .font(.rxCode)
                     #if os(iOS)
                     .keyboardType(.phonePad)
                     #endif
-                Button(busyAction == "sms-send" ? "Sending…" : "Send Code") {
+                Button(busyAction == "sms-send" ? LocalizedStringResource("Sending…", bundle: .module) : LocalizedStringResource("Send Code", bundle: .module)) {
                     run("sms-send") {
                         try await account.sendSMSCode(countryCode: phoneCountry, mobile: phoneNumber)
-                        infoLine = "A code was sent to \(phoneCountry) \(phoneNumber)."
+                        infoLine = String(localized: "A code was sent to \(phoneCountry) \(phoneNumber).", bundle: .module)
                     }
                 }
                 .buttonStyle(.rx)
                 .disabled(phoneNumber.isEmpty || busyAction == "sms-send")
             }
             HStack(spacing: RX.Space.s2) {
-                TextField("Code from the SMS", text: $smsCode)
+                TextField(String(localized: "Code from the SMS", bundle: .module), text: $smsCode)
                     .textFieldStyle(.roundedBorder)
                     .font(.rxCode)
                     #if os(iOS)
                     .keyboardType(.numberPad)
                     #endif
-                Button("Sign In") {
+                Button(.init("Sign In", bundle: .module)) {
                     run("sms-login") {
                         try await account.loginBySMS(countryCode: phoneCountry, mobile: phoneNumber, code: smsCode)
                     }
@@ -316,16 +324,16 @@ public struct UURemoteAccountView: View {
     private var tokenFields: some View {
         VStack(alignment: .leading, spacing: RX.Space.s2) {
             HStack(spacing: RX.Space.s2) {
-                SecureField("Access token", text: $tokenDraft)
+                SecureField(String(localized: "Access token", bundle: .module), text: $tokenDraft)
                     .textFieldStyle(.roundedBorder)
                     .font(.rxCode)
-                Button("Sign In") {
+                Button(.init("Sign In", bundle: .module)) {
                     run("token") { try await account.importToken(tokenDraft) }
                 }
                 .buttonStyle(.rxPrimary)
                 .disabled(tokenDraft.isEmpty || busyAction == "token")
             }
-            Text("For an access token you already have; most people sign in with the QR code.")
+            Text("For an access token you already have; most people sign in with the QR code.", bundle: .module)
                 .font(.rxHelp)
                 .foregroundStyle(Color.rxInkTertiary)
         }
@@ -355,9 +363,9 @@ public struct UURemoteAccountView: View {
         var machine = RDMachine(
             remoteAddress: id,
             remotePort: "22",
-            name: "Assist \(id)",
+            name: String(localized: "Assist \(id)", bundle: .module),
             // Not the account's folder: a refresh would treat it as a device.
-            comment: "UU Remote assistance session"
+            comment: String(localized: "UU Remote assistance session", bundle: .module)
         )
         machine.remoteDesktopProtocol = .uuRemote
         machine.transport = .uuRemote

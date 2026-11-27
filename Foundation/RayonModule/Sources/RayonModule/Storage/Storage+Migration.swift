@@ -74,7 +74,7 @@ struct DBMigration: Sendable {
     struct NewerSchema: LocalizedError {
         let version: Int
         var errorDescription: String? {
-            "The database is from a newer version of Rayon (schema \(version))."
+            String(localized: "The database is from a newer version of Rayon (schema \(version)).", bundle: .module)
         }
     }
 }

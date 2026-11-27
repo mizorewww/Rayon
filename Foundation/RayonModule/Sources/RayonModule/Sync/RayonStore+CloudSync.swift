@@ -95,13 +95,13 @@ public final class CloudSyncModel: ObservableObject {
     /// What to say under the switch.
     public var statusText: String {
         switch status {
-        case .off: return "Off"
-        case .unavailable: return "This build is not signed for iCloud."
-        case .noAccount: return "Sign in to iCloud to sync."
-        case .accountChanged: return "Paused: the iCloud account changed. Nothing has been sent to the account signed in now."
-        case .syncing: return "Syncing…"
-        case let .idle(lastSync?): return "Synced \(lastSync.formatted(.relative(presentation: .named)))"
-        case .idle(nil): return "Up to date"
+        case .off: return String(localized: "Off", bundle: .module)
+        case .unavailable: return String(localized: "This build is not signed for iCloud.", bundle: .module)
+        case .noAccount: return String(localized: "Sign in to iCloud to sync.", bundle: .module)
+        case .accountChanged: return String(localized: "Paused: the iCloud account changed. Nothing has been sent to the account signed in now.", bundle: .module)
+        case .syncing: return String(localized: "Syncing…", bundle: .module)
+        case let .idle(lastSync?): return String(localized: "Synced \(lastSync.formatted(.relative(presentation: .named)))", bundle: .module)
+        case .idle(nil): return String(localized: "Up to date", bundle: .module)
         case let .failed(message): return message
         }
     }

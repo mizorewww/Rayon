@@ -44,9 +44,9 @@ public final class TerminalManager: ObservableObject {
 
         public var title: String {
             switch self {
-            case .horizontal: return "Side by Side"
-            case .vertical: return "Stacked"
-            case .grid: return "Grid"
+            case .horizontal: return String(localized: "Side by Side", bundle: .module)
+            case .vertical: return String(localized: "Stacked", bundle: .module)
+            case .grid: return String(localized: "Grid", bundle: .module)
             }
         }
     }

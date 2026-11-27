@@ -123,7 +123,7 @@ public actor CloudSync {
         // engine would start over without it. `CloudSyncModel` applies the
         // preferences again once it does.
         guard storage.openIfNeeded() else {
-            publish(.failed(storage.openProblem ?? "The database cannot be opened."))
+            publish(.failed(storage.openProblem ?? String(localized: "The database cannot be opened.", bundle: .module)))
             return
         }
         let tables = new.syncedTables

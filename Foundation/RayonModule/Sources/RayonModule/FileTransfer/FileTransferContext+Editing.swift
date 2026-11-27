@@ -19,12 +19,12 @@ public enum RemoteTextFileError: LocalizedError, Equatable {
     public var errorDescription: String? {
         switch self {
         case .notConnected:
-            return "Not connected to the server."
+            return String(localized: "Not connected to the server.", bundle: .module)
         case let .tooLarge(bytes, limit):
             let formatter = ByteCountFormatter()
-            return "This file is \(formatter.string(fromByteCount: bytes)); files up to \(formatter.string(fromByteCount: limit)) open in the editor. Download it instead."
+            return String(localized: "This file is \(formatter.string(fromByteCount: bytes)); files up to \(formatter.string(fromByteCount: limit)) open in the editor. Download it instead.", bundle: .module)
         case .notText:
-            return "This file isn't UTF-8 text, so it can't be edited here. Download it instead."
+            return String(localized: "This file isn't UTF-8 text, so it can't be edited here. Download it instead.", bundle: .module)
         case let .transfer(message):
             return message
         }
@@ -75,7 +75,7 @@ public extension FileTransferContext {
             do {
                 try await sftp.download(remotePath, to: local) { _ in }
             } catch {
-                throw RemoteTextFileError.transfer(Self.describe(error, "Couldn't read \(remotePath)"))
+                throw RemoteTextFileError.transfer(Self.describe(error, String(localized: "Couldn't read \(remotePath)", bundle: .module)))
             }
         }
         let data = try Data(contentsOf: local)
@@ -102,7 +102,7 @@ public extension FileTransferContext {
             do {
                 try await sftp.upload(local, toDirectory: directory) { _ in }
             } catch {
-                throw RemoteTextFileError.transfer(Self.describe(error, "Couldn't save \(remotePath)"))
+                throw RemoteTextFileError.transfer(Self.describe(error, String(localized: "Couldn't save \(remotePath)", bundle: .module)))
             }
         }
     }

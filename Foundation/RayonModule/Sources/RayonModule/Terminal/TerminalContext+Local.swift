@@ -42,7 +42,7 @@
                     rows: max(8, Int(initial.height))
                 )
             } catch {
-                putInformation("[!] Failed to start the local shell (\(error)).")
+                putInformation("[!] \(String(localized: "Failed to start the local shell (\(String(describing: error))).", bundle: .module))")
                 return
             }
             let pid = terminal.pid

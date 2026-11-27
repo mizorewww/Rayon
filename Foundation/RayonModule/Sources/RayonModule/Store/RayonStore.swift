@@ -251,7 +251,7 @@ public extension RayonStore {
             guard candidate.id != probe.id, !candidate.isUURemoteDevice, candidate.hasAddress else { return nil }
             probe.proxyJumpMachineID = candidate.id
             if problem(saving: probe) != nil {
-                return JumpServerChoice(machine: candidate, unavailableReason: "its jumps lead back here")
+                return JumpServerChoice(machine: candidate, unavailableReason: String(localized: "its jumps lead back here", bundle: .module))
             }
             return JumpServerChoice(machine: candidate, unavailableReason: nil)
         }

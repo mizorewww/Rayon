@@ -32,11 +32,11 @@ extension RDMachine {
             // The device answered and nothing listens there: on a Mac,
             // Remote Login is off.
             throw SSHFailure(
-                message: "\(name) did not accept a connection to port \(port) through UU Remote (\(failure.message)). Turn on SSH on the device (on a Mac: System Settings › General › Sharing › Remote Login).",
+                message: String(localized: "\(name) did not accept a connection to port \(port) through UU Remote (\(failure.message)). Turn on SSH on the device (on a Mac: System Settings › General › Sharing › Remote Login).", bundle: .module),
                 unreachable: true
             )
         } catch {
-            throw SSHFailure(message: "Could not reach \(name) through UU Remote: \(error.localizedDescription)", unreachable: true)
+            throw SSHFailure(message: String(localized: "Could not reach \(name) through UU Remote: \(error.localizedDescription)", bundle: .module), unreachable: true)
         }
         if Task.isCancelled {
             Darwin.close(descriptor)

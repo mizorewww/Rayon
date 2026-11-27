@@ -18,19 +18,19 @@ public struct PortForwardPresentation: Equatable {
     public init(state: PortForwardContext.Lifecycle?, running: Bool) {
         switch state {
         case .awaitingConnect, .openingChannel:
-            (status, text) = (.running, "Connecting")
+            (status, text) = (.running, String(localized: "Connecting", bundle: .module))
         case .forwardRunning:
-            (status, text) = running ? (.success, "Running") : (.off, "Stopped")
+            (status, text) = running ? (.success, String(localized: "Running", bundle: .module)) : (.off, String(localized: "Stopped", bundle: .module))
         case .failedConnect:
-            (status, text) = (.danger, "Could not connect")
+            (status, text) = (.danger, String(localized: "Could not connect", bundle: .module))
         case .failedAuthenticate:
-            (status, text) = (.danger, "Could not sign in")
+            (status, text) = (.danger, String(localized: "Could not sign in", bundle: .module))
         case .portInUse:
-            (status, text) = (.danger, "Port in use")
+            (status, text) = (.danger, String(localized: "Port in use", bundle: .module))
         case .forwardStopped:
-            (status, text) = running ? (.danger, "Forward ended") : (.off, "Stopped")
+            (status, text) = running ? (.danger, String(localized: "Forward ended", bundle: .module)) : (.off, String(localized: "Stopped", bundle: .module))
         case .terminating, .terminated, .none:
-            (status, text) = running ? (.running, "Starting") : (.off, "Stopped")
+            (status, text) = running ? (.running, String(localized: "Starting", bundle: .module)) : (.off, String(localized: "Stopped", bundle: .module))
         }
     }
 }

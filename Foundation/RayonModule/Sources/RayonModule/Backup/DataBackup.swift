@@ -101,11 +101,11 @@ public enum DataBackup {
     public static func read(_ url: URL, password: String?) throws -> DataBackupContents {
         if let legacy = legacyData(url) { return try LegacyBackup.read(legacy, password: password) }
         let (manifest, files) = try BackupArchive.read(url, kind: .data, password: password)
-        guard let database = files[databaseFile] else { throw BackupError.damaged("it has no database") }
+        guard let database = files[databaseFile] else { throw BackupError.damaged(String(localized: "it has no database", bundle: .module)) }
         let secrets: [String: Data]
         if let data = files[secretsFile] {
             guard let decoded = try? JSONDecoder().decode([String: Data].self, from: data) else {
-                throw BackupError.damaged("its passwords and keys cannot be read")
+                throw BackupError.damaged(String(localized: "its passwords and keys cannot be read", bundle: .module))
             }
             secrets = decoded
         } else {
@@ -118,7 +118,7 @@ public enum DataBackup {
         try database.write(to: snapshotURL)
         let snapshot = Database(at: snapshotURL.path)
         defer { snapshot.close() }
-        guard snapshot.canOpen else { throw BackupError.damaged("its database cannot be opened") }
+        guard snapshot.canOpen else { throw BackupError.damaged(String(localized: "its database cannot be opened", bundle: .module)) }
         do {
             // A snapshot of an older schema is brought up to this one.
             try DBMigration.migrate(snapshot)
@@ -139,7 +139,7 @@ public enum DataBackup {
                 var row = row
                 if let data = secrets[row.secretAccount] {
                     guard let value = try? JSONDecoder().decode(T.Secrets.self, from: data) else {
-                        throw BackupError.damaged("the passwords of \(T.tableName) \(row.id) cannot be read")
+                        throw BackupError.damaged(String(localized: "the passwords of \(T.tableName) \(row.id.uuidString) cannot be read", bundle: .module))
                     }
                     row.secrets = value
                 } else if present.contains(row.secretAccount) {
@@ -194,9 +194,9 @@ public extension RayonStore {
 
         /// "3 servers, 1 identity, …", and what was not saved.
         public var summary: String {
-            var text = "\(machines) servers, \(identities) identities, \(snippets) snippets, and \(forwards) port forwards"
-            if refused > 0 { text += "; \(refused) could not be saved" }
-            return text + "."
+            refused > 0
+                ? String(localized: "\(machines) servers, \(identities) identities, \(snippets) snippets, and \(forwards) port forwards; \(refused) could not be saved.", bundle: .module)
+                : String(localized: "\(machines) servers, \(identities) identities, \(snippets) snippets, and \(forwards) port forwards.", bundle: .module)
         }
     }
 

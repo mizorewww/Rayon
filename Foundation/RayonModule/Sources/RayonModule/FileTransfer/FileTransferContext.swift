@@ -143,7 +143,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
     }
 
     private func connect() async {
-        putInformation("Connecting...")
+        putInformation(String(localized: "Connecting...", bundle: .module))
         onMainThread {
             self.processConnection = true
             self.connectionPhase = .connecting
@@ -166,7 +166,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
             sftp = try await lease.connection.openSFTP()
         } catch {
             lease.release()
-            putInformation("Failed to setup file transfer protocol")
+            putInformation(String(localized: "Failed to setup file transfer protocol", bundle: .module))
             onMainThread { self.processShutdown() }
             return
         }
@@ -186,7 +186,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
     }
 
     public func processShutdown() {
-        putInformation("Connection Closed")
+        putInformation(String(localized: "Connection Closed", bundle: .module))
         onMainThread {
             self.connected = false
             self.currentFileList = []
@@ -261,8 +261,8 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
     }
 
     static func describe(_ error: Error, _ fallback: String) -> String {
-        if error is CancellationError { return "Cancelled" }
-        return "\(fallback): \(SFTPSession.describe(error))"
+        if error is CancellationError { return String(localized: "Cancelled", bundle: .module) }
+        return String(localized: "\(fallback): \(SFTPSession.describe(error))", bundle: .module)
     }
 
     private func reportProgress(_ progress: SFTPProgress) {
@@ -280,18 +280,18 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
         let currentDir = currentDir
         let currentUrl = currentUrl
         enqueue { [self] sftp in
-            putInformation("Loading... \(currentDir)")
+            putInformation(String(localized: "Loading... \(currentDir)", bundle: .module))
             onMainThread { self.isProgressRunning = true }
             let entries: [SFTPEntry]
             do {
                 entries = try await sftp?.entries(at: currentDir) ?? []
             } catch {
                 entries = []
-                report(error, "Failed to list \(currentDir)")
+                report(error, String(localized: "Failed to list \(currentDir)", bundle: .module))
             }
             let targets = await Self.linkTargets(of: entries, in: currentDir, sftp: sftp)
             let builder = entries.map { RemoteFile(base: currentUrl, name: $0.name, fstat: $0, linkTarget: targets[$0.name]) }
-            putInformation("Load Complete")
+            putInformation(String(localized: "Load Complete", bundle: .module))
             onMainThread {
                 guard self.currentDir == currentDir else { return }
                 self.isProgressRunning = false
@@ -321,13 +321,13 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
         guard connectionAvailableCheckPassed() else { return }
         let url = currentUrl.appendingPathComponent(name)
         enqueue { [self] sftp in
-            putInformation("Creating Folder \(url.path)...")
+            putInformation(String(localized: "Creating Folder \(url.path)...", bundle: .module))
             onMainThread { self.isProgressRunning = true }
             do {
                 try await sftp?.createDirectory(at: url.path)
-                putInformation("Folder Created")
+                putInformation(String(localized: "Folder Created", bundle: .module))
             } catch {
-                report(error, "Failed to create folder")
+                report(error, String(localized: "Failed to create folder", bundle: .module))
             }
             onMainThread { self.loadCurrentFileList() }
         }
@@ -374,7 +374,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
                 self.isProgressRunning = true
                 self.currentProgressCancelable = true
             }
-            putInformation("Uploading...")
+            putInformation(String(localized: "Uploading...", bundle: .module))
             for (current, url) in urls.enumerated() {
                 onMainThread {
                     let progress = Progress(totalUnitCount: Int64(urls.count))
@@ -384,11 +384,11 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
                 do {
                     try await sftp?.upload(url, toDirectory: base.path) { [weak self] in self?.reportProgress($0) }
                 } catch {
-                    report(error, "Upload failed")
+                    report(error, String(localized: "Upload failed", bundle: .module))
                     break
                 }
             }
-            putInformation("Upload Completed")
+            putInformation(String(localized: "Upload Completed", bundle: .module))
             onMainThread { self.loadCurrentFileList() }
         }
     }
@@ -396,13 +396,13 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
     public func rename(from: URL, to: URL) {
         guard connectionAvailableCheckPassed() else { return }
         enqueue { [self] sftp in
-            putInformation("Renaming...")
+            putInformation(String(localized: "Renaming...", bundle: .module))
             onMainThread { self.isProgressRunning = true }
             do {
                 try await sftp?.rename(from.path, to: to.path)
-                putInformation("Renamed Successfully")
+                putInformation(String(localized: "Renamed Successfully", bundle: .module))
             } catch {
-                report(error, "Failed to rename")
+                report(error, String(localized: "Failed to rename", bundle: .module))
             }
             onMainThread { self.loadCurrentFileList() }
         }
@@ -417,14 +417,14 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
                 self.currentProgressCancelable = true
                 self.currentProcessingFile = item.path
             }
-            putInformation("Deleting...")
+            putInformation(String(localized: "Deleting...", bundle: .module))
             do {
                 try await sftp?.removeItem(at: item.path) { [weak self] file in
                     onMainThread { self?.currentProcessingFile = file }
                 }
-                putInformation("Delete Completed")
+                putInformation(String(localized: "Delete Completed", bundle: .module))
             } catch {
-                report(error, "Delete failed")
+                report(error, String(localized: "Delete failed", bundle: .module))
             }
             onMainThread { self.loadCurrentFileList() }
         }
@@ -452,15 +452,15 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
                 self.isProgressRunning = true
                 self.currentProgressCancelable = true
             }
-            putInformation("Downloading...")
+            putInformation(String(localized: "Downloading...", bundle: .module))
             do {
                 try await sftp?.download(fromPath, to: destination) { [weak self] in self?.reportProgress($0) }
-                putInformation("Download Completed")
+                putInformation(String(localized: "Download Completed", bundle: .module))
                 onMainThread {
                     FileTransferInterface.uiHandler.downloadCompleted()
                 }
             } catch {
-                report(error, "Download failed")
+                report(error, String(localized: "Download failed", bundle: .module))
             }
             onMainThread { self.loadCurrentFileList() }
         }

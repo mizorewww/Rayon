@@ -138,10 +138,10 @@ public struct RemoteDesktopStreamSettings: Equatable, Sendable {
     public static let frameRates = [30, 60, 90, 144]
     /// The presets in the official menu's order, with their bit rates.
     public static let qualities: [(value: Int, title: String)] = [
-        (5, "Auto"),
-        (4, "Original · 20 Mbps"),
-        (3, "Ultra HD · 8 Mbps"),
-        (2, "HD · 2 Mbps"),
+        (5, String(localized: "Auto", bundle: .module)),
+        (4, String(localized: "Original · 20 Mbps", bundle: .module)),
+        (3, String(localized: "Ultra HD · 8 Mbps", bundle: .module)),
+        (2, String(localized: "HD · 2 Mbps", bundle: .module)),
     ]
 
     public init(fps: Int = 60, quality: Int = 5, trueColor: Bool = false) {

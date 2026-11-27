@@ -16,14 +16,14 @@ public extension RDMachine {
         switch remoteDesktopProtocol {
         case .vnc:
             var parts = ["VNC", remoteAddress + ":" + vncPort]
-            if vncOverSSH { parts.append("over SSH") }
+            if vncOverSSH { parts.append(String(localized: "over SSH", bundle: .module)) }
             return parts.joined(separator: " · ")
         case .uuRemote:
             var parts = ["UU Remote"]
             // The device's name only when the server's says something else.
             let alias = uuDeviceAlias
             if !alias.isEmpty, alias != name { parts.append(alias) }
-            if let uuDevice { parts.append(uuDevice.isOnline ? "Online" : "Offline") }
+            if let uuDevice { parts.append(uuDevice.isOnline ? String(localized: "Online", bundle: .module) : String(localized: "Offline", bundle: .module)) }
             return parts.joined(separator: " · ")
         case .none:
             return ""
@@ -46,11 +46,11 @@ public extension RemoteDesktopSession {
     /// The phase in a word.
     var phaseTitle: String {
         switch phase {
-        case .connected: viewOnly ? "Viewing" : "Connected"
-        case .idle: "Idle"
-        case .connecting, .authenticating: "Connecting"
-        case .closed: "Closed"
-        case .failed: "Failed"
+        case .connected: viewOnly ? String(localized: "Viewing", bundle: .module) : String(localized: "Connected", bundle: .module)
+        case .idle: String(localized: "Idle", bundle: .module)
+        case .connecting, .authenticating: String(localized: "Connecting", bundle: .module)
+        case .closed: String(localized: "Closed", bundle: .module)
+        case .failed: String(localized: "Failed", bundle: .module)
         }
     }
 }

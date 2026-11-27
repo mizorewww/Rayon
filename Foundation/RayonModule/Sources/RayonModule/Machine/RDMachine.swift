@@ -237,7 +237,7 @@ public extension RDMachine {
         public var errorDescription: String? {
             switch self {
             case let .cycle(names):
-                "The proxy jumps go round in a circle: \(names.joined(separator: " → "))."
+                String(localized: "The proxy jumps go round in a circle: \(names.joined(separator: " → ")).", bundle: .module)
             }
         }
     }

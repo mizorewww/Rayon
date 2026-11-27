@@ -68,7 +68,7 @@ public final class RayonStorage: Sendable {
     public var openProblem: String? {
         if let replacedProblem { return replacedProblem }
         guard isClosed.withLock({ $0 }) else { return nil }
-        return "Rayon cannot open its database right now, so your servers are not shown. Nothing was changed: they appear once it opens."
+        return String(localized: "Rayon cannot open its database right now, so your servers are not shown. Nothing was changed: they appear once it opens.", bundle: .module)
     }
 
     /// Opens the database `open(at:)` could not, if it can now; whether it
@@ -135,7 +135,7 @@ public final class RayonStorage: Sendable {
                 return try RayonStorage(
                     databaseURL: scratch,
                     secrets: secrets,
-                    openProblem: "Your servers were last saved by a newer version of Rayon, so this one cannot open them. Update Rayon to see them; nothing changed until then is kept."
+                    openProblem: String(localized: "Your servers were last saved by a newer version of Rayon, so this one cannot open them. Update Rayon to see them; nothing changed until then is kept.", bundle: .module)
                 )
             } catch {
                 fatalError("unable to create a database at \(scratch.path): \(error)")

@@ -112,9 +112,9 @@ public enum Appearance: String, Codable, CaseIterable, Sendable {
 
     public var title: String {
         switch self {
-        case .system: "System"
-        case .light: "Light"
-        case .dark: "Dark"
+        case .system: String(localized: "System", bundle: .module)
+        case .light: String(localized: "Light", bundle: .module)
+        case .dark: String(localized: "Dark", bundle: .module)
         }
     }
 }

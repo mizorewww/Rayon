@@ -5,6 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "RayonModule",
+    defaultLocalization: "en",
     platforms: [
         .macOS(.v15),
         .iOS(.v18),
@@ -53,7 +54,8 @@ let package = Package(
                 "RayonTerminal",
                 "UURemoteKit",
                 "RayonPTY",
-            ]
+            ],
+            resources: [.process("Resources")]
         ),
         .target(name: "RayonPTY"),
         .testTarget(

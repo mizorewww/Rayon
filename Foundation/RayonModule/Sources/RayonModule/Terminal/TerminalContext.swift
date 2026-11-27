@@ -31,8 +31,8 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
     public var navigationTitle: String {
         switch remoteType {
         case .machine: return machine.shortDescription(withComment: false)
-        case .command: return command?.command ?? "Unknown Command"
-        case .local: return "Local Terminal"
+        case .command: return command?.command ?? String(localized: "Unknown Command", bundle: .module)
+        case .local: return String(localized: "Local Terminal", bundle: .module)
         }
     }
 
@@ -206,9 +206,9 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
     }
 
     public init(localShell surface: TerminalSessionSurface) {
-        machine = RDMachine(name: "Local Terminal")
+        machine = RDMachine(name: String(localized: "Local Terminal", bundle: .module))
         command = nil
-        _title = "Local Terminal"
+        _title = String(localized: "Local Terminal", bundle: .module)
         remoteType = .local
         self.surface = surface
         Self.queue.async {
@@ -240,7 +240,7 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
 
         Logger.terminal.infoFile("terminal \(id) opening for \(machine.id)")
         if remoteType != .local {
-            putInformation("[*] Creating Connection")
+            putInformation("[*] \(String(localized: "Creating Connection", bundle: .module))")
         }
         continueDecision = true
 
@@ -258,7 +258,7 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
             #if os(macOS)
                 runLocalTerminal()
             #else
-                putInformation("[!] Local shell is only supported on macOS.")
+                putInformation("[!] \(String(localized: "Local shell is only supported on macOS.", bundle: .module))")
             #endif
             onMainThread { self.processShutdown(exitFromShell: true) }
             return
@@ -293,7 +293,7 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
 
         if remoteType == .machine {
             let id = machine.id
-            let banner = connection.serverVersion.isEmpty ? "No Banner" : connection.serverVersion
+            let banner = connection.serverVersion.isEmpty ? String(localized: "No Banner", bundle: .module) : connection.serverVersion
             Task { @MainActor in
                 RayonStore.shared.updateMachine(id) { $0.lastBanner = banner }
             }
@@ -344,8 +344,8 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
     /// only "NIOSSHError error 1", and the link may not read as closed yet.
     static func shellEndedMessage(_ error: Error, linkActive: Bool, address: String) -> String {
         linkActive
-            ? "The shell ended (\(SSHTransport.describe(error)))."
-            : "The connection to \(address) was lost."
+            ? String(localized: "The shell ended (\(SSHTransport.describe(error))).", bundle: .module)
+            : String(localized: "The connection to \(address) was lost.", bundle: .module)
     }
 
     /// How many leading bytes end on a whole UTF-8 character.
@@ -400,7 +400,7 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
         discardPendingInput()
         if exitFromShell {
             putInformation("")
-            putInformation("[*] Connection Closed")
+            putInformation("[*] \(String(localized: "Connection Closed", bundle: .module))")
         }
         continueDecision = false
         endSSH()

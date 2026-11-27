@@ -27,8 +27,8 @@ public enum RemoteDesktopTouchMode: String, CaseIterable, Codable, Sendable {
 
     public var title: String {
         switch self {
-        case .trackpad: "Trackpad"
-        case .direct: "Direct Touch"
+        case .trackpad: String(localized: "Trackpad", bundle: .module)
+        case .direct: String(localized: "Direct Touch", bundle: .module)
         }
     }
 

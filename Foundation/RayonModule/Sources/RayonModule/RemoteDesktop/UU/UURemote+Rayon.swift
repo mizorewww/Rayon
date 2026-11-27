@@ -32,7 +32,7 @@ public extension UURemoteAccount {
 
     /// "1 desktop device", "3 desktop devices".
     nonisolated static func deviceCount(_ count: Int) -> String {
-        count == 1 ? "1 desktop device" : "\(count) desktop devices"
+        String(localized: "\(count) desktop devices", bundle: .module)
     }
 
     /// The folder this account's devices are in, if it was made.

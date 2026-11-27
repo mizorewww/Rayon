@@ -31,7 +31,7 @@ enum VNCAppleAuth {
         let generator = header.readU16BE(at: 0)
         let keyLength = Int(header.readU16BE(at: 2))
         guard keyLength > 0, keyLength <= 1024 else {
-            throw RemoteDesktopFailure("The server sent an unusable Apple authentication key length (\(keyLength)).")
+            throw RemoteDesktopFailure(String(localized: "The server sent an unusable Apple authentication key length (\(keyLength)).", bundle: .module))
         }
         let prime = Array(try await reader.read(exactly: keyLength))
         let publicKey = Array(try await reader.read(exactly: keyLength))
@@ -59,7 +59,7 @@ enum VNCAppleAuth {
               isValidGroupElement(generator, prime: prime),
               isValidGroupElement(serverPublicKey, prime: prime)
         else {
-            throw RemoteDesktopFailure("The server sent unusable Apple authentication key parameters.")
+            throw RemoteDesktopFailure(String(localized: "The server sent unusable Apple authentication key parameters.", bundle: .module))
         }
         // The private exponent lands in [2, p − 2].
         let secret = BigUInt(Data(randomBytes(length))) % (prime - 3) + 2
@@ -69,7 +69,7 @@ enum VNCAppleAuth {
         let key = Array(Insecure.MD5.hash(data: bigEndianBytes(shared, length: length)))
         let plain = credentialBlock(username: username, password: password)
         guard let cipher = aes128ECB(plain, key: key) else {
-            throw RemoteDesktopFailure("Could not encrypt the Apple authentication credentials.")
+            throw RemoteDesktopFailure(String(localized: "Could not encrypt the Apple authentication credentials.", bundle: .module))
         }
         var data = Data(cipher)
         data.append(bigEndianBytes(publicKey, length: length))

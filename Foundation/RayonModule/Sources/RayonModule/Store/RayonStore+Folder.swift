@@ -46,7 +46,7 @@ public extension RayonStore {
     @discardableResult
     func createFolder(named name: String, source: RDFolder.Source = .local) -> RDFolder {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        let folder = RDFolder(name: availableFolderName(trimmed.isEmpty ? "New Folder" : trimmed), source: source)
+        let folder = RDFolder(name: availableFolderName(trimmed.isEmpty ? String(localized: "New Folder", bundle: .module) : trimmed), source: source)
         save(folder)
         return self.folder(folder.id) ?? folder
     }
