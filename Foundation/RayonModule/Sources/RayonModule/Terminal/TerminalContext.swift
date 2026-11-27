@@ -104,6 +104,8 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
     private var _terminalSize: CGSize = defaultTerminalSize
     private var _continueDecision: Bool = true
     internal let uuWakeSemaphore = DispatchSemaphore(value: 0)
+    /// The UU terminal behind this tab, when it is one.
+    @MainActor var uuTerminalLink: UUTerminalLink?
 
     public var terminalSize: CGSize {
         get {

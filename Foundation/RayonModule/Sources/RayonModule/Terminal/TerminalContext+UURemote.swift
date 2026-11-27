@@ -8,7 +8,7 @@
 //
 
 import Foundation
-import ObjectiveC
+import Synchronization
 import UURemoteKit
 
 extension TerminalContext {
@@ -17,7 +17,7 @@ extension TerminalContext {
     func runUURemoteTerminal() {
         putInformation("[*] Connecting through UU Remote")
         let finished = DispatchSemaphore(value: 0)
-        nonisolated(unsafe) let context = self
+        let context = self
         let machine = machine
         let initial = terminalSize
 
@@ -52,18 +52,8 @@ extension TerminalContext {
     }
 }
 
-private nonisolated(unsafe) var uuTerminalLinkKey: UInt8 = 0
-
-extension TerminalContext {
-    /// The UU terminal behind this tab; main thread only.
-    @MainActor fileprivate var uuTerminalLink: UUTerminalLink? {
-        get { objc_getAssociatedObject(self, &uuTerminalLinkKey) as? UUTerminalLink }
-        set { objc_setAssociatedObject(self, &uuTerminalLinkKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
-    }
-}
-
 @MainActor
-private final class UUTerminalLink {
+final class UUTerminalLink {
     let machine: RDMachine
     let finished: DispatchSemaphore
     let wake: DispatchSemaphore
@@ -202,10 +192,14 @@ private final class UUTerminalLink {
 }
 
 /// UTF-8 text out of chunks that may split a character between them.
-final class UTF8StreamDecoder: @unchecked Sendable {
-    private var pending = Data()
+final class UTF8StreamDecoder: Sendable {
+    private let pendingBytes = Mutex(Data())
 
     func decode(_ chunk: Data) -> String {
+        pendingBytes.withLock { Self.decode(chunk, pending: &$0) }
+    }
+
+    private static func decode(_ chunk: Data, pending: inout Data) -> String {
         pending.append(chunk)
         guard !pending.isEmpty else { return "" }
         var end = pending.count
