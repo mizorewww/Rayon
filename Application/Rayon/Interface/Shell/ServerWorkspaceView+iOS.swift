@@ -21,6 +21,7 @@
         /// A command's `tabGroupKey`.
         case command(String)
 
+        @MainActor
         init(_ context: TerminalContext) {
             self = context.remoteType == .machine ? .server(context.machine.id) : .command(context.tabGroupKey)
         }

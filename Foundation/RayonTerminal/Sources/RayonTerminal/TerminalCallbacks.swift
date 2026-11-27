@@ -1,40 +1,44 @@
 import Foundation
+import Synchronization
 
-/// Registration may happen on an SSH worker. Delivery stays on the UI thread,
+/// Registration may happen on an SSH worker. Delivery stays on the main actor,
 /// like the old WebKit message handlers. Never invoke a client while holding the lock.
-final class TerminalCallbacks: @unchecked Sendable {
-    private let lock = NSLock()
-    private var input: ((String) -> Void)?
-    private var title: ((String) -> Void)?
-    private var bell: (() -> Void)?
-    private var resize: ((CGSize) -> Void)?
-    private var size = CGSize(width: 80, height: 40)
-    private var requestedFontSize = 14
-    private var decoder = TerminalInputDecoder()
+final class TerminalCallbacks: Sendable {
+    private struct State {
+        var input: (@MainActor (String) -> Void)?
+        var title: (@MainActor (String) -> Void)?
+        var bell: (@MainActor () -> Void)?
+        var resize: (@MainActor (CGSize) -> Void)?
+        var size = CGSize(width: 80, height: 40)
+        var requestedFontSize = 14
+        var decoder = TerminalInputDecoder()
+    }
 
-    func setInput(_ callback: ((String) -> Void)?) {
-        lock.withLock {
-            input = callback
-            decoder.reset()
+    private let state = Mutex(State())
+
+    func setInput(_ callback: (@MainActor (String) -> Void)?) {
+        state.withLock {
+            $0.input = callback
+            $0.decoder.reset()
         }
     }
-    func setTitle(_ callback: ((String) -> Void)?) { lock.withLock { title = callback } }
-    func setBell(_ callback: (() -> Void)?) { lock.withLock { bell = callback } }
-    func setResize(_ callback: ((CGSize) -> Void)?) {
-        lock.withLock { resize = callback }
+    func setTitle(_ callback: (@MainActor (String) -> Void)?) { state.withLock { $0.title = callback } }
+    func setBell(_ callback: (@MainActor () -> Void)?) { state.withLock { $0.bell = callback } }
+    func setResize(_ callback: (@MainActor (CGSize) -> Void)?) {
+        state.withLock { $0.resize = callback }
         DispatchQueue.main.async { [self] in
-            let (callback, value) = lock.withLock { (resize, size) }
+            let (callback, value) = state.withLock { ($0.resize, $0.size) }
             callback?(value)
         }
     }
 
-    var terminalSize: CGSize { lock.withLock { size } }
-    var fontSize: Int { lock.withLock { requestedFontSize } }
-    func setFontSize(_ value: Int) { lock.withLock { requestedFontSize = value } }
+    var terminalSize: CGSize { state.withLock { $0.size } }
+    var fontSize: Int { state.withLock { $0.requestedFontSize } }
+    func setFontSize(_ value: Int) { state.withLock { $0.requestedFontSize = value } }
 
     func receiveInput(_ data: Data) {
         DispatchQueue.main.async { [self] in
-            let (callback, text) = lock.withLock { (input, decoder.append(data)) }
+            let (callback, text) = state.withLock { ($0.input, $0.decoder.append(data)) }
             if !text.isEmpty { callback?(text) }
         }
     }
@@ -43,21 +47,21 @@ final class TerminalCallbacks: @unchecked Sendable {
         guard columns > 0, rows > 0 else { return }
         DispatchQueue.main.async { [self] in
             let value = CGSize(width: columns, height: rows)
-            let callback = lock.withLock {
-                size = value
-                return resize
+            let callback = state.withLock {
+                $0.size = value
+                return $0.resize
             }
             callback?(value)
         }
     }
 
-    @MainActor func receiveTitle(_ value: String) { lock.withLock { title }?(value) }
-    @MainActor func receiveBell() { lock.withLock { bell }?() }
+    @MainActor func receiveTitle(_ value: String) { state.withLock { $0.title }?(value) }
+    @MainActor func receiveBell() { state.withLock { $0.bell }?() }
 }
 
 /// The session takes input as String. Hold incomplete UTF-8 suffixes instead of
 /// replacing a Chinese character/emoji when Ghostty splits it across callbacks.
-struct TerminalInputDecoder {
+struct TerminalInputDecoder: Sendable {
     private var pending = Data()
 
     mutating func reset() {

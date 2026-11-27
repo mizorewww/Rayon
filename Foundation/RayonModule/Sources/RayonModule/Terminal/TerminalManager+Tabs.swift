@@ -230,11 +230,9 @@ public extension TerminalManager.Context {
     /// Connects a closed tab again, with the details it started with.
     func reconnect() {
         guard closed else { return }
-        DispatchQueue.global().async {
-            self.putInformation("[i] \(String(localized: "Reconnecting with the details from when this session started.", bundle: .module))")
-            self.putInformation("    \(String(localized: "If the server was edited, open a new terminal instead.", bundle: .module))")
-            self.processBootstrap()
-        }
+        putInformation("[i] \(String(localized: "Reconnecting with the details from when this session started.", bundle: .module))")
+        putInformation("    \(String(localized: "If the server was edited, open a new terminal instead.", bundle: .module))")
+        processBootstrap()
     }
 }
 

@@ -11,7 +11,7 @@
     import Foundation
 
     extension TerminalContext {
-        func runLocalTerminal() {
+        func runLocalTerminal() async {
             let initial = terminalSize
 
             let pw = getpwuid(getuid())
@@ -48,32 +48,27 @@
             let pid = terminal.pid
             let masterFD = terminal.master
 
-            let finished = DispatchSemaphore(value: 0)
+            let (wakes, ended) = makeWakeStream()
             let decoder = UTF8StreamDecoder()
-            let io = PseudoTerminalIO(descriptor: masterFD) { [weak self] data in
+            let surface = surface
+            let io = PseudoTerminalIO(descriptor: masterFD) { data in
                 let text = decoder.decode(data)
-                if !text.isEmpty { self?.surface.write(text) }
-            } ended: { [weak self] in
-                finished.signal()
-                self?.uuWakeSemaphore.signal()
+                if !text.isEmpty { surface.write(text) }
+            } ended: {
+                ended.finish()
             }
 
             // The shell's exit ends the tab even while a process it left
             // behind keeps the pseudo-terminal open.
             let exit = DispatchSource.makeProcessSource(identifier: pid, eventMask: .exit, queue: .global(qos: .utility))
-            exit.setEventHandler { [weak self] in
-                finished.signal()
-                self?.uuWakeSemaphore.signal()
-            }
+            exit.setEventHandler { ended.finish() }
             exit.resume()
 
-            // Typing, a resize, closing the tab and the shell ending each
-            // signal the semaphore; nothing else needs a look.
+            // Typing, a resize and closing the tab each wake the loop, and
+            // the shell ending finishes it; nothing else needs a look.
             var lastSize = initial
-            while !closed {
-                if finished.wait(timeout: .now()) == .success { break }
-                uuWakeSemaphore.wait()
-                if finished.wait(timeout: .now()) == .success || closed { break }
+            for await _ in wakes {
+                guard !closed else { break }
 
                 let currentSize = terminalSize
                 if currentSize != lastSize, currentSize.width >= 8, currentSize.height >= 8 {
@@ -88,6 +83,7 @@
                 if !typed.isEmpty { io.send(Data(typed.utf8)) }
             }
 
+            wake = nil
             exit.cancel()
             io.close()
             // Reaps a shell that exited; one still running is hung up. Only

@@ -3,8 +3,8 @@
 //  RayonModule
 //
 //  A terminal on a UU Remote device: the host's own shell over the device's
-//  UU connection (TERM frames on its binary channel), no SSH. Runs on the
-//  session's worker queue like the SSH loop, and ends the same way.
+//  UU connection (TERM frames on its binary channel), no SSH. Runs in the
+//  session's task like the SSH loop, and ends the same way.
 //
 
 import Combine
@@ -15,53 +15,33 @@ import UURemoteKit
 extension TerminalContext {
     /// Wakes on typing, a resize, closing the tab, and the link ending or
     /// its connection closing; nothing else needs a look.
-    func runUURemoteTerminal() {
+    func runUURemoteTerminal() async {
         putInformation("[*] \(String(localized: "Connecting through UU Remote", bundle: .module))")
-        let finished = DispatchSemaphore(value: 0)
-        let context = self
-        let machine = machine
-        let initial = terminalSize
+        let (wakes, wake) = makeWakeStream()
+        let link = UUTerminalLink(machine: machine, wake: wake)
+        uuTerminalLink = link
+        link.connect(context: self, size: terminalSize)
 
-        onMainThread {
-            MainActor.assumeIsolated {
-                let link = UUTerminalLink(machine: machine, finished: finished, wake: context.uuWakeSemaphore)
-                context.uuTerminalLink = link
-                link.connect(context: context, size: initial)
-            }
+        for await _ in wakes {
+            guard !closed else { break }
+            link.pump(typed: getBuffer(), size: terminalSize, context: self)
         }
 
-        while !closed {
-            if finished.wait(timeout: .now()) == .success { break }
-            uuWakeSemaphore.wait()
-            if finished.wait(timeout: .now()) == .success || closed { break }
-            let typed = getBuffer()
-            let size = terminalSize
-            onMainThread {
-                MainActor.assumeIsolated { context.uuTerminalLink?.pump(typed: typed, size: size, context: context) }
-            }
-        }
-
-        let done = DispatchSemaphore(value: 0)
-        DispatchQueue.main.async {
-            MainActor.assumeIsolated {
-                context.uuTerminalLink?.end()
-                context.uuTerminalLink = nil
-            }
-            done.signal()
-        }
-        done.wait()
+        self.wake = nil
+        link.end()
+        uuTerminalLink = nil
     }
 }
 
 @MainActor
 final class UUTerminalLink {
     let machine: RDMachine
-    let finished: DispatchSemaphore
-    let wake: DispatchSemaphore
+    /// Wakes the terminal's loop; finishing it ends the loop.
+    let wake: AsyncStream<Void>.Continuation
     private var connection: UURemoteConnection? {
         didSet {
             // A dropped connection wakes the loop, whose pump resumes the session.
-            closing = connection?.$isClosed.filter { $0 }.sink { [wake] _ in wake.signal() }
+            closing = connection?.$isClosed.filter { $0 }.sink { [wake] _ in wake.yield() }
         }
     }
     private var closing: AnyCancellable?
@@ -73,9 +53,8 @@ final class UUTerminalLink {
     private var resumes: [Date] = []
     private let decoder = UTF8StreamDecoder()
 
-    init(machine: RDMachine, finished: DispatchSemaphore, wake: DispatchSemaphore) {
+    init(machine: RDMachine, wake: AsyncStream<Void>.Continuation) {
         self.machine = machine
-        self.finished = finished
         self.wake = wake
     }
 
@@ -107,11 +86,10 @@ final class UUTerminalLink {
                     connection.resizeTerminal(cols: cols, rows: max(rows - 1, 8), sessionID: id)
                     connection.resizeTerminal(cols: cols, rows: rows, sessionID: id)
                 }
-                self.wake.signal()
+                self.wake.yield()
             } catch {
                 context.putInformation("[!] " + error.localizedDescription)
-                self.finished.signal()
-                self.wake.signal()
+                self.wake.finish()
             }
         }
     }
@@ -125,19 +103,16 @@ final class UUTerminalLink {
             if let refusal = frame.openFailure {
                 context.putInformation("[!] \(String(localized: "The device refused the terminal: \(refusal.message) (\(refusal.code))", bundle: .module))")
                 context.uuSessionID = nil
-                finished.signal()
-                wake.signal()
+                wake.finish()
             }
         case .exit:
             let ended = frame.exitCode.map { String(localized: "Shell ended (exit \($0))", bundle: .module) }
                 ?? String(localized: "Shell ended", bundle: .module)
             context.putInformation("\r\n[*] \(ended)")
             context.uuSessionID = nil
-            finished.signal()
-            wake.signal()
+            wake.finish()
         case .close:
-            finished.signal()
-            wake.signal()
+            wake.finish()
         default:
             break
         }
@@ -174,8 +149,7 @@ final class UUTerminalLink {
         let counts = dropped.purpose != .desktop
         guard context.uuSessionID != nil, !counts || resumes.count < Self.resumeLimit else {
             context.putInformation("\r\n[!] \(String(localized: "The UU Remote connection dropped.", bundle: .module))")
-            finished.signal()
-            wake.signal()
+            wake.finish()
             return
         }
         if counts { resumes.append(now) }

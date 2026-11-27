@@ -69,25 +69,25 @@ public struct RayonTerminalView: Sendable {
     }
 
     @discardableResult
-    nonisolated public func setupBufferChain(callback: ((String) -> Void)?) -> Self {
+    nonisolated public func setupBufferChain(callback: (@MainActor (String) -> Void)?) -> Self {
         session.callbacks.setInput(callback)
         return self
     }
 
     @discardableResult
-    nonisolated public func setupTitleChain(callback: ((String) -> Void)?) -> Self {
+    nonisolated public func setupTitleChain(callback: (@MainActor (String) -> Void)?) -> Self {
         session.callbacks.setTitle(callback)
         return self
     }
 
     @discardableResult
-    nonisolated public func setupBellChain(callback: (() -> Void)?) -> Self {
+    nonisolated public func setupBellChain(callback: (@MainActor () -> Void)?) -> Self {
         session.callbacks.setBell(callback)
         return self
     }
 
     @discardableResult
-    nonisolated public func setupSizeChain(callback: ((CGSize) -> Void)?) -> Self {
+    nonisolated public func setupSizeChain(callback: (@MainActor (CGSize) -> Void)?) -> Self {
         session.callbacks.setResize(callback)
         return self
     }
@@ -106,7 +106,7 @@ public struct RayonTerminalView: Sendable {
 #endif
 
 /// Bridges the shared terminal session core to `RayonTerminalView`.
-public final class TerminalSurfaceBridge: @unchecked Sendable {
+public final class TerminalSurfaceBridge: Sendable {
     public let termInterface = RayonTerminalView()
 
     public init() {}
@@ -115,26 +115,26 @@ public final class TerminalSurfaceBridge: @unchecked Sendable {
         termInterface.write(string)
     }
 
-    public func setupBellChain(_ callback: @escaping () -> Void) {
+    public func setupBellChain(_ callback: @escaping @MainActor () -> Void) {
         termInterface.setupBellChain(callback: callback)
     }
 
-    public func setupBufferChain(_ callback: @escaping (String) -> Void) {
+    public func setupBufferChain(_ callback: @escaping @MainActor (String) -> Void) {
         termInterface.setupBufferChain(callback: callback)
     }
 
-    public func setupTitleChain(_ callback: @escaping (String) -> Void) {
+    public func setupTitleChain(_ callback: @escaping @MainActor (String) -> Void) {
         termInterface.setupTitleChain(callback: callback)
     }
 
-    public func setupSizeChain(_ callback: @escaping (CGSize) -> Void) {
+    public func setupSizeChain(_ callback: @escaping @MainActor (CGSize) -> Void) {
         termInterface.setupSizeChain(callback: callback)
     }
 }
 
 /// Only the immutable/thread-safe transport objects cross queues. AppKit storage
 /// and all Ghostty view operations are explicitly main-actor isolated.
-final class RayonTerminalSession: @unchecked Sendable {
+final class RayonTerminalSession: Sendable {
     let callbacks: TerminalCallbacks
     /// Output that arrives before the view attaches is kept by Ghostty itself
     /// (up to 1 MiB) and replayed on attach.

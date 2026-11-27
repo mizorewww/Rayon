@@ -63,7 +63,7 @@ public final class TerminalManager: ObservableObject {
         }
     }
 
-    public final class Context: TerminalContext, @unchecked Sendable {
+    public final class Context: TerminalContext {
         private let surfaceBridge = TerminalSurfaceBridge()
         public var termInterface: RayonTerminalView { surfaceBridge.termInterface }
 

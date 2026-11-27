@@ -1,4 +1,5 @@
 import GhosttyTerminal
+import Synchronization
 import XCTest
 #if canImport(UIKit)
     import UIKit
@@ -305,9 +306,8 @@ final class NativeTerminalTests: XCTestCase {
     }
 }
 
-private final class SessionOwner: @unchecked Sendable {
-    private let lock = NSLock()
-    private var value: RayonTerminalSession? = .init()
-    var session: RayonTerminalSession? { lock.withLock { value } }
-    func releaseSession() { lock.withLock { value = nil } }
+private final class SessionOwner: Sendable {
+    private let value = Mutex<RayonTerminalSession?>(.init())
+    var session: RayonTerminalSession? { value.withLock { $0 } }
+    func releaseSession() { value.withLock { $0 = nil } }
 }

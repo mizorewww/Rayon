@@ -4,6 +4,7 @@
 //
 
 @testable import RayonModule
+import Synchronization
 import XCTest
 
 @MainActor
@@ -41,15 +42,18 @@ final class TerminalShutdownTests: XCTestCase {
 }
 
 /// A terminal renderer that keeps what it is sent, and types on request.
-final class RecordingSurface: TerminalSessionSurface, @unchecked Sendable {
-    private let lock = NSLock()
-    private var written = ""
-    private var buffer: ((String) -> Void)?
-    var text: String { lock.withLock { written } }
-    func type(_ string: String) { buffer?(string) }
-    func write(_ string: String) { lock.withLock { written += string } }
-    func setupBellChain(_: @escaping () -> Void) {}
-    func setupBufferChain(_ callback: @escaping (String) -> Void) { buffer = callback }
-    func setupTitleChain(_: @escaping (String) -> Void) {}
-    func setupSizeChain(_: @escaping (CGSize) -> Void) {}
+final class RecordingSurface: TerminalSessionSurface {
+    private struct State {
+        var written = ""
+        var buffer: (@MainActor (String) -> Void)?
+    }
+
+    private let state = Mutex(State())
+    var text: String { state.withLock { $0.written } }
+    @MainActor func type(_ string: String) { state.withLock { $0.buffer }?(string) }
+    func write(_ string: String) { state.withLock { $0.written += string } }
+    func setupBellChain(_: @escaping @MainActor () -> Void) {}
+    func setupBufferChain(_ callback: @escaping @MainActor (String) -> Void) { state.withLock { $0.buffer = callback } }
+    func setupTitleChain(_: @escaping @MainActor (String) -> Void) {}
+    func setupSizeChain(_: @escaping @MainActor (CGSize) -> Void) {}
 }

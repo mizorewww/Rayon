@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "RayonTerminal",
     defaultLocalization: "en",
-    platforms: [.macOS(.v14), .iOS(.v17)],
+    platforms: [.macOS(.v15), .iOS(.v18)],
     products: [
         .library(name: "RayonTerminal", targets: ["RayonTerminal"]),
         .executable(name: "RayonConfigurationPreview", targets: ["RayonConfigurationPreview"]),

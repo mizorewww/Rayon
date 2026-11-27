@@ -17,16 +17,20 @@ import Logger
 
 /// The terminal renderer a session drives, implemented in the apps over
 /// RayonTerminalView so RayonModule never links the renderer.
-public protocol TerminalSessionSurface: AnyObject {
+/// `write` takes output from any thread; the callbacks run on the main actor.
+public protocol TerminalSessionSurface: AnyObject, Sendable {
     func write(_ string: String)
-    func setupBellChain(_ callback: @escaping () -> Void)
-    func setupBufferChain(_ callback: @escaping (String) -> Void)
-    func setupTitleChain(_ callback: @escaping (String) -> Void)
-    func setupSizeChain(_ callback: @escaping (CGSize) -> Void)
+    func setupBellChain(_ callback: @escaping @MainActor () -> Void)
+    func setupBufferChain(_ callback: @escaping @MainActor (String) -> Void)
+    func setupTitleChain(_ callback: @escaping @MainActor (String) -> Void)
+    func setupSizeChain(_ callback: @escaping @MainActor (CGSize) -> Void)
 }
 
-open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecked Sendable {
-    public var id: UUID = .init()
+/// The session's state lives on the main actor, like the interface showing
+/// it; the shell's input and output stream past it on their own.
+@MainActor
+open class TerminalContext: ObservableObject, Identifiable, Equatable {
+    public nonisolated let id = UUID()
 
     public var navigationTitle: String {
         switch remoteType {
@@ -47,24 +51,11 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
 
     @Published public var navigationSubtitle: String = ""
 
-    private var _title: String = ""
     private var title: String {
-        get {
-            stateAccessLock.lock()
-            defer { stateAccessLock.unlock() }
-            return _title
-        }
-        set {
-            stateAccessLock.lock()
-            _title = newValue
-            stateAccessLock.unlock()
-            onMainThread { [weak self] in
-                self?.navigationSubtitle = newValue
-            }
-        }
+        didSet { navigationSubtitle = title }
     }
 
-    public enum RemoteType {
+    public enum RemoteType: Sendable {
         case machine
         case command
         case local
@@ -83,13 +74,13 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
         var task: Task<Void, Never>?
     }
 
-    let ssh = OSAllocatedUnfairLock(initialState: SSHState())
+    var ssh = SSHState()
 
     /// On a UU Remote device: the host's session this tab shows.
     public var uuSessionID: UInt32?
 
     /// The renderer this session writes output to and takes input from.
-    public let surface: TerminalSessionSurface
+    public nonisolated let surface: TerminalSessionSurface
 
     // MARK: - SHELL CONTEXT
 
@@ -98,129 +89,97 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
     @Published public var interfaceToken: UUID = .init()
     @Published public var interfaceDisabled: Bool = false
 
-    public static let defaultTerminalSize = CGSize(width: 80, height: 40)
+    public nonisolated static let defaultTerminalSize = CGSize(width: 80, height: 40)
 
-    private let stateAccessLock = NSLock()
-    private var _terminalSize: CGSize = defaultTerminalSize
-    private var _continueDecision: Bool = true
-    internal let uuWakeSemaphore = DispatchSemaphore(value: 0)
+    /// Wakes a local or UU Remote terminal's loop: on typing, a resize and
+    /// closing the tab. Finishing it ends the loop.
+    var wake: AsyncStream<Void>.Continuation?
     /// The UU terminal behind this tab, when it is one.
-    @MainActor var uuTerminalLink: UUTerminalLink?
+    var uuTerminalLink: UUTerminalLink?
 
-    public var terminalSize: CGSize {
-        get {
-            stateAccessLock.lock()
-            defer { stateAccessLock.unlock() }
-            return _terminalSize
-        }
-        set {
-            stateAccessLock.lock()
-            _terminalSize = newValue
-            stateAccessLock.unlock()
-            if let shell = ssh.withLock({ $0.shell }) {
-                let size = Self.usableSize(newValue)
+    public var terminalSize: CGSize = defaultTerminalSize {
+        didSet {
+            if let shell = ssh.shell {
+                let size = Self.usableSize(terminalSize)
                 shell.resize(columns: Int(size.width), rows: Int(size.height))
             }
-            uuWakeSemaphore.signal()
+            wake?.yield()
         }
+    }
+
+    /// A stream for `wake` that keeps one wake-up at most: each look
+    /// handles everything that piled up before it.
+    func makeWakeStream() -> (AsyncStream<Void>, AsyncStream<Void>.Continuation) {
+        let (wakes, wake) = AsyncStream.makeStream(of: Void.self, bufferingPolicy: .bufferingNewest(1))
+        self.wake = wake
+        return (wakes, wake)
     }
 
     /// A size too small to be real is the renderer not laid out yet.
-    static func usableSize(_ size: CGSize) -> CGSize {
+    nonisolated static func usableSize(_ size: CGSize) -> CGSize {
         size.width < 8 || size.height < 8 ? defaultTerminalSize : size
     }
 
-    private var _dataBuffer: String = ""
-    private var bufferAccessLock = NSLock()
+    private var dataBuffer: String = ""
 
     public func getBuffer() -> String {
-        bufferAccessLock.lock()
-        defer { bufferAccessLock.unlock() }
-        let copy = _dataBuffer
-        _dataBuffer = ""
-        return copy
+        defer { dataBuffer = "" }
+        return dataBuffer
     }
 
     public func insertBuffer(_ str: String) {
-        bufferAccessLock.lock()
-        guard !closed else {
-            bufferAccessLock.unlock()
-            return
-        }
-        if let input = ssh.withLock({ $0.input }) {
-            bufferAccessLock.unlock()
+        guard !closed else { return }
+        if let input = ssh.input {
             input.yield(ByteBuffer(string: str))
             return
         }
-        _dataBuffer += str
-        bufferAccessLock.unlock()
-        uuWakeSemaphore.signal()
+        dataBuffer += str
+        wake?.yield()
     }
 
-    public var continueDecision: Bool {
-        get {
-            stateAccessLock.lock()
-            defer { stateAccessLock.unlock() }
-            return _continueDecision
-        }
-        set {
-            stateAccessLock.lock()
-            _continueDecision = newValue
-            stateAccessLock.unlock()
-            uuWakeSemaphore.signal()
-            onMainThread { [weak self] in
-                guard let self else { return }
-                self.interfaceDisabled = !newValue
-            }
+    public var continueDecision: Bool = true {
+        didSet {
+            wake?.yield()
+            interfaceDisabled = !continueDecision
         }
     }
 
     // MARK: SHELL CONTEXT -
 
-    private static let queue = DispatchQueue(
-        label: "me.mizorewww.terminal",
-        attributes: .concurrent
-    )
-
     public init(machine: RDMachine, surface: TerminalSessionSurface, resuming uuSession: UInt32? = nil) {
         self.machine = machine
         command = nil
         remoteType = .machine
-        _title = machine.name
+        title = machine.name
         uuSessionID = uuSession
         self.surface = surface
-        Self.queue.async {
-            self.processBootstrap()
-        }
+        // After init returns, as the subclass sets the renderer up first.
+        Task { self.processBootstrap() }
     }
 
     public init(command: SSHCommandReader, surface: TerminalSessionSurface) {
         machine = command.machine
         self.command = command
-        _title = command.command
+        title = command.command
         remoteType = .command
         self.surface = surface
-        Self.queue.async {
-            self.processBootstrap()
-        }
+        Task { self.processBootstrap() }
     }
 
     public init(localShell surface: TerminalSessionSurface) {
         machine = RDMachine(name: String(localized: "Local Terminal", bundle: .module))
         command = nil
-        _title = String(localized: "Local Terminal", bundle: .module)
+        title = String(localized: "Local Terminal", bundle: .module)
         remoteType = .local
         self.surface = surface
-        Self.queue.async {
-            self.processBootstrap()
-        }
+        Task { self.processBootstrap() }
     }
 
-    public static func == (lhs: TerminalContext, rhs: TerminalContext) -> Bool {
+    public nonisolated static func == (lhs: TerminalContext, rhs: TerminalContext) -> Bool {
         lhs.id == rhs.id
     }
 
-    public func putInformation(_ str: String) {
+    public nonisolated func putInformation(_ str: String) {
         if str.isEmpty {
             surface.write("\r\n")
         } else {
@@ -229,11 +188,11 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
     }
 
     public func processBootstrap() {
-        onMainThread {
-            guard self.firstConnect else { return }
-            self.firstConnect = false
-            guard AppSettings.showsSessionOnConnect.value else { return }
-            TerminalInterface.uiHandler.autoOpenInterface(self)
+        if firstConnect {
+            firstConnect = false
+            if AppSettings.showsSessionOnConnect.value {
+                TerminalInterface.uiHandler.autoOpenInterface(self)
+            }
         }
 
         discardPendingInput()
@@ -254,27 +213,21 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
             self?.terminalSize = size
         }
 
-        if remoteType == .local {
-            #if os(macOS)
-                runLocalTerminal()
-            #else
-                putInformation("[!] \(String(localized: "Local shell is only supported on macOS.", bundle: .module))")
-            #endif
-            onMainThread { self.processShutdown(exitFromShell: true) }
-            return
+        let task = Task { [self] in
+            if remoteType == .local {
+                #if os(macOS)
+                    await runLocalTerminal()
+                #else
+                    putInformation("[!] \(String(localized: "Local shell is only supported on macOS.", bundle: .module))")
+                #endif
+            } else if machine.isUURemoteDevice {
+                await runUURemoteTerminal()
+            } else {
+                await runSSHTerminal()
+            }
+            processShutdown(exitFromShell: true)
         }
-
-        if machine.isUURemoteDevice {
-            runUURemoteTerminal()
-            onMainThread { self.processShutdown(exitFromShell: true) }
-            return
-        }
-
-        let task = Task.detached { [self] in
-            await runSSHTerminal()
-            onMainThread { self.processShutdown(exitFromShell: true) }
-        }
-        ssh.withLock { $0.task = task }
+        ssh.task = task
     }
 
     private func runSSHTerminal() async {
@@ -309,11 +262,10 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
             return
         }
         let (input, continuation) = AsyncStream<ByteBuffer>.makeStream()
-        bufferAccessLock.withLock {
-            ssh.withLock { $0.shell = shell; $0.input = continuation }
-            if !_dataBuffer.isEmpty { continuation.yield(ByteBuffer(string: _dataBuffer)) }
-            _dataBuffer = ""
-        }
+        ssh.shell = shell
+        ssh.input = continuation
+        if !dataBuffer.isEmpty { continuation.yield(ByteBuffer(string: dataBuffer)) }
+        dataBuffer = ""
         // The renderer's size may have changed while the shell opened.
         let current = Self.usableSize(terminalSize)
         if current != size { shell.resize(columns: Int(current.width), rows: Int(current.height)) }
@@ -335,21 +287,22 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
                 putInformation("[!] " + Self.shellEndedMessage(error, linkActive: connection.isActive, address: machine.remoteAddress))
             }
         }
-        ssh.withLock { $0.shell = nil; $0.input = nil }
+        ssh.shell = nil
+        ssh.input = nil
         Logger.terminal.infoFile("terminal \(id) for \(machine.id) ended")
     }
 
     /// Why the shell ended, worded for the person. A dropped connection
     /// fails the shell with swift-nio-ssh's error, whose description is
     /// only "NIOSSHError error 1", and the link may not read as closed yet.
-    static func shellEndedMessage(_ error: Error, linkActive: Bool, address: String) -> String {
+    nonisolated static func shellEndedMessage(_ error: Error, linkActive: Bool, address: String) -> String {
         linkActive
             ? String(localized: "The shell ended (\(SSHTransport.describe(error))).", bundle: .module)
             : String(localized: "The connection to \(address) was lost.", bundle: .module)
     }
 
     /// How many leading bytes end on a whole UTF-8 character.
-    static func completeUTF8Prefix(_ bytes: [UInt8]) -> Int {
+    nonisolated static func completeUTF8Prefix(_ bytes: [UInt8]) -> Int {
         var index = bytes.count
         // Step back over at most three continuation bytes to a lead byte.
         while index > 0, bytes.count - index < 4, bytes[index - 1] & 0xC0 == 0x80 {
@@ -363,16 +316,14 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
 
     /// Ends the SSH shell, if there is one, from this side.
     func endSSH() {
-        let state = ssh.withLock { state in
-            defer { state = SSHState() }
-            return state
-        }
+        let state = ssh
+        ssh = SSHState()
         state.input?.finish()
         state.shell?.close()
         state.task?.cancel()
     }
 
-    static let modeReset = [
+    nonisolated static let modeReset = [
         "\u{1B}[=0;1u",
         // Leaving the alternate screen restores the cursor saved on entering
         // it, and on the main screen Ghostty restores whatever was saved last
@@ -390,9 +341,7 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
     ].joined()
 
     func discardPendingInput() {
-        bufferAccessLock.lock()
-        _dataBuffer = ""
-        bufferAccessLock.unlock()
+        dataBuffer = ""
     }
 
     public func processShutdown(exitFromShell: Bool = false) {
