@@ -34,6 +34,8 @@ public struct SSHCommandReader: Codable, Equatable, Sendable {
             name: remoteAddress
         )
         machine.transport = usesCloudflareAccess ? .cloudflareAccess : .direct
+        // The typed user name wins over each identity's, as with ssh.
+        machine.sshUsername = username
         return machine
     }
 

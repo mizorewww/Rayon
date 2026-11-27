@@ -14,6 +14,17 @@ final class SSHCommandReaderTests: XCTestCase {
         XCTAssertEqual(reader?.remotePort, "22")
     }
 
+    /// The user name in the command is the one signed in with, not the
+    /// user name of an identity that signs in automatically.
+    func testTheTypedUserNameWinsOverTheIdentitys() throws {
+        let machine = try XCTUnwrap(SSHCommandReader(quickConnect: "bob@192.168.64.1:2242")).machine
+        XCTAssertEqual(machine.sshUsernameOverride, "bob")
+        var alice = RDIdentity()
+        alice.username = "alice"
+        XCTAssertEqual(alice.loginUsername(override: machine.sshUsernameOverride), "bob")
+        XCTAssertEqual(machine.sshLoginUsername(identity: alice), "bob")
+    }
+
     func testCustomPort() {
         let reader = SSHCommandReader(command: "ssh ubuntu@10.0.0.8 -p 2222")
         XCTAssertEqual(reader?.remotePort, "2222")
