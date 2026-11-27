@@ -63,6 +63,12 @@ public struct TelemetryEnvironment: Equatable, Sendable {
 
         /// The App Store storefront, else the system's region, else strict.
         public static func detect() async -> Region {
+            #if DEBUG
+                // RAYON_PREVIEW_REGION=DE shows the EEA notice in QA.
+                if let code = ProcessInfo.processInfo.environment["RAYON_PREVIEW_REGION"] {
+                    return Region(countryCode: code)
+                }
+            #endif
             let storefront = await withTaskGroup(of: String?.self) { group in
                 group.addTask { await Storefront.current?.countryCode }
                 // StoreKit can take long to answer offline; the locale is good enough then.
