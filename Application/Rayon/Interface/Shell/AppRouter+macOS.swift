@@ -232,11 +232,7 @@
         /// Pick one or more servers, then open a terminal for each.
         @MainActor
         func openTerminals() {
-            ServerPickerSheet.present(
-                title: "Open Terminals",
-                confirmTitle: "Open",
-                allowsMany: true
-            ) { machines in
+            ServerPicker.present(title: "Open Terminals", confirmTitle: "Open") { machines in
                 for machine in machines {
                     TerminalManager.shared.createSession(withMachineID: machine) { _ in }
                 }

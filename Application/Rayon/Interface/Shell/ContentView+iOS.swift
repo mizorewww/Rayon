@@ -172,7 +172,7 @@
             case .home: HomeView()
             case .dashboard: DashboardView()
             case .servers: ServersView()
-            case .identities: IdentityView()
+            case .identities: IdentitiesView()
             case .snippets: SnippetView()
             case .desktops: RemoteDesktopsView()
             case .settings: SettingsView()
@@ -271,7 +271,7 @@
         var body: some View {
             List {
                 Section {
-                    NavigationLink { IdentityView() } label: {
+                    NavigationLink { IdentitiesView() } label: {
                         moreRow("Identities", "person", count: store.identities.count)
                     }
                     .rxListRow()

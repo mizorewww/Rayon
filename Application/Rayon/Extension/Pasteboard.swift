@@ -21,4 +21,12 @@ enum Pasteboard {
             Indicator.success("Copied")
         #endif
     }
+
+    static var string: String? {
+        #if os(macOS)
+            NSPasteboard.general.string(forType: .string)
+        #else
+            UIPasteboard.general.string
+        #endif
+    }
 }

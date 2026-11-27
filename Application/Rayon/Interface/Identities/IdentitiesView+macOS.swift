@@ -2,7 +2,8 @@
 //  IdentitiesView+macOS.swift
 //  Rayon
 //
-//  Identities grouped by group, with the editor beside the list.
+//  Identities in a Table: sortable columns, several selected at once for
+//  Delete, a double click or Return to edit.
 //
 
 #if os(macOS)
@@ -11,39 +12,25 @@
 
     struct IdentitiesView: View {
         @EnvironmentObject var store: RayonStore
-
         @State private var searchText = ""
-        @State private var selection: RDIdentity.ID?
-        @State private var creating = false
+        @State private var selection = Set<RDIdentity.ID>()
+        @State private var sortOrder = [KeyPathComparator(\RDIdentity.username, comparator: .localizedStandard)]
 
-        var filtered: [RDIdentity] {
-            let all = store.identities
-            guard !searchText.isEmpty else { return all }
+        private var identities: [RDIdentity] {
             let key = searchText.lowercased()
-            return all.filter {
-                $0.username.lowercased().contains(key)
-                    || $0.group.lowercased().contains(key)
-                    || $0.comment.lowercased().contains(key)
-            }
-        }
-
-        var groups: [(name: String, identities: [RDIdentity])] {
-            let identities = filtered
-            let names = Set(identities.map(\.group)).sorted { lhs, rhs in
-                if lhs.isEmpty { return false }
-                if rhs.isEmpty { return true }
-                return lhs.localizedStandardCompare(rhs) == .orderedAscending
-            }
-            return names.map { name in
-                (name, identities.filter { $0.group == name }.sorted { $0.username < $1.username })
-            }
+            return store.identities
+                .filter {
+                    key.isEmpty || [$0.username, $0.group, $0.comment].contains { $0.lowercased().contains(key) }
+                }
+                .sorted(using: sortOrder)
         }
 
         var body: some View {
             PageScaffold(
+                scrolls: false,
                 search: $searchText,
                 searchPrompt: "Search identities",
-                primary: ToolbarAction("New Identity", systemImage: "plus", primary: true) { creating = true }
+                primary: ToolbarAction("New Identity", systemImage: "plus", primary: true) { create() }
             ) {
             } trailing: {
             } header: {
@@ -56,451 +43,67 @@
                         message: "A username with a password or key.",
                         actionTitle: "New Identity"
                     ) {
-                        creating = true
+                        create()
                     }
                     .rxCard()
                 } else {
-                    HStack(alignment: .top, spacing: RX.Space.s4) {
-                        list
-                            .frame(width: 240)
-                        if let selection, store.identities.contains(where: { $0.id == selection }) {
-                            IdentityDetail(identity: selection)
-                                .id(selection)
-                        } else {
-                            EmptyStateView("Select an identity", systemImage: "person")
-                                .rxCard()
-                        }
-                    }
+                    table
                 }
             }
-            .sheet(isPresented: $creating) {
-                IdentityEditorSheet { created in
-                    creating = false
-                    if let created { selection = created }
-                }
-                .environmentObject(RayonStore.shared)
-            }
-            .onAppear {
-                if selection == nil { selection = groups.first?.identities.first?.id }
-            }
+            // Edit › Delete… (⌘⌫) deletes the selected rows.
+            .focusedSceneValue(\.deleteSelection, selection.isEmpty ? nil : { IdentityActions.delete(Array(selection)) })
         }
 
-        var list: some View {
-            VStack(spacing: 0) {
-                if filtered.isEmpty {
-                    EmptyStateView("No matches", systemImage: "magnifyingglass")
-                }
-                ForEach(groups, id: \.name) { group in
-                    TableGroupRow(group.name.isEmpty ? "Default" : "\(group.name)")
-                        .transition(.opacity)
-                    ForEach(Array(group.identities.enumerated()), id: \.element.id) { index, identity in
-                        IdentityRow(identity: identity, selected: selection == identity.id)
-                            .onTapGesture { selection = identity.id }
-                            .rxRise(index)
-                            .transition(.opacity)
-                    }
-                }
-            }
-            .animation(.rxMove, value: groups.flatMap { $0.identities.map(\.id) })
-            .rxCard(padding: RX.Space.s2)
-        }
-    }
-
-    private struct IdentityRow: View {
-        let identity: RDIdentity
-        let selected: Bool
-        @EnvironmentObject var store: RayonStore
-        @State private var hovered = false
-
-        var usage: Int {
-            store.machines.filter { $0.associatedIdentity == identity.id }.count
-        }
-
-        var body: some View {
-            HStack(spacing: RX.Space.s2) {
-                VStack(alignment: .leading, spacing: 1) {
+        private var table: some View {
+            Table(identities, selection: $selection, sortOrder: $sortOrder) {
+                TableColumn("Username", value: \.username, comparator: .localizedStandard) { identity in
                     Text(identity.username.isEmpty ? "No username" : "\(identity.username)")
-                        .font(.rxBody)
                         .foregroundStyle(identity.username.isEmpty ? Color.rxInkSecondary : Color.rxInk)
-                        .lineLimit(1)
+                }
+                TableColumn("Authentication") { identity in
                     Text(identity.authDescription)
-                        .font(.rxHelp)
                         .foregroundStyle(.rxInkSecondary)
                 }
-                Spacer()
-                Text("\(usage) servers")
-                    .font(.system(size: 12).monospacedDigit())
-                    .foregroundStyle(.rxInkSecondary)
-            }
-            .padding(.horizontal, RX.Space.s3)
-            .frame(height: RX.tableRowHeight)
-            .rxRowBackground(selected: selected, hovered: hovered)
-            .contentShape(Rectangle())
-            .onHover { hovered = $0 }
-            .contextMenu {
-                if !identity.publicKey.isEmpty {
-                    Button("Deploy Public Key (ssh-copy-id)…") {
-                        IdentityActions.deployPublicKey(identity.publicKey, identityID: identity.id)
-                    }
-                    Divider()
+                TableColumn("Group", value: \.group, comparator: .localizedStandard) { identity in
+                    Text(identity.group.isEmpty ? "Default" : "\(identity.group)")
+                        .foregroundStyle(.rxInkSecondary)
                 }
-                Button("Duplicate") { IdentityActions.duplicate(identity.id) }
-                Button("Copy Public Key") { Pasteboard.copy(identity.publicKey) }
-                    .disabled(identity.publicKey.isEmpty)
-                Divider()
-                Button("Delete…", role: .destructive) { IdentityActions.delete(identity.id) }
+                TableColumn("Automatic", value: \.authenticAutomatically.sortKey) { identity in
+                    Text(identity.authenticAutomatically ? "Yes" : "No")
+                        .foregroundStyle(.rxInkSecondary)
+                }
+                .width(min: 60, ideal: 80)
+                TableColumn("Servers") { identity in
+                    Text("\(store.servers(using: identity.id).count)")
+                        .monospacedDigit()
+                        .foregroundStyle(.rxInkSecondary)
+                }
+                .width(min: 50, ideal: 60)
             }
+            .contextMenu(forSelectionType: RDIdentity.ID.self) { chosen in
+                if chosen.count == 1, let identity = chosen.first {
+                    IdentityContextMenu(identity: identity)
+                } else if !chosen.isEmpty {
+                    Button("Delete \(chosen.count) Identities…", systemImage: "trash", role: .destructive) {
+                        IdentityActions.delete(Array(chosen))
+                    }
+                }
+            } primaryAction: { chosen in
+                if let identity = chosen.first { IdentityActions.edit(identity) }
+            }
+            .overlay {
+                if identities.isEmpty { ContentUnavailableView.search(text: searchText) }
+            }
+        }
+
+        private func create() {
+            IdentityActions.edit(nil) { created in selection = [created] }
         }
     }
 
-    @MainActor
-    enum IdentityActions {
-        static func duplicate(_ id: RDIdentity.ID) {
-            guard var copy = RayonStore.shared.identity(id) else { return }
-            copy.id = UUID()
-            copy.comment = copy.comment.isEmpty ? String(localized: "Copy (identity comment)", defaultValue: "Copy", comment: "The comment of a duplicated identity that had none") : String(localized: "\(copy.comment) (copy)")
-            RayonStore.shared.save(copy)
-        }
-
-        static func delete(_ id: RDIdentity.ID) {
-            let store = RayonStore.shared
-            guard let identity = store.identity(id) else { return }
-            let users = store.machines.filter { $0.associatedIdentity == id }.count
-            Indicator.confirm(
-                message: "Delete identity \(identity.username)?",
-                informative: users > 0
-                    ? "\(users) servers use it and will try automatic identities instead."
-                    : "Its password and keys are removed from Rayon.",
-                confirmTitle: "Delete",
-                destructive: true
-            ) { confirmed in
-                guard confirmed else { return }
-                store.deleteIdentities([id])
-            }
-        }
-
-        @MainActor
-        static func deployPublicKey(_ publicKey: String, identityID: RDIdentity.ID) {
-            let pub = publicKey.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !pub.isEmpty else {
-                Indicator.error(String(localized: "This identity has no public key to deploy."))
-                return
-            }
-            ServerPickerSheet.present(
-                title: "Deploy Public Key (ssh-copy-id)",
-                lead: "Appends this identity's public key to ~/.ssh/authorized_keys on the selected servers.",
-                confirmTitle: "Deploy",
-                allowsMany: true
-            ) { machines in
-                guard !machines.isEmpty else { return }
-                Task {
-                    let outcome = await PublicKeyDeployment.deploy(pub, to: machines)
-                    await MainActor.run {
-                        if !outcome.failed.isEmpty {
-                            Indicator.error(String(localized: "Failed to deploy public key to: \(outcome.failed.joined(separator: ", "))."))
-                        } else if !outcome.succeeded.isEmpty {
-                            PublicKeyDeployment.adopt(identity: identityID, on: machines)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /// The editor beside the list.
-    private struct IdentityDetail: View {
-        let identity: RDIdentity.ID
-        @EnvironmentObject var store: RayonStore
-        @State private var draft = IdentityDraft()
-        @State private var loaded = false
-
-        var original: RDIdentity { (store.identity(identity) ?? RDIdentity()) }
-
-        var usedBy: [String] {
-            store.machines
-                .filter { $0.associatedIdentity == identity }
-                .map(\.name)
-        }
-
-        var body: some View {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .center) {
-                    HelpText(usageLine.isEmpty ? "Not used by any server" : "\(usageLine)")
-                    Spacer()
-                    Button("Revert") { draft = IdentityDraft(original) }
-                        .buttonStyle(.rx(size: .small))
-                        .disabled(!draft.differs(from: original))
-                    Button("Save") {
-                        store.save(draft.apply(to: original))
-                    }
-                    .buttonStyle(.rx(.primary, size: .small))
-                    .keyboardShortcut("s", modifiers: .command)
-                    .disabled(!draft.differs(from: original) || !draft.isValid)
-                    Menu {
-                        if !draft.publicKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            Button("Deploy Public Key (ssh-copy-id)…") {
-                                IdentityActions.deployPublicKey(draft.publicKey, identityID: identity)
-                            }
-                            Divider()
-                        }
-                        Button("Duplicate") { IdentityActions.duplicate(identity) }
-                        Divider()
-                        Button("Delete…", role: .destructive) { IdentityActions.delete(identity) }
-                    } label: {
-                        Label("More", systemImage: "ellipsis")
-                    }
-                    .moreMenu()
-                }
-                IdentityForm(draft: $draft)
-                    .padding(.top, RX.Space.s3)
-            }
-            .rxCard()
-            .frame(maxWidth: .infinity)
-            .onAppear {
-                draft = IdentityDraft(original)
-            }
-            .onDisappear {
-                // Keep edits when another identity is selected.
-                let stillExists = store.identities.contains { $0.id == identity }
-                if stillExists, draft.differs(from: original), draft.isValid {
-                    store.save(draft.apply(to: original))
-                }
-            }
-        }
-
-        var usageLine: String {
-            let names = usedBy
-            guard !names.isEmpty else { return "" }
-            let shown = names.prefix(4).joined(separator: ", ")
-            return names.count > 4 ? String(localized: "Used by \(shown) and \(names.count - 4) more") : String(localized: "Used by \(shown)")
-        }
-    }
-
-    /// Username, Group, Key pair / Password, keys, Password, Comment, Authenticate automatically.
-    struct IdentityForm: View {
-        @Binding var draft: IdentityDraft
-        @EnvironmentObject var store: RayonStore
-
-        var body: some View {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .top, spacing: RX.Space.s4) {
-                    RXField("Username") {
-                        TextField("root", text: $draft.username)
-                            .textFieldStyle(.roundedBorder)
-                            .disableAutocorrection(true)
-                    }
-                    RXField("Group") {
-                        TextField("Default", text: $draft.group)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                }
-                RXField("Authentication") {
-                    Picker("Authentication", selection: $draft.method) {
-                        Text("Key pair").tag(IdentityDraft.Method.keyPair)
-                        Text("Password").tag(IdentityDraft.Method.password)
-                        Text("SSH Agent").tag(IdentityDraft.Method.sshAgent)
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                }
-                if draft.method == .keyPair {
-                    RXField("Private key") {
-                        HStack(spacing: RX.Space.s2) {
-                            KeyField(
-                                text: $draft.privateKey,
-                                masked: true,
-                                placeholder: "No private key loaded",
-                                loadTitle: "Load…",
-                                matches: RDIdentity.looksLikePrivateKey
-                            )
-                            Button("Generate Ed25519") {
-                                draft.generateEd25519KeyPair()
-                            }
-                            .buttonStyle(.rx)
-                            .fixedSize()
-                            .help("Generate a new OpenSSH Ed25519 key pair in memory")
-                        }
-                    }
-                    RXField("Public key", help: "Optional") {
-                        KeyField(
-                            text: $draft.publicKey,
-                            masked: false,
-                            placeholder: "No public key loaded",
-                            loadTitle: "Load…",
-                            matches: RDIdentity.looksLikePublicKey
-                        )
-                    }
-                    HStack(alignment: .top, spacing: RX.Space.s4) {
-                        RXField("Passphrase") {
-                            SecureField("None", text: $draft.passphrase)
-                                .textFieldStyle(.roundedBorder)
-                        }
-                        RXField("Comment") {
-                            TextField("Optional", text: $draft.comment)
-                                .textFieldStyle(.roundedBorder)
-                        }
-                    }
-                } else if draft.method == .password {
-                    HStack(alignment: .top, spacing: RX.Space.s4) {
-                        RXField("Password") {
-                            RevealablePasswordField(placeholder: "Required", text: $draft.password)
-                        }
-                        RXField("Comment") {
-                            TextField("Optional", text: $draft.comment)
-                                .textFieldStyle(.roundedBorder)
-                        }
-                    }
-                } else {
-                    HelpText("Signs in using your Mac's running SSH agent (SSH_AUTH_SOCK), including the system ssh-agent, 1Password SSH Agent, Secretive, or YubiKey/GPG agents.")
-                    RXField("Comment") {
-                        TextField("Optional", text: $draft.comment)
-                            .textFieldStyle(.roundedBorder)
-                    }
-                }
-                Hairline()
-                SwitchRow(
-                    "Authenticate automatically",
-                    description: "Required for Quick Connect.",
-                    isOn: $draft.automatic
-                )
-            }
-        }
-    }
-
-    /// A key shown in `code`, masked when private, with Load, Copy and Clear.
-    private struct KeyField: View {
-        @Binding var text: String
-        let masked: Bool
-        let placeholder: LocalizedStringResource
-        let loadTitle: LocalizedStringResource
-        let matches: (String) -> Bool
-
-        var display: String {
-            guard !text.isEmpty else { return "" }
-            let lines = text.split(separator: "\n").map(String.init)
-            if masked {
-                let header = lines.first ?? ""
-                let bytes = text.utf8.count
-                return String(localized: "\(header)  •••••••• \(bytes) bytes")
-            }
-            return text.trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-
-        var body: some View {
-            HStack(spacing: RX.Space.s2) {
-                RXValueField(display, placeholder: placeholder, monospaced: true)
-                if !text.isEmpty {
-                    if !masked {
-                        RXIconButton("Copy", systemImage: "doc.on.doc") {
-                            Pasteboard.copy(text)
-                        }
-                    }
-                    RXIconButton("Remove", systemImage: "minus.circle") { text = "" }
-                }
-                Button(loadTitle) { load() }
-                    .buttonStyle(.rx)
-                    .fixedSize()
-            }
-        }
-
-        func load() {
-            OpenPanel.present(
-                message: nil,
-                prompt: nil,
-                directory: URL(fileURLWithPath: "\(NSHomeDirectory())/.ssh/"),
-                canChooseFiles: true,
-                canChooseDirectories: false,
-                allowsMultipleSelection: false,
-                canCreateDirectories: false,
-                showsHiddenFiles: true
-            ) { urls in
-                guard let url = urls.first else { return }
-                guard let data = try? Data(contentsOf: url), let string = String(data: data, encoding: .utf8) else {
-                    Indicator.error(String(localized: "The file could not be read as text."))
-                    return
-                }
-                if matches(string) {
-                    text = string
-                } else {
-                    Indicator.confirm(
-                        message: masked ? "This file does not look like a private key" : "This file does not look like a public key",
-                        informative: "Load it anyway?",
-                        confirmTitle: "Load"
-                    ) { confirmed in
-                        if confirmed { text = string }
-                    }
-                }
-            }
-        }
-    }
-
-    /// New Identity as a sheet (from Identities and the identity picker). Existing
-    /// identities are edited in place on the Identities page.
-    struct IdentityEditorSheet: View {
-        let onComplete: (RDIdentity.ID?) -> Void
-
-        @EnvironmentObject var store: RayonStore
-        @State private var draft = IdentityDraft()
-
-        var body: some View {
-            SheetScaffold("New Identity") {
-                IdentityForm(draft: $draft)
-            } footer: {
-                Button("Cancel") { onComplete(nil) }
-                    .buttonStyle(.rx)
-                    .keyboardShortcut(.cancelAction)
-                Spacer()
-                Button("Create") {
-                    var base = RDIdentity(
-                        username: "",
-                        password: "",
-                        privateKey: "",
-                        publicKey: "",
-                        lastRecentUsed: .init(timeIntervalSince1970: 0),
-                        comment: "",
-                        group: "",
-                        authenticAutomatically: true
-                    )
-                    base = draft.apply(to: base)
-                    store.save(base)
-                    onComplete(base.id)
-                }
-                .buttonStyle(.rxPrimary)
-                .keyboardShortcut(.defaultAction)
-                .disabled(!draft.isValid)
-            }
-            .frame(width: 520)
-        }
-    }
-
-    /// A password field whose text shows only after the Mac's owner confirms
-    /// with Touch ID or the login password, as on iPhone.
-    private struct RevealablePasswordField: View {
-        let placeholder: LocalizedStringResource
-        @Binding var text: String
-        @State private var revealed = false
-
-        var body: some View {
-            HStack(spacing: RX.Space.s2) {
-                Group {
-                    if revealed {
-                        TextField(String(localized: placeholder), text: $text)
-                    } else {
-                        SecureField(placeholder, text: $text)
-                    }
-                }
-                .textFieldStyle(.roundedBorder)
-                if !text.isEmpty {
-                    RXIconButton(revealed ? "Hide Password" : "Show Password", systemImage: revealed ? "eye.slash" : "eye") {
-                        if revealed {
-                            revealed = false
-                        } else {
-                            Task { revealed = await DeviceOwner.confirm("show the identity's password") }
-                        }
-                    }
-                }
-            }
-        }
+    private extension Bool {
+        /// Bool is not Comparable; a Table sorts by this instead.
+        var sortKey: Int { self ? 1 : 0 }
     }
 
 #endif

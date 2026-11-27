@@ -126,23 +126,11 @@ struct ServerEditor: View {
         }
         .editorSheet(isNew ? "New Server" : "Edit Server")
         .sheet(isPresented: $picksIdentity) {
-            #if os(macOS)
-                IdentityPickerSheet { picked in
-                    picksIdentity = false
-                    guard let picked else { return }
-                    draft.identity = picked
-                    createAndConnect()
-                }
-            #else
-                NavigationStack {
-                    PickIdentityView { picked in
-                        guard let picked else { return }
-                        draft.identity = picked
-                        createAndConnect()
-                    }
-                }
-                .interactiveDismissDisabled()
-            #endif
+            IdentityPicker { picked in
+                guard let picked else { return }
+                draft.identity = picked
+                createAndConnect()
+            }
         }
         .sheet(isPresented: $showsUURemoteAccount) {
             #if os(macOS)

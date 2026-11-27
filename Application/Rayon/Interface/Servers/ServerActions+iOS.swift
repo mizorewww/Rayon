@@ -52,8 +52,7 @@
 
         /// Pick servers, then open a terminal for each.
         static func batchStartup() {
-            Task { @MainActor in
-                let machines = await RayonUtil.selectMachine()
+            ServerPicker.present(title: "Batch Startup", confirmTitle: "Open") { machines in
                 for machine in machines {
                     TerminalManager.shared.begin(for: machine, force: true)
                 }

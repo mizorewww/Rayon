@@ -162,11 +162,10 @@
                 Indicator.error(String(localized: "This snippet has no command to run."))
                 return
             }
-            ServerPickerSheet.present(
+            ServerPicker.present(
                 title: "Run \(snippet.name)",
                 lead: "Servers need an identity set.",
-                confirmTitle: "Run",
-                allowsMany: true
+                confirmTitle: "Run"
             ) { machines in
                 AppRouter.shared.present { dismiss in
                     BatchRunSheet(snippet: snippet, machines: machines, close: dismiss)

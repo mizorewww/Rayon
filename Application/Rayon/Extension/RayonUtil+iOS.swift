@@ -26,35 +26,14 @@
             ModalPresenter.present(controller)
         }
 
-        static func selectMachine(canSelectMany: Bool = true) async -> [RDMachine.ID] {
-            await withCheckedContinuation { continuation in
-                let picker = NavigationStack {
-                    PickMachineView(completion: {
-                        continuation.resume(returning: $0)
-                    }, canSelectMany: canSelectMany)
-                }
-                .expended()
-                presentModalSheet(rootView: picker)
-            }
-        }
-
-        static func selectOneMachine() async -> [RDMachine.ID] {
-            await selectMachine(canSelectMany: false)
-        }
-
         static func createExecuteFor(snippet: RDSnippet) {
-            Task {
-                let machineIds = await selectMachine()
-                guard !machineIds.isEmpty else {
-                    return
-                }
-                let runner = NavigationStack {
-                    SnippetExecuteView(snippet: snippet, machines: machineIds)
-                }
-                .expended()
+            ServerPicker.present(title: "Run \(snippet.name)", lead: "Servers need an identity set.", confirmTitle: "Run") { machines in
                 // The picker sheet is still animating out when the
                 // selection comes back; the present follows it.
-                presentModalSheet(rootView: runner)
+                presentModalSheet(rootView: NavigationStack {
+                    SnippetExecuteView(snippet: snippet, machines: machines)
+                }
+                .expended())
             }
         }
     }
