@@ -1,0 +1,30 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Also a daily count of which features are used. No identifier, no IP address kept." : {
+
+    },
+    "Also performance timings and protocol details, on some days." : {
+
+    },
+    "Crash Reports" : {
+
+    },
+    "Crash Reports and Usage" : {
+
+    },
+    "Crash and hang reports, without your hosts, names or terminal content." : {
+
+    },
+    "Detailed Diagnostics" : {
+
+    },
+    "Nothing is sent." : {
+
+    },
+    "Off" : {
+
+    }
+  },
+  "version" : "1.0"
+}
