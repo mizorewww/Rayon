@@ -3,7 +3,7 @@
 //  RayonModule
 //
 //  The terminal settings that iCloud carries: one record holding the keys
-//  of config.ghostty that travel (TerminalConfigurationSync says which).
+//  of the terminal settings that travel (TerminalConfigurationSync says which).
 //  The later change wins, as for every record.
 //
 

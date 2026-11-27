@@ -23,7 +23,7 @@ public struct TerminalSettingsCategory: Identifiable, Hashable, Sendable {
         layout?.previews ?? false
     }
 
-    /// How many of its settings are set in config.ghostty.
+    /// How many of its settings are set.
     @MainActor public var changedCount: Int {
         TerminalSettings.shared.changedCounts[id] ?? 0
     }
@@ -76,7 +76,7 @@ public struct TerminalSettingsSearchSections: View {
     }
 }
 
-/// Undo, Redo, the preview, the file and Reset.
+/// Undo, Redo, the preview and Reset.
 public struct TerminalSettingsTools: View {
     @Binding private var showsPreview: Bool
     @Binding private var confirmingReset: Bool

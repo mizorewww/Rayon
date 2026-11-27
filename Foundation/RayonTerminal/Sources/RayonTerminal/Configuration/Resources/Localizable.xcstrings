@@ -3338,22 +3338,6 @@
         }
       }
     },
-    "Line %lld: expected key = value" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "第 %lld 行：应为 key = value"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "第 %lld 行：應為 key = value"
-          }
-        }
-      }
-    },
     "Line Editing" : {
       "localizations" : {
         "zh-Hans" : {
@@ -5980,6 +5964,38 @@
         }
       }
     },
+    "The terminal settings were not applied: %@" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "终端设置未应用：%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "終端設定未套用：%@"
+          }
+        }
+      }
+    },
+    "The terminal settings were not saved: %@" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "终端设置未保存：%@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "終端設定未儲存：%@"
+          }
+        }
+      }
+    },
     "The typeface for terminal text, then fallbacks for characters it lacks." : {
       "localizations" : {
         "zh-Hans" : {
@@ -6584,38 +6600,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "單字邊界"
-          }
-        }
-      }
-    },
-    "config.ghostty is not UTF-8 text, so it was not read." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "config.ghostty 不是 UTF-8 文本，因此未读取。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "config.ghostty 不是 UTF-8 文字，因此未讀取。"
-          }
-        }
-      }
-    },
-    "config.ghostty was not applied: %@" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "config.ghostty 未应用：%@"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "config.ghostty 未應用：%@"
           }
         }
       }

@@ -12,9 +12,7 @@ import RayonTerminal
 extension TelemetrySnapshot {
     static var rayon: TelemetrySnapshot {
         let store = RayonStore.shared
-        let themed = TerminalSettings.shared.contents.split(separator: "\n").contains {
-            $0.trimmingCharacters(in: .whitespaces).hasPrefix("theme")
-        }
+        let themed = TerminalSettings.shared.applied["theme"] != nil
         let redaction: TelemetryReport.RedactionMode = switch AppSettings.serverRedaction.value {
         case .none: .none
         case .sensitive: .address

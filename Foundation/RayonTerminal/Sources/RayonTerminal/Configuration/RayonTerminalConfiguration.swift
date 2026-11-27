@@ -15,7 +15,7 @@ enum RayonTerminalConfiguration {
     private(set) static var appliedFontSize: Double?
 
     /// The app's Copy on Select preference. The app stores it with its own
-    /// preferences and sets it here; the file's own value is not used.
+    /// preferences and sets it here; a `copy-on-select` setting is not used.
     private(set) static var copyOnSelect = true
     /// The app's Clipboard Sharing preference: programs running on the remote
     /// host may read and write the system clipboard through the terminal
@@ -26,9 +26,9 @@ enum RayonTerminalConfiguration {
         let controller = TerminalController(configuration: base)
         do {
             try apply(TerminalSettings.shared.applied, to: controller)
-            appliedFontSize = TerminalSettings.shared.applied.values("font-size").last.flatMap(Double.init)
+            appliedFontSize = TerminalSettings.shared.applied["font-size"]?.last.flatMap(Double.init)
         } catch {
-            TerminalSettings.shared.issue = String(localized: "config.ghostty was not applied: \(error.localizedDescription)", bundle: .module)
+            TerminalSettings.shared.issue = String(localized: "The terminal settings were not applied: \(error.localizedDescription)", bundle: .module)
         }
         return controller
     }()
@@ -99,48 +99,50 @@ enum RayonTerminalConfiguration {
             && !binding.prefixes.contains("global") && !binding.prefixes.contains("all")
     }
 
-    /// The configuration lines for one appearance.
-    static func lines(for config: GhosttyConfigText, dark: Bool) throws -> [(key: String, value: String)] {
+    /// The configuration lines for one appearance: the theme's colors, then
+    /// the settings that apply inside Rayon, key by key in a fixed order.
+    static func lines(for config: [String: [String]], dark: Bool) -> [(key: String, value: String)] {
         var lines: [(key: String, value: String)] = []
-        if let theme = TerminalThemes.theme(for: config.values("theme").last ?? "", dark: dark) {
+        if let theme = TerminalThemes.theme(for: config["theme"]?.last ?? "", dark: dark) {
             lines += ["background", "foreground", "cursor-color", "cursor-text", "selection-background", "selection-foreground"]
                 .compactMap { key in theme.color(key).map { (key, $0) } }
             lines += (0 ..< 256).compactMap { index in theme.paletteColor(index).map { ("palette", "\(index)=\($0)") } }
         }
-        for entry in try config.entries() where supportedKeys.contains(entry.key) {
-            if entry.key == "keybind", !applies(keybind: entry.value) { continue }
-            lines.append(entry)
+        for (key, values) in config.sorted(by: { $0.key < $1.key }) where supportedKeys.contains(key) {
+            for value in values where key != "keybind" || applies(keybind: value) {
+                lines.append((key, value))
+            }
         }
         lines += [("copy-on-select", copyOnSelectValue), ("clipboard-read", clipboardAccessValue), ("clipboard-write", clipboardAccessValue)]
         return lines
     }
 
     /// The whole configuration one appearance gets, as Ghostty reads it.
-    static func contents(_ config: GhosttyConfigText, dark: Bool) throws -> String {
-        ([base.rendered] + (try lines(for: config, dark: dark)).map { "\($0.key) = \($0.value)" }).joined(separator: "\n")
+    static func contents(_ config: [String: [String]], dark: Bool) -> String {
+        ([base.rendered] + lines(for: config, dark: dark).map { "\($0.key) = \($0.value)" }).joined(separator: "\n")
     }
 
     /// Applies `config` to `target` (every terminal, by default) once Ghostty
     /// accepts both appearances of it; otherwise throws Ghostty's diagnostics
     /// and changes nothing.
-    static func apply(_ config: GhosttyConfigText, to target: TerminalController? = nil) throws {
+    static func apply(_ config: [String: [String]], to target: TerminalController? = nil) throws {
         let shared = target == nil
         let target = target ?? controller
-        let light = try contents(config, dark: false)
-        let dark = try contents(config, dark: true)
+        let light = contents(config, dark: false)
+        let dark = contents(config, dark: true)
         for contents in Set([light, dark]) {
             let validation = TerminalController(configSource: .generated(contents), theme: .init())
             if let issue = validation.lastConfigurationIssue { throw ConfigError(issue) }
         }
-        func configuration(_ dark: Bool) throws -> TerminalConfiguration {
-            try lines(for: config, dark: dark).reduce(TerminalConfiguration()) { $0.custom($1.key, $1.value) }
+        func configuration(_ dark: Bool) -> TerminalConfiguration {
+            lines(for: config, dark: dark).reduce(TerminalConfiguration()) { $0.custom($1.key, $1.value) }
         }
-        let theme = try TerminalTheme(light: configuration(false), dark: configuration(true))
+        let theme = TerminalTheme(light: configuration(false), dark: configuration(true))
         if target.theme != theme, !target.setTheme(theme) {
             throw ConfigError(target.lastConfigurationIssue ?? String(localized: "Ghostty did not accept the configuration", bundle: .module))
         }
         if shared {
-            appliedFontSize = config.values("font-size").last.flatMap(Double.init)
+            appliedFontSize = config["font-size"]?.last.flatMap(Double.init)
             NotificationCenter.default.post(name: didApply, object: nil)
         }
     }

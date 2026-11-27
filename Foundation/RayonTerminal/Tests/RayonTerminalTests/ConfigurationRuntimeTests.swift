@@ -16,23 +16,23 @@ final class ConfigurationRuntimeTests: XCTestCase {
         XCTAssertEqual(KeybindingCatalog.shared.actions.count, 83)
     }
 
-    /// A file of its own and a clean shared terminal configuration afterwards.
-    @MainActor private func scratchSettings(_ text: String? = nil, defaults: UserDefaults = .standard) throws -> TerminalSettings {
-        let url = FileManager.default.temporaryDirectory.appending(path: "RayonTerminalTests-\(UUID())/config.ghostty")
-        if let text {
-            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try Data(text.utf8).write(to: url)
-        }
+    /// Settings of their own, from `text` as an earlier release's
+    /// config.ghostty, and a clean shared terminal configuration afterwards.
+    @MainActor private func scratchSettings(_ text: String? = nil) throws -> TerminalSettings {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "RayonTerminalTests-\(UUID())")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        let configFile = folder.appending(path: "config.ghostty")
+        if let text { try Data(text.utf8).write(to: configFile) }
         addTeardownBlock { @MainActor in
-            try? FileManager.default.removeItem(at: url.deletingLastPathComponent())
+            try? FileManager.default.removeItem(at: folder)
             try? RayonTerminalConfiguration.apply(TerminalSettings.shared.applied)
         }
-        return TerminalSettings(fileURL: url, defaults: defaults)
+        return TerminalSettings(fileURL: folder.appending(path: "terminal-settings.json"), importing: configFile)
     }
 
     @MainActor func testExplicitGhosttyDefaultOverridesRayonDefault() throws {
         let size = try XCTUnwrap(SettingCatalog.shared.setting("font-size")?.defaultValue.values.first)
-        let text = try RayonTerminalConfiguration.contents(GhosttyConfigText("font-size = \(size)\nfont-thicken = false"), dark: true)
+        let text = RayonTerminalConfiguration.contents(["font-size": [size], "font-thicken": ["false"]], dark: true)
         XCTAssertTrue(text.contains("font-size = \(size)"))
         let lines = text.components(separatedBy: "\n")
         XCTAssertGreaterThan(try XCTUnwrap(lines.lastIndex(of: "font-thicken = false")), try XCTUnwrap(lines.lastIndex(of: "font-thicken = true")))
@@ -40,8 +40,11 @@ final class ConfigurationRuntimeTests: XCTestCase {
 
     @MainActor func testRuntimeFilterAndDualThemes() throws {
         TestHost.prepare()
-        let config = GhosttyConfigText("theme = light:3024 Day,dark:3024 Night\nbackground = #223344\ncommand = rm -rf /\nconfig-file = /tmp/config\nclipboard-write = deny\nkeybind = global:ctrl+k=quit\nkeybind = ctrl+k=text:hello")
-        let text = try RayonTerminalConfiguration.contents(config, dark: true)
+        let config = [
+            "theme": ["light:3024 Day,dark:3024 Night"], "background": ["#223344"], "command": ["rm -rf /"], "config-file": ["/tmp/config"],
+            "clipboard-write": ["deny"], "keybind": ["global:ctrl+k=quit", "ctrl+k=text:hello"],
+        ]
+        let text = RayonTerminalConfiguration.contents(config, dark: true)
         XCTAssertFalse(text.contains("command ="))
         XCTAssertFalse(text.contains("config-file ="))
         // A user's clipboard-write is filtered out: the only such line is the
@@ -50,20 +53,19 @@ final class ConfigurationRuntimeTests: XCTestCase {
         XCTAssertFalse(text.contains("=quit"))
         XCTAssertTrue(text.contains("ctrl+k=text:hello"))
         XCTAssertTrue(text.contains("background = #090300"))
-        XCTAssertTrue(try RayonTerminalConfiguration.contents(config, dark: false).contains("background = #f7f7f7"))
+        XCTAssertTrue(RayonTerminalConfiguration.contents(config, dark: false).contains("background = #f7f7f7"))
         let controller = TerminalController(configuration: RayonTerminalConfiguration.base)
         try RayonTerminalConfiguration.apply(config, to: controller)
         let before = controller.theme
         var broken = config
-        broken.set("font-size", ["not a number"])
+        broken["font-size"] = ["not a number"]
         XCTAssertThrowsError(try RayonTerminalConfiguration.apply(broken, to: controller))
         XCTAssertEqual(controller.theme, before)
-        XCTAssertThrowsError(try RayonTerminalConfiguration.apply(GhosttyConfigText("not a line"), to: controller))
     }
 
     /// A font feature Ghostty cannot read is refused when typed in Settings;
-    /// one already in the file is left for Ghostty to skip and keeps
-    /// neither the file nor later changes from applying.
+    /// one already applied is left for Ghostty to skip and keeps neither
+    /// the rest nor later changes from applying.
     @MainActor func testAnUnreadableFontFeatureIsRefusedOnlyInSettings() throws {
         let settings = try scratchSettings("font-feature = !!=bad value\nbackground = #111111\n")
         try RayonTerminalConfiguration.apply(settings.applied)
@@ -82,18 +84,18 @@ final class ConfigurationRuntimeTests: XCTestCase {
         let settings = try scratchSettings()
         let defaults = settings.shortcuts
         XCTAssertFalse(defaults.isEmpty)
-        XCTAssertFalse(settings.config.values("keybind").contains("clear"))
+        XCTAssertFalse(settings.config["keybind", default: []].contains("clear"))
         settings.setShortcuts(Array(defaults.dropFirst()) + ["ctrl+k=text:hello"])
         XCTAssertEqual(settings.shortcuts, Array(defaults.dropFirst()) + ["ctrl+k=text:hello"])
-        XCTAssertEqual(settings.config.values("keybind").first, "clear")
-        let text = try RayonTerminalConfiguration.contents(settings.config, dark: true)
+        XCTAssertEqual(settings.config["keybind"]?.first, "clear")
+        let text = RayonTerminalConfiguration.contents(settings.config, dark: true)
         XCTAssertTrue(text.contains("keybind = clear"))
         try RayonTerminalConfiguration.apply(settings.config, to: TerminalController(configuration: .default))
     }
 
     @MainActor func testFindBarKeysAreNotGhosttys() throws {
-        for config in [GhosttyConfigText(), GhosttyConfigText("keybind = ctrl+k=ignore")] {
-            let text = try RayonTerminalConfiguration.contents(config, dark: false)
+        for config in [[:], ["keybind": ["ctrl+k=ignore"]]] {
+            let text = RayonTerminalConfiguration.contents(config, dark: false)
             for trigger in RayonTerminalConfiguration.unboundTriggers {
                 XCTAssertTrue(text.contains("keybind = \(trigger)=unbind"), trigger)
             }
@@ -115,7 +117,7 @@ final class ConfigurationRuntimeTests: XCTestCase {
         try await Task.sleep(for: .milliseconds(100))
         terminal.write("configuration survival marker\r\n")
         XCTAssertTrue(terminal.session.backend.waitForPendingOutput())
-        try RayonTerminalConfiguration.apply(GhosttyConfigText("font-size = 13.5\ntheme = 3024 Night"))
+        try RayonTerminalConfiguration.apply(["font-size": ["13.5"], "theme": ["3024 Night"]])
         try await Task.sleep(for: .milliseconds(100))
         XCTAssertTrue(native === terminal.session.platformView())
         XCTAssertEqual(native.fontSize, 13.5)
@@ -137,11 +139,16 @@ final class ConfigurationRuntimeTests: XCTestCase {
         try await Task.sleep(for: .milliseconds(50))
         XCTAssertEqual(native.fontSize, 20, "Reappearance must preserve local toolbar zoom")
     }
-    @MainActor func testChangesApplySaveAndUndo() throws {
-        let settings = try scratchSettings("# kept\nfuture-key = 1\n")
+    @MainActor func testChangesApplySaveAndUndo() async throws {
+        let settings = try scratchSettings()
+        func saved() async -> [String: [String]] {
+            await settings.saved()
+            return TerminalSettings(fileURL: settings.fileURL, importing: nil).applied
+        }
         settings.set("background", "#123456")
         XCTAssertTrue(settings.applyNow())
-        XCTAssertEqual(try String(contentsOf: settings.fileURL, encoding: .utf8), "# kept\nfuture-key = 1\nbackground = #123456\n")
+        let saved1 = await saved()
+        XCTAssertEqual(saved1, ["background": ["#123456"]])
         settings.undo()
         XCTAssertFalse(settings.isSet("background"))
         settings.redo()
@@ -151,12 +158,14 @@ final class ConfigurationRuntimeTests: XCTestCase {
         settings.set("font-size", "not a number")
         XCTAssertFalse(settings.applyNow())
         XCTAssertNotNil(settings.issue)
-        XCTAssertEqual(settings.applied.values("font-size"), [])
-        XCTAssertFalse(try String(contentsOf: settings.fileURL, encoding: .utf8).contains("font-size"))
+        XCTAssertNil(settings.applied["font-size"])
+        let saved2 = await saved()
+        XCTAssertNil(saved2["font-size"])
         settings.resetAll()
         XCTAssertTrue(settings.applyNow())
         XCTAssertNil(settings.issue)
-        XCTAssertEqual(try String(contentsOf: settings.fileURL, encoding: .utf8), "# kept\nfuture-key = 1\n")
+        let saved3 = await saved()
+        XCTAssertEqual(saved3, [:])
     }
 
     @MainActor func testPaletteAndEffectiveColors() throws {
@@ -167,56 +176,58 @@ final class ConfigurationRuntimeTests: XCTestCase {
         XCTAssertEqual(settings.effectiveColor("background", dark: true), "#123456")
         settings.setPalette(255, "#010203")
         settings.setPalette(2, "#112233")
-        XCTAssertEqual(settings.config.values("palette"), ["2=#112233", "255=#010203"])
+        XCTAssertEqual(settings.config["palette"], ["2=#112233", "255=#010203"])
         XCTAssertEqual(settings.effectivePalette(255, dark: true), "#010203")
         settings.setPalette(255, nil)
         settings.setPalette(2, nil)
         XCTAssertFalse(settings.isSet("palette"))
     }
 
-    /// Settings the previous release kept in the user defaults become config.ghostty.
-    @MainActor func testLegacySettingsMoveToTheFile() throws {
-        let suite = "RayonConfigurationTests.\(UUID())"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let legacy = #"{"document":{"overrides":{"font-size":["15"],"keybind":["ctrl+k=ignore"],"palette":["1=#010101"]}}}"#
-        defaults.set(Data(legacy.utf8), forKey: "me.mizorewww.rayon.ghosttyConfiguration.v1")
-        let settings = try scratchSettings(defaults: defaults)
-        XCTAssertEqual(settings.value("font-size"), "15")
+    /// An earlier release's config.ghostty moves into the settings at the
+    /// first launch, without comments, malformed lines or options Rayon's
+    /// terminal does not use, and is gone after; its time stays the
+    /// settings' time, for sync.
+    @MainActor func testConfigGhosttyIsImportedOnce() throws {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "RayonTerminalTests-\(UUID())")
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let configFile = folder.appending(path: "config.ghostty")
+        let text = "# mine\r\nfont-size = 15\nfont-family = \"Menlo\"\nfont-family = SF Mono\nmacos-titlebar-style = tabs\nbroken line\nkeybind = clear\nkeybind = ctrl+k=ignore\npalette = 1=#010101\nbackground =\n"
+        try Data(text.utf8).write(to: configFile)
+        let written = Date(timeIntervalSince1970: 1_700_000_000)
+        try FileManager.default.setAttributes([.modificationDate: written], ofItemAtPath: configFile.path)
+        let url = folder.appending(path: "terminal-settings.json")
+
+        let settings = TerminalSettings(fileURL: url, importing: configFile)
+        let expected = ["font-size": ["15"], "font-family": ["Menlo", "SF Mono"], "keybind": ["clear", "ctrl+k=ignore"], "palette": ["1=#010101"]]
+        XCTAssertEqual(settings.applied, expected)
         XCTAssertEqual(settings.shortcuts, ["ctrl+k=ignore"])
         XCTAssertEqual(settings.paletteOverrides, [1: "#010101"])
-        XCTAssertTrue(FileManager.default.fileExists(atPath: settings.fileURL.path))
-        XCTAssertNil(defaults.data(forKey: "me.mizorewww.rayon.ghosttyConfiguration.v1"))
+        XCTAssertEqual(settings.modified, written)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: configFile.path))
+
+        // A config.ghostty that turns up later is not read.
+        try Data("font-size = 30\n".utf8).write(to: configFile)
+        let relaunched = TerminalSettings(fileURL: url, importing: configFile)
+        XCTAssertEqual(relaunched.applied, expected)
+        XCTAssertEqual(relaunched.modified, written)
     }
 
-    /// Every shortcut removed in the previous release stays removed: Ghostty's
-    /// defaults do not come back.
-    @MainActor func testAnEmptyLegacyShortcutListStaysEmpty() throws {
-        let suite = "RayonConfigurationTests.\(UUID())"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let legacy = #"{"document":{"overrides":{"keybind":[],"palette":[]}}}"#
-        defaults.set(Data(legacy.utf8), forKey: "me.mizorewww.rayon.ghosttyConfiguration.v1")
-        let settings = try scratchSettings(defaults: defaults)
-        XCTAssertEqual(settings.applied.text, "keybind = clear\n")
-    }
-
-    /// What another device set is applied at once, keeps local lines, and is
-    /// not something Undo takes back.
+    /// What another device set is applied at once and is not something
+    /// Undo takes back.
     @MainActor func testAdoptingRemoteChanges() throws {
-        let settings = try scratchSettings("# mine\nfont-size = 16\n")
+        let settings = try scratchSettings("font-size = 16\n")
         settings.adopt(["background": ["#222222"], "font-size": nil])
-        XCTAssertEqual(settings.applied.text, "# mine\nbackground = #222222\n")
+        XCTAssertEqual(settings.applied, ["background": ["#222222"]])
         XCTAssertFalse(settings.undoManager.canUndo)
         settings.adopt(["font-size": ["not a number"]])
         XCTAssertNotNil(settings.issue)
-        XCTAssertEqual(settings.applied.values("font-size"), [])
+        XCTAssertNil(settings.applied["font-size"])
     }
 
-    /// What syncs leaves the device's own keys, comments and unknown keys
-    /// alone, both ways.
+    /// What syncs leaves the device's own keys alone, both ways.
     @MainActor func testSyncCarriesAllButDeviceBoundKeys() throws {
-        let settings = try scratchSettings("# mine\nfont-size = 16\nwindow-padding-x = 4\nbackground = #111111\nfuture-key = 1\nkeybind = clear\nkeybind = ctrl+k=ignore\n")
+        let settings = try scratchSettings("font-size = 16\nwindow-padding-x = 4\nbackground = #111111\nkeybind = clear\nkeybind = ctrl+k=ignore\n")
         XCTAssertEqual(TerminalConfigurationSync.entries(of: settings), [
             "background": ["#111111"], "keybind": ["clear", "ctrl+k=ignore"],
         ])
@@ -224,31 +235,11 @@ final class ConfigurationRuntimeTests: XCTestCase {
         let expected: [String: [String]?] = [
             "background": nil as [String]?, "foreground": ["#eeeeee"], "keybind": ["clear", "ctrl+j=ignore"],
         ]
-        XCTAssertEqual(try TerminalConfigurationSync.changes(from: XCTUnwrap(TerminalConfigurationSync.entries(of: settings)), to: remote), expected)
+        XCTAssertEqual(TerminalConfigurationSync.changes(from: TerminalConfigurationSync.entries(of: settings), to: remote), expected)
         TerminalConfigurationSync.adopt(remote, into: settings)
-        XCTAssertEqual(settings.applied.text, "# mine\nfont-size = 16\nwindow-padding-x = 4\nfuture-key = 1\nkeybind = clear\nkeybind = ctrl+j=ignore\nforeground = #eeeeee\n")
+        XCTAssertEqual(settings.applied, ["font-size": ["16"], "window-padding-x": ["4"], "keybind": ["clear", "ctrl+j=ignore"], "foreground": ["#eeeeee"]])
         XCTAssertEqual(TerminalConfigurationSync.entries(of: settings), ["foreground": ["#eeeeee"], "keybind": ["clear", "ctrl+j=ignore"]])
-        XCTAssertTrue(try TerminalConfigurationSync.changes(from: XCTUnwrap(TerminalConfigurationSync.entries(of: settings)), to: remote).isEmpty)
-    }
-
-    /// A file that cannot be read says nothing about the settings that
-    /// travel: none are read from it, and another device's do not replace it.
-    @MainActor func testAnUnreadableFileNeitherSyncsNorIsReplaced() throws {
-        let malformed = try scratchSettings("background = #111111\nthis line has no equals sign\n")
-        XCTAssertNil(TerminalConfigurationSync.entries(of: malformed))
-        TerminalConfigurationSync.adopt(["foreground": ["#eeeeee"]], into: malformed)
-        XCTAssertEqual(malformed.applied.text, "background = #111111\nthis line has no equals sign\n")
-
-        let url = FileManager.default.temporaryDirectory.appending(path: "RayonTerminalTests-\(UUID())/config.ghostty")
-        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        defer { try? FileManager.default.removeItem(at: url.deletingLastPathComponent()) }
-        let bytes = Data("background = #111111\n".utf8) + Data([0xFF, 0xFE, 0x0A])
-        try bytes.write(to: url)
-        let binary = TerminalSettings(fileURL: url, defaults: .standard)
-        XCTAssertNil(TerminalConfigurationSync.entries(of: binary))
-        XCTAssertNotNil(binary.issue)
-        TerminalConfigurationSync.adopt(["foreground": ["#eeeeee"]], into: binary)
-        XCTAssertEqual(try Data(contentsOf: url), bytes)
+        XCTAssertTrue(TerminalConfigurationSync.changes(from: TerminalConfigurationSync.entries(of: settings), to: remote).isEmpty)
     }
 
     /// A listener to a change that changes the settings again (iCloud sync
@@ -265,9 +256,9 @@ final class ConfigurationRuntimeTests: XCTestCase {
             }
         }
         defer { NotificationCenter.default.removeObserver(observer) }
-        try settings.load("font-size = 20\n")
+        try settings.load(["font-size": ["20"]])
         XCTAssertTrue(adopted)
-        XCTAssertEqual(settings.applied.text, "font-size = 20\nbackground = #202020\n")
+        XCTAssertEqual(settings.applied, ["font-size": ["20"], "background": ["#202020"]])
         XCTAssertEqual(settings.config, settings.applied)
     }
 
@@ -281,33 +272,13 @@ final class ConfigurationRuntimeTests: XCTestCase {
         settings.adopt(["background": ["#333333"]])
         XCTAssertFalse(settings.undoManager.canUndo)
         settings.undo()
-        XCTAssertEqual(settings.applied.text, "background = #333333\n")
+        XCTAssertEqual(settings.applied, ["background": ["#333333"]])
 
         settings.set("background", "#444444")
         XCTAssertTrue(settings.applyNow())
         XCTAssertTrue(settings.undoManager.canUndo)
-        try settings.load("background = #555555\n")
+        try settings.load(ghosttyConfig: "background = #555555\n")
         XCTAssertFalse(settings.undoManager.canUndo)
-    }
-
-    /// The file edited outside Rayon while it runs: a change made in
-    /// Settings, or one from another device, is made to the edited file
-    /// instead of writing the old one over it.
-    @MainActor func testOutsideEditsAreNotOverwritten() throws {
-        let settings = try scratchSettings("background = #111111\n")
-        func editOutside(_ text: String, at seconds: TimeInterval) throws {
-            try Data(text.utf8).write(to: settings.fileURL)
-            try FileManager.default.setAttributes([.modificationDate: Date(timeIntervalSinceNow: seconds)], ofItemAtPath: settings.fileURL.path)
-        }
-
-        try editOutside("background = #111111\nforeground = #eeeeee\n", at: 10)
-        settings.set("cursor-color", "#ff0000")
-        XCTAssertTrue(settings.applyNow())
-        XCTAssertEqual(try String(contentsOf: settings.fileURL, encoding: .utf8), "background = #111111\nforeground = #eeeeee\ncursor-color = #ff0000\n")
-
-        try editOutside("background = #222222\nforeground = #eeeeee\ncursor-color = #ff0000\n", at: 20)
-        XCTAssertEqual(TerminalConfigurationSync.entries(of: settings)?["background"], ["#222222"])
-        TerminalConfigurationSync.adopt(["background": ["#222222"], "foreground": ["#dddddd"], "cursor-color": ["#ff0000"]], into: settings)
-        XCTAssertEqual(try String(contentsOf: settings.fileURL, encoding: .utf8), "background = #222222\nforeground = #dddddd\ncursor-color = #ff0000\n")
+        XCTAssertEqual(settings.applied, ["background": ["#555555"]])
     }
 }

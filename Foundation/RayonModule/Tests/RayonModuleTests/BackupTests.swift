@@ -158,24 +158,21 @@ final class BackupTests: XCTestCase {
         }
     }
 
-    /// A terminal settings file of its own, removed after the test.
-    private func terminalSettings(_ text: String? = nil) throws -> TerminalSettings {
+    /// Terminal settings of their own, removed after the test.
+    private func terminalSettings(_ values: [String: [String]] = [:]) throws -> TerminalSettings {
         let folder = FileManager.default.temporaryDirectory.appending(path: "rayon-tests-\(UUID().uuidString)")
         addTeardownBlock { try? FileManager.default.removeItem(at: folder) }
-        let url = folder.appending(path: "config.ghostty")
-        if let text {
-            try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            try Data(text.utf8).write(to: url)
-        }
-        return TerminalSettings(fileURL: url, defaults: UserDefaults(suiteName: "rayon-tests-\(UUID().uuidString)")!)
+        let settings = TerminalSettings(fileURL: folder.appending(path: "terminal-settings.json"), importing: nil)
+        if !values.isEmpty { try settings.load(values) }
+        return settings
     }
 
-    func testPreferencesRoundTripWithoutDeviceState() throws {
+    func testPreferencesRoundTripWithoutDeviceState() async throws {
         let settings = UserDefaultKeyValueStorage(suite: UserDefaults(suiteName: "rayon-tests-\(UUID().uuidString)")!)
         ConfigurableKit.set(value: 21, forKey: AppSettings.terminalFontSize.key, storage: settings)
         ConfigurableKit.set(value: false, forKey: AppSettings.animatesHome.key, storage: settings)
         ConfigurableKit.set(value: true, forKey: AppSettings.syncEnabled.key, storage: settings)
-        let terminal = try terminalSettings("# mine\nbackground = #123456\n")
+        let terminal = try terminalSettings(["background": ["#123456"], "keybind": ["clear", "ctrl+k=ignore"]])
         try PreferencesBackup.export(from: settings, terminal: terminal, to: file)
         XCTAssertThrowsError(try DataBackup.read(file, password: nil)) {
             XCTAssertEqual($0 as? BackupError, .wrongKind)
@@ -184,15 +181,33 @@ final class BackupTests: XCTestCase {
         let restored = UserDefaultKeyValueStorage(suite: UserDefaults(suiteName: "rayon-tests-\(UUID().uuidString)")!)
         ConfigurableKit.set(value: 9, forKey: AppSettings.connectionTimeout.key, storage: restored)
         let restoredTerminal = try terminalSettings()
-        defer { try? restoredTerminal.load(TerminalSettings.shared.contents) }
+        defer { try? restoredTerminal.load(TerminalSettings.shared.applied) }
         XCTAssertEqual(try PreferencesBackup.restore(from: file, into: restored, terminal: restoredTerminal), 2)
         XCTAssertEqual(ConfigurableKit.value(forKey: AppSettings.terminalFontSize.key, storage: restored), 21)
         XCTAssertEqual(ConfigurableKit.value(forKey: AppSettings.animatesHome.key, storage: restored), false)
         // Not in the backup: reset. Never in a backup: left alone.
         XCTAssertNil(restored.value(forKey: AppSettings.connectionTimeout.key))
         XCTAssertNil(restored.value(forKey: AppSettings.syncEnabled.key))
-        XCTAssertEqual(restoredTerminal.contents, "# mine\nbackground = #123456\n")
-        XCTAssertEqual(try String(contentsOf: restoredTerminal.fileURL, encoding: .utf8), "# mine\nbackground = #123456\n")
+        XCTAssertEqual(restoredTerminal.applied, ["background": ["#123456"], "keybind": ["clear", "ctrl+k=ignore"]])
+        await restoredTerminal.saved()
+        XCTAssertEqual(TerminalSettings(fileURL: restoredTerminal.fileURL, importing: nil).applied, restoredTerminal.applied)
+    }
+
+    /// A backup made before the terminal settings were JSON holds them as
+    /// config.ghostty text: they are restored, without the options Rayon's
+    /// terminal does not use, comments or malformed lines.
+    func testPreferencesBackupWithConfigGhosttyIsRestored() throws {
+        let values: [String: Any] = [:]
+        let data = try PropertyListSerialization.data(fromPropertyList: values, format: .binary, options: 0)
+        let text = "# mine\nbackground = #123456\nmacos-titlebar-style = tabs\nnot a line\nkeybind = clear\nkeybind = ctrl+k=ignore\n"
+        try BackupArchive.write(
+            [PreferencesBackup.preferencesFile: data, PreferencesBackup.configFile: Data(text.utf8)],
+            kind: .preferences, includesSecrets: false, password: nil, to: file
+        )
+        let terminal = try terminalSettings(["foreground": ["#eeeeee"]])
+        defer { try? terminal.load(TerminalSettings.shared.applied) }
+        try PreferencesBackup.restore(from: file, into: UserDefaultKeyValueStorage(suite: UserDefaults(suiteName: "rayon-tests-\(UUID().uuidString)")!), terminal: terminal)
+        XCTAssertEqual(terminal.applied, ["background": ["#123456"], "keybind": ["clear", "ctrl+k=ignore"]])
     }
 
     /// A backup from before config.ghostty kept other keys, and the terminal among them.

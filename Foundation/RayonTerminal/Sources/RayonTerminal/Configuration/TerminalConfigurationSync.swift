@@ -1,9 +1,8 @@
 import Foundation
 
 /// The terminal's settings as the app's iCloud sync sees them: the keys set
-/// in `config.ghostty` that travel, with their values, and a way to take
-/// those another device set. What fits one screen (font size, padding) stays
-/// on the device, as do comments and keys Ghostty does not document.
+/// that travel, with their values, and a way to take those another device
+/// set. What fits one screen (font size, padding) stays on the device.
 @MainActor
 public enum TerminalConfigurationSync {
     /// Posted, by the `TerminalSettings` concerned, after its settings changed.
@@ -16,21 +15,13 @@ public enum TerminalConfigurationSync {
         SettingCatalog.shared.setting(key) != nil && !deviceBoundKeys.contains(key)
     }
 
-    /// The keys that travel, as applied here; nil when the file cannot be
-    /// read (not UTF-8, or a line that is not `key = value`). Such a file
-    /// says nothing about them: taken for "none set", it would remove every
-    /// device's settings.
-    public static func entries(of settings: TerminalSettings = .shared) -> [String: [String]]? {
-        settings.reloadIfChangedOutside()
-        guard !settings.fileIsUnreadable else { return nil }
-        return entries(of: settings.applied)
+    /// The keys that travel, as applied here.
+    public static func entries(of settings: TerminalSettings = .shared) -> [String: [String]] {
+        entries(of: settings.applied)
     }
 
-    nonisolated static func entries(of config: GhosttyConfigText) -> [String: [String]]? {
-        guard let lines = try? config.entries() else { return nil }
-        return lines.reduce(into: [:]) { result, line in
-            if syncs(line.key) { result[line.key, default: []].append(line.value) }
-        }
+    nonisolated static func entries(of config: [String: [String]]) -> [String: [String]] {
+        config.filter { syncs($0.key) }
     }
 
     /// What makes the keys that travel equal `remote`: each key's new values,
@@ -46,17 +37,15 @@ public enum TerminalConfigurationSync {
         return result
     }
 
-    /// Makes the keys that travel what another device has, and applies them;
-    /// not to a file that cannot be read, which stays as it is.
+    /// Makes the keys that travel what another device has, and applies them.
     public static func adopt(_ remote: [String: [String]], into settings: TerminalSettings = .shared) {
-        guard let local = entries(of: settings) else { return }
-        let changes = changes(from: local, to: remote)
+        let changes = changes(from: entries(of: settings), to: remote)
         guard !changes.isEmpty else { return }
         settings.adopt(changes)
     }
 
-    /// When the file was last written, for deciding which side is newer.
+    /// When the settings last changed, for deciding which side is newer.
     public static func lastWritten(_ settings: TerminalSettings = .shared) -> Date? {
-        (try? settings.fileURL.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
+        settings.modified
     }
 }

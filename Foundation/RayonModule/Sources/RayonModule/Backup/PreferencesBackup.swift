@@ -4,7 +4,7 @@
 //
 //  A backup of the app's settings, apart from the data: every setting
 //  `AppSettings` declares that may leave the device, as ConfigurableKit
-//  stores it, and the terminal's config.ghostty.
+//  stores it, and the terminal's settings.
 //
 
 import ConfigurableKit
@@ -14,7 +14,9 @@ import RayonTerminal
 public enum PreferencesBackup {
     public static let fileExtension = "rayonsettings"
     static let preferencesFile = "preferences.plist"
-    static let terminalFile = "config.ghostty"
+    static let terminalFile = "terminal-settings.json"
+    /// What backups from before the JSON held: the terminal's config.ghostty.
+    static let configFile = "config.ghostty"
 
     /// The keys a backup carries: all but what never leaves the device.
     static let keys: Set<String> = Set(AppSettings.all.filter { $0.scope != .deviceLocal }.map(\.key))
@@ -30,8 +32,10 @@ public enum PreferencesBackup {
             values[key] = settings.value(forKey: key)
         }
         let data = try PropertyListSerialization.data(fromPropertyList: values, format: .binary, options: 0)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = .sortedKeys
         try BackupArchive.write(
-            [preferencesFile: data, terminalFile: Data(terminal.contents.utf8)],
+            [preferencesFile: data, terminalFile: encoder.encode(terminal.applied)],
             kind: .preferences, includesSecrets: false, password: nil, to: url
         )
     }
@@ -49,10 +53,20 @@ public enum PreferencesBackup {
         guard let data = files[preferencesFile],
               let values = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any]
         else { throw BackupError.damaged(String(localized: "it has no settings", bundle: .module)) }
-        // Older backups kept other keys, and the terminal among them.
-        guard let file = files[terminalFile] else { throw BackupError.damaged(String(localized: "it is from an older version of Rayon", bundle: .module)) }
-        guard let text = String(data: file, encoding: .utf8) else { throw BackupError.damaged(String(localized: "its terminal settings are not text", bundle: .module)) }
-        try terminal.load(text)
+        if let file = files[terminalFile] {
+            guard let values = try? JSONDecoder().decode([String: [String]].self, from: file) else {
+                throw BackupError.damaged(String(localized: "its terminal settings cannot be read", bundle: .module))
+            }
+            try terminal.load(values)
+        } else if let file = files[configFile] {
+            guard let text = String(data: file, encoding: .utf8) else {
+                throw BackupError.damaged(String(localized: "its terminal settings cannot be read", bundle: .module))
+            }
+            try terminal.load(ghosttyConfig: text)
+        } else {
+            // Older backups kept other keys, and the terminal among them.
+            throw BackupError.damaged(String(localized: "it is from an older version of Rayon", bundle: .module))
+        }
         var count = 0
         for key in keys {
             let value = values[key] as? Data

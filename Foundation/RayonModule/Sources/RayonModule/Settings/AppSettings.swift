@@ -3,7 +3,7 @@
 //  RayonModule
 //
 //  Every setting Rayon has, by key. The terminal's own settings are not
-//  here: they live in config.ghostty (RayonTerminal's TerminalSettings).
+//  here: RayonTerminal's TerminalSettings keeps them.
 //
 
 import Foundation

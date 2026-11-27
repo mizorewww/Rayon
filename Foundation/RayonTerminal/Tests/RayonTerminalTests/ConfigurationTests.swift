@@ -61,24 +61,10 @@ final class ConfigurationTests: XCTestCase {
         }
     }
 
-    func testConfigTextKeepsWhatItDoesNotTouch() throws {
-        var text = GhosttyConfigText("# mine\nfont-size = 12\n\nunknown-future = x\nkeybind = a=ignore\nkeybind = b=ignore\n")
-        text.set("keybind", ["c=ignore"])
-        text.set("font-size", ["13"])
-        text.set("background", ["#123456"])
-        XCTAssertEqual(text.text, "# mine\nfont-size = 13\n\nunknown-future = x\nkeybind = c=ignore\nbackground = #123456\n")
-        text.set("unknown-future", [])
-        XCTAssertEqual(text.values("unknown-future"), [])
-        XCTAssertEqual(try text.entries().count, 3)
-        XCTAssertThrowsError(try GhosttyConfigText("palette broken").entries())
-    }
-
-    func testConfigTextKeysFollowItsLines() {
-        var text = GhosttyConfigText("# font-size = 1\nfont-size = 12\nbroken line\n")
-        XCTAssertEqual(text.keys, ["font-size"])
-        text.set("background", ["#123456"])
-        text.set("font-size", [])
-        XCTAssertEqual(text.keys, ["background"])
+    func testGhosttyConfigTextKeepsOnlyCatalogOptions() {
+        let parsed = GhosttyConfigImport.parse("# font-size = 1\nfont-size = 12\n\nbroken line\nunknown-future = x\nwindow-decoration = none\nkeybind = a=ignore\nkeybind = b=ignore\nbackground = #111111\nbackground =\n")
+        XCTAssertEqual(parsed.values, ["font-size": ["12"], "keybind": ["a=ignore", "b=ignore"]])
+        XCTAssertEqual(parsed.skipped, ["unknown-future", "window-decoration"])
     }
 
     func testShortcutsReadAsKeyCaps() {

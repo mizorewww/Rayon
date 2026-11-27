@@ -5,7 +5,7 @@ extension TerminalSettings {
     /// The color a color setting gives: its own value, else the theme's,
     /// else Ghostty's default. Values that name another color follow it.
     func effectiveColor(_ key: String, dark: Bool) -> String {
-        var value = config.values(key).last ?? ""
+        var value = config[key, default: []].last ?? ""
         if value.isEmpty, let theme = TerminalThemes.theme(for: self.value("theme"), dark: dark) {
             value = theme.color(key) ?? ""
         }
@@ -27,7 +27,7 @@ extension TerminalSettings {
     /// Palette entries set here, by index.
     var paletteOverrides: [Int: String] {
         var result: [Int: String] = [:]
-        for item in config.values("palette") {
+        for item in config["palette", default: []] {
             let parts = item.split(separator: "=", maxSplits: 1).map { $0.trimmingCharacters(in: .whitespaces) }
             if parts.count == 2, let index = Int(parts[0]), (0 ... 255).contains(index) { result[index] = parts[1] }
         }

@@ -1,11 +1,10 @@
 import Foundation
 import Observation
 
-/// The terminal's settings: one `config.ghostty` in the app's Application
-/// Support folder. Settings changes it one key at a time, and whatever else
-/// is in the file (comments, keys Settings does not show, their order) stays
-/// as written. A change is applied to every open terminal a moment later,
-/// once Ghostty accepts it, and only then written to the file.
+/// The terminal's settings: each Ghostty option set, with its values, kept
+/// as JSON in the app's Application Support folder. A change is applied to
+/// every open terminal a moment later, once Ghostty accepts it, and only
+/// then saved. Ghostty's config text is made from them in memory.
 @MainActor @Observable
 public final class TerminalSettings {
     public static let shared = TerminalSettings()
@@ -16,9 +15,9 @@ public final class TerminalSettings {
     public let fileURL: URL
 
     /// What Settings shows, including a change not applied yet.
-    private(set) var config: GhosttyConfigText {
+    private(set) var config: [String: [String]] {
         didSet {
-            if config.keys != oldValue.keys { countChanges() }
+            if Set(config.keys) != Set(oldValue.keys) { countChanges() }
         }
     }
 
@@ -26,17 +25,13 @@ public final class TerminalSettings {
     /// sidebar's badges read, so a change redraws them only when a count
     /// changes rather than on every slider step.
     private(set) var changedCounts: [String: Int] = [:]
-    /// What the terminals use and the file holds.
-    private(set) var applied: GhosttyConfigText
-    /// Why the last change, or the file at launch, was not applied.
+    /// What the terminals use and is saved.
+    public private(set) var applied: [String: [String]]
+    /// When the applied settings last changed, here or from elsewhere; nil
+    /// before they ever did.
+    @ObservationIgnored public private(set) var modified: Date?
+    /// Why the last change, or the settings at launch, were not applied.
     var issue: String?
-    /// The file is there but is not UTF-8 text: what Settings shows does not
-    /// stand for it, so iCloud sync neither sends nor applies settings until
-    /// a change made here writes it anew.
-    @ObservationIgnored private(set) var fileIsUnreadable = false
-    /// The file's time when it was last read or written here; another one
-    /// on disk means it was changed outside Rayon.
-    @ObservationIgnored private var fileDate: Date?
 
     /// Undo and redo for Settings' own changes.
     @ObservationIgnored let undoManager: UndoManager = {
@@ -51,88 +46,65 @@ public final class TerminalSettings {
     /// Told the new size when an applied change sets another font size.
     @ObservationIgnored public var onFontSizeChange: ((Double) -> Void)?
     @ObservationIgnored private var pendingApply: Task<Void, Never>?
+    /// The last save, which the next one waits for so they land in order.
+    @ObservationIgnored private var saving: Task<Void, Never>?
 
-    public static var defaultFileURL: URL {
+    private static var folder: URL {
         URL.applicationSupportDirectory
             .appending(path: Bundle.main.bundleIdentifier ?? ProcessInfo.processInfo.processName, directoryHint: .isDirectory)
-            .appending(path: "config.ghostty")
     }
 
-    public init(fileURL: URL = defaultFileURL, defaults: UserDefaults = .standard) {
+    public static var defaultFileURL: URL { folder.appending(path: "terminal-settings.json") }
+
+    /// Where releases before 2026.12 kept the settings, as Ghostty config text.
+    public static var configFileURL: URL { folder.appending(path: "config.ghostty") }
+
+    /// Reads the settings at `fileURL`. Before there are any, the settings in
+    /// `importing` (an earlier release's config.ghostty) move there, and
+    /// that file goes.
+    public init(fileURL: URL = defaultFileURL, importing configFile: URL? = configFileURL) {
         self.fileURL = fileURL
-        let data = try? Data(contentsOf: fileURL)
-        var text = data.flatMap { String(data: $0, encoding: .utf8) }.map(GhosttyConfigText.init)
-        if data == nil, let legacy = Self.legacySettings(in: defaults) {
-            text = legacy
-            if (try? Self.write(legacy, to: fileURL)) != nil {
-                defaults.removeObject(forKey: Self.legacyKey)
+        var initial: [String: [String]] = [:]
+        if let data = try? Data(contentsOf: fileURL), let stored = try? JSONDecoder().decode(Stored.self, from: data) {
+            initial = stored.values
+            modified = stored.modified
+        } else if let configFile, let data = try? Data(contentsOf: configFile) {
+            initial = GhosttyConfigImport.parse(String(decoding: data, as: UTF8.self)).values
+            // The file's time, so sync weighs these settings by when they were made.
+            modified = (try? configFile.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
+            if (try? Self.write(Stored(values: initial, modified: modified ?? Date()), to: fileURL)) != nil {
+                try? FileManager.default.removeItem(at: configFile)
             }
         }
-        let initial = text ?? GhosttyConfigText()
         config = initial
         applied = initial
-        fileDate = Self.modificationDate(of: fileURL)
-        if data != nil, text == nil {
-            fileIsUnreadable = true
-            issue = Self.unreadableIssue
-        }
         countChanges()
     }
 
     private func countChanges() {
-        let keys = config.keys
         var counts: [String: Int] = [:]
         for category in SettingsLayout.categories {
-            counts[category.id] = category.keys.filter(keys.contains).count
+            counts[category.id] = category.keys.count(where: { config[$0] != nil })
         }
         if counts != changedCounts { changedCounts = counts }
     }
 
-    private static let unreadableIssue = String(localized: "config.ghostty is not UTF-8 text, so it was not read.", bundle: .module)
-
-    private static func modificationDate(of url: URL) -> Date? {
-        (try? FileManager.default.attributesOfItem(atPath: url.path))?[.modificationDate] as? Date
-    }
-
-    /// Takes the file as it is when it was changed outside Rayon (in a text
-    /// editor, say) since it was read or written here, so that a change
-    /// made here, or another device's, is made to it rather than over it.
-    func reloadIfChangedOutside() {
-        let date = Self.modificationDate(of: fileURL)
-        guard date != fileDate, let data = try? Data(contentsOf: fileURL) else { return }
-        fileDate = date
-        guard let text = String(data: data, encoding: .utf8) else {
-            fileIsUnreadable = true
-            issue = Self.unreadableIssue
-            return
-        }
-        fileIsUnreadable = false
-        let next = GhosttyConfigText(text)
-        guard next != applied else { return }
-        do {
-            try RayonTerminalConfiguration.apply(next)
-            issue = nil
-        } catch {
-            issue = String(localized: "config.ghostty was not applied: \(error.localizedDescription)", bundle: .module)
-        }
-        applied = next
-        config = next
-        undoManager.removeAllActions()
-        revision += 1
+    private struct Stored: Codable {
+        var values: [String: [String]]
+        var modified: Date
     }
 
     // MARK: Reading
 
     /// The values a key has: as set, else the terminal's default.
     func values(_ key: String) -> [String] {
-        let own = config.values(key)
-        return own.isEmpty ? Self.defaultValues(key) : own
+        config[key] ?? Self.defaultValues(key)
     }
 
     /// The value of a single-valued key (Ghostty takes the last one).
     func value(_ key: String) -> String { values(key).last ?? "" }
 
-    func isSet(_ key: String) -> Bool { !config.values(key).isEmpty }
+    func isSet(_ key: String) -> Bool { config[key] != nil }
 
     /// Rayon's terminal defaults where they differ from Ghostty's (font size,
     /// thickening, cursor), then Ghostty's own.
@@ -144,7 +116,9 @@ public final class TerminalSettings {
 
     /// Sets a key's values; none removes it, so its default applies.
     func set(_ key: String, _ values: [String]) {
-        edit { $0.set(key, values) }
+        var next = config
+        next[key] = values.isEmpty ? nil : values
+        replace(with: next)
     }
 
     func set(_ key: String, _ value: String) {
@@ -153,22 +127,12 @@ public final class TerminalSettings {
 
     func reset(_ key: String) { set(key, []) }
 
-    /// Every key Settings shows goes back to its default; comments and keys
-    /// it does not know stay.
+    /// Every setting goes back to its default.
     func resetAll() {
-        edit { config in
-            for setting in SettingCatalog.shared.settings { config.set(setting.key, []) }
-        }
+        replace(with: [:])
     }
 
-    private func edit(_ change: (inout GhosttyConfigText) -> Void) {
-        reloadIfChangedOutside()
-        var next = config
-        change(&next)
-        replace(with: next)
-    }
-
-    private func replace(with next: GhosttyConfigText) {
+    private func replace(with next: [String: [String]]) {
         guard next != config else { return }
         let previous = config
         undoManager.beginUndoGrouping()
@@ -210,35 +174,70 @@ public final class TerminalSettings {
 
     /// Ghostty takes any font feature and passes over one it cannot read
     /// without a word, so a feature typed in Settings is checked first. One
-    /// already applied (from the file, a text editor or another device) is
-    /// left for Ghostty to skip: it must not keep the rest of the file from
-    /// applying, or every later change in Settings from saving.
-    private func checkNewFontFeatures(_ next: GhosttyConfigText) throws {
-        let applied = Set(applied.values("font-feature"))
-        for value in next.values("font-feature") where !applied.contains(value) {
+    /// already applied (from a backup, Ghostty's config or another device)
+    /// is left for Ghostty to skip: it must not keep the rest from applying,
+    /// or every later change in Settings from saving.
+    private func checkNewFontFeatures(_ next: [String: [String]]) throws {
+        let applied = Set(applied["font-feature"] ?? [])
+        for value in next["font-feature"] ?? [] where !applied.contains(value) {
             try FontFeatureValue.validate(value)
         }
     }
 
     /// Validates `next` with Ghostty, applies it to every terminal, then
-    /// writes it. Nothing changes when Ghostty rejects it.
-    private func commit(_ next: GhosttyConfigText) throws {
-        let oldSize = applied.values("font-size").last
+    /// saves it. Nothing changes when Ghostty rejects it.
+    private func commit(_ next: [String: [String]]) throws {
+        let oldSize = applied["font-size"]?.last
         try RayonTerminalConfiguration.apply(next)
-        try Self.write(next, to: fileURL)
-        fileDate = Self.modificationDate(of: fileURL)
         applied = next
-        fileIsUnreadable = false
+        modified = Date()
         issue = nil
+        save()
         NotificationCenter.default.post(name: Self.didChange, object: self)
-        if let size = next.values("font-size").last, size != oldSize, let points = Double(size) {
+        if let size = next["font-size"]?.last, size != oldSize, let points = Double(size) {
             onFontSizeChange?(points)
         }
     }
 
-    /// Replaces the whole file (a restored backup, say), once Ghostty accepts it.
-    public func load(_ text: String) throws {
-        try take(GhosttyConfigText(text))
+    /// Writes the applied settings off the main actor, after the save before.
+    private func save() {
+        let stored = Stored(values: applied, modified: modified ?? Date())
+        let url = fileURL
+        let previous = saving
+        saving = Task.detached(priority: .utility) { [weak self] in
+            await previous?.value
+            do {
+                try Self.write(stored, to: url)
+            } catch {
+                let message = String(localized: "The terminal settings were not saved: \(error.localizedDescription)", bundle: .module)
+                await MainActor.run { self?.issue = message }
+            }
+        }
+    }
+
+    /// Returns once every change applied so far is saved.
+    public func saved() async {
+        await saving?.value
+    }
+
+    private nonisolated static func write(_ stored: Stored, to url: URL) throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys, .prettyPrinted]
+        let data = try encoder.encode(stored)
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try data.write(to: url, options: .atomic)
+    }
+
+    /// Replaces every setting (a restored backup, say), once Ghostty accepts
+    /// them. Keys the catalog does not have are dropped.
+    public func load(_ values: [String: [String]]) throws {
+        try take(values.filter { SettingCatalog.shared.setting($0.key) != nil && !$0.value.isEmpty })
+    }
+
+    /// Replaces every setting with those Ghostty config text sets (a backup
+    /// from an earlier release, say).
+    public func load(ghosttyConfig text: String) throws {
+        try take(GhosttyConfigImport.parse(text).values)
     }
 
     /// Shows `next` and commits it, in place of any change not applied yet.
@@ -246,7 +245,7 @@ public final class TerminalSettings {
     /// listener that changes the settings again builds on it. Undo forgets
     /// the changes before: undoing one would put back what `next` replaced,
     /// and sync would send that on.
-    private func take(_ next: GhosttyConfigText) throws {
+    private func take(_ next: [String: [String]]) throws {
         pendingApply?.cancel()
         let previous = config
         config = next
@@ -260,48 +259,17 @@ public final class TerminalSettings {
         revision += 1
     }
 
-    /// The file's text, as applied.
-    public var contents: String { applied.text }
-
     /// Changes that came from elsewhere (another device): applied at once,
     /// over what is being edited here, and not undone by Undo.
     func adopt(_ changes: [String: [String]?]) {
-        reloadIfChangedOutside()
         var next = config
-        for (key, values) in changes { next.set(key, values ?? []) }
+        for (key, values) in changes { next[key] = values.flatMap { $0.isEmpty ? nil : $0 } }
         guard next != applied else { return }
         do {
             try take(next)
         } catch {
             issue = error.localizedDescription
         }
-    }
-
-    private static func write(_ text: GhosttyConfigText, to url: URL) throws {
-        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        try Data(text.text.utf8).write(to: url, options: .atomic)
-    }
-
-    // MARK: Before config.ghostty
-
-    private static let legacyKey = "me.mizorewww.rayon.ghosttyConfiguration.v1"
-
-    /// The settings as the previous release kept them in the user defaults,
-    /// as a config file. Its shortcut list was the whole list, hence `clear`.
-    static func legacySettings(in defaults: UserDefaults) -> GhosttyConfigText? {
-        struct Storage: Decodable {
-            struct Document: Decodable { let overrides: [String: [String]] }
-            let document: Document
-        }
-        guard let data = defaults.data(forKey: legacyKey),
-              let storage = try? JSONDecoder().decode(Storage.self, from: data)
-        else { return nil }
-        var text = GhosttyConfigText()
-        // An empty shortcut list was the user removing every shortcut.
-        for (key, values) in storage.document.overrides.sorted(by: { $0.key < $1.key }) where !values.isEmpty || key == "keybind" {
-            text.set(key, key == "keybind" ? ["clear"] + values : values)
-        }
-        return text
     }
 }
 

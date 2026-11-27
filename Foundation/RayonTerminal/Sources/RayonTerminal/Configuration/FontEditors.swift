@@ -6,7 +6,7 @@ import SwiftUI
 private func family(for key: String, prefix: String) -> String {
     let settings = TerminalSettings.shared
     let own = key.replacingOccurrences(of: prefix, with: "font-family")
-    return settings.config.values(own).first ?? settings.config.values("font-family").first ?? ""
+    return settings.config[own, default: []].first ?? settings.config["font-family", default: []].first ?? ""
 }
 
 /// A button showing the chosen family in its own typeface; it opens the
@@ -100,7 +100,7 @@ struct FontFamilyEditor: View {
     @State private var addingFallback = false
 
     var body: some View {
-        let families = settings.config.values(key)
+        let families = settings.config[key, default: []]
         VStack(alignment: .trailing, spacing: 6) {
             FontPicker(family: Binding(get: { families.first ?? "" }, set: { name in
                 var next = families
@@ -186,8 +186,8 @@ struct FontFeatureEditor: View {
     }
 
     var body: some View {
-        let family = settings.config.values("font-family").first ?? ""
-        let entries = settings.config.values("font-feature")
+        let family = settings.config["font-family", default: []].first ?? ""
+        let entries = settings.config["font-feature", default: []]
         let features = FontLibrary.features(of: family)
         let known = Set(features.map(\.tag))
         let groups = features.map(\.group).reduce(into: [String]()) { if !$0.contains($1) { $0.append($1) } }
@@ -240,7 +240,7 @@ struct FontVariationEditor: View {
     var body: some View {
         let family = family(for: key, prefix: "font-variation")
         let axes = FontLibrary.axes(of: family)
-        let entries = settings.config.values(key)
+        let entries = settings.config[key, default: []]
         VStack(alignment: .leading, spacing: 6) {
             if family.isEmpty {
                 Text("Choose a variable font under Font to adjust its axes.", bundle: .module).foregroundStyle(.secondary)
@@ -275,7 +275,7 @@ struct CodepointMapEditor: View {
     @State private var pending: CodepointMapping?
 
     var body: some View {
-        let entries = settings.config.values("font-codepoint-map")
+        let entries = settings.config["font-codepoint-map", default: []]
         VStack(alignment: .leading, spacing: 6) {
             ForEach(Array(entries.enumerated()), id: \.offset) { index, entry in
                 let remove = { settings.set("font-codepoint-map", entries.enumerated().filter { $0.offset != index }.map(\.element)) }

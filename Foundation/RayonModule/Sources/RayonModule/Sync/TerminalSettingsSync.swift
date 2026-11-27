@@ -2,7 +2,7 @@
 //  TerminalSettingsSync.swift
 //  RayonModule
 //
-//  Keeps the terminal settings record and config.ghostty in step: a change
+//  Keeps the terminal settings record and the terminal settings in step: a change
 //  made here is written to the record (and so queued for iCloud), and a
 //  record from another device is applied to the terminals.
 //
@@ -25,8 +25,7 @@ final class TerminalSettingsSync {
 
     /// Settles which side is newer, then follows both. Before there is a
     /// record, these settings are written as old, so another device's
-    /// changes win: the file's time says nothing then, since moving the
-    /// settings into it at launch wrote it just now.
+    /// changes win: a first record says nothing of when they were made.
     func start() {
         guard observers.isEmpty else { return }
         let written = TerminalConfigurationSync.lastWritten(settings)
@@ -52,7 +51,7 @@ final class TerminalSettingsSync {
     }
 
     /// Writes what changed here to the record, as changed at `changed` (now
-    /// by default). A file that cannot be read writes nothing.
+    /// by default).
     func push(changed: Date? = nil) {
         record.push(changed: changed)
     }

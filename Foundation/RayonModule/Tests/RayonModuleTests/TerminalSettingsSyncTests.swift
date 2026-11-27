@@ -22,16 +22,18 @@ final class TerminalSettingsSyncTests: XCTestCase {
 
     override func tearDown() async throws {
         // The scratch settings applied themselves to the shared terminal configuration.
-        try? TerminalSettings.shared.load(TerminalSettings.shared.contents)
+        try? TerminalSettings.shared.load(TerminalSettings.shared.applied)
         test = nil
     }
 
+    /// Settings of their own, moved from `text` as an earlier release's
+    /// config.ghostty, like a first launch after the update.
     private func settings(_ text: String) throws -> TerminalSettings {
         let folder = test.directory.appending(path: "terminal-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let url = folder.appending(path: "config.ghostty")
         try Data(text.utf8).write(to: url)
-        return TerminalSettings(fileURL: url, defaults: UserDefaults(suiteName: "rayon-tests-\(UUID().uuidString)")!)
+        return TerminalSettings(fileURL: folder.appending(path: "terminal-settings.json"), importing: url)
     }
 
     private var record: RDTerminalSettings? {
@@ -49,15 +51,11 @@ final class TerminalSettingsSyncTests: XCTestCase {
         XCTAssertEqual(record?.modified, Date(timeIntervalSince1970: 0))
     }
 
-    /// Settings moved into config.ghostty at launch, on a device that
-    /// updates late: the file is new, the settings in it are not, and they
-    /// do not win over a change made since on another device.
-    func testMigratedSettingsAreNotNewerThanAnotherDevicesChange() throws {
-        let defaults = UserDefaults(suiteName: "rayon-tests-\(UUID().uuidString)")!
-        let legacy = try JSONSerialization.data(withJSONObject: ["document": ["overrides": ["background": ["#202020"]]]])
-        defaults.set(legacy, forKey: "me.mizorewww.rayon.ghosttyConfiguration.v1")
-        let folder = test.directory.appending(path: "terminal-\(UUID().uuidString)")
-        let local = TerminalSettings(fileURL: folder.appending(path: "config.ghostty"), defaults: defaults)
+    /// Settings moved out of config.ghostty at launch, on a device that
+    /// updates late: they are not newer than a change made since on another
+    /// device.
+    func testImportedSettingsAreNotNewerThanAnotherDevicesChange() throws {
+        let local = try settings("background = #202020\n")
         XCTAssertEqual(TerminalConfigurationSync.entries(of: local), ["background": ["#202020"]])
         TerminalSettingsSync(storage: storage, settings: local).start()
 
@@ -72,19 +70,6 @@ final class TerminalSettingsSyncTests: XCTestCase {
         XCTAssertNil(record)
     }
 
-    /// A hand-edited file with a line that is not `key = value`, newer than
-    /// the record: it is not read as "nothing set", which would remove
-    /// every device's settings.
-    func testAnUnreadableFileDoesNotEmptyTheRecord() throws {
-        var synced = RDTerminalSettings(entries: ["background": ["#101010"]])
-        synced.modified = Date(timeIntervalSince1970: 1_000_000)
-        try storage.save(synced, changed: synced.modified)
-        let local = try settings("background = #101010\noops\n")
-        TerminalSettingsSync(storage: storage, settings: local).start()
-        XCTAssertEqual(record?.values, ["background": ["#101010"]])
-        XCTAssertEqual(record?.modified, synced.modified)
-    }
-
     func testChangesHereAndFromAnotherDevice() throws {
         let local = try settings("font-size = 18\nbackground = #101010\n")
         let sync = TerminalSettingsSync(storage: storage, settings: local)
@@ -95,7 +80,7 @@ final class TerminalSettingsSyncTests: XCTestCase {
         remote.modified = Date().addingTimeInterval(60).wholeMilliseconds
         XCTAssertEqual(try storage.mergeRemote(remote), .tookRemote)
         NotificationCenter.default.post(name: RayonStorage.didMergeRemoteChanges, object: nil)
-        XCTAssertEqual(local.contents, "font-size = 18\nforeground = #fafafa\n")
+        XCTAssertEqual(local.applied, ["font-size": ["18"], "foreground": ["#fafafa"]])
 
         // An older one loses: what is here goes out again.
         var stale = RDTerminalSettings(entries: ["background": ["#000000"]])
@@ -119,11 +104,36 @@ final class TerminalSettingsSyncTests: XCTestCase {
         var remote = RDTerminalSettings(entries: ["background": ["#202020"]])
         remote.modified = Date().addingTimeInterval(60).wholeMilliseconds
         XCTAssertEqual(try storage.mergeRemote(remote), .tookRemote)
-        try local.load("font-size = 20\nbackground = #101010\n")
+        try local.load(["font-size": ["20"], "background": ["#101010"]])
         sync.push()
         XCTAssertEqual(record?.values, ["background": ["#202020"]])
         XCTAssertEqual(record?.modified, remote.modified)
-        XCTAssertEqual(local.contents, "font-size = 20\nbackground = #202020\n")
+        XCTAssertEqual(local.applied, ["font-size": ["20"], "background": ["#202020"]])
+    }
+
+    /// A change on one device reaches another through the record, as CloudKit
+    /// carries it, and is saved there; that device's font size stays its own.
+    func testAChangeTravelsToAnotherDevice() async throws {
+        let mine = try settings("font-size = 18\nbackground = #101010\n")
+        let mySync = TerminalSettingsSync(storage: storage, settings: mine)
+        mySync.start()
+        try mine.load(["font-size": ["18"], "background": ["#101010"], "keybind": ["clear", "ctrl+k=ignore"]])
+        let sent = try XCTUnwrap(record)
+        XCTAssertEqual(sent.values, ["background": ["#101010"], "keybind": ["clear", "ctrl+k=ignore"]])
+
+        let other = try TestStorage()
+        let theirs = try settings("font-size = 30\n")
+        let theirSync = TerminalSettingsSync(storage: other.storage, settings: theirs)
+        theirSync.start()
+        var arrived = try XCTUnwrap(CloudRecordCoding.decode(CloudRecordCoding.ckRecord(for: sent, systemFields: nil)) as? RDTerminalSettings)
+        arrived.modified = Date().addingTimeInterval(60).wholeMilliseconds
+        XCTAssertEqual(try other.storage.mergeRemote(arrived), .tookRemote)
+        NotificationCenter.default.post(name: RayonStorage.didMergeRemoteChanges, object: nil)
+        XCTAssertEqual(theirs.applied, ["font-size": ["30"], "background": ["#101010"], "keybind": ["clear", "ctrl+k=ignore"]])
+
+        await theirs.saved()
+        XCTAssertEqual(TerminalSettings(fileURL: theirs.fileURL, importing: nil).applied, theirs.applied)
+        withExtendedLifetime((mySync, theirSync)) {}
     }
 
     func testTheRecordRoundTripsThroughCloudKit() throws {

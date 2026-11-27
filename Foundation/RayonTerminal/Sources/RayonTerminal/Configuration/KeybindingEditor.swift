@@ -3,10 +3,10 @@ import SwiftUI
 // MARK: - List
 
 extension TerminalSettings {
-    /// The shortcuts in effect: after the file's last `keybind = clear`, its
-    /// own; else Ghostty's defaults and then the file's.
+    /// The shortcuts in effect: after the last `keybind = clear`, the
+    /// ones set; else Ghostty's defaults and then the ones set.
     var shortcuts: [String] {
-        let own = config.values("keybind")
+        let own = config["keybind", default: []]
         if let clear = own.lastIndex(of: "clear") { return Array(own[(clear + 1)...]) }
         return (SettingCatalog.shared.setting("keybind")?.defaultValue.values ?? []) + own
     }
