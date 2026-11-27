@@ -336,41 +336,53 @@ public actor SSHConnection {
 
     // MARK: Channels
 
-    /// Opens a child channel; `setup` runs on the event loop before any
-    /// data arrives, and its result is returned once the server confirms.
-    /// A server that does not confirm in time, or a cancelled task, fails
-    /// the open and closes the channel if it opens later.
+    /// Opens a child channel. `setup` adds its handlers before any data
+    /// arrives; `open` makes the result once the server confirms, on the
+    /// event loop before any data is read. A server that does not confirm
+    /// in time, or a cancelled task, fails the open; a channel the server
+    /// confirms after that is closed and never reaches `open`, since an
+    /// async channel made for nobody would trip NIO's unfinished-writer
+    /// precondition once dropped.
     nonisolated func openChannel<T: Sendable>(
         _ type: SSHChannelType,
         timeout: Duration? = nil,
-        setup: @escaping @Sendable (Channel) throws -> T
+        setup: @escaping @Sendable (Channel) throws -> Void,
+        open: @escaping @Sendable (Channel) throws -> T
     ) async throws -> T {
         let parent = channel
         let eventLoop = parent.eventLoop
         let outcome = eventLoop.makePromise(of: T.self)
+        // Only touched on the event loop, as is every completion of `outcome`.
+        let givenUp = NIOLoopBoundBox.makeBoxSendingValue(false, eventLoop: eventLoop)
+        let giveUp: @Sendable (Error) -> Void = { error in
+            givenUp.value = true
+            outcome.fail(error)
+        }
         let deadline = eventLoop.scheduleTask(in: min(timeout.map(TimeAmount.init) ?? Self.channelTimeout, Self.channelTimeout)) {
-            outcome.fail(SSHError.channelRejected("The server did not open a channel in time."))
+            giveUp(SSHError.channelRejected("The server did not open a channel in time."))
         }
         outcome.futureResult.whenComplete { _ in deadline.cancel() }
         eventLoop.execute {
             let created = eventLoop.makePromise(of: Channel.self)
-            let prepared = eventLoop.makePromise(of: T.self)
-            created.futureResult.whenFailure { prepared.fail($0) }
-            // Opened after all was given up on: nobody will use it.
-            created.futureResult.whenSuccess { child in
-                outcome.futureResult.whenFailure { _ in child.close(promise: nil) }
+            created.futureResult.whenComplete { result in
+                switch result {
+                case let .failure(error):
+                    outcome.fail(error)
+                case let .success(child) where givenUp.value:
+                    child.close(promise: nil)
+                case let .success(child):
+                    do {
+                        outcome.succeed(try open(child))
+                    } catch {
+                        child.close(promise: nil)
+                        outcome.fail(error)
+                    }
+                }
             }
-            created.futureResult.flatMap { _ in prepared.futureResult }.cascade(to: outcome)
             do {
                 let handler = try parent.pipeline.syncOperations.handler(type: NIOSSHHandler.self)
                 handler.createChannel(created, channelType: type) { child, _ in
-                    do {
-                        prepared.succeed(try setup(child))
-                        return child.eventLoop.makeSucceededVoidFuture()
-                    } catch {
-                        prepared.fail(error)
-                        return child.eventLoop.makeFailedFuture(error)
-                    }
+                    child.eventLoop.makeCompletedFuture { try setup(child) }
                 }
             } catch {
                 created.fail(error)
@@ -380,7 +392,7 @@ public actor SSHConnection {
             return try await withTaskCancellationHandler {
                 try await outcome.futureResult.get()
             } onCancel: {
-                outcome.fail(CancellationError())
+                eventLoop.execute { giveUp(CancellationError()) }
             }
         } catch let error as SSHError {
             throw error
@@ -403,8 +415,7 @@ public actor SSHConnection {
         try await openChannel(Self.directTCPIP(host: host, port: port)) { child in
             try child.pipeline.syncOperations.addHandler(SSHChannelByteCodec())
             try setup(child)
-            return child
-        }
+        } open: { $0 }
     }
 
     /// A direct-tcpip channel (`ssh -W host:port`) as an async byte stream
@@ -413,7 +424,8 @@ public actor SSHConnection {
         try await openChannel(Self.directTCPIP(host: host, port: port)) { child in
             try child.allowHalfClosure()
             try child.pipeline.syncOperations.addHandler(SSHChannelByteCodec())
-            return try NIOAsyncChannel(wrappingChannelSynchronously: child, configuration: .init(isOutboundHalfClosureEnabled: true))
+        } open: { child in
+            try NIOAsyncChannel(wrappingChannelSynchronously: child, configuration: .init(isOutboundHalfClosureEnabled: true))
         }
     }
 
@@ -422,8 +434,7 @@ public actor SSHConnection {
         try await openChannel(Self.directTCPIP(host: host, port: port)) { child in
             try child.pipeline.syncOperations.addHandlers(SSHChannelByteCodec(), SSHByteStream.Reader())
             child.setOption(ChannelOptions.autoRead, value: false).whenComplete { _ in }
-            return SSHByteStream(channel: child)
-        }
+        } open: { SSHByteStream(channel: $0) }
     }
 
     /// A session channel, for a shell or a command.
@@ -431,7 +442,8 @@ public actor SSHConnection {
         try await openChannel(.session, timeout: timeout) { child in
             try child.allowHalfClosure()
             try child.pipeline.syncOperations.addHandler(SSHSessionHandler())
-            return try NIOAsyncChannel(wrappingChannelSynchronously: child)
+        } open: { child in
+            try NIOAsyncChannel(wrappingChannelSynchronously: child)
         }
     }
 

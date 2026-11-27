@@ -730,8 +730,9 @@ final class SSHLiveTests: XCTestCase {
     // MARK: A server that stops answering
 
     /// Freezes the server container (its kernel still answers TCP) until
-    /// the test ends.
-    private func freezeServer() throws {
+    /// the test ends or the returned thaw is called.
+    @discardableResult
+    private func freezeServer() throws -> () -> Void {
         guard let server = ProcessInfo.processInfo.environment["SSH_DOCKER_LIVE_SERVER"] else {
             throw XCTSkip("needs the server container's name")
         }
@@ -744,6 +745,7 @@ final class SSHLiveTests: XCTestCase {
         }
         try docker("pause", server)
         addTeardownBlock { try? docker("unpause", server) }
+        return { try? docker("unpause", server) }
     }
 
     func testAServerThatStopsAnsweringIsDropped() async throws {
@@ -809,6 +811,49 @@ final class SSHLiveTests: XCTestCase {
             XCTFail("a command ran on a frozen server")
         } catch is CancellationError {}
         XCTAssertLessThan(ContinuousClock.now - started, .seconds(6))
+        await connection.close()
+    }
+
+    /// Channels given up on while the server is frozen, by their timeout
+    /// or by a cancel, are confirmed once it thaws. Those late channels are
+    /// closed without ever being handed to an async channel, whose writer
+    /// would otherwise be dropped unfinished: NIO's "Deinited NIOAsyncWriter
+    /// without calling finish()" precondition, in release builds too.
+    func testChannelsConfirmedAfterTheyWereGivenUpOn() async throws {
+        let connection = try await connect([.password(password)])
+        _ = try await connection.execute("true")
+        let thaw = try freezeServer()
+
+        let timedOut = (0 ..< 4).map { _ in
+            Task { try await connection.execute("true", timeout: .seconds(1)) }
+        }
+        let cancelled = (0 ..< 4).map { _ in
+            Task { _ = try await connection.openDirectTCPIP(host: "127.0.0.1", port: 9001) }
+        } + (0 ..< 2).map { _ in
+            Task { _ = try await connection.openShell(terminalType: "xterm", columns: 80, rows: 24) }
+        }
+        try await Task.sleep(for: .milliseconds(500))
+        cancelled.forEach { $0.cancel() }
+        for task in timedOut {
+            do {
+                _ = try await task.value
+                XCTFail("a command ran on a frozen server")
+            } catch SSHError.channelRejected {}
+        }
+        for task in cancelled {
+            do {
+                _ = try await task.value
+                XCTFail("a channel opened on a frozen server")
+            } catch is CancellationError {}
+        }
+
+        thaw()
+        // The server answers the queued opens in order, so this command's
+        // channel is confirmed after every late one.
+        let result = try await connection.execute("echo thawed", timeout: .seconds(10))
+        XCTAssertEqual(String(decoding: result.output, as: UTF8.self), "thawed\n")
+        try await Task.sleep(for: .milliseconds(500))
+        XCTAssertTrue(connection.isActive)
         await connection.close()
     }
 
