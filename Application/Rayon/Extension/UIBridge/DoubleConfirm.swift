@@ -64,9 +64,10 @@ final class MacHostKeyTrustHandler: HostKeyTrustHandler {
         return await withCheckedContinuation { continuation in
             UIBridge.alert(
                 message: question.title,
-                informative: question.message,
+                informative: question.explanation,
                 buttons: buttons,
-                destructiveFirstButton: false
+                destructiveFirstButton: false,
+                monospacedDetail: question.keys
             ) { button, _ in
                 continuation.resume(returning: button == (changed ? 1 : 0) ? .trusted : .declined)
             }

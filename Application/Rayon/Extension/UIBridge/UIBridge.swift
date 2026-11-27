@@ -32,6 +32,7 @@ enum UIBridge {
         buttons: [String] = [],
         destructiveFirstButton: Bool = false,
         textField: String? = nil,
+        monospacedDetail: String? = nil,
         completion: ((Int, String?) -> Void)? = nil
     ) {
         let alert = NSAlert()
@@ -42,6 +43,18 @@ enum UIBridge {
             if index == 0 { button.hasDestructiveAction = destructiveFirstButton }
         }
         var field: NSTextField?
+        if let monospacedDetail {
+            // Wraps between any two characters, without the hyphens the
+            // informative text adds to a fingerprint it breaks.
+            let label = NSTextField(wrappingLabelWithString: monospacedDetail)
+            label.font = .monospacedSystemFont(ofSize: NSFont.smallSystemFontSize, weight: .regular)
+            label.lineBreakMode = .byCharWrapping
+            label.lineBreakStrategy = []
+            label.isSelectable = true
+            label.preferredMaxLayoutWidth = 220
+            label.frame.size = label.fittingSize
+            alert.accessoryView = label
+        }
         if let textField {
             let input = NSTextField(frame: NSRect(x: 0, y: 0, width: 220, height: 24))
             input.stringValue = textField

@@ -52,16 +52,29 @@ public struct HostKeyQuestion: Sendable {
             : "Trust \(host)?"
     }
 
+    /// The explanation, then the keys.
     public var message: String {
+        "\(explanation)\n\n\(keys)"
+    }
+
+    public var explanation: String {
         let name = port == 22 ? host : "\(host):\(port)"
-        let compare = "Compare the key's fingerprint with the server's own (ssh-keygen -lf /etc/ssh/ssh_host_*_key.pub) before trusting it.\n\n\(offered.type)\n\(offered.fingerprint)"
+        let compare = "Compare the key's fingerprint with the server's own (ssh-keygen -lf /etc/ssh/ssh_host_*_key.pub) before trusting it."
         guard let saved else {
             return "Rayon has not connected to \(name) before. " + compare
         }
         guard isWarning else {
             return "Rayon saved the \(saved.type) key of \(name); the server now presents its \(offered.type) key, which Rayon has not seen. Servers have a key of each type, and this version of Rayon asks for Ed25519 first. " + compare
         }
-        return "\(name) presented a different host key than the one saved for it. Someone may be intercepting the connection. Only replace the saved key if you know the server was reinstalled or its keys were changed.\n\nSaved: \(saved.type)\n\(saved.fingerprint)\n\nOffered: \(offered.type)\n\(offered.fingerprint)"
+        return "\(name) presented a different host key than the one saved for it. Someone may be intercepting the connection. Only replace the saved key if you know the server was reinstalled or its keys were changed."
+    }
+
+    /// The offered key's type and fingerprint, after the saved one's when
+    /// it replaces that; for a monospaced font.
+    public var keys: String {
+        let offeredKey = "\(offered.type)\n\(offered.fingerprint)"
+        guard let saved, isWarning else { return offeredKey }
+        return "Saved: \(saved.type)\n\(saved.fingerprint)\n\nOffered: \(offeredKey)"
     }
 
     public var confirmTitle: String {
