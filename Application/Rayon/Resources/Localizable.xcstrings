@@ -23,40 +23,6 @@
         }
       }
     },
-    "%@  •••••••• %lld bytes" : {
-      "localizations" : {
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%@  •••••••• %lld byte"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%@  •••••••• %lld bytes"
-                }
-              }
-            }
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@  •••••••• %lld 字节"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@  •••••••• %lld 位元組"
-          }
-        }
-      }
-    },
     "%@ (copy)" : {
       "localizations" : {
         "zh-Hans" : {
@@ -319,22 +285,6 @@
     },
     "%lld" : {
       "shouldTranslate" : false
-    },
-    "%lld Selected" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已选择 %lld 项"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已選擇 %lld 項"
-          }
-        }
-      }
     },
     "%lld items" : {
       "localizations" : {
@@ -635,38 +585,6 @@
     "5900" : {
       "shouldTranslate" : false
     },
-    "<Not Available>" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "<不可用>"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "<不可用>"
-          }
-        }
-      }
-    },
-    "A key pair needs a private key" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "密钥对需要私钥"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "金鑰對需要私鑰"
-          }
-        }
-      }
-    },
     "A server's key is saved the first time you connect; a server that later presents another key is refused. %lld saved." : {
       "localizations" : {
         "zh-Hans" : {
@@ -775,22 +693,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "接受許可協議？"
-          }
-        }
-      }
-    },
-    "Access Hostname" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Access 主机名"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Access 主機名稱"
           }
         }
       }
@@ -1243,22 +1145,6 @@
         }
       }
     },
-    "Assist code (optional)" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "协助码（可选）"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "協助碼（可選）"
-          }
-        }
-      }
-    },
     "Assist connect ID" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1271,22 +1157,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "協助連線 ID"
-          }
-        }
-      }
-    },
-    "Assist connect ID (optional)" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "协助连接 ID（可选）"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "協助連線 ID（可選）"
           }
         }
       }
@@ -1351,22 +1221,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "自動"
-          }
-        }
-      }
-    },
-    "Available Identities" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "可用身份"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "可用身份"
           }
         }
       }
@@ -1707,22 +1561,6 @@
         }
       }
     },
-    "Choose Servers" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "选取服务器"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "選取伺服器"
-          }
-        }
-      }
-    },
     "Choose VNC or UU Remote under Remote Desktop when you edit a server." : {
       "localizations" : {
         "zh-Hans" : {
@@ -1851,38 +1689,6 @@
         }
       }
     },
-    "Clear Selection" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "清除选择"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "清除選擇"
-          }
-        }
-      }
-    },
-    "Client ID (optional)" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "客户端 ID（可选）"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "客戶端 ID（可選）"
-          }
-        }
-      }
-    },
     "Client Secret" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1895,22 +1701,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "客戶端金鑰"
-          }
-        }
-      }
-    },
-    "Client Secret (optional)" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "客户端密钥（可选）"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "客戶端金鑰（可選）"
           }
         }
       }
@@ -2251,22 +2041,6 @@
         }
       }
     },
-    "Code" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "代码"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "程式碼"
-          }
-        }
-      }
-    },
     "Command" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2503,22 +2277,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "連線方式等同於 ssh -o ProxyCommand='cloudflared access ssh --hostname %h'，但無需 cloudflared。如果應用沒有 Access 策略，請將服務令牌留空。埠僅用於標識伺服器的主機金鑰。"
-          }
-        }
-      }
-    },
-    "Connects like ssh -o ProxyCommand='cloudflared access ssh --hostname %h'. Leave the service token empty when the application has no Access policy. The port only names the server's host key." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "连接方式等同于 ssh -o ProxyCommand='cloudflared access ssh --hostname %h'。如果应用没有 Access 策略，请将服务令牌留空。端口仅用于标识服务器的主机密钥。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "連線方式等同於 ssh -o ProxyCommand='cloudflared access ssh --hostname %h'。如果應用沒有 Access 策略，請將服務令牌留空。埠僅用於標識伺服器的主機金鑰。"
           }
         }
       }
@@ -3000,22 +2758,6 @@
         }
       }
     },
-    "Create New Identity" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新建身份"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新建身份"
-          }
-        }
-      }
-    },
     "Dashboard" : {
       "localizations" : {
         "zh-Hans" : {
@@ -3124,6 +2866,108 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "刪除“%@”？"
+          }
+        }
+      }
+    },
+    "Delete %lld Identities…" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld Identity…"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld Identities…"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除 %lld 个身份…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除 %lld 個身份…"
+          }
+        }
+      }
+    },
+    "Delete %lld Servers…" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld Server…"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld Servers…"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除 %lld 台服务器…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除 %lld 臺伺服器…"
+          }
+        }
+      }
+    },
+    "Delete %lld identities?" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld identity?"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Delete %lld identities?"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除 %lld 个身份？"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除 %lld 個身份？"
           }
         }
       }
@@ -3850,22 +3694,6 @@
         }
       }
     },
-    "Duplicate %@?" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "复制“%@”？"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "複製“%@”？"
-          }
-        }
-      }
-    },
     "Edit" : {
       "localizations" : {
         "zh-Hans" : {
@@ -4006,54 +3834,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "編輯…"
-          }
-        }
-      }
-    },
-    "Empty Name" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "名称为空"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "名稱為空"
-          }
-        }
-      }
-    },
-    "Empty Password" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "密码为空"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "密碼為空"
-          }
-        }
-      }
-    },
-    "Empty Username" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "用户名为空"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用者名稱為空"
           }
         }
       }
@@ -4246,22 +4026,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "現有資料夾"
-          }
-        }
-      }
-    },
-    "Existing Groups" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "现有分组"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "現有分組"
           }
         }
       }
@@ -4486,22 +4250,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "立即獲取併發送更改。"
-          }
-        }
-      }
-    },
-    "Fetch the account's devices again" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重新获取账户的设备"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重新獲取帳號的裝置"
           }
         }
       }
@@ -4826,22 +4574,6 @@
         }
       }
     },
-    "Forget Host Key" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "忘记主机密钥"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "忘記主機金鑰"
-          }
-        }
-      }
-    },
     "Forget Host Key…" : {
       "localizations" : {
         "zh-Hans" : {
@@ -4902,22 +4634,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "忘記“%@”的主機金鑰？"
-          }
-        }
-      }
-    },
-    "Forget the host key of %@? The key it presents next is saved as its key." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "忘记“%@”的主机密钥？它下次出示的密钥将被存储为它的密钥。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "忘記“%@”的主機金鑰？它下次出示的金鑰將被儲存為它的金鑰。"
           }
         }
       }
@@ -4986,22 +4702,6 @@
         }
       }
     },
-    "Generate Ed25519" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "生成 Ed25519"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "生成 Ed25519"
-          }
-        }
-      }
-    },
     "Generate Ed25519 Key Pair" : {
       "localizations" : {
         "zh-Hans" : {
@@ -5030,22 +4730,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "在記憶體中生成新的 OpenSSH Ed25519 金鑰對"
-          }
-        }
-      }
-    },
-    "Generated an Ed25519 key pair" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已生成 Ed25519 密钥对"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已生成 Ed25519 金鑰對"
           }
         }
       }
@@ -5254,38 +4938,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "主機"
-          }
-        }
-      }
-    },
-    "Host Address" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "主机地址"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "主機位址"
-          }
-        }
-      }
-    },
-    "Host Port" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "主机端口"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "主機埠"
           }
         }
       }
@@ -5618,26 +5270,6 @@
             "value" : "Imported %#@servers@ and %#@identities@"
           },
           "substitutions" : {
-            "servers" : {
-              "argNum" : 1,
-              "formatSpecifier" : "lld",
-              "variations" : {
-                "plural" : {
-                  "one" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg server"
-                    }
-                  },
-                  "other" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg servers"
-                    }
-                  }
-                }
-              }
-            },
             "identities" : {
               "argNum" : 2,
               "formatSpecifier" : "lld",
@@ -5653,6 +5285,26 @@
                     "stringUnit" : {
                       "state" : "translated",
                       "value" : "%arg identities"
+                    }
+                  }
+                }
+              }
+            },
+            "servers" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg server"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg servers"
                     }
                   }
                 }
@@ -5682,26 +5334,6 @@
             "value" : "Imported %#@servers@ and %#@identities@ from %3$@."
           },
           "substitutions" : {
-            "servers" : {
-              "argNum" : 1,
-              "formatSpecifier" : "lld",
-              "variations" : {
-                "plural" : {
-                  "one" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg server"
-                    }
-                  },
-                  "other" : {
-                    "stringUnit" : {
-                      "state" : "translated",
-                      "value" : "%arg servers"
-                    }
-                  }
-                }
-              }
-            },
             "identities" : {
               "argNum" : 2,
               "formatSpecifier" : "lld",
@@ -5717,6 +5349,26 @@
                     "stringUnit" : {
                       "state" : "translated",
                       "value" : "%arg identities"
+                    }
+                  }
+                }
+              }
+            },
+            "servers" : {
+              "argNum" : 1,
+              "formatSpecifier" : "lld",
+              "variations" : {
+                "plural" : {
+                  "one" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg server"
+                    }
+                  },
+                  "other" : {
+                    "stringUnit" : {
+                      "state" : "translated",
+                      "value" : "%arg servers"
                     }
                   }
                 }
@@ -5942,22 +5594,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "它在“%@”上的 shell 及其中執行的所有內容都將停止。"
-          }
-        }
-      }
-    },
-    "Jump server" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "跳板服务器"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "跳板伺服器"
           }
         }
       }
@@ -6342,22 +5978,6 @@
         }
       }
     },
-    "Load…" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "载入…"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "載入…"
-          }
-        }
-      }
-    },
     "Local (-L)" : {
       "localizations" : {
         "zh-Hans" : {
@@ -6418,22 +6038,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在此網路上查詢開啟了螢幕共享的 Mac 和 VNC 伺服器…"
-          }
-        }
-      }
-    },
-    "Mac User Name (empty = identity user)" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mac 用户名（留空 = 身份的用户）"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mac 使用者名稱（留空 = 身份的使用者）"
           }
         }
       }
@@ -7046,6 +6650,22 @@
         }
       }
     },
+    "No" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "否"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "否"
+          }
+        }
+      }
+    },
     "No desktop devices on the account" : {
       "localizations" : {
         "zh-Hans" : {
@@ -7170,38 +6790,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "沒有埠轉發"
-          }
-        }
-      }
-    },
-    "No private key loaded" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未载入私钥"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未載入私鑰"
-          }
-        }
-      }
-    },
-    "No public key loaded" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未载入公钥"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未載入公鑰"
           }
         }
       }
@@ -7350,22 +6938,6 @@
         }
       }
     },
-    "Not Selected" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未选择"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未選擇"
-          }
-        }
-      }
-    },
     "Not signed in" : {
       "localizations" : {
         "zh-Hans" : {
@@ -7378,22 +6950,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "未登入"
-          }
-        }
-      }
-    },
-    "Not used by any server" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "没有服务器使用"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "沒有伺服器使用"
           }
         }
       }
@@ -7506,6 +7062,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "開啟%@"
+          }
+        }
+      }
+    },
+    "Open %lld Terminals" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Open %lld Terminal"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Open %lld Terminals"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开 %lld 个终端"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開啟 %lld 個終端"
           }
         }
       }
@@ -8339,22 +7929,6 @@
         }
       }
     },
-    "Private key" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "私钥"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "私鑰"
-          }
-        }
-      }
-    },
     "Programs running on the server may read and write this Mac's clipboard (OSC 52), so a copy in vim or tmux lands here." : {
       "localizations" : {
         "zh-Hans" : {
@@ -8953,22 +8527,6 @@
         }
       }
     },
-    "Remove" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "移除"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "移除"
-          }
-        }
-      }
-    },
     "Remove Folder and Sign Out…" : {
       "localizations" : {
         "zh-Hans" : {
@@ -9241,22 +8799,6 @@
         }
       }
     },
-    "Revert" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "复原"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "復原"
-          }
-        }
-      }
-    },
     "Run" : {
       "localizations" : {
         "zh-Hans" : {
@@ -9333,22 +8875,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "執行…"
-          }
-        }
-      }
-    },
-    "SFTP" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SFTP"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SFTP"
           }
         }
       }
@@ -9433,22 +8959,6 @@
         }
       }
     },
-    "SSH, SFTP and Monitor on this server tunnel through the UU Remote session's port mapping — open the Desktop first so the tunnel is live." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "此服务器上的 SSH、SFTP 和监控通过 UU 远程会话的端口映射建立隧道——请先打开桌面，使隧道处于活跃状态。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "此伺服器上的 SSH、SFTP 和監控通過 UU 遠端會話的埠對映建立隧道——請先開啟桌面，使隧道處於活躍狀態。"
-          }
-        }
-      }
-    },
     "Save" : {
       "localizations" : {
         "zh-Hans" : {
@@ -9509,22 +9019,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "儲存為 VNC 伺服器，並輸入這臺 Mac 的使用者名稱和密碼"
-          }
-        }
-      }
-    },
-    "Save the server without connecting" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "存储服务器但不连接"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "儲存伺服器但不連線"
           }
         }
       }
@@ -9765,70 +9259,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "全選"
-          }
-        }
-      }
-    },
-    "Select SF Symbol" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "选择 SF Symbol"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "選擇 SF Symbol"
-          }
-        }
-      }
-    },
-    "Select an identity" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "选择身份"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "選擇身份"
-          }
-        }
-      }
-    },
-    "Selected" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已选择"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已選擇"
-          }
-        }
-      }
-    },
-    "Selected Identity" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "所选身份"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "所選身份"
           }
         }
       }
@@ -10781,22 +10211,6 @@
         }
       }
     },
-    "Start folder" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "起始文件夹"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "起始資料夾"
-          }
-        }
-      }
-    },
     "Status" : {
       "localizations" : {
         "zh-Hans" : {
@@ -11453,22 +10867,6 @@
         }
       }
     },
-    "The user name to sign in as on this server. It overrides the identity's, so one key can sign in as different users on different servers." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在此服务器上登录所用的用户名。它会覆盖身份中的用户名，因此同一个密钥可以在不同服务器上以不同用户登录。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在此伺服器上登入所用的使用者名稱。它會覆蓋身份中的使用者名稱，因此同一個金鑰可以在不同伺服器上以不同使用者登入。"
-          }
-        }
-      }
-    },
     "Theme, colors, fonts and shortcuts. Font size and padding stay on each device." : {
       "localizations" : {
         "zh-Hans" : {
@@ -11565,38 +10963,6 @@
         }
       }
     },
-    "This cannot be undone." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "此操作无法撤销。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "此操作無法撤銷。"
-          }
-        }
-      }
-    },
-    "This cannot be undone. The device stays on your UU Remote account, which Rayon cannot remove it from; Rayon stops listing it." : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "此操作无法撤销。该设备仍会留在你的 UU 远程账号中，Rayon 无法将其从账号移除，只会不再列出它。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "此操作無法復原。該裝置仍會留在你的 UU 遠端帳號中，Rayon 無法將其從帳號移除，只會不再列出它。"
-          }
-        }
-      }
-    },
     "This does not look like a private key" : {
       "localizations" : {
         "zh-Hans" : {
@@ -11625,38 +10991,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "這看起來不像公鑰"
-          }
-        }
-      }
-    },
-    "This file does not look like a private key" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "此文件看起来不像私钥"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "此檔案看起來不像私鑰"
-          }
-        }
-      }
-    },
-    "This file does not look like a public key" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "此文件看起来不像公钥"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "此檔案看起來不像公鑰"
           }
         }
       }
@@ -11819,6 +11153,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "過大，無法編輯"
+          }
+        }
+      }
+    },
+    "Tools" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "工具"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "工具"
           }
         }
       }
@@ -11995,22 +11345,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "UU 遠端帳號…"
-          }
-        }
-      }
-    },
-    "UU Remote Transport" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "UU 远程传输"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "UU 遠端傳輸"
           }
         }
       }
@@ -12351,44 +11685,6 @@
         }
       }
     },
-    "Used by %@" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "由 %@ 使用"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "由 %@ 使用"
-          }
-        }
-      }
-    },
-    "Used by %@ and %lld more" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Used by %1$@ and %2$lld more"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "由 %@ 及另外 %lld 台服务器使用"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "由 %@ 及另外 %lld 臺伺服器使用"
-          }
-        }
-      }
-    },
     "User" : {
       "localizations" : {
         "zh-Hans" : {
@@ -12401,38 +11697,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "使用者"
-          }
-        }
-      }
-    },
-    "User Name (empty = %@)" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "用户名（留空则为 %@）"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用者名稱（留空則為 %@）"
-          }
-        }
-      }
-    },
-    "User Name (empty = identity user)" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "用户名（留空则使用身份用户名）"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用者名稱（留空則使用身份使用者名稱）"
           }
         }
       }
@@ -12481,38 +11745,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "VNC"
-          }
-        }
-      }
-    },
-    "VNC Password (empty = identity password)" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "VNC 密码（留空则使用身份密码）"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "VNC 密碼（留空則使用身份密碼）"
-          }
-        }
-      }
-    },
-    "VNC Port" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "VNC 端口"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "VNC 埠"
           }
         }
       }
@@ -12773,6 +12005,22 @@
         }
       }
     },
+    "Yes" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "是"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "是"
+          }
+        }
+      }
+    },
     "You are running version %@." : {
       "localizations" : {
         "zh-Hans" : {
@@ -12897,6 +12145,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "GitHub 上的 mizorewww/Rayon"
+          }
+        }
+      }
+    },
+    "prod-web-01" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "prod-web-01"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "prod-web-01"
           }
         }
       }
@@ -13028,9 +12292,6 @@
           }
         }
       }
-    },
-    "·" : {
-      "shouldTranslate" : false
     },
     "—" : {
       "shouldTranslate" : false
