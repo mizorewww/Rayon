@@ -222,11 +222,11 @@
                     if includeSecrets {
                         RXField("Password") {
                             SecureField("Password", text: $password)
-                                .textFieldStyle(.rx)
+                                .textFieldStyle(.roundedBorder)
                         }
                         RXField("Confirm password") {
                             SecureField("Confirm password", text: $confirmation)
-                                .textFieldStyle(.rx)
+                                .textFieldStyle(.roundedBorder)
                         }
                         if !confirmation.isEmpty, password != confirmation {
                             HelpText("The passwords differ.", isError: true)
@@ -260,7 +260,7 @@
                 VStack(alignment: .leading, spacing: RX.Space.s2) {
                     RXField("Password") {
                         SecureField("Password", text: $password)
-                            .textFieldStyle(.rx)
+                            .textFieldStyle(.roundedBorder)
                             .onSubmit {
                                 if !password.isEmpty {
                                     onComplete(password)

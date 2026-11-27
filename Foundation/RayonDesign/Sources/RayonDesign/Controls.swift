@@ -174,30 +174,6 @@ public struct RXIconButton: View {
 
 // MARK: - Text fields
 
-/// 28pt field: `surface` fill, 1px `control-border`, `radius-md`.
-public struct RXTextFieldStyle: TextFieldStyle {
-    let monospaced: Bool
-
-    public init(monospaced: Bool = false) {
-        self.monospaced = monospaced
-    }
-
-    public func _body(configuration: TextField<Self._Label>) -> some View {
-        configuration
-            .textFieldStyle(.plain)
-            .font(monospaced ? .rxCode : .rxBody)
-            .foregroundStyle(.rxInk)
-            .padding(.horizontal, 8)
-            .frame(height: RX.controlHeight)
-            .rxFieldBackground()
-    }
-}
-
-public extension TextFieldStyle where Self == RXTextFieldStyle {
-    static var rx: RXTextFieldStyle { RXTextFieldStyle() }
-    static var rxMono: RXTextFieldStyle { RXTextFieldStyle(monospaced: true) }
-}
-
 public extension View {
     /// The field chrome used by text fields, pop-ups and editors.
     func rxFieldBackground() -> some View {

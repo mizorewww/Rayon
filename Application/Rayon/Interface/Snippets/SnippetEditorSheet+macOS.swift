@@ -41,11 +41,11 @@
                     HStack(alignment: .top, spacing: RX.Space.s4) {
                         RXField("Name") {
                             TextField("Restart nginx", text: $name)
-                                .textFieldStyle(.rx)
+                                .textFieldStyle(.roundedBorder)
                         }
                         RXField("Group") {
                             TextField("Default", text: $group)
-                                .textFieldStyle(.rx)
+                                .textFieldStyle(.roundedBorder)
                         }
                     }
                     RXField("Icon") {
@@ -102,7 +102,7 @@
                     }
                     RXField("Comment") {
                         TextField("Optional", text: $comment)
-                            .textFieldStyle(.rx)
+                            .textFieldStyle(.roundedBorder)
                     }
                 }
             } footer: {

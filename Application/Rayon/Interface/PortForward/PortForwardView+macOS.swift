@@ -255,7 +255,8 @@
                     HStack(alignment: .top, spacing: RX.Space.s4) {
                         RXField("Bind port", error: bindPort.isEmpty || UInt16(bindPort) != nil ? nil : "1–65535") {
                             TextField(orientation == .dynamicSOCKS ? "1080" : "5433", text: $bindPort)
-                                .textFieldStyle(.rxMono)
+                                .textFieldStyle(.roundedBorder)
+                                .font(.rxCode)
                         }
                         .frame(width: 120)
                         RXField("Forward through") {
@@ -272,12 +273,14 @@
                         HStack(alignment: .top, spacing: RX.Space.s4) {
                             RXField("Target host") {
                                 TextField("127.0.0.1", text: $targetHost)
-                                    .textFieldStyle(.rxMono)
+                                    .textFieldStyle(.roundedBorder)
+                                    .font(.rxCode)
                                     .disableAutocorrection(true)
                             }
                             RXField("Target port", error: targetPort.isEmpty || UInt16(targetPort) != nil ? nil : "1–65535") {
                                 TextField("5432", text: $targetPort)
-                                    .textFieldStyle(.rxMono)
+                                    .textFieldStyle(.roundedBorder)
+                                    .font(.rxCode)
                             }
                             .frame(width: 120)
                         }

@@ -160,9 +160,11 @@ public struct UURemoteAccountView: View {
                 .foregroundStyle(Color.rxInkSecondary)
             HStack(spacing: RX.Space.s2) {
                 TextField("Connect ID", text: $assistID)
-                    .textFieldStyle(.rxMono)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.rxCode)
                 SecureField("Code", text: $assistCode)
-                    .textFieldStyle(.rxMono)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.rxCode)
                     .frame(width: 120)
                 Button("Join") { connectAssist() }
                     .buttonStyle(.rx)
@@ -275,10 +277,12 @@ public struct UURemoteAccountView: View {
         VStack(alignment: .leading, spacing: RX.Space.s2) {
             HStack(spacing: RX.Space.s2) {
                 TextField("+86", text: $phoneCountry)
-                    .textFieldStyle(.rxMono)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.rxCode)
                     .frame(width: 64)
                 TextField("Phone number", text: $phoneNumber)
-                    .textFieldStyle(.rxMono)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.rxCode)
                     #if os(iOS)
                     .keyboardType(.phonePad)
                     #endif
@@ -293,7 +297,8 @@ public struct UURemoteAccountView: View {
             }
             HStack(spacing: RX.Space.s2) {
                 TextField("Code from the SMS", text: $smsCode)
-                    .textFieldStyle(.rxMono)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.rxCode)
                     #if os(iOS)
                     .keyboardType(.numberPad)
                     #endif
@@ -312,7 +317,8 @@ public struct UURemoteAccountView: View {
         VStack(alignment: .leading, spacing: RX.Space.s2) {
             HStack(spacing: RX.Space.s2) {
                 SecureField("Access token", text: $tokenDraft)
-                    .textFieldStyle(.rxMono)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.rxCode)
                 Button("Sign In") {
                     run("token") { try await account.importToken(tokenDraft) }
                 }

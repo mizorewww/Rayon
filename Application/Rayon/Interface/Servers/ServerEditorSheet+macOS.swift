@@ -134,7 +134,7 @@
             VStack(alignment: .leading, spacing: 14) {
                 RXField("Name") {
                     TextField(address.isEmpty ? "prod-web-01" : address, text: $name)
-                        .textFieldStyle(.rx)
+                        .textFieldStyle(.roundedBorder)
                 }
                 RXField("Connect through") {
                     Picker("Connect through", selection: $transport) {
@@ -168,12 +168,14 @@
                 HStack(alignment: .top, spacing: RX.Space.s4) {
                     RXField(transport == .cloudflareAccess ? "Access hostname" : transport == .uuRemote ? "Device ID" : "Address") {
                         TextField(transport == .cloudflareAccess ? "ssh.example.com" : transport == .uuRemote ? "UU Remote device id" : "Host name or IP address", text: $address)
-                            .textFieldStyle(.rxMono)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.rxCode)
                             .disableAutocorrection(true)
                     }
                     RXField("Port", error: portIsValid ? nil : "1–65535") {
                         TextField("22", text: $port)
-                            .textFieldStyle(.rxMono)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.rxCode)
                     }
                     .frame(width: 96)
                 }
@@ -208,7 +210,8 @@
                     }
                     RXField("User name") {
                         TextField(sshUsernamePlaceholder, text: $sshUsername)
-                            .textFieldStyle(.rxMono)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.rxCode)
                             .disableAutocorrection(true)
                     }
                 }
@@ -217,7 +220,7 @@
                     RXField("Group") {
                         HStack(spacing: RX.Space.s1) {
                             TextField("Default", text: $group)
-                                .textFieldStyle(.rx)
+                                .textFieldStyle(.roundedBorder)
                             if !existingGroups.isEmpty {
                                 Menu {
                                     ForEach(existingGroups, id: \.self) { item in
@@ -236,12 +239,13 @@
                 }
                 RXField("SFTP start folder") {
                     TextField("/", text: $startFolder)
-                        .textFieldStyle(.rxMono)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.rxCode)
                         .disableAutocorrection(true)
                 }
                 RXField("Comment") {
                     TextField("Optional", text: $comment)
-                        .textFieldStyle(.rx)
+                        .textFieldStyle(.roundedBorder)
                 }
                 if !isNew {
                     RXField("Last banner") {
@@ -257,16 +261,17 @@
             HStack(alignment: .top, spacing: RX.Space.s4) {
                 RXField("VNC port") {
                     TextField("5900", text: $vncPort)
-                        .textFieldStyle(.rxMono)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.rxCode)
                 }
                 RXField("VNC password") {
                     SecureField("Use identity password", text: $vncPassword)
-                        .textFieldStyle(.rx)
+                        .textFieldStyle(.roundedBorder)
                 }
             }
             RXField("Mac user name") {
                 TextField("Use identity user name", text: $vncUsername)
-                    .textFieldStyle(.rx)
+                    .textFieldStyle(.roundedBorder)
                     .disableAutocorrection(true)
             }
             HelpText("macOS Screen Sharing signs in with a Mac user name and password. Leave the VNC password empty to use the identity's; a VNC password alone uses VNC authentication.")
@@ -299,19 +304,22 @@
                 HStack(alignment: .top, spacing: RX.Space.s4) {
                     RXField("Device ID") {
                         TextField("From the account's device list", text: $uuDeviceID)
-                            .textFieldStyle(.rxMono)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.rxCode)
                             .disableAutocorrection(true)
                     }
                 }
                 HStack(alignment: .top, spacing: RX.Space.s4) {
                     RXField("Assist connect ID") {
                         TextField("Optional", text: $uuAssistID)
-                            .textFieldStyle(.rxMono)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.rxCode)
                             .disableAutocorrection(true)
                     }
                     RXField("Assist code") {
                         SecureField("Optional", text: $uuAssistCode)
-                            .textFieldStyle(.rxMono)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.rxCode)
                     }
                 }
             }
@@ -334,12 +342,14 @@
             HStack(alignment: .top, spacing: RX.Space.s4) {
                 RXField("Service token Client ID") {
                     TextField("Optional", text: $serviceTokenID)
-                        .textFieldStyle(.rxMono)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.rxCode)
                         .disableAutocorrection(true)
                 }
                 RXField("Client Secret") {
                     SecureField("Optional", text: $serviceTokenSecret)
-                        .textFieldStyle(.rxMono)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.rxCode)
                 }
             }
             HelpText("Connects like ssh -o ProxyCommand='cloudflared access ssh --hostname %h', without cloudflared. Leave the service token empty when the application has no Access policy. The port only names the server's host key.")

@@ -226,7 +226,7 @@
             SheetScaffold(title, lead: lead) {
                 RXField("Folder name") {
                     TextField("Folder name", text: $text)
-                        .textFieldStyle(.rx)
+                        .textFieldStyle(.roundedBorder)
                         .onSubmit {
                             if !trimmed.isEmpty { onComplete(trimmed) }
                         }

@@ -535,7 +535,8 @@
             SheetScaffold(title) {
                 RXField(prompt.label, error: error) {
                     TextField(prompt.placeholder, text: $text)
-                        .textFieldStyle(prompt.isPath ? .rxMono : .rx)
+                        .textFieldStyle(.roundedBorder)
+                        .font(prompt.isPath ? .rxCode : .rxBody)
                         .disableAutocorrection(true)
                         .onSubmit(confirm)
                 }

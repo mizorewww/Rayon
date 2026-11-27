@@ -286,12 +286,12 @@
                 HStack(alignment: .top, spacing: RX.Space.s4) {
                     RXField("Username") {
                         TextField("root", text: $draft.username)
-                            .textFieldStyle(.rx)
+                            .textFieldStyle(.roundedBorder)
                             .disableAutocorrection(true)
                     }
                     RXField("Group") {
                         TextField("Default", text: $draft.group)
-                            .textFieldStyle(.rx)
+                            .textFieldStyle(.roundedBorder)
                     }
                 }
                 RXField("Authentication") {
@@ -333,11 +333,11 @@
                     HStack(alignment: .top, spacing: RX.Space.s4) {
                         RXField("Passphrase") {
                             SecureField("None", text: $draft.passphrase)
-                                .textFieldStyle(.rx)
+                                .textFieldStyle(.roundedBorder)
                         }
                         RXField("Comment") {
                             TextField("Optional", text: $draft.comment)
-                                .textFieldStyle(.rx)
+                                .textFieldStyle(.roundedBorder)
                         }
                     }
                 } else if draft.method == .password {
@@ -347,14 +347,14 @@
                         }
                         RXField("Comment") {
                             TextField("Optional", text: $draft.comment)
-                                .textFieldStyle(.rx)
+                                .textFieldStyle(.roundedBorder)
                         }
                     }
                 } else {
                     HelpText("Signs in using your Mac's running SSH agent (SSH_AUTH_SOCK), including the system ssh-agent, 1Password SSH Agent, Secretive, or YubiKey/GPG agents.")
                     RXField("Comment") {
                         TextField("Optional", text: $draft.comment)
-                            .textFieldStyle(.rx)
+                            .textFieldStyle(.roundedBorder)
                     }
                 }
                 Hairline()
@@ -489,7 +489,7 @@
                         SecureField(placeholder, text: $text)
                     }
                 }
-                .textFieldStyle(.rx)
+                .textFieldStyle(.roundedBorder)
                 if !text.isEmpty {
                     RXIconButton(revealed ? "Hide Password" : "Show Password", systemImage: revealed ? "eye.slash" : "eye") {
                         if revealed {

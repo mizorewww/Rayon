@@ -361,7 +361,8 @@
             SheetScaffold("Open File", lead: "A text file on the server, up to 4 MB.") {
                 RXField("Path", error: error) {
                     TextField("/etc/hosts", text: $path)
-                        .textFieldStyle(.rxMono)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.rxCode)
                         .disableAutocorrection(true)
                         .onSubmit(confirm)
                 }

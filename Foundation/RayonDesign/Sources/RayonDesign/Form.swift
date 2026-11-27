@@ -19,25 +19,20 @@ public struct RXDividedStack<Content: View>: View {
     }
 
     public var body: some View {
-        _VariadicView.Tree(DividedLayout(inset: inset)) {
-            content
-        }
-    }
-
-    private struct DividedLayout: _VariadicView_MultiViewRoot {
-        let inset: CGFloat
-
-        @ViewBuilder
-        func body(children: _VariadicView.Children) -> some View {
-            let last = children.last?.id
+        if #available(macOS 15.0, iOS 18.0, *) {
             VStack(spacing: 0) {
-                ForEach(children) { child in
-                    child
-                    if child.id != last {
-                        Hairline().padding(.leading, inset)
+                Group(subviews: content) { children in
+                    ForEach(children) { child in
+                        child
+                        if child.id != children.last?.id {
+                            Hairline().padding(.leading, inset)
+                        }
                     }
                 }
             }
+        } else {
+            // The apps need macOS 15 and iOS 18; older systems get no dividers.
+            VStack(spacing: 0) { content }
         }
     }
 }
@@ -180,7 +175,7 @@ public struct RXSlider: View {
                 .labelsHidden()
                 .multilineTextAlignment(.trailing)
                 .font(.rxBody.monospacedDigit())
-                .textFieldStyle(.rx)
+                .textFieldStyle(.roundedBorder)
                 .frame(width: 56)
                 .focused($fieldFocused)
                 .onSubmit(commitText)
@@ -239,7 +234,7 @@ public struct NumberFieldRow: View {
                 TextField(title, text: $text)
                     .labelsHidden()
                     .multilineTextAlignment(.trailing)
-                    .textFieldStyle(.rx)
+                    .textFieldStyle(.roundedBorder)
                     .frame(width: 72)
                     .focused($fieldFocused)
                     .onSubmit(commitText)
