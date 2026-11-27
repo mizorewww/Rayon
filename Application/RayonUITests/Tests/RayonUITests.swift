@@ -86,8 +86,9 @@ final class RayonUITests: XCTestCase {
         let keyboard = app.buttons["Keyboard"].firstMatch
         if !keyboard.exists { app.swipeUp() }
         keyboard.tap()
-        XCTAssertTrue(app.staticTexts["Copy"].firstMatch.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.staticTexts["⌘C"].firstMatch.exists)
+        // The action is a menu of the others and the keys a recorder, so both are buttons.
+        XCTAssertTrue(app.buttons["Copy"].firstMatch.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["⌘C"].firstMatch.exists)
         screenshot("Keyboard")
     }
 

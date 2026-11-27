@@ -191,6 +191,9 @@ struct CategoryPage: View {
     let category: SettingsLayout.Category
     @Binding var showsPreview: Bool
     var header: AnyView?
+    #if os(macOS)
+        @State private var formHeight: CGFloat?
+    #endif
 
     var body: some View {
         VStack(spacing: 0) {
@@ -200,15 +203,41 @@ struct CategoryPage: View {
                     .padding([.horizontal, .top])
                     .transition(.opacity)
             }
-            Form {
-                header
-                ForEach(category.groups) { group in
-                    GroupSection(group: group, keys: group.keys)
+            #if os(macOS)
+                if category.keys.contains("keybind") {
+                    shortcutsPage
+                } else {
+                    form(category.groups)
                 }
-            }
-            .formStyle(.grouped)
+            #else
+                form(category.groups)
+            #endif
         }
     }
+
+    private func form(_ groups: [SettingsLayout.Group]) -> some View {
+        Form {
+            header
+            ForEach(groups) { group in
+                GroupSection(group: group, keys: group.keys)
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    #if os(macOS)
+        /// A Table cannot sit inside a Form: the page's other groups go in a
+        /// form as tall as its rows, the shortcuts in a table below it.
+        private var shortcutsPage: some View {
+            VStack(spacing: 0) {
+                form(category.groups.filter { $0.keys != ["keybind"] })
+                    .scrollDisabled(true)
+                    .onScrollGeometryChange(for: CGFloat.self) { $0.contentSize.height } action: { formHeight = $1 }
+                    .frame(height: formHeight)
+                KeybindingList(table: true)
+            }
+        }
+    #endif
 }
 
 /// A group of Ghostty settings.

@@ -74,6 +74,22 @@
         }
       }
     },
+    "%@ uses the same keys and is set later, so it wins." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 使用相同的按键且设置在后，因此以它为准。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 使用相同的按鍵且設定在後，因此以它為準。"
+          }
+        }
+      }
+    },
     "%@ · on by default" : {
       "localizations" : {
         "zh-Hans" : {
@@ -608,6 +624,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "高階"
+          }
+        }
+      }
+    },
+    "Advanced…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "高级…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "進階…"
           }
         }
       }
@@ -1492,6 +1524,22 @@
         }
       }
     },
+    "Click to record a new shortcut" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "点按以录制新快捷键"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按一下以錄製新快捷鍵"
+          }
+        }
+      }
+    },
     "Clipboard" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2116,18 +2164,18 @@
         }
       }
     },
-    "Edit" : {
+    "Edit in the advanced editor" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "编辑"
+            "value" : "在高级编辑器中编辑"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "編輯"
+            "value" : "在進階編輯器中編輯"
           }
         }
       }
@@ -2144,22 +2192,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "編輯"
-          }
-        }
-      }
-    },
-    "Edit…" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "编辑…"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "編輯…"
           }
         }
       }
@@ -3322,6 +3354,22 @@
         }
       }
     },
+    "Line Editing" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "行编辑"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "行編輯"
+          }
+        }
+      }
+    },
     "Linear" : {
       "localizations" : {
         "zh-Hans" : {
@@ -4458,34 +4506,34 @@
         }
       }
     },
-    "Press keys…" : {
+    "Press the new keys; Esc cancels" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "按下按键…"
+            "value" : "按下新的按键；按 Esc 取消"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "按下按鍵…"
+            "value" : "按下新的按鍵；按 Esc 取消"
           }
         }
       }
     },
-    "Press the shortcut on the keyboard" : {
+    "Press the new keys; Esc cancels, Delete removes the shortcut" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "在键盘上按下快捷键"
+            "value" : "按下新的按键；按 Esc 取消，按 Delete 移除此快捷键"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "在鍵盤上按下快捷鍵"
+            "value" : "按下新的按鍵；按 Esc 取消，按 Delete 移除此快捷鍵"
           }
         }
       }
@@ -4534,22 +4582,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "標點符號"
-          }
-        }
-      }
-    },
-    "Record" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "录制"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "錄製"
           }
         }
       }
@@ -4938,22 +4970,6 @@
         }
       }
     },
-    "Same keys as another shortcut" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "与另一个快捷键的按键相同"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "與另一個快捷鍵的按鍵相同"
-          }
-        }
-      }
-    },
     "Save" : {
       "localizations" : {
         "zh-Hans" : {
@@ -5224,22 +5240,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "搜尋設定"
-          }
-        }
-      }
-    },
-    "Search shortcuts" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "搜索快捷键"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "搜尋快捷鍵"
           }
         }
       }
@@ -6156,6 +6156,22 @@
         }
       }
     },
+    "Type Shortcut" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "键入快捷键"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "鍵入快捷鍵"
+          }
+        }
+      }
+    },
     "Type Text" : {
       "localizations" : {
         "zh-Hans" : {
@@ -6344,6 +6360,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "用於該字型缺少的字元"
+          }
+        }
+      }
+    },
+    "Uses the same keys as %@; this one is set later, so it wins." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "与 %@ 使用相同的按键；此项设置在后，因此以此项为准。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "與 %@ 使用相同的按鍵；此項設定在後，因此以此項為準。"
           }
         }
       }

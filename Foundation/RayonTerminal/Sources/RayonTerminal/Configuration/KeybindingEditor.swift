@@ -1,7 +1,4 @@
 import SwiftUI
-#if os(macOS)
-    import AppKit
-#endif
 
 // MARK: - List
 
@@ -21,14 +18,25 @@ extension TerminalSettings {
 }
 
 /// The Keyboard page: every shortcut Rayon's terminal takes, grouped by what
-/// it does, with Add, Edit, Delete and Restore Defaults.
+/// it does. Click a shortcut to record new keys; pick its action from the
+/// menu beside it; Advanced… edits sequences and Ghostty's own syntax.
 struct KeybindingList: View {
     /// Settings search: only the shortcuts with every word of it show.
     var query = ""
+    /// The Mac's Keyboard page: a table with +, − and Restore Defaults
+    /// beneath it. Otherwise form sections, for a form around them.
+    var table = false
     private var settings: TerminalSettings { .shared }
     @State private var editing: Editing?
-    @State private var filter = ""
+    /// The row whose recorder is listening; one at a time.
+    @State private var recording: Int?
+    /// A shortcut being added: its action is chosen, its keys are being
+    /// recorded. It is saved once they are, and dropped if recording stops.
+    @State private var draft: Keybinding?
+    @State private var selection: Set<Int> = []
     @State private var confirmReset = false
+
+    private static let draftID = -1
 
     private struct Editing: Identifiable {
         let id = UUID()
@@ -37,52 +45,245 @@ struct KeybindingList: View {
         var raw: String
     }
 
+    /// A shortcut as shown: `id` is its place in the list.
+    private struct Row: Identifiable {
+        let id: Int
+        let binding: Keybinding
+        let raw: String
+        /// Why another shortcut with the same keys matters to this one.
+        var conflict: String?
+    }
+
     var body: some View {
+        let (groups, hidden) = rows()
+        if table {
+            #if os(macOS)
+                presenting(tableView(groups, hidden: hidden))
+            #endif
+        } else {
+            formSections(groups, hidden: hidden)
+        }
+    }
+
+    /// The dialogs, on one view only: on a group of sections each would get its own.
+    private func presenting(_ content: some View) -> some View {
+        content
+            .confirmationDialog(Text("Restore the default shortcuts?", bundle: .module), isPresented: $confirmReset) {
+                Button(.init("Restore", bundle: .module), role: .destructive) { settings.reset("keybind") }
+            }
+            .sheet(item: $editing) { item in
+                KeybindingBuilder(raw: item.raw) { raw in
+                    save(Keybinding(raw), at: item.index ?? Self.draftID)
+                    editing = nil
+                } cancel: {
+                    editing = nil
+                }
+            }
+            .onChange(of: recording) { if recording != Self.draftID { draft = nil } }
+    }
+
+    // MARK: Rows
+
+    private func rows() -> (groups: [(title: String, rows: [Row])], hidden: Int) {
         let entries = settings.shortcuts
         let parsed = entries.map(Keybinding.init)
-        let counts = Dictionary(parsed.map { ($0.canonical, 1) }, uniquingKeysWith: +)
-        let visible = parsed.indices.filter { index in
-            let text = KeybindingNames.searchText(parsed[index], raw: entries[index])
-            return KeybindingNames.applies(parsed[index])
-                && (filter.isEmpty || text.localizedCaseInsensitiveContains(filter))
-                && KeybindingNames.contains(text, every: query)
+        let shown = parsed.indices.filter { KeybindingNames.applies(parsed[$0]) }
+        // Ghostty drops a line it cannot read, so only valid ones override.
+        let byKeys = Dictionary(grouping: shown.filter { parsed[$0].errors.isEmpty }) { parsed[$0].canonical }
+        var rows = shown
+            .filter { KeybindingNames.contains(KeybindingNames.searchText(parsed[$0], raw: entries[$0]), every: query) }
+            .map { Row(id: $0, binding: parsed[$0], raw: entries[$0], conflict: conflict(of: $0, among: byKeys[parsed[$0].canonical] ?? [], parsed)) }
+        if let draft { rows.append(Row(id: Self.draftID, binding: draft, raw: draft.rendered)) }
+        let groups = (KeybindingNames.groups.map(\.title) + [KeybindingNames.otherGroup]).compactMap { title -> (title: String, rows: [Row])? in
+            let members = rows.filter { KeybindingNames.group(of: $0.binding.action) == title }
+            return members.isEmpty ? nil : (title, members)
         }
-        let hidden = parsed.filter { !KeybindingNames.applies($0) }.count
-        Section {
-            TextField(String(localized: "Search shortcuts", bundle: .module), text: $filter)
+        return (groups, parsed.count - shown.count)
+    }
+
+    /// Ghostty keeps the last of the lines with the same keys.
+    private func conflict(of index: Int, among same: [Int], _ parsed: [Keybinding]) -> String? {
+        guard same.count > 1, same.contains(index) else { return nil }
+        let names = { (indices: [Int]) in
+            indices.map { "“\(KeybindingNames.summary(parsed[$0]))”" }.formatted(.list(type: .and))
+        }
+        let later = same.filter { $0 > index }
+        if !later.isEmpty {
+            return String(localized: "\(names(later)) uses the same keys and is set later, so it wins.", bundle: .module)
+        }
+        return String(localized: "Uses the same keys as \(names(same.filter { $0 < index })); this one is set later, so it wins.", bundle: .module)
+    }
+
+    // MARK: Changes
+
+    /// Puts `binding` at `index`, or adds it for the draft or a new one.
+    private func save(_ binding: Keybinding, at index: Int) {
+        var next = settings.shortcuts
+        if next.indices.contains(index) { next[index] = binding.rendered } else { next.append(binding.rendered) }
+        settings.setShortcuts(next)
+    }
+
+    /// Ghostty has no line for an action without keys, so clearing a
+    /// shortcut's keys removes it; Undo brings it back.
+    private func remove(_ indices: Set<Int>) {
+        guard indices.contains(where: { $0 != Self.draftID }) else { return }
+        settings.setShortcuts(settings.shortcuts.enumerated().filter { !indices.contains($0.offset) }.map(\.element))
+        selection = []
+    }
+
+    private func advanced(_ row: Row) {
+        editing = Editing(index: row.id == Self.draftID ? nil : row.id, raw: row.raw)
+    }
+
+    /// Gives `row` (nil: a new shortcut) another action. One that needs text
+    /// or a sequence opens the advanced editor; a number or a choice gets a
+    /// default to change there.
+    private func choose(_ action: String, argument: String?, for row: Row?) {
+        var next = row?.binding ?? Keybinding()
+        next.action = action
+        next.argument = argument ?? Self.defaultArgument(action)
+        let definition = KeybindingCatalog.shared.actionsByName[action]
+        let needsText = next.argument == nil && ["text", "free"].contains(definition?.type) && definition?.allowEmpty != true
+        if let row, row.id != Self.draftID {
+            if needsText { editing = Editing(index: row.id, raw: next.rendered) } else { save(next, at: row.id) }
+        } else if needsText || !ShortcutRecorder.canRecord {
+            recording = nil
+            editing = Editing(index: nil, raw: next.rendered)
+        } else {
+            draft = next
+            recording = Self.draftID
+        }
+    }
+
+    private static func defaultArgument(_ action: String) -> String? {
+        guard let definition = KeybindingCatalog.shared.actionsByName[action] else { return nil }
+        switch definition.type {
+        case "enum": return definition.allowEmpty == true ? nil : definition.options?.first
+        case "number", "integer", "unsignedInteger": return action == "set_font_size" ? "13" : String(Int(max(definition.min ?? 1, 1)))
+        case "resize": return "right,10"
+        default: return nil
+        }
+    }
+
+    // MARK: Cells
+
+    private func isRecording(_ id: Int) -> Binding<Bool> {
+        Binding(get: { recording == id }, set: { on in
+            if on { recording = id } else if recording == id { recording = nil }
+        })
+    }
+
+    /// The friendly name of what the shortcut does, as a menu of the others.
+    private func actionMenu(_ row: Row) -> some View {
+        Menu {
+            actionChoices(for: row)
+        } label: {
+            Text(KeybindingNames.summary(row.binding))
+        }
+        .menuIndicator(.visible)
+        .fixedSize()
+        .help(row.raw)
+    }
+
+    @ViewBuilder private func actionChoices(for row: Row?) -> some View {
+        ForEach(KeybindingNames.groups, id: \.title) { group in
+            Section(group.title) {
+                ForEach(group.actions, id: \.self) { action in
+                    Button(KeybindingNames.action(action)) { choose(action, argument: nil, for: row) }
+                }
+            }
+        }
+        Section(KeybindingNames.lineEditing) {
+            ForEach(KeybindingNames.lineEditingSequences, id: \.title) { sequence in
+                Button(sequence.title) { choose(sequence.action, argument: sequence.argument, for: row) }
+            }
+        }
+    }
+
+    /// The keys, as a recorder; a sequence, or iOS without a keyboard,
+    /// opens the advanced editor instead. Warnings follow.
+    @ViewBuilder private func shortcutCell(_ row: Row) -> some View {
+        HStack(spacing: 6) {
+            if row.binding.steps.count == 1, ShortcutRecorder.canRecord {
+                ShortcutRecorder(steps: row.binding.steps, isRecording: isRecording(row.id)) { step in
+                    var next = row.binding
+                    next.steps = [step]
+                    save(next, at: row.id)
+                } clear: {
+                    remove([row.id])
+                }
+            } else {
+                Button { advanced(row) } label: { ShortcutCaps(steps: row.binding.steps) }
+                    .buttonStyle(.plain)
+                    .help(Text("Edit in the advanced editor", bundle: .module))
+            }
+            if !row.binding.errors.isEmpty {
+                let errors = row.binding.errors.joined(separator: "\n")
+                Image(systemName: "exclamationmark.octagon.fill")
+                    .foregroundStyle(.red)
+                    .help(errors)
+                    .accessibilityLabel(errors)
+            }
+            if let conflict = row.conflict {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.yellow)
+                    .help(conflict)
+                    .accessibilityLabel(conflict)
+            }
+        }
+    }
+
+    @ViewBuilder private func rowMenu(_ rows: [Row]) -> some View {
+        if rows.count == 1, let row = rows.first {
+            Button(.init("Advanced…", bundle: .module)) { advanced(row) }
+        }
+        if rows.contains(where: { $0.id != Self.draftID }) {
+            Button(.init("Delete", bundle: .module), role: .destructive) { remove(Set(rows.map(\.id))) }
+        }
+    }
+
+    private var addMenu: some View {
+        Group {
+            actionChoices(for: nil)
+            Divider()
+            Button(.init("Advanced…", bundle: .module)) {
+                recording = nil
+                editing = Editing(index: nil, raw: Keybinding().rendered)
+            }
+        }
+    }
+
+    private func hiddenNote(_ hidden: Int) -> Text {
+        Text("\(hidden) of Ghostty's shortcuts are for windows, tabs and splits, which Rayon manages itself; they are not shown.", bundle: .module)
+    }
+
+    // MARK: Layouts
+
+    @ViewBuilder private func formSections(_ groups: [(title: String, rows: [Row])], hidden: Int) -> some View {
+        presenting(Section {
             HStack {
-                Button(.init("Add Shortcut", bundle: .module), systemImage: "plus") { editing = Editing(index: nil, raw: Keybinding().rendered) }
+                Menu { addMenu } label: { Label(.init("Add Shortcut", bundle: .module), systemImage: "plus") }
+                    .fixedSize()
                 Spacer()
                 Button(.init("Restore Defaults…", bundle: .module)) { confirmReset = true }
                     .disabled(!settings.isSet("keybind"))
             }
+            .buttonStyle(.borderless)
         } footer: {
-            if hidden > 0 {
-                Text("\(hidden) of Ghostty's shortcuts are for windows, tabs and splits, which Rayon manages itself; they are not shown.", bundle: .module)
-            }
-        }
-        .confirmationDialog(Text("Restore the default shortcuts?", bundle: .module), isPresented: $confirmReset) {
-            Button(.init("Restore", bundle: .module), role: .destructive) { settings.reset("keybind") }
-        }
-        .sheet(item: $editing) { item in
-            KeybindingBuilder(raw: item.raw) { raw in
-                var next = entries
-                if let index = item.index, next.indices.contains(index) { next[index] = raw } else { next.append(raw) }
-                settings.setShortcuts(next)
-                editing = nil
-            } cancel: {
-                editing = nil
-            }
-        }
-        ForEach(KeybindingNames.groups.map(\.title) + [KeybindingNames.otherGroup], id: \.self) { group in
-            let members = visible.filter { KeybindingNames.group(of: parsed[$0].action) == group }
-            if !members.isEmpty {
-                Section(group) {
-                    ForEach(members, id: \.self) { index in
-                        row(parsed[index], raw: entries[index], duplicate: (counts[parsed[index].canonical] ?? 0) > 1) {
-                            editing = Editing(index: index, raw: entries[index])
-                        } delete: {
-                            settings.setShortcuts(entries.enumerated().filter { $0.offset != index }.map(\.element))
+            if hidden > 0 { hiddenNote(hidden) }
+        })
+        ForEach(groups, id: \.title) { group in
+            Section(group.title) {
+                ForEach(group.rows) { row in
+                    HStack {
+                        actionMenu(row)
+                        Spacer()
+                        shortcutCell(row)
+                    }
+                    .contextMenu { rowMenu([row]) }
+                    .swipeActions {
+                        if row.id != Self.draftID {
+                            Button(.init("Delete", bundle: .module), role: .destructive) { remove([row.id]) }
                         }
                     }
                 }
@@ -90,36 +291,49 @@ struct KeybindingList: View {
         }
     }
 
-    private func row(_ binding: Keybinding, raw: String, duplicate: Bool, edit: @escaping () -> Void, delete: @escaping () -> Void) -> some View {
-        HStack {
-            HStack(spacing: 4) {
-                ForEach(Array(binding.steps.enumerated()), id: \.offset) { offset, step in
-                    if offset > 0 { Text(KeybindingNames.then).font(.caption).foregroundStyle(.secondary) }
-                    KeyCaps(text: KeybindingNames.step(step))
+    #if os(macOS)
+        private func tableView(_ groups: [(title: String, rows: [Row])], hidden: Int) -> some View {
+            let all = groups.flatMap(\.rows)
+            return VStack(spacing: 0) {
+                Table(of: Row.self, selection: $selection) {
+                    TableColumn(String(localized: "Action", bundle: .module)) { actionMenu($0) }
+                    TableColumn(String(localized: "Shortcut", bundle: .module)) { shortcutCell($0) }
+                } rows: {
+                    ForEach(groups, id: \.title) { group in
+                        Section(group.title) {
+                            ForEach(group.rows) { TableRow($0) }
+                        }
+                    }
                 }
+                .contextMenu(forSelectionType: Int.self) { ids in
+                    rowMenu(all.filter { ids.contains($0.id) })
+                } primaryAction: { ids in
+                    if ids.count == 1, let row = all.first(where: { ids.contains($0.id) }) { advanced(row) }
+                }
+                Divider()
+                HStack(spacing: 8) {
+                    ControlGroup {
+                        Menu { addMenu } label: { Label(.init("Add Shortcut", bundle: .module), systemImage: "plus") }
+                            .menuIndicator(.hidden)
+                        Button { remove(selection) } label: { Label(.init("Delete Shortcut", bundle: .module), systemImage: "minus") }
+                            .disabled(!selection.contains(where: { $0 != Self.draftID }))
+                    }
+                    .labelStyle(.iconOnly)
+                    .fixedSize()
+                    if hidden > 0 {
+                        hiddenNote(hidden)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                    Spacer()
+                    Button(.init("Restore Defaults…", bundle: .module)) { confirmReset = true }
+                        .disabled(!settings.isSet("keybind"))
+                }
+                .padding(8)
             }
-            .frame(minWidth: 96, alignment: .leading)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(KeybindingNames.summary(binding))
-                if !binding.errors.isEmpty {
-                    Text(binding.errors.joined(separator: "; ")).font(.caption).foregroundStyle(.red)
-                }
-                if duplicate {
-                    Text("Same keys as another shortcut", bundle: .module).font(.caption).foregroundStyle(.orange)
-                }
-            }
-            Spacer()
-            Button(.init("Edit", bundle: .module), action: edit)
-            Button(role: .destructive, action: delete) { Label(.init("Delete Shortcut", bundle: .module), systemImage: "trash") }
-                .labelStyle(.iconOnly)
         }
-        .buttonStyle(.borderless)
-        .help(raw)
-        .contextMenu {
-            Button(.init("Edit…", bundle: .module), action: edit)
-            Button(.init("Delete", bundle: .module), role: .destructive, action: delete)
-        }
-    }
+    #endif
 }
 
 // MARK: - Builder
@@ -224,21 +438,19 @@ struct KeybindingBuilder: View {
     @ViewBuilder private func stepEditor(index: Int, step: String) -> some View {
         let (mods, key) = Keybinding.splitStep(step)
         HStack {
-            KeyCaps(text: recordingStep == index ? String(localized: "Press keys…", bundle: .module) : KeybindingNames.step(step))
-            #if os(macOS) || targetEnvironment(macCatalyst)
-                Button(recordingStep == index ? String(localized: "Cancel", bundle: .module) : String(localized: "Record", bundle: .module)) {
-                    recordingStep = recordingStep == index ? nil : index
+            // Without a keyboard to record from, the pickers below set the keys.
+            if ShortcutRecorder.canRecord {
+                ShortcutRecorder(
+                    steps: [step],
+                    isRecording: Binding(get: { recordingStep == index }, set: { on in
+                        if on { recordingStep = index } else if recordingStep == index { recordingStep = nil }
+                    })
+                ) { recorded in
+                    edit { if $0.steps.indices.contains(index) { $0.steps[index] = recorded } }
                 }
-                .help(.init("Press the shortcut on the keyboard", bundle: .module))
-                .background(KeyRecorder(
-                    active: recordingStep == index,
-                    record: { recorded in
-                        edit { if $0.steps.indices.contains(index) { $0.steps[index] = recorded } }
-                        recordingStep = nil
-                    },
-                    cancel: { recordingStep = nil }
-                ))
-            #endif
+            } else {
+                KeyCaps(text: KeybindingNames.step(step))
+            }
             Spacer()
             if parsed.steps.count > 1 {
                 Button(role: .destructive) { edit { $0.steps.remove(at: index) } } label: {
@@ -316,155 +528,3 @@ struct KeybindingBuilder: View {
         return number.rounded() == number ? String(Int(number)) : String(number)
     }
 }
-
-
-#if os(macOS)
-    /// Captures the next key press, with its modifiers, while `active`.
-    private struct KeyRecorder: NSViewRepresentable {
-        let active: Bool
-        let record: (String) -> Void
-        /// Only the Catalyst recorder grabs first responder, so only it can
-        /// lose it; here the monitor simply never uses this.
-        let cancel: () -> Void
-
-        final class Coordinator {
-            var monitor: Any?
-            var record: ((String) -> Void)?
-            deinit { if let monitor { NSEvent.removeMonitor(monitor) } }
-        }
-
-        func makeCoordinator() -> Coordinator { Coordinator() }
-        func makeNSView(context _: Context) -> NSView { NSView() }
-
-        func updateNSView(_: NSView, context: Context) {
-            let coordinator = context.coordinator
-            coordinator.record = record
-            if active, coordinator.monitor == nil {
-                coordinator.monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak coordinator] event in
-                    guard let coordinator, let step = Self.step(for: event) else { return event }
-                    coordinator.record?(step)
-                    if let monitor = coordinator.monitor { NSEvent.removeMonitor(monitor) }
-                    coordinator.monitor = nil
-                    return nil
-                }
-            } else if !active, let monitor = coordinator.monitor {
-                NSEvent.removeMonitor(monitor)
-                coordinator.monitor = nil
-            }
-        }
-
-        private static let specialKeys: [UInt16: String] = [
-            36: "enter", 48: "tab", 49: "space", 51: "backspace", 53: "escape", 117: "delete",
-            115: "home", 119: "end", 116: "page_up", 121: "page_down",
-            123: "arrow_left", 124: "arrow_right", 125: "arrow_down", 126: "arrow_up",
-            122: "f1", 120: "f2", 99: "f3", 118: "f4", 96: "f5", 97: "f6", 98: "f7", 100: "f8",
-            101: "f9", 109: "f10", 103: "f11", 111: "f12",
-        ]
-
-        private static func step(for event: NSEvent) -> String? {
-            let flags = event.modifierFlags
-            var mods: [String] = []
-            if flags.contains(.control) { mods.append("ctrl") }
-            if flags.contains(.option) { mods.append("alt") }
-            if flags.contains(.shift) { mods.append("shift") }
-            if flags.contains(.command) { mods.append("super") }
-            let key: String
-            if let special = specialKeys[event.keyCode] {
-                key = special
-            } else if let character = event.characters(byApplyingModifiers: [])?.lowercased(), character.unicodeScalars.count == 1 {
-                key = character
-            } else {
-                return nil
-            }
-            return (mods.sorted() + [key]).joined(separator: "+")
-        }
-    }
-#elseif targetEnvironment(macCatalyst)
-    import UIKit
-
-    /// Captures the next key press, with its modifiers, while `active`.
-    private struct KeyRecorder: UIViewRepresentable {
-        let active: Bool
-        let record: (String) -> Void
-        let cancel: () -> Void
-
-        final class Catcher: UIView {
-            var record: ((String) -> Void)?
-            var cancelled: (() -> Void)?
-            /// Mirrors `active` so a queued focus grab dies once recording ended.
-            var armed = false
-            override var canBecomeFirstResponder: Bool { true }
-
-            override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
-                for press in presses {
-                    if let key = press.key, let step = KeyRecorder.step(for: key) {
-                        record?(step)
-                        return
-                    }
-                }
-                // A modifier on its own: keep waiting for the key.
-            }
-
-            override func resignFirstResponder() -> Bool {
-                let resigned = super.resignFirstResponder()
-                // A tap into another field ends the recording like Cancel
-                // instead of the next body pass grabbing the focus back.
-                if resigned { DispatchQueue.main.async { self.cancelled?() } }
-                return resigned
-            }
-        }
-
-        func makeUIView(context _: Context) -> Catcher { Catcher() }
-
-        func updateUIView(_ view: Catcher, context _: Context) {
-            view.record = record
-            view.cancelled = cancel
-            view.armed = active
-            if active, !view.isFirstResponder {
-                DispatchQueue.main.async { if view.armed { view.becomeFirstResponder() } }
-            } else if !active, view.isFirstResponder {
-                _ = view.resignFirstResponder()
-            }
-        }
-
-        private static let specialKeys: [UIKeyboardHIDUsage: String] = [
-            .keyboardReturnOrEnter: "enter", .keyboardTab: "tab", .keyboardSpacebar: "space",
-            .keyboardDeleteOrBackspace: "backspace", .keyboardEscape: "escape", .keyboardDeleteForward: "delete",
-            .keyboardHome: "home", .keyboardEnd: "end", .keyboardPageUp: "page_up", .keyboardPageDown: "page_down",
-            .keyboardLeftArrow: "arrow_left", .keyboardRightArrow: "arrow_right",
-            .keyboardDownArrow: "arrow_down", .keyboardUpArrow: "arrow_up",
-            .keyboardF1: "f1", .keyboardF2: "f2", .keyboardF3: "f3", .keyboardF4: "f4", .keyboardF5: "f5",
-            .keyboardF6: "f6", .keyboardF7: "f7", .keyboardF8: "f8", .keyboardF9: "f9", .keyboardF10: "f10",
-            .keyboardF11: "f11", .keyboardF12: "f12",
-        ]
-
-        /// The unshifted character of the keys whose shifted one differs.
-        private static let unshifted: [UIKeyboardHIDUsage: String] = [
-            .keyboard1: "1", .keyboard2: "2", .keyboard3: "3", .keyboard4: "4", .keyboard5: "5",
-            .keyboard6: "6", .keyboard7: "7", .keyboard8: "8", .keyboard9: "9", .keyboard0: "0",
-            .keyboardHyphen: "-", .keyboardEqualSign: "=", .keyboardOpenBracket: "[", .keyboardCloseBracket: "]",
-            .keyboardBackslash: "\\", .keyboardSemicolon: ";", .keyboardQuote: "'", .keyboardGraveAccentAndTilde: "`",
-            .keyboardComma: ",", .keyboardPeriod: ".", .keyboardSlash: "/",
-        ]
-
-        fileprivate static func step(for key: UIKey) -> String? {
-            let flags = key.modifierFlags
-            var mods: [String] = []
-            if flags.contains(.control) { mods.append("ctrl") }
-            if flags.contains(.alternate) { mods.append("alt") }
-            if flags.contains(.shift) { mods.append("shift") }
-            if flags.contains(.command) { mods.append("super") }
-            let name: String
-            if let special = specialKeys[key.keyCode] {
-                name = special
-            } else if flags.contains(.shift) || flags.contains(.alternate), let plain = unshifted[key.keyCode] {
-                name = plain
-            } else {
-                let character = key.charactersIgnoringModifiers.lowercased()
-                guard character.unicodeScalars.count == 1 else { return nil }
-                name = character
-            }
-            return (mods.sorted() + [name]).joined(separator: "+")
-        }
-    }
-#endif

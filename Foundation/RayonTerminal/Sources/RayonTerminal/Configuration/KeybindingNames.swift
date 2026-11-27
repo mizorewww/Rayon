@@ -117,19 +117,28 @@ enum KeybindingNames {
         ][value] ?? value.replacingOccurrences(of: "_", with: " ").capitalized
     }
 
-    /// Shell editing keys the defaults send as raw bytes, by what they do.
-    private static let knownSequences: [String: String] = [
-        "text:\\x01": String(localized: "Move to Start of Line", bundle: .module),
-        "text:\\x05": String(localized: "Move to End of Line", bundle: .module),
-        "text:\\x15": String(localized: "Delete to Start of Line", bundle: .module),
-        "text:\\x0b": String(localized: "Delete to End of Line", bundle: .module),
-        "text:\\x17": String(localized: "Delete Previous Word", bundle: .module),
-        "esc:b": String(localized: "Move Back a Word", bundle: .module),
-        "esc:f": String(localized: "Move Forward a Word", bundle: .module),
-        "esc:d": String(localized: "Delete Next Word", bundle: .module),
-        "jump_to_prompt:-1": String(localized: "Jump to Previous Prompt", bundle: .module),
-        "jump_to_prompt:1": String(localized: "Jump to Next Prompt", bundle: .module),
+    /// Shell editing keys the defaults send as raw bytes, by what they do;
+    /// the action menu offers them in this order.
+    static let lineEditingSequences: [(action: String, argument: String, title: String)] = [
+        ("text", "\\x01", String(localized: "Move to Start of Line", bundle: .module)),
+        ("text", "\\x05", String(localized: "Move to End of Line", bundle: .module)),
+        ("esc", "b", String(localized: "Move Back a Word", bundle: .module)),
+        ("esc", "f", String(localized: "Move Forward a Word", bundle: .module)),
+        ("text", "\\x15", String(localized: "Delete to Start of Line", bundle: .module)),
+        ("text", "\\x0b", String(localized: "Delete to End of Line", bundle: .module)),
+        ("text", "\\x17", String(localized: "Delete Previous Word", bundle: .module)),
+        ("esc", "d", String(localized: "Delete Next Word", bundle: .module)),
     ]
+
+    /// The menu section of `lineEditingSequences`.
+    static let lineEditing = String(localized: "Line Editing", bundle: .module)
+
+    private static let knownSequences: [String: String] = Dictionary(
+        uniqueKeysWithValues: lineEditingSequences.map { ("\($0.action):\($0.argument)", $0.title) } + [
+            ("jump_to_prompt:-1", String(localized: "Jump to Previous Prompt", bundle: .module)),
+            ("jump_to_prompt:1", String(localized: "Jump to Next Prompt", bundle: .module)),
+        ]
+    )
 
     /// "Make Text Bigger (2 pt)" for a binding with an argument.
     static func summary(_ binding: Keybinding) -> String {
