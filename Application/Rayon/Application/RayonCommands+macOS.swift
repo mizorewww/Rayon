@@ -71,8 +71,7 @@
                 Indicator.confirm(
                     message: "Rayon \(package.version) is available",
                     informative: "You are running version \(manager.currentVersion).",
-                    confirmTitle: "Download",
-                    always: true
+                    confirmTitle: "Download"
                 ) { download in
                     if download { NSWorkspace.shared.open(package.downloadURL) }
                 }

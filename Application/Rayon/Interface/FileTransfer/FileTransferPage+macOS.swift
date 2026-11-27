@@ -609,7 +609,7 @@
                         : "A transfer is still running and will be interrupted.",
                     confirmTitle: unsaved ? "Discard Changes" : "Close",
                     destructive: true,
-                    always: unsaved
+                    skippable: !unsaved
                 ) { confirmed in
                     if confirmed { FileTransferManager.shared.end(for: context.id) }
                 }

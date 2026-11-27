@@ -141,7 +141,8 @@
             if !another, TerminalManager.shared.sessionContexts.contains(where: { $0.machine.id == machine }) {
                 Indicator.confirm(
                     message: "\(object.name) already has a terminal open",
-                    confirmTitle: "Open Another"
+                    confirmTitle: "Open Another",
+                    skippable: true
                 ) { confirmed in
                     if confirmed { MainActor.assumeIsolated { pick() } }
                 }

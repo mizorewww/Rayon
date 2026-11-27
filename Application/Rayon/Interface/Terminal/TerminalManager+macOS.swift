@@ -18,7 +18,8 @@
             if index != nil, !force {
                 Indicator.confirm(
                     message: "\(machine.name) already has a terminal open",
-                    confirmTitle: "Open Another"
+                    confirmTitle: "Open Another",
+                    skippable: true
                 ) { confirmed in
                     if confirmed {
                         MainActor.assumeIsolated {

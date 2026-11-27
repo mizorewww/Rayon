@@ -23,7 +23,8 @@ enum TerminalSessionActions {
             message: "Close this terminal tab?",
             informative: informative ?? "Its session on \(context.displayName) ends.",
             confirmTitle: "Close Tab",
-            destructive: true
+            destructive: true,
+            skippable: true
         ) { confirmed in
             if confirmed { MainActor.assumeIsolated { perform() } }
         }

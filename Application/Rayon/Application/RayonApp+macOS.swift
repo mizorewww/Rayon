@@ -203,7 +203,7 @@
                 informative: consequences.compactMap { $0 }.joined(separator: " "),
                 confirmTitle: unsaved ? "Discard Changes and Quit" : "Quit",
                 destructive: true,
-                always: unsaved
+                skippable: !unsaved
             ) { confirmed in
                 MainActor.assumeIsolated {
                     self.quitAsked = false

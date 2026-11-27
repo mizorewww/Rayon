@@ -62,7 +62,8 @@
                         Indicator.confirm(
                             message: "Stop running \(snippet.name)?",
                             confirmTitle: "Stop and Close",
-                            destructive: true
+                            destructive: true,
+                            skippable: true
                         ) { confirmed in
                             guard confirmed else { return }
                             context.stopAll()

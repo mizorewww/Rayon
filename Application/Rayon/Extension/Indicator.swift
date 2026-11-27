@@ -48,17 +48,19 @@ enum Indicator {
 
     /// Asks before an action: the title names the thing, the message says the
     /// consequence, the confirming button says the verb.
-    /// - Parameter always: ask even when confirmations are turned off, for
-    ///   losing unsaved work.
+    /// - Parameter skippable: a session prompt (closing or stopping a session,
+    ///   opening another to the same server, quitting), which "Ask before
+    ///   closing a session" turns off. Every other confirmation, a delete
+    ///   above all, always asks.
     static func confirm(
         message: String,
         informative: String? = nil,
         confirmTitle: String = "Continue",
         destructive: Bool = false,
-        always: Bool = false,
+        skippable: Bool = false,
         confirmation: @escaping (Bool) -> Void
     ) {
-        if !AppSettings.confirmsClosingSession.value, !always {
+        if skippable, !AppSettings.confirmsClosingSession.value {
             confirmation(true)
             return
         }

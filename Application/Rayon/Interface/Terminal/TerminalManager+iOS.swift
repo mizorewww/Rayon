@@ -12,7 +12,8 @@
             if !force {
                 for terminal in terminals where terminal.machine.id == machineId {
                     Indicator.confirm(
-                        message: "Another terminal for this machine is already running"
+                        message: "Another terminal for this machine is already running",
+                        skippable: true
                     ) { confirmed in
                         guard confirmed else { return }
                         MainActor.assumeIsolated {
@@ -33,7 +34,8 @@
             if !force {
                 for terminal in terminals where terminal.command == command {
                     Indicator.confirm(
-                        message: "Another terminal for this command is already running"
+                        message: "Another terminal for this command is already running",
+                        skippable: true
                     ) { confirmed in
                         guard confirmed else { return }
                         MainActor.assumeIsolated {
