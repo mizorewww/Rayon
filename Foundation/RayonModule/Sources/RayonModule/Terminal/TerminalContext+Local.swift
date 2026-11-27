@@ -58,11 +58,21 @@
                 self?.uuWakeSemaphore.signal()
             }
 
+            // The shell's exit ends the tab even while a process it left
+            // behind keeps the pseudo-terminal open.
+            let exit = DispatchSource.makeProcessSource(identifier: pid, eventMask: .exit, queue: .global(qos: .utility))
+            exit.setEventHandler { [weak self] in
+                finished.signal()
+                self?.uuWakeSemaphore.signal()
+            }
+            exit.resume()
+
+            // Typing, a resize, closing the tab and the shell ending each
+            // signal the semaphore; nothing else needs a look.
             var lastSize = initial
-            var exited = false
             while !closed {
                 if finished.wait(timeout: .now()) == .success { break }
-                _ = uuWakeSemaphore.wait(timeout: .now() + 0.5)
+                uuWakeSemaphore.wait()
                 if finished.wait(timeout: .now()) == .success || closed { break }
 
                 let currentSize = terminalSize
@@ -76,17 +86,15 @@
 
                 let typed = getBuffer()
                 if !typed.isEmpty { io.send(Data(typed.utf8)) }
-
-                var status: Int32 = 0
-                if waitpid(pid, &status, WNOHANG) == pid {
-                    exited = true
-                    break
-                }
             }
 
+            exit.cancel()
             io.close()
-            // A reaped pid may belong to another process already.
-            if !exited { LocalPseudoTerminal.hangUp(pid) }
+            // Reaps a shell that exited; one still running is hung up. Only
+            // an unreaped pid is signalled: a reaped one may belong to
+            // another process already.
+            var status: Int32 = 0
+            if waitpid(pid, &status, WNOHANG) == 0 { LocalPseudoTerminal.hangUp(pid) }
         }
     }
 #endif
