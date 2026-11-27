@@ -2,23 +2,17 @@
 //  PortForwardView+macOS.swift
 //  Rayon
 //
-//  Forwards: orientation, bind, through server, target, status and an on/off switch.
+//  Forwards in a native Table: orientation, bind, through server, target,
+//  status and an on/off switch.
 //
 
 #if os(macOS)
     import RayonModule
     import SwiftUI
 
-    /// Header and rows share these, so the columns line up.
-    private enum ForwardColumns {
-        static let orientation: CGFloat = 115
-        static let bind: CGFloat = 80
-        static let status: CGFloat = 95
-        static let toggle: CGFloat = 52
-    }
-
     struct PortForwardView: View {
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
         @ObservedObject var backend = PortForwardBackend.shared
 
         @State private var searchText = ""
@@ -44,6 +38,7 @@
 
         var body: some View {
             PageScaffold(
+                scrolls: false,
                 search: $searchText,
                 searchPrompt: "Search forwards",
                 primary: ToolbarAction("New Port Forward", systemImage: "plus", primary: true) {
@@ -86,110 +81,81 @@
         }
 
         var table: some View {
-            let hasDanger = filtered.contains {
-                let running = backend.sessionExists(withPortForwardID: $0.id)
-                return PortForwardPresentation(state: backend.lastStatus[$0.id], running: running).status == .danger
-            }
-            return VStack(spacing: 0) {
-                HStack(spacing: 0) {
-                    TableHeaderLabel("Orientation").frame(width: ForwardColumns.orientation)
-                    TableHeaderLabel("Bind").frame(width: ForwardColumns.bind)
-                    TableHeaderLabel("Through").frame(maxWidth: .infinity)
-                    TableHeaderLabel("Target").frame(maxWidth: .infinity)
-                    if hasDanger {
-                        Color.clear.frame(width: ForwardColumns.status, height: 1)
-                    }
-                    Color.clear.frame(width: ForwardColumns.toggle, height: 1)
+            Table(filtered, selection: $selection) {
+                TableColumn("Orientation") { forward in
+                    RXTag(forward.forwardOrientation.label)
                 }
-                .padding(.horizontal, RX.Space.s3)
-                .frame(height: RX.tableHeaderHeight)
-                Hairline()
-                ForEach(Array(filtered.enumerated()), id: \.element.id) { index, forward in
-                    PortForwardRow(forward: forward, showStatusColumn: hasDanger, selected: selection == forward.id) {
-                        selection = forward.id
-                    } edit: {
-                        editor = EditorTarget(forward: forward.id)
-                    }
-                    .rxRise(index)
-                    .transition(.opacity)
+                .width(min: 90, ideal: 115)
+                TableColumn("Bind") { forward in
+                    Text(verbatim: ":\(forward.bindPort)")
+                        .font(.rxCode)
                 }
-            }
-            .animation(.rxMove, value: filtered.map(\.id))
-            .rxCard(padding: RX.Space.s2)
-        }
-    }
-
-    private struct PortForwardRow: View {
-        let forward: RDPortForward
-        let showStatusColumn: Bool
-        let selected: Bool
-        let select: () -> Void
-        let edit: () -> Void
-
-        @EnvironmentObject var store: RayonStore
-        @AppSetting(AppSettings.serverRedaction) private var redaction
-        @ObservedObject var backend = PortForwardBackend.shared
-        @State private var hovered = false
-
-        var running: Bool { backend.sessionExists(withPortForwardID: forward.id) }
-
-        var body: some View {
-            let status = PortForwardPresentation(state: backend.lastStatus[forward.id], running: running)
-            HStack(spacing: 0) {
-                RXTag(forward.forwardOrientation.label)
-                    .frame(width: ForwardColumns.orientation, alignment: .leading)
-                Text(verbatim: ":\(forward.bindPort)")
-                    .font(.rxCode)
-                    .foregroundStyle(.rxInk)
-                    .frame(width: ForwardColumns.bind, alignment: .leading)
-                RedactableText(forward.getMachineName() ?? "No server", redacted: redaction == .all)
-                    .font(.rxBody)
-                    .foregroundStyle(forward.usingMachine == nil ? Color.rxInkSecondary : Color.rxInk)
-                    .lineLimit(1)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Text(verbatim: forward.targetLabel)
-                    .font(.rxCode)
-                    .foregroundStyle(forward.forwardOrientation == .dynamicSOCKS ? Color.rxInkSecondary : Color.rxInk)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                if showStatusColumn {
-                    Text(status.status == .danger ? status.text : "")
-                        .font(.rxBody)
-                        .foregroundStyle(.rxDanger)
+                .width(min: 60, ideal: 80)
+                TableColumn("Through") { forward in
+                    RedactableText(forward.getMachineName() ?? "No server", redacted: redaction == .all)
+                        .foregroundStyle(forward.usingMachine == nil ? Color.rxInkSecondary : Color.rxInk)
                         .lineLimit(1)
-                        .frame(width: ForwardColumns.status, alignment: .leading)
                 }
-                Toggle("Running", isOn: Binding(get: { running }, set: { on in
-                    if on {
-                        backend.createSession(withPortForwardID: forward.id)
-                    } else {
-                        backend.endSession(withPortForwardID: forward.id)
+                TableColumn("Target") { forward in
+                    Text(verbatim: forward.targetLabel)
+                        .font(.rxCode)
+                        .foregroundStyle(forward.forwardOrientation == .dynamicSOCKS ? Color.rxInkSecondary : Color.rxInk)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+                TableColumn("Status") { forward in
+                    let status = presentation(forward)
+                    Label {
+                        Text(status.text)
+                            .foregroundStyle(status.status == .danger ? Color.rxDanger : Color.rxInkSecondary)
+                    } icon: {
+                        StatusDot(status.status, size: .small)
                     }
-                }))
-                .labelsHidden()
-                .rxSwitchToggle()
-                .controlSize(.small)
-                .tint(.rxAccent)
-                .disabled(!forward.isValid())
-                .help(forward.isValid() ? (running ? "Stop" : "Start") : "Incomplete")
-                .frame(width: ForwardColumns.toggle, alignment: .trailing)
+                }
+                .width(min: 90, ideal: 120)
+                TableColumn("Running") { forward in
+                    runningToggle(forward)
+                }
+                .width(52)
             }
-            .padding(.horizontal, RX.Space.s3)
-            .frame(height: RX.tableRowHeight)
-            .rxRowBackground(selected: selected, hovered: hovered)
-            .contentShape(Rectangle())
-            .onHover { hovered = $0 }
-            .gesture(TapGesture(count: 2).onEnded { if !running { edit() } })
-            .simultaneousGesture(TapGesture(count: 1).onEnded(select))
-            .contextMenu {
-                Button("Edit…", action: edit).disabled(running)
-                Button("Duplicate") { PortForwardActions.duplicate(forward.id) }
-                Button("Copy SSH Command") { Pasteboard.copy(forward.getCommand() ?? "") }
-                    .disabled(forward.getCommand() == nil)
-                Divider()
-                Button("Delete…", role: .destructive) { PortForwardActions.delete(forward.id) }
+            .contextMenu(forSelectionType: RDPortForward.ID.self) { chosen in
+                if let forward = chosen.first.flatMap({ store.portForward($0) }) { menu(for: forward) }
+            } primaryAction: { chosen in
+                if let id = chosen.first, !backend.sessionExists(withPortForwardID: id) {
+                    editor = EditorTarget(forward: id)
+                }
             }
+        }
+
+        func presentation(_ forward: RDPortForward) -> PortForwardPresentation {
+            PortForwardPresentation(state: backend.lastStatus[forward.id], running: backend.sessionExists(withPortForwardID: forward.id))
+        }
+
+        func runningToggle(_ forward: RDPortForward) -> some View {
+            let running = backend.sessionExists(withPortForwardID: forward.id)
+            return Toggle("Running", isOn: Binding(get: { running }, set: { on in
+                if on {
+                    backend.createSession(withPortForwardID: forward.id)
+                } else {
+                    backend.endSession(withPortForwardID: forward.id)
+                }
+            }))
+            .labelsHidden()
+            .rxSwitchToggle()
+            .controlSize(.small)
+            .tint(.rxAccent)
+            .disabled(!forward.isValid())
+            .help(forward.isValid() ? (running ? "Stop" : "Start") : "Incomplete")
+        }
+
+        @ViewBuilder func menu(for forward: RDPortForward) -> some View {
+            Button("Edit…") { editor = EditorTarget(forward: forward.id) }
+                .disabled(backend.sessionExists(withPortForwardID: forward.id))
+            Button("Duplicate") { PortForwardActions.duplicate(forward.id) }
+            Button("Copy SSH Command") { Pasteboard.copy(forward.getCommand() ?? "") }
+                .disabled(forward.getCommand() == nil)
+            Divider()
+            Button("Delete…", role: .destructive) { PortForwardActions.delete(forward.id) }
         }
     }
 
