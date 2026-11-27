@@ -17,10 +17,15 @@ concurrency:
   group: ci-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+# The xcode-27 image, like release.yml: `swift test` with Xcode 26's SwiftPM
+# uses its native build system, which leaves the code editor's asset catalog
+# (CodeEditSymbols' Symbols.xcassets) unbuilt, so that package has no
+# Bundle.module and does not compile. Xcode 27's SwiftPM builds with Swift
+# Build, as Xcode does.
 jobs:
   build:
     name: Build (${{ matrix.platform }})
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 60
     strategy:
       fail-fast: false
@@ -38,7 +43,7 @@ jobs:
 
   test:
     name: Test
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
