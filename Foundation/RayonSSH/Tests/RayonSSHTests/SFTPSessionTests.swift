@@ -58,4 +58,26 @@ final class SFTPSessionTests: XCTestCase {
         XCTAssertEqual(tree.openedFolders, ["/home/sub"])
         XCTAssertEqual(tree.removedPaths, ["/home/sub/a.txt", "/home/sub"])
     }
+
+    /// A server's listing decides the names a download writes: one that
+    /// lists "../escaped" or "a/b" must not reach outside the folder the
+    /// download goes to (CVE-2019-6111).
+    func testADownloadStaysInsideItsFolder() async throws {
+        let tree = FixedTreeSFTP([
+            "/srv": [("../escaped", "evil"), ("a/b", "evil"), ("", "evil"), (".", nil), ("..", nil), ("kept.txt", "kept")],
+        ])
+        let scratch = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: scratch, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: scratch) }
+        let destination = scratch.appendingPathComponent("srv")
+        try await withSFTP(tree) { sftp in
+            let names = try await sftp.entries(at: "/srv").map(\.name)
+            XCTAssertEqual(names, ["kept.txt"])
+            try await sftp.download("/srv", to: destination) { _ in }
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: scratch.appendingPathComponent("escaped").path), "wrote outside the folder")
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: scratch.path), ["srv"])
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: destination.path), ["kept.txt"])
+        XCTAssertEqual(try String(contentsOf: destination.appendingPathComponent("kept.txt"), encoding: .utf8), "kept")
+    }
 }

@@ -96,11 +96,13 @@ public struct SFTPSession: Sendable {
         return SSHTransport.describe(error)
     }
 
-    /// The entries of a directory, without "." and "..".
+    /// The entries of a directory, without "." and "..", and without
+    /// names no file can have: a server that lists "../../.zshrc" would
+    /// have a download write outside the folder it goes to (CVE-2019-6111).
     public func entries(at path: String) async throws -> [SFTPEntry] {
         try await client.listDirectory(atPath: path)
             .flatMap(\.components)
-            .filter { $0.filename != "." && $0.filename != ".." }
+            .filter { !$0.filename.isEmpty && $0.filename != "." && $0.filename != ".." && !$0.filename.contains("/") }
             .map { SFTPEntry(name: $0.filename, attributes: $0.attributes) }
     }
 
