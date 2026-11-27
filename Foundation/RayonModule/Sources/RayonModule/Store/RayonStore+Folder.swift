@@ -56,11 +56,10 @@ public extension RayonStore {
     @discardableResult
     func renameFolder(_ id: RDFolder.ID, to newName: String) -> Bool {
         let name = newName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty, var folder = folder(id) else { return false }
+        guard !name.isEmpty, let folder = folder(id) else { return false }
         if name == folder.name { return true }
         guard self.folder(named: name) == nil else { return false }
-        folder.name = name
-        return save(folder)
+        return updateFolder(folder.id) { $0.name = name } != nil
     }
 
     /// Removes a folder. Servers pulled from an account go with it; every
@@ -76,9 +75,7 @@ public extension RayonStore {
     /// Puts servers in a folder (nil is the default one).
     func moveServers(_ ids: [RDMachine.ID], toFolder folderId: RDFolder.ID?) {
         for id in ids {
-            guard var machine = machine(id), machine.folderId != folderId else { continue }
-            machine.folderId = folderId
-            save(machine)
+            updateMachine(id) { $0.folderId = folderId }
         }
     }
 }

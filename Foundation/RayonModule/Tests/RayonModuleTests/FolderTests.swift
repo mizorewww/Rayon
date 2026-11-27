@@ -27,6 +27,39 @@ final class FolderTests: XCTestCase {
         return machine
     }
 
+    /// Changing one field (a server's folder, a folder's name, when an
+    /// identity was used) changes it on the record as saved now: a change
+    /// another device made, merged after the store last read it, stays.
+    func testOneFieldChangesKeepWhatAnotherDeviceChanged() throws {
+        let folder = store.createFolder(named: "prod")
+        let machine = server("web")
+        let identity = RDIdentity(username: "root", password: "pw")
+        store.save(identity)
+
+        func remoteEdit<T: StoredRecord>(_ record: T, _ change: (inout T) -> Void) throws {
+            var remote = try XCTUnwrap(test.storage.record(T.self, id: record.id))
+            change(&remote)
+            remote.modified = remote.modified.addingTimeInterval(60)
+            XCTAssertEqual(try test.storage.mergeRemote(remote), .tookRemote)
+        }
+        try remoteEdit(machine) { $0.comment = "edited there" }
+        try remoteEdit(folder) { $0.uuRemoteUserID = "account" }
+        try remoteEdit(identity) { $0.comment = "edited there" }
+
+        store.moveServers([machine.id], toFolder: folder.id)
+        XCTAssertTrue(store.renameFolder(folder.id, to: "production"))
+        store.noteIdentityUsed(identity.id)
+
+        let savedMachine = try XCTUnwrap(test.storage.record(RDMachine.self, id: machine.id))
+        XCTAssertEqual(savedMachine.folderId, folder.id)
+        XCTAssertEqual(savedMachine.comment, "edited there")
+        XCTAssertEqual(store.machine(machine.id), savedMachine)
+        let savedFolder = try XCTUnwrap(test.storage.record(RDFolder.self, id: folder.id))
+        XCTAssertEqual(savedFolder.name, "production")
+        XCTAssertEqual(savedFolder.uuRemoteUserID, "account")
+        XCTAssertEqual(test.storage.record(RDIdentity.self, id: identity.id)?.comment, "edited there")
+    }
+
     func testFoldersAreSortedAndEmptyFoldersStay() {
         let prod = store.createFolder(named: "prod")
         _ = server("a", folder: prod)

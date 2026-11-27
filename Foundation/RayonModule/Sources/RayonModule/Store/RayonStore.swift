@@ -372,9 +372,32 @@ public extension RayonStore {
 
     /// Records that the identity signed a session in, at most once a minute.
     func noteIdentityUsed(_ id: RDIdentity.ID, at date: Date = Date()) {
-        guard var identity = identity(id), abs(identity.lastRecentUsed.timeIntervalSince(date)) > 60 else { return }
-        identity.lastRecentUsed = date
-        save(identity)
+        updateIdentity(id) { identity in
+            guard abs(identity.lastRecentUsed.timeIntervalSince(date)) > 60 else { return }
+            identity.lastRecentUsed = date
+        }
+    }
+
+    /// Changes some fields of the server as it is saved now: the copy here
+    /// may be older than a change another device made, which saving it
+    /// would undo. The change must not touch its jumps, which `save`
+    /// checks. Returns the server as saved.
+    @discardableResult
+    func updateMachine(_ id: RDMachine.ID, _ change: (inout RDMachine) -> Void) -> RDMachine? {
+        update(RDMachine.self, id: id, into: \.machines, change)
+    }
+
+    /// `updateMachine`, for an identity.
+    @discardableResult
+    func updateIdentity(_ id: RDIdentity.ID, _ change: (inout RDIdentity) -> Void) -> RDIdentity? {
+        update(RDIdentity.self, id: id, into: \.identities, change)
+    }
+
+    /// `updateMachine`, for a folder.
+    @discardableResult
+    func updateFolder(_ id: RDFolder.ID, _ change: (inout RDFolder) -> Void) -> RDFolder? {
+        defer { folders = Self.sorted(folders) }
+        return update(RDFolder.self, id: id, into: \.folders, change)
     }
 }
 
@@ -392,6 +415,24 @@ extension RayonStore {
         } catch {
             Logger.database.errorFile("saving \(T.tableName) \(record.id) failed: \(error.localizedDescription)")
             return false
+        }
+    }
+
+    func update<T: StoredRecord>(
+        _: T.Type,
+        id: UUID,
+        into path: ReferenceWritableKeyPath<RayonStore, [T]>,
+        _ change: (inout T) -> Void
+    ) -> T? {
+        do {
+            guard let saved = try storage.update(T.self, id: id, change) else { return nil }
+            if let index = self[keyPath: path].firstIndex(where: { $0.id == saved.id }) {
+                self[keyPath: path][index] = saved
+            }
+            return saved
+        } catch {
+            Logger.database.errorFile("updating \(T.tableName) \(id) failed: \(error.localizedDescription)")
+            return nil
         }
     }
 

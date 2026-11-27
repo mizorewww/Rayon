@@ -229,6 +229,22 @@ public extension RayonStorage {
         return record
     }
 
+    /// Changes the record as the database has it now, not as a copy read
+    /// earlier has it: a change merged from another device in between is
+    /// kept, where saving the copy would undo it. Returns the record as
+    /// written; nil when there is none.
+    @discardableResult
+    func update<T: StoredRecord>(_: T.Type, id: UUID, _ change: (inout T) throws -> Void) throws -> T? {
+        try requireOpen()
+        return try writes.withLock { _ in
+            guard let current = row(T.self, id: id).map(withSecrets), !current.removed else { return nil }
+            var record = current
+            try change(&record)
+            guard record != current else { return current }
+            return try saveLocked(record, changed: nil)
+        }
+    }
+
     /// A copy of a record from elsewhere whose secrets did not come with it
     /// (a backup made without them), new here: they are missing, not empty.
     /// The keychain is left alone and the record reads as unread, so it is
