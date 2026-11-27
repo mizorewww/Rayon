@@ -71,9 +71,7 @@ enum ServerActions {
     /// installs it if it is missing (say, after ~/.terminfo was cleared).
     @MainActor
     static func reinstallTerminfo(_ machine: RDMachine.ID) {
-        guard var read = RayonStore.shared.machine(machine) else { return }
-        read.forgetGhosttyTerminfo()
-        RayonStore.shared.save(read)
+        RayonStore.shared.updateMachine(machine) { $0.forgetGhosttyTerminfo() }
     }
 
     static func forgetHostKey(_ machine: RDMachine.ID) {

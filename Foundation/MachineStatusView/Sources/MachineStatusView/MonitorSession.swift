@@ -291,10 +291,10 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
     /// Stamps the server's banner and last connection once per connection,
     /// not every round: each write republishes the whole store.
     private func recordConnection(banner: String) {
-        guard var read = RayonStore.shared.machine(machine.id) else { return }
-        if !banner.isEmpty { read.lastBanner = banner }
-        read.lastConnection = Date()
-        RayonStore.shared.save(read)
+        RayonStore.shared.updateMachine(machine.id) { read in
+            if !banner.isEmpty { read.lastBanner = banner }
+            read.lastConnection = Date()
+        }
     }
 
     public func reconnect() {

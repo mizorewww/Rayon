@@ -298,11 +298,11 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
     }
 
     private func save(_ settings: RemoteDesktopStreamSettings) {
-        guard var record = store.machine(machine.id) else { return }
-        record.uuFPS = settings.fps
-        record.uuQuality = settings.quality
-        record.uuTrueColor = settings.trueColor
-        store.save(record)
+        store.updateMachine(machine.id) { record in
+            record.uuFPS = settings.fps
+            record.uuQuality = settings.quality
+            record.uuTrueColor = settings.trueColor
+        }
     }
 
     /// The fastest the screen this runs on refreshes.

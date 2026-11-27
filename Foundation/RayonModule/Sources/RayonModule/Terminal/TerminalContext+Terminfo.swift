@@ -39,9 +39,10 @@ extension TerminalContext {
         guard remoteType == .machine else { return }
         let id = machine.id
         Task { @MainActor in
-            guard var saved = RayonStore.shared.machine(id), !saved.hasGhosttyTerminfo else { return }
-            saved.ghosttyTerminfoVersion = GhosttyTerminfo.version
-            RayonStore.shared.save(saved)
+            RayonStore.shared.updateMachine(id) { saved in
+                guard !saved.hasGhosttyTerminfo else { return }
+                saved.ghosttyTerminfoVersion = GhosttyTerminfo.version
+            }
         }
     }
 }

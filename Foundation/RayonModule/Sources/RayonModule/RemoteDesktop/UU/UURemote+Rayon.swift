@@ -51,7 +51,14 @@ public extension UURemoteAccount {
             ownDeviceID: credentials.deviceID,
             machines: store.machines
         )
-        changes.save.forEach { store.save($0) }
+        for machine in changes.save {
+            // One saved already follows its device as it is saved now.
+            if store.machine(machine.id) != nil, let device = devices.first(where: { $0.deviceID == machine.uuDeviceID }) {
+                store.updateMachine(machine.id) { UURemoteFolderSync.follow(device, in: &$0) }
+            } else {
+                store.save(machine)
+            }
+        }
         store.deleteMachines(changes.delete)
     }
 

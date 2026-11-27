@@ -73,10 +73,7 @@ public enum UURemoteFolderSync {
         for device in desktops {
             if var machine = machines.first(where: { $0.uuDeviceID == device.deviceID }) {
                 let before = machine
-                // The name follows the device's until the user gives it one.
-                let oldAlias = machine.uuDeviceAlias.isEmpty ? device.deviceID : machine.uuDeviceAlias
-                if machine.name == oldAlias, !device.alias.isEmpty { machine.name = device.alias }
-                machine.uuDeviceAlias = device.alias
+                follow(device, in: &machine)
                 if machine != before { save.append(machine) }
             } else {
                 save.append(makeMachine(for: device, folder: folder))
@@ -86,5 +83,13 @@ public enum UURemoteFolderSync {
             .filter { $0.folderId == folder && $0.uuManaged && !present.contains($0.uuDeviceID) }
             .map(\.id)
         return (save, delete)
+    }
+
+    /// The server takes the device's alias; its name follows the device's
+    /// until the user gives it one.
+    public static func follow(_ device: UUDeviceInfo, in machine: inout RDMachine) {
+        let oldAlias = machine.uuDeviceAlias.isEmpty ? device.deviceID : machine.uuDeviceAlias
+        if machine.name == oldAlias, !device.alias.isEmpty { machine.name = device.alias }
+        machine.uuDeviceAlias = device.alias
     }
 }

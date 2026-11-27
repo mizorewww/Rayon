@@ -293,9 +293,7 @@ open class TerminalContext: ObservableObject, Identifiable, Equatable, @unchecke
             let id = machine.id
             let banner = connection.serverVersion.isEmpty ? "No Banner" : connection.serverVersion
             Task { @MainActor in
-                guard var read = RayonStore.shared.machine(id), read.lastBanner != banner else { return }
-                read.lastBanner = banner
-                RayonStore.shared.save(read)
+                RayonStore.shared.updateMachine(id) { $0.lastBanner = banner }
             }
         }
 

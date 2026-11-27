@@ -31,7 +31,7 @@ public final class RemoteDesktopManager: ObservableObject {
         overrideProtocol: RDMachine.RemoteDesktopProtocolType? = nil
     ) -> RemoteDesktopSession? {
         let store = RayonStore.shared
-        guard var machine = store.machine(machineID) else { return nil }
+        guard let machine = store.machine(machineID) else { return nil }
         let type = overrideProtocol ?? machine.remoteDesktopProtocol
         if let existing = sessions.first(where: { $0.machine.id == machineID && $0.protocolType == type }) {
             return existing
@@ -39,8 +39,7 @@ public final class RemoteDesktopManager: ObservableObject {
         let session = RemoteDesktopSession(machine: machine, protocolType: type)
         sessions.append(session)
         session.connect()
-        machine.lastConnection = Date()
-        store.save(machine)
+        store.updateMachine(machineID) { $0.lastConnection = Date() }
         return session
     }
 

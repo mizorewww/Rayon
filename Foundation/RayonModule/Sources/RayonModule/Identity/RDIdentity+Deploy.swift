@@ -58,9 +58,8 @@ public enum PublicKeyDeployment {
     @MainActor
     public static func adopt(identity: RDIdentity.ID, on machines: [RDMachine.ID]) {
         for machineID in machines {
-            if var machine = RayonStore.shared.machine(machineID), machine.associatedIdentity == nil {
-                machine.associatedIdentity = identity
-                RayonStore.shared.save(machine)
+            RayonStore.shared.updateMachine(machineID) { machine in
+                if machine.associatedIdentity == nil { machine.associatedIdentity = identity }
             }
         }
     }
