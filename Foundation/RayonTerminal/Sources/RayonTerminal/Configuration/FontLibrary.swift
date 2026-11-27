@@ -5,23 +5,26 @@ import Foundation
 /// code serves macOS and iOS.
 @MainActor
 enum FontLibrary {
-    struct Face {
+    struct Face: Sendable {
         let family: String
         let style: String
         let postScriptName: String
         let monospaced: Bool
     }
 
-    struct Family: Identifiable, Hashable {
+    struct Family: Identifiable, Hashable, Sendable {
         var id: String { name }
         let name: String
         let monospaced: Bool
     }
 
-    static let faces: [Face] = {
+    /// Every face, by family. A static let is set up once, by whichever
+    /// thread asks first; `TerminalSettings.preload()` asks off the main
+    /// actor at launch, so Settings does not wait on CoreText.
+    nonisolated static let faces: [String: [Face]] = {
         let collection = CTFontCollectionCreateFromAvailableFonts(nil)
         let descriptors = CTFontCollectionCreateMatchingFontDescriptors(collection) as? [CTFontDescriptor] ?? []
-        return descriptors.compactMap { descriptor in
+        let faces = descriptors.compactMap { descriptor -> Face? in
             guard let family = CTFontDescriptorCopyAttribute(descriptor, kCTFontFamilyNameAttribute) as? String,
                   !family.hasPrefix("."),
                   let name = CTFontDescriptorCopyAttribute(descriptor, kCTFontNameAttribute) as? String
@@ -32,22 +35,19 @@ enum FontLibrary {
             let monospaced = symbolic & CTFontSymbolicTraits.traitMonoSpace.rawValue != 0
             return Face(family: family, style: style, postScriptName: name, monospaced: monospaced)
         }
+        return Dictionary(grouping: faces, by: \.family)
     }()
 
-    static let families: [Family] = {
-        var monospaced: [String: Bool] = [:]
-        for face in faces { monospaced[face.family] = (monospaced[face.family] ?? false) || face.monospaced }
-        return monospaced
-            .map { Family(name: $0.key, monospaced: $0.value) }
-            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-    }()
+    nonisolated static let families: [Family] = faces
+        .map { Family(name: $0.key, monospaced: $0.value.contains(where: \.monospaced)) }
+        .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
 
     static func isMonospaced(_ family: String) -> Bool {
-        families.first { $0.name == family }?.monospaced ?? false
+        faces[family]?.contains(where: \.monospaced) ?? false
     }
 
     static func members(of family: String) -> [Face] {
-        faces.filter { $0.family == family }
+        faces[family] ?? []
     }
 
     /// Style/feature/axis lookups are cached per family: editors ask for

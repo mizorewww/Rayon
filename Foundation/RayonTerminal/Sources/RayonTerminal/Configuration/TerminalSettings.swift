@@ -81,6 +81,15 @@ public final class TerminalSettings {
         countChanges()
     }
 
+    /// Reads the installed fonts and the themes off the main actor, so the
+    /// first visit to Settings does not wait on CoreText or decoding them.
+    public nonisolated static func preload() {
+        Task.detached(priority: .utility) {
+            _ = FontLibrary.families
+            _ = TerminalThemes.all
+        }
+    }
+
     private func countChanges() {
         var counts: [String: Int] = [:]
         for category in SettingsLayout.categories {

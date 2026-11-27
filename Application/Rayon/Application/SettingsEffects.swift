@@ -33,5 +33,6 @@ enum SettingsEffects {
         TerminalSettings.shared.onFontSizeChange = { size in
             AppSettings.terminalFontSize.set(Int(size.rounded()))
         }
+        TerminalSettings.preload()
     }
 }
