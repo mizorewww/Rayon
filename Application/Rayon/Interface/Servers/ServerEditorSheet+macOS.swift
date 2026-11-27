@@ -283,7 +283,8 @@
                     .labelsHidden()
                 }
             }
-            if draft.uuDeviceID.isEmpty {
+            // Typed in, or not on the account: the field stays while it is typed.
+            if !uuAccount.desktopDevices.contains(where: { $0.deviceID == draft.uuDeviceID }) {
                 HStack(alignment: .top, spacing: RX.Space.s4) {
                     RXField("Device ID") {
                         TextField("From the account's device list", text: $draft.uuDeviceID)
