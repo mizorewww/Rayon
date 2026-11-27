@@ -3,7 +3,8 @@
 //  Rayon
 //
 //  SFTP inside the main window: Back, Forward, Up, breadcrumb, Go to Folder, filter, Reload,
-//  New Folder, Upload, Download. Table: name, size, modified, permissions, owner.
+//  New Folder, Upload, Download. Table: name, size, modified, kind, permissions, owner,
+//  sorted by any of the first four; Download and Delete act on every chosen file.
 //  Transfer card with speed and Cancel. Drag files in to upload. Double-click a
 //  file to edit it.
 //
@@ -122,6 +123,8 @@
                 }
             }
             .focusedSceneValue(\.fileBrowserCommands, browser.commands)
+            // Edit › Delete… (⌘⌫) deletes the chosen files.
+            .focusedSceneValue(\.deleteSelection, browser.selection.isEmpty || !browser.ready ? nil : { browser.delete(browser.selectedFiles) })
             .sheet(item: $browser.prompt) { prompt in
                 FilePromptSheet(prompt: prompt, browser: browser) { browser.prompt = nil }
             }
