@@ -40,6 +40,9 @@ jobs:
       # No certificate on the runner: the Mac app is signed ad hoc, the iOS
       # app built for the simulator unsigned.
       - run: make build-${{ matrix.platform }}
+      # Keys missing from a catalog, untranslated keys and format mismatches;
+      # stale keys need both platforms' builds, so they are left to sync.
+      - run: make check-localization
 
   test:
     name: Test
