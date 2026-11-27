@@ -2610,22 +2610,6 @@
         }
       }
     },
-    "Could not add the server to the menu bar: its identity is missing" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "无法将服务器添加到菜单栏：缺少其身份"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "無法將伺服器新增到選單欄：缺少其身份"
-          }
-        }
-      }
-    },
     "Could not delete the data in iCloud: %@" : {
       "localizations" : {
         "zh-Hans" : {
@@ -11303,22 +11287,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "部署到 %lld 臺伺服器"
-          }
-        }
-      }
-    },
-    "To show a server in the menu bar, choose an identity for it first (Edit Server › Identity)" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "要在菜单栏中显示服务器，请先为它选择身份（编辑服务器 › 身份）"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "要在選單欄中顯示伺服器，請先為它選擇身份（編輯伺服器 › 身份）"
           }
         }
       }

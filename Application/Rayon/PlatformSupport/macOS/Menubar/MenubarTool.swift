@@ -42,16 +42,11 @@
                 fail("Could not add the server to the menu bar: its details are missing")
                 return
             }
-            guard machine.associatedIdentity != nil else {
-                fail("To show a server in the menu bar, choose an identity for it first (Edit Server › Identity)")
-                return
-            }
-            guard RayonStore.shared.associatedIdentity(for: machine) != nil else {
-                fail("Could not add the server to the menu bar: its identity is missing")
-                return
-            }
             // The monitor page's session when it is open: one connection per
-            // server, however many places show it.
+            // server, however many places show it. It signs in as the Monitor
+            // page does, with the server's identity or else the automatic
+            // ones, which is how a UU device signs in: it has no identity of
+            // its own. What fails to connect says so in the popover.
             guard let session = try? MonitorCenter.shared.hold(machine.id) else {
                 fail("Could not add the server to the menu bar: its details are missing")
                 return
