@@ -265,8 +265,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/mizorewww/UURemoteKit.git",
       "state" : {
-        "revision" : "2265a5b855254f82d07222e5269db1c406890427",
-        "version" : "0.3.0"
+        "revision" : "940182f6fd1e536633195c5ceafdcec6aafc256d",
+        "version" : "0.4.0"
       }
     },
     {
