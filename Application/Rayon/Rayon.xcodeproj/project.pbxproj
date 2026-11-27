@@ -21,7 +21,6 @@
 		126FF72D1892819D6034FD7A /* ConnectionSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8E247320B0E86BDCD94E59D /* ConnectionSettings.swift */; };
 		13B77D0A086020871DE1FFCF /* PickIdentityView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3D1C4C92513BF27ADBFEDA0 /* PickIdentityView+iOS.swift */; };
 		141B9A3D5BB5AB274C289C47 /* DataBackupSettings+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 223A263F84AFBF12F7AC4E89 /* DataBackupSettings+iOS.swift */; };
-		148859D9986F6A38CBD6F815 /* SheetPresenter+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB1CDB5A33CB5117A4A6D17F /* SheetPresenter+macOS.swift */; };
 		1D3D3FE1B2353A98278271B1 /* EditorPage+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = B11F79E80302AD81398C5EBD /* EditorPage+macOS.swift */; };
 		23BF21BC95FFA9650D516E06 /* ServerWorkspaceView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D0FC5306FDF184EE8C6DC9E /* ServerWorkspaceView+iOS.swift */; };
 		270027F48F064062933EE3E4 /* ContentView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = D39DB7FB8828DB64E12E7B66 /* ContentView+iOS.swift */; };
@@ -193,7 +192,6 @@
 		A7759F9D471435550D123D0F /* SettingsGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsGroup.swift; sourceTree = "<group>"; };
 		A7D9DB4080541BAAA9B3AD21 /* UURemoteSessionPickerView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UURemoteSessionPickerView+iOS.swift"; sourceTree = "<group>"; };
 		A891A8230F7E102E0E624E56 /* StatusItem+Loop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StatusItem+Loop.swift"; sourceTree = "<group>"; };
-		AB1CDB5A33CB5117A4A6D17F /* SheetPresenter+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SheetPresenter+macOS.swift"; sourceTree = "<group>"; };
 		B11F79E80302AD81398C5EBD /* EditorPage+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EditorPage+macOS.swift"; sourceTree = "<group>"; };
 		B24EC3D2BE3F2C512AF4CE33 /* RayonCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RayonCommands.swift; sourceTree = "<group>"; };
 		B32D984E65F989A5003BC29D /* HomeView+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HomeView+macOS.swift"; sourceTree = "<group>"; };
@@ -563,7 +561,6 @@
 				72D3BA0EADD0295E7594B69A /* OpenPanel+macOS.swift */,
 				46910F2B6D3EE880A8F2A142 /* Pasteboard.swift */,
 				942DABEC7925BEBD536CD478 /* RayonUtil+iOS.swift */,
-				AB1CDB5A33CB5117A4A6D17F /* SheetPresenter+macOS.swift */,
 				F303FA061D1A76E58FCA4BA2 /* View+iOS.swift */,
 			);
 			path = Extension;
@@ -755,7 +752,6 @@
 				28A01389C2F9BBBAFE054357 /* SettingsEffects.swift in Sources */,
 				E46BBE53C8F1CD032B053407 /* SettingsGroup.swift in Sources */,
 				58FB423B8D35371FB4369399 /* SettingsView.swift in Sources */,
-				148859D9986F6A38CBD6F815 /* SheetPresenter+macOS.swift in Sources */,
 				9CB17ACF582117F3C32A915B /* SidebarView+macOS.swift in Sources */,
 				048A7AD1861084413CA66F29 /* SnippetEditorSheet+macOS.swift in Sources */,
 				8CD6C64DC74A40DAB2D78A95 /* SnippetElementView+iOS.swift in Sources */,

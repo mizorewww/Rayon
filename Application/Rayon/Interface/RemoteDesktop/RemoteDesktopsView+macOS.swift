@@ -37,7 +37,7 @@
                 search: $searchText,
                 searchPrompt: "Search desktops",
                 primary: ToolbarAction("New Server", systemImage: "plus", primary: true) {
-                    AppRouter.shared.presentNewServer = true
+                    ServerActions.create()
                 }
             ) {
             } trailing: {
@@ -65,7 +65,7 @@
                     message: "Choose VNC or UU Remote under Remote Desktop when you edit a server.",
                     actionTitle: "New Server"
                 ) {
-                    AppRouter.shared.presentNewServer = true
+                    ServerActions.create()
                 }
                 .rxCard()
             } else if servers.isEmpty {

@@ -255,7 +255,7 @@
         private func splitWithServer() {
             let anchorID = context.id
             let current = context
-            SheetPresenter.present { dismiss in
+            AppRouter.shared.present { dismiss in
                 SplitWithServerSheet(current: current) { choice in
                     dismiss()
                     switch choice {
@@ -293,7 +293,7 @@
                 open(nil)
                 return
             }
-            SheetPresenter.present { dismiss in
+            AppRouter.shared.present { dismiss in
                 UURemoteSessionPickerSheet(machine: machine) { choice in
                     dismiss()
                     switch choice {

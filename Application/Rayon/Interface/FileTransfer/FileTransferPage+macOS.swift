@@ -398,7 +398,7 @@
         private static func handle(_ event: NSEvent, context: FileTransferContext) -> Bool {
             guard let window = event.window,
                   MainWindow.ordinaryWindows.contains(window),
-                  !RayonUtil.isShowingSheetOrModal
+                  !MainWindow.isShowingSheetOrModal
             else { return false }
             let back: Bool
             switch event.type {

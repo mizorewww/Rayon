@@ -124,7 +124,7 @@ struct RayonCommands: Commands {
     private func run(_ action: (() -> Void)?) -> () -> Void {
         {
             #if os(macOS)
-                if RayonUtil.isShowingSheetOrModal { return }
+                if MainWindow.isShowingSheetOrModal { return }
             #endif
             action?()
         }

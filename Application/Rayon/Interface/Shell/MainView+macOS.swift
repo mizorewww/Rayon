@@ -49,9 +49,12 @@
                 }
             }
             .animation(.easeOut(duration: 0.2), value: store.globalProgressInPresent)
-            .sheet(isPresented: $router.presentNewServer) {
-                ServerEditorSheet(machine: nil)
-                    .environmentObject(RayonStore.shared)
+            .sheet(item: $router.sheet) { sheet in
+                sheet.content {
+                    // A sheet that replaced this one stays up.
+                    if router.sheet?.id == sheet.id { router.sheet = nil }
+                }
+                .environmentObject(RayonStore.shared)
             }
             .sheet(isPresented: $openLicenseAgreement) {
                 AgreementSheet()

@@ -38,6 +38,15 @@
             }
         }
 
+        /// A sheet, a modal panel or an alert is up: the window's own
+        /// shortcuts wait for it.
+        @MainActor static var isShowingSheetOrModal: Bool {
+            if NSApp.modalWindow != nil { return true }
+            return ordinaryWindows.contains { window in
+                window.attachedSheet != nil || window.contentViewController?.presentedViewControllers?.isEmpty == false
+            }
+        }
+
         @MainActor static func show() {
             NSApp.setActivationPolicy(.regular)
             NSApp.activate(ignoringOtherApps: true)
@@ -134,14 +143,14 @@
                 NSApp.terminate(nil)
                 return true
             case "t":
-                if RayonUtil.isShowingSheetOrModal { return true }
+                if MainWindow.isShowingSheetOrModal { return true }
                 let window = event.window ?? NSApp.keyWindow
                 guard let window, MainWindow.ordinaryWindows.contains(window) else { return false }
                 if event.isARepeat { return true }
                 AppRouter.shared.newTerminal()
                 return true
             case "w":
-                if RayonUtil.isShowingSheetOrModal { return true }
+                if MainWindow.isShowingSheetOrModal { return true }
                 let window = event.window ?? NSApp.keyWindow
                 guard let window, MainWindow.ordinaryWindows.contains(window) else { return false }
                 if event.isARepeat { return true }
@@ -161,7 +170,7 @@
                 terminating = true
                 return .terminateNow
             }
-            if quitAsked, RayonUtil.isShowingSheetOrModal {
+            if quitAsked, MainWindow.isShowingSheetOrModal {
                 return .terminateCancel
             }
             quitAsked = false

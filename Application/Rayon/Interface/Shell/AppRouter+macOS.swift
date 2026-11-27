@@ -53,8 +53,10 @@
         /// The last page that is not a session; closing a session returns here.
         private(set) var lastPlace: Route = .home
         @Published var columnVisibility: NavigationSplitViewVisibility = .all
-        /// Presents the server editor for a new server from anywhere (menu, Dashboard, Servers).
-        @Published var presentNewServer = false
+        /// The sheet over the main window, asked for from anywhere: a menu,
+        /// a context menu, a command. Asking for another while one is up
+        /// replaces it.
+        @Published var sheet: WindowSheet?
         /// Settings category to show when Settings opens.
         /// Settings follows this itself, so a change of category does not go
         /// through every view that watches the router.
@@ -126,7 +128,7 @@
                 return
             }
             let pick = {
-                SheetPresenter.present { dismiss in
+                AppRouter.shared.present { dismiss in
                     UURemoteSessionPickerSheet(machine: object) { choice in
                         dismiss()
                         switch choice {
@@ -230,7 +232,7 @@
         /// Pick one or more servers, then open a terminal for each.
         @MainActor
         func openTerminals() {
-            ServerPickerPanel.present(
+            ServerPickerSheet.present(
                 title: "Open Terminals",
                 confirmTitle: "Open",
                 allowsMany: true
@@ -338,7 +340,7 @@
         /// or to the same Quick Connect command; elsewhere, the picker.
         @MainActor
         func newTerminal() {
-            guard !RayonUtil.isShowingSheetOrModal else { return }
+            guard !MainWindow.isShowingSheetOrModal else { return }
             switch owner(of: route) {
             case let .server(id):
                 openTerminal(machine: id, another: true)
@@ -356,7 +358,7 @@
         /// ⌘W: closes the session page in front, as a browser closes its tab.
         @MainActor
         func closeTabInFront() {
-            guard !RayonUtil.isShowingSheetOrModal else { return }
+            guard !MainWindow.isShowingSheetOrModal else { return }
             switch route {
             case .terminal:
                 if let terminal = terminalInFront { TerminalSessionActions.closeTab(terminal) }
@@ -377,10 +379,20 @@
             }
         }
 
+        /// Shows `content` as the main window's sheet; `dismiss` closes it.
+        func present<Content: View>(@ViewBuilder _ content: @escaping (_ dismiss: @escaping () -> Void) -> Content) {
+            sheet = WindowSheet { AnyView(content($0)) }
+        }
+
         func openSettings(_ category: String = SettingsCategory.general) {
             settingsSelection = category
             route = .settings
         }
+    }
+
+    struct WindowSheet: Identifiable {
+        let id = UUID()
+        let content: (_ dismiss: @escaping () -> Void) -> AnyView
     }
 
     /// What owns a group of session pages: a saved server, or one Quick Connect

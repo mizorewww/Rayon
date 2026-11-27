@@ -32,7 +32,7 @@
                 LabeledContent {
                     HStack {
                         Button("Export Backup…") {
-                            SheetPresenter.present { dismiss in
+                            AppRouter.shared.present { dismiss in
                                 BackupExportSheet { includeSecrets, password in
                                     dismiss()
                                     if let includeSecrets {

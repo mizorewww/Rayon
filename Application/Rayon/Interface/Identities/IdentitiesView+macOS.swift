@@ -185,7 +185,7 @@
                 Indicator.error("This identity has no public key to deploy.")
                 return
             }
-            ServerPickerPanel.present(
+            ServerPickerSheet.present(
                 title: "Deploy Public Key (ssh-copy-id)",
                 lead: "Appends this identity's public key to ~/.ssh/authorized_keys on the selected servers.",
                 confirmTitle: "Deploy",

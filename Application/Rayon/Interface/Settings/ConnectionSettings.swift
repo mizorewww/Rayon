@@ -112,7 +112,7 @@ struct MonitorSettings: View {
         }
 
         private func openAccountSheet() {
-            SheetPresenter.present { dismiss in
+            AppRouter.shared.present { dismiss in
                 UURemoteAccountSheet(onConnectDesktop: { machineID in
                     dismiss()
                     AppRouter.shared.openDesktop(machine: machineID)

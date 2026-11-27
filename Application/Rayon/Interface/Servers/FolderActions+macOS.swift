@@ -17,7 +17,7 @@
         @MainActor
         static func newFolder(moving servers: [RDMachine.ID] = []) {
             let store = RayonStore.shared
-            SheetPresenter.present { dismiss in
+            AppRouter.shared.present { dismiss in
                 FolderNameSheet(
                     title: "New Folder",
                     lead: "Name the folder.",
@@ -34,7 +34,7 @@
 
         @MainActor
         static func rename(_ name: String) {
-            SheetPresenter.present { dismiss in
+            AppRouter.shared.present { dismiss in
                 FolderNameSheet(
                     title: "Rename Folder",
                     lead: "The servers in it move with it.",
@@ -70,7 +70,7 @@
         /// folder of their own.
         @MainActor
         static func linkUURemote() {
-            SheetPresenter.present { dismiss in
+            AppRouter.shared.present { dismiss in
                 UURemoteAccountSheet(onConnectDesktop: { machineID in
                     dismiss()
                     AppRouter.shared.openDesktop(machine: machineID)

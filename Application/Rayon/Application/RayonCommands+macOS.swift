@@ -29,7 +29,7 @@
                     .keyboardShortcut(",", modifiers: .command)
             }
             CommandGroup(after: .newItem) {
-                Button("New Server…") { AppRouter.shared.presentNewServer = true }
+                Button("New Server…") { ServerActions.create() }
                     .keyboardShortcut("n", modifiers: [.command, .shift])
                 Button("New Terminal") { AppRouter.shared.newTerminal() }
                     .keyboardShortcut("t", modifiers: .command)

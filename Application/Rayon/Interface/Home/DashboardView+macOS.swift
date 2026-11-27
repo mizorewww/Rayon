@@ -34,7 +34,7 @@
                     message: "Saved servers keep their address, port and identity, and open a terminal, files or a monitor.",
                     actionTitle: "New Server"
                 ) {
-                    AppRouter.shared.presentNewServer = true
+                    ServerActions.create()
                 }
                 .frame(maxWidth: 640)
                 .rxCard()
@@ -245,7 +245,7 @@
 
         var body: some View {
             Button {
-                AppRouter.shared.presentNewServer = true
+                ServerActions.create()
             } label: {
                 VStack(spacing: RX.Space.s2) {
                     Image(systemName: "plus")

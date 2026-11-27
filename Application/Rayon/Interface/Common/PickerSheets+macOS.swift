@@ -552,4 +552,32 @@
         }
     }
 
+    extension ServerPickerSheet {
+        /// Asks for servers in the main window's sheet; `onComplete` hears a
+        /// selection, not a cancel.
+        @MainActor
+        static func present(
+            title: String,
+            lead: String? = nil,
+            confirmTitle: String,
+            allowsMany: Bool,
+            preselected: Set<RDMachine.ID> = [],
+            onComplete: @escaping ([RDMachine.ID]) -> Void
+        ) {
+            AppRouter.shared.present { dismiss in
+                ServerPickerSheet(
+                    title: title,
+                    lead: lead,
+                    confirmTitle: confirmTitle,
+                    allowsMany: allowsMany,
+                    initialSelection: preselected
+                ) { selection in
+                    dismiss()
+                    guard let selection, !selection.isEmpty else { return }
+                    onComplete(selection)
+                }
+            }
+        }
+    }
+
 #endif

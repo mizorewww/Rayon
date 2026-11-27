@@ -15,15 +15,15 @@
     enum ServerActions {
         @MainActor
         static func edit(_ machine: RDMachine.ID) {
-            SheetPresenter.present { dismiss in
+            AppRouter.shared.present { dismiss in
                 ServerEditorSheet(machine: machine, close: dismiss)
             }
         }
 
         /// New Server, filled in from `template`.
         @MainActor
-        static func create(from template: RDMachine) {
-            SheetPresenter.present { dismiss in
+        static func create(from template: RDMachine? = nil) {
+            AppRouter.shared.present { dismiss in
                 ServerEditorSheet(machine: nil, template: template, close: dismiss)
             }
         }

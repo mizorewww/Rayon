@@ -50,7 +50,7 @@
                 search: $searchText,
                 searchPrompt: "Search servers",
                 primary: ToolbarAction("New Server", systemImage: "plus", primary: true) {
-                    router.presentNewServer = true
+                    ServerActions.create()
                 }
             ) {
             } trailing: {
@@ -84,7 +84,7 @@
                         systemImage: "server.rack",
                         actionTitle: "New Server"
                     ) {
-                        router.presentNewServer = true
+                        ServerActions.create()
                     }
                     .rxCard()
                 } else if filtered.isEmpty {

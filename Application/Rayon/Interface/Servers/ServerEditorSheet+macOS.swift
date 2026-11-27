@@ -49,6 +49,8 @@
 
         @State private var connecting = false
         @State private var error: String?
+        @State private var showsUURemoteAccount = false
+        @State private var picksIdentity = false
 
         var isNew: Bool { machine == nil }
         var portIsValid: Bool { UInt16(port) != nil }
@@ -112,6 +114,20 @@
             }
             .frame(width: 520)
             .onAppear(perform: load)
+            .sheet(isPresented: $showsUURemoteAccount) {
+                UURemoteAccountSheet(onConnectDesktop: { machineID in
+                    showsUURemoteAccount = false
+                    AppRouter.shared.openDesktop(machine: machineID)
+                }, close: { showsUURemoteAccount = false })
+            }
+            .sheet(isPresented: $picksIdentity) {
+                IdentityPickerSheet { picked in
+                    picksIdentity = false
+                    guard let picked else { return }
+                    identity = picked
+                    createAndConnect()
+                }
+            }
         }
 
         private var fields: some View {
@@ -296,12 +312,7 @@
             }
             HStack {
                 Button("UU Remote Account & Devices…") {
-                    SheetPresenter.present { dismiss in
-                        UURemoteAccountSheet(onConnectDesktop: { machineID in
-                            dismiss()
-                            AppRouter.shared.openDesktop(machine: machineID)
-                        }, close: dismiss)
-                    }
+                    showsUURemoteAccount = true
                 }
                 .buttonStyle(.rx)
                 if uuAccount.isLoggedIn {
@@ -444,11 +455,7 @@
                     error = "The selected identity could not sign in to \(host)."
                 } else {
                     error = "No identity that authenticates automatically could sign in. Choose an identity."
-                    IdentityPickerPanel.present { picked in
-                        guard let picked else { return }
-                        identity = picked
-                        createAndConnect()
-                    }
+                    picksIdentity = true
                 }
             }
         }
@@ -456,9 +463,7 @@
         func finishCreation(banner: String, identity: RDIdentity.ID) {
             guard let created = save(banner: banner, identity: identity) else { return }
             finish()
-            onMainThread(delay: 0.2) {
-                AppRouter.shared.openTerminal(machine: created.id)
-            }
+            AppRouter.shared.openTerminal(machine: created.id)
         }
     }
 
