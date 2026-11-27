@@ -13,7 +13,7 @@ WORKSPACE := App.xcworkspace
 TEST_PACKAGES := $(patsubst %/Tests,%,$(wildcard Foundation/*/Tests))
 RESOLVED_PACKAGES := $(patsubst %/Package.resolved,%,$(wildcard Foundation/*/Package.resolved))
 
-.PHONY: help build build-macos build-ios test test-telemetry-server resolve scan-license clean
+.PHONY: help build build-macos build-ios test test-telemetry-server resolve scan-license check-localization sync-localization clean
 
 help:
 	@echo "build         Build the Mac and iOS apps"
@@ -23,6 +23,9 @@ help:
 	@echo "test-telemetry-server  Typecheck and test the telemetry Worker in Server/Telemetry (needs bun)"
 	@echo "resolve       Resolve the workspace's and the packages' dependencies"
 	@echo "scan-license  List the resolved dependencies; fail on any missing from Resources/LICENSE"
+	@echo "check-localization  Fail on keys missing from a String Catalog, stale keys, missing translations"
+	@echo "                    and format mismatches; the build in DERIVED_DATA says which keys the code uses"
+	@echo "sync-localization   Add the keys the code uses to the String Catalogs, drop stale ones (after make build)"
 	@echo "clean         Remove .build/ here and in every package"
 	@echo
 	@echo "CONFIGURATION=Debug|Release (default Debug), DERIVED_DATA=<dir> (default .build/DerivedData)"
@@ -62,6 +65,12 @@ resolve:
 
 scan-license:
 	bash Workflow/Scripts/scan-license.sh
+
+check-localization:
+	/usr/bin/python3 Workflow/Scripts/localization.py check
+
+sync-localization:
+	/usr/bin/python3 Workflow/Scripts/localization.py sync
 
 clean:
 	rm -rf .build Foundation/*/.build
