@@ -28,19 +28,17 @@
                     // Only the page in front is mounted. What outlives it — a
                     // terminal's surface, a desktop's connection, a folder's
                     // history, the editor's files — is in the session models.
+                    // Pages swap in one frame, as a split view's detail does:
+                    // a fade-in left the window empty for a few frames, since
+                    // the page going away (and its toolbar) left at once.
                     if router.route.isSession {
                         SessionPage(route: router.route)
                     } else {
                         place
                             .id(router.route)
-                            .transition(.asymmetric(
-                                insertion: .opacity.combined(with: .offset(y: 6)),
-                                removal: .opacity
-                            ))
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .animation(.easeOut(duration: 0.2), value: router.route.isSession ? nil : router.route)
                 .rxClearToolbar()
             }
             .frame(minWidth: 940, minHeight: 600)
