@@ -9,7 +9,7 @@ import LocalAuthentication
 /// paired watch, or the device's password.
 enum DeviceOwner {
     @MainActor
-    static func confirm(_ reason: String) async -> Bool {
+    static func confirm(_ reason: LocalizedStringResource) async -> Bool {
         let context = LAContext()
         guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: nil) else {
             // An iPhone without a passcode has no owner to ask. A Mac always
@@ -20,6 +20,6 @@ enum DeviceOwner {
                 return false
             #endif
         }
-        return (try? await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason)) ?? false
+        return (try? await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: String(localized: reason))) ?? false
     }
 }

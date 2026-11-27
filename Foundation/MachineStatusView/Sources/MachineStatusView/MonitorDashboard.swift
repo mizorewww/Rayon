@@ -71,10 +71,10 @@ public struct MonitorFacts: View {
     public var body: some View {
         let system = session.status.system
         FactsRow([
-            .init("Hostname", value: system.hostname.isEmpty ? "—" : system.hostname),
-            .init("OS", value: system.releaseName.isEmpty ? "—" : system.releaseName),
-            .init("Uptime", value: RXFormat.duration(system.uptimeSec)),
-            .init("Address", value: session.machine.remoteAddress, monospaced: true, redacted: redactAddress),
+            .init(.init("Hostname", bundle: .module), value: system.hostname.isEmpty ? "—" : system.hostname),
+            .init(.init("OS", bundle: .module), value: system.releaseName.isEmpty ? "—" : system.releaseName),
+            .init(.init("Uptime", bundle: .module), value: RXFormat.duration(system.uptimeSec)),
+            .init(.init("Address", bundle: .module), value: session.machine.remoteAddress, monospaced: true, redacted: redactAddress),
         ])
     }
 }
@@ -94,27 +94,27 @@ public struct MonitorPlaceholder: View {
             switch session.phase {
             case let .failed(message):
                 EmptyStateView(
-                    "Can't connect",
+                    .init("Can't connect", bundle: .module),
                     systemImage: "exclamationmark.triangle",
-                    message: message,
-                    actionTitle: retry == nil ? nil : "Try Again",
+                    message: "\(message)",
+                    actionTitle: retry == nil ? nil : .init("Try Again", bundle: .module),
                     action: retry
                 )
             case .unavailable:
                 EmptyStateView(
-                    "Status isn't available",
+                    .init("Status isn't available", bundle: .module),
                     systemImage: "waveform.path.ecg",
-                    message: "This server doesn't run the status script; it needs a POSIX shell.",
-                    actionTitle: retry == nil ? nil : "Try Again",
+                    message: .init("This server doesn't run the status script; it needs a POSIX shell.", bundle: .module),
+                    actionTitle: retry == nil ? nil : .init("Try Again", bundle: .module),
                     action: retry
                 )
             case .closed:
-                EmptyStateView("Monitor closed", systemImage: "waveform.path.ecg")
+                EmptyStateView(.init("Monitor closed", bundle: .module), systemImage: "waveform.path.ecg")
             default:
                 VStack(spacing: RX.Space.s3) {
                     ProgressView()
                         .rxSpinner()
-                    Text("Connecting…")
+                    Text("Connecting…", bundle: .module)
                         .font(.rxBody)
                         .foregroundStyle(.rxInkSecondary)
                 }

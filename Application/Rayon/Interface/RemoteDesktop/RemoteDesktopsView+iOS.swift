@@ -116,7 +116,7 @@
         @ViewBuilder private var nearbySection: some View {
             Section {
                 if let failure = nearby.failure {
-                    HelpText(failure, isError: true)
+                    HelpText(verbatim: failure, isError: true)
                         .rxListRow()
                 } else if nearby.hosts.isEmpty {
                     HStack(spacing: RX.Space.s2) {
@@ -152,7 +152,7 @@
                             .font(.system(size: 26))
                             .foregroundStyle(account.isLoggedIn ? Color.rxAccent : Color.rxInkSecondary)
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(account.isLoggedIn ? (account.nickname.isEmpty ? "Signed in" : account.nickname) : "Not signed in")
+                            Text(account.isLoggedIn ? (account.nickname.isEmpty ? "Signed in" : "\(account.nickname)") : "Not signed in")
                                 .foregroundStyle(.rxInk)
                             if let failure = account.refreshError, account.isLoggedIn {
                                 Text(failure)

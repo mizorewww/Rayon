@@ -26,19 +26,19 @@
                 HStack(alignment: .top, spacing: RX.Space.s3) {
                     SymbolTile(snippet.displaySymbol)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(snippet.name.isEmpty ? "Untitled" : snippet.name)
+                        Text(snippet.name.isEmpty ? "Untitled" : "\(snippet.name)")
                             .font(.headline)
                             .foregroundStyle(.rxInk)
                             .lineLimit(1)
                         if !detail.isEmpty {
-                            HelpText(detail).lineLimit(1)
+                            HelpText(verbatim: detail).lineLimit(1)
                         }
                     }
                     Spacer()
                     Menu {
                         Button {
                             guard !snippet.code.isEmpty else {
-                                Indicator.error("This snippet has no command to run.")
+                                Indicator.error(String(localized: "This snippet has no command to run."))
                                 return
                             }
                             RayonUtil.createExecuteFor(snippet: snippet)
@@ -53,7 +53,7 @@
                         Button {
                             var copy = snippet
                             copy.id = .init()
-                            copy.name += " copy"
+                            copy.name = String(localized: "\(copy.name) copy")
                             store.save(copy)
                         } label: {
                             Label("Duplicate", systemImage: "plus.square.on.square")

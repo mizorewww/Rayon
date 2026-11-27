@@ -108,7 +108,7 @@
 
         func completeSheet() {
             guard !name.trimmingCharacters(in: .whitespaces).isEmpty else {
-                Indicator.error("Empty Name")
+                Indicator.error(String(localized: "Empty Name"))
                 return
             }
 

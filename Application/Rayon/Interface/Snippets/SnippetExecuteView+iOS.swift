@@ -103,7 +103,7 @@
                             HStack(spacing: RX.Space.s2) {
                                 stateLabel(state)
                                     .frame(width: 18)
-                                Text(context.names[machine] ?? "Unknown server")
+                                Text(context.names[machine] ?? String(localized: "Unknown server"))
                                     .font(.rxBody)
                                     .foregroundStyle(.rxInk)
                                     .lineLimit(1)

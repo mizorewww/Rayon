@@ -20,7 +20,7 @@
                 title: "New Folder",
                 message: "Name the folder.",
                 placeholder: "Folder name",
-                text: store.availableFolderName("New Folder")
+                text: store.availableFolderName(String(localized: "New Folder"))
             ) { text in
                 let name = text.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !name.isEmpty else { return }
@@ -40,7 +40,7 @@
                 let newName = text.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !newName.isEmpty else { return }
                 if let folder = RayonStore.shared.folder(named: name), !RayonStore.shared.renameFolder(folder.id, to: newName) {
-                    Indicator.error("There is already a folder named \"\(newName)\".")
+                    Indicator.error(String(localized: "There is already a folder named \"\(newName)\"."))
                 }
             }
         }
@@ -50,9 +50,9 @@
             guard let folder = RayonStore.shared.folder(named: name) else { return }
             let plan = FolderDeletionPlan(folder: folder)
             Indicator.confirm(
-                message: plan.message,
-                informative: plan.informative,
-                confirmTitle: plan.confirmTitle,
+                message: "\(plan.message)",
+                informative: plan.informative.map { "\($0)" },
+                confirmTitle: "\(plan.confirmTitle)",
                 destructive: true
             ) { confirmed in
                 guard confirmed else { return }
@@ -133,12 +133,12 @@
                         .foregroundStyle(.rxInkSecondary)
                         .accessibilityHidden(true)
                 }
-                RXSectionHeader(name.isEmpty ? "Default" : name)
+                RXSectionHeader(name.isEmpty ? "Default" : "\(name)")
                 Text("\(count)")
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.rxInkSecondary)
                 if case .uuRemote = folder?.source {
-                    Text(signedIn ? (account.nickname.isEmpty ? "Signed in" : account.nickname) : "Signed out")
+                    Text(signedIn ? (account.nickname.isEmpty ? "Signed in" : "\(account.nickname)") : "Signed out")
                         .font(.caption)
                         .foregroundStyle(signedIn ? Color.rxInkSecondary : Color.rxWarning)
                         .lineLimit(1)

@@ -46,7 +46,7 @@
                 guard let bundle = Bundle.main.url(forResource: resource, withExtension: nil),
                       let str = try? String(contentsOfFile: bundle.path)
                 else {
-                    return "Failed to load license info."
+                    return String(localized: "Failed to load license info.")
                 }
                 return str
             }.value

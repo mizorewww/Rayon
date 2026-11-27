@@ -12,7 +12,7 @@ enum TerminalSessionActions {
     @MainActor
     static func confirmClose(
         _ context: TerminalManager.Context,
-        informative: String? = nil,
+        informative: LocalizedStringResource? = nil,
         then perform: @escaping @MainActor () -> Void
     ) {
         let manager = TerminalManager.shared

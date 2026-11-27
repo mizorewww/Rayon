@@ -105,7 +105,7 @@ public struct UURemoteAccountView: View {
     private var devicesCard: some View {
         VStack(alignment: .leading, spacing: RX.Space.s2) {
             HStack {
-                CardHead(String(localized: "Devices", bundle: .module))
+                CardHead(.init("Devices", bundle: .module))
                 Spacer()
                 Button {
                     run("refreshing") { try await account.refreshDevices() }
@@ -162,7 +162,7 @@ public struct UURemoteAccountView: View {
 
     private var assistCard: some View {
         VStack(alignment: .leading, spacing: RX.Space.s2) {
-            CardHead(String(localized: "Remote Assistance", bundle: .module))
+            CardHead(.init("Remote Assistance", bundle: .module))
             Text("Join someone's screen with the Connect ID and code their UU Remote shows.", bundle: .module)
                 .font(.rxHelp)
                 .foregroundStyle(Color.rxInkSecondary)

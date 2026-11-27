@@ -903,8 +903,8 @@
 
         private var title: String {
             if !context.navigationSubtitle.isEmpty { return context.navigationSubtitle }
-            if let number { return "Terminal \(number)" }
-            return context.remoteType == .machine ? "Terminal" : context.displayName
+            if let number { return String(localized: "Terminal \(number)") }
+            return context.remoteType == .machine ? String(localized: "Terminal") : context.displayName
         }
         @State private var hovered = false
 

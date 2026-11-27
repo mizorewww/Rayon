@@ -85,7 +85,7 @@
                         } label: {
                             HStack(spacing: RX.Space.s2) {
                                 VStack(alignment: .leading, spacing: 1) {
-                                    Text(context.names[machine] ?? "Unknown server")
+                                    Text(context.names[machine] ?? String(localized: "Unknown server"))
                                         .font(.rxBody)
                                         .foregroundStyle(.rxInk)
                                         .lineLimit(1)

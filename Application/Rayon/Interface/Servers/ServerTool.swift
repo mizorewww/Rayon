@@ -3,6 +3,7 @@
 //  Rayon
 //
 
+import Foundation
 import RayonModule
 
 /// The five ways into a server. Every surface that opens one (tiles, table rows,
@@ -17,7 +18,7 @@ enum ServerTool: CaseIterable, Identifiable {
 
     var id: Self { self }
 
-    var title: String {
+    var title: LocalizedStringResource {
         switch self {
         case .terminal: return "Terminal"
         case .files: return "Files"
@@ -38,7 +39,7 @@ enum ServerTool: CaseIterable, Identifiable {
     }
 
     /// Tooltip: what the tool does, in a sentence.
-    var help: String {
+    var help: LocalizedStringResource {
         switch self {
         case .terminal: return "Open an SSH terminal on this server"
         case .files: return "Browse, upload and download files over SFTP"
@@ -56,7 +57,7 @@ enum ServerTool: CaseIterable, Identifiable {
     }
 
     /// The tooltip for this tool on `machine`.
-    func help(for machine: RDMachine) -> String {
+    func help(for machine: RDMachine) -> LocalizedStringResource {
         if self == .terminal, machine.isUURemoteDevice { return "Open a terminal session on the device through UU Remote" }
         return help
     }

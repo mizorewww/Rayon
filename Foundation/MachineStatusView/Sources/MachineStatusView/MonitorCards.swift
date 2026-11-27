@@ -23,13 +23,13 @@ public struct SystemCard: View {
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            CardHead("Load")
-            MetricView(String(format: "%.2f", system.load1), unit: "1 min")
+            CardHead(.init("Load", bundle: .module))
+            MetricView(String(format: "%.2f", system.load1), unit: String(localized: "1 min", bundle: .module))
                 .padding(.top, RX.Space.s1)
             SubMetricRow([
-                .init("5 min", value: String(format: "%.2f", system.load5)),
-                .init("15 min", value: String(format: "%.2f", system.load15)),
-                .init("Processes", value: "\(system.runningProcs)", unit: "/ \(system.totalProcs) running"),
+                .init(.init("5 min", bundle: .module), value: String(format: "%.2f", system.load5)),
+                .init(.init("15 min", bundle: .module), value: String(format: "%.2f", system.load15)),
+                .init(.init("Processes", bundle: .module), value: "\(system.runningProcs)", unit: String(localized: "/ \(system.totalProcs) running", bundle: .module)),
             ])
             .padding(.top, RX.Space.s5)
         }
@@ -49,10 +49,10 @@ public struct ProcessorCard: View {
 
     var processor: ServerStatus.ProcessorInfo { session.status.processor }
 
-    var title: String {
+    var title: LocalizedStringResource {
         let count = processor.cores.count
-        guard count > 0 else { return "Processor" }
-        return "Processor · \(count) \(count == 1 ? "core" : "cores")"
+        guard count > 0 else { return .init("Processor", bundle: .module) }
+        return .init("Processor · \(count) cores", bundle: .module)
     }
 
     public var body: some View {
@@ -61,9 +61,9 @@ public struct ProcessorCard: View {
         VStack(alignment: .leading, spacing: 0) {
             CardHead(title) {
                 if hasCores {
-                    Picker("Summary or Cores", selection: $showCores) {
-                        Text("Summary").tag(false)
-                        Text("Cores").tag(true)
+                    Picker(String(localized: "Summary or Cores", bundle: .module), selection: $showCores) {
+                        Text("Summary", bundle: .module).tag(false)
+                        Text("Cores", bundle: .module).tag(true)
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()
@@ -77,17 +77,17 @@ public struct ProcessorCard: View {
                     .padding(.top, RX.Space.s4)
             } else {
                 UsageBar([
-                    .init("User", Double(summary.sumUser) / 100, .rxAccent),
-                    .init("System", Double(summary.sumSystem) / 100, .rxSeries2),
-                    .init("IO wait", Double(summary.sumIOWait) / 100, .rxWarning),
-                    .init("Nice", Double(summary.sumNice) / 100, .rxControlBorder),
+                    .init(.init("User", bundle: .module), Double(summary.sumUser) / 100, .rxAccent),
+                    .init(.init("System", bundle: .module), Double(summary.sumSystem) / 100, .rxSeries2),
+                    .init(.init("IO wait", bundle: .module), Double(summary.sumIOWait) / 100, .rxWarning),
+                    .init(.init("Nice", bundle: .module), Double(summary.sumNice) / 100, .rxControlBorder),
                 ])
                 .padding(.top, RX.Space.s3)
                 SubMetricRow([
-                    .init("User", value: RXFormat.oneDecimal(Double(summary.sumUser)), unit: "%", swatch: .rxAccent),
-                    .init("System", value: RXFormat.oneDecimal(Double(summary.sumSystem)), unit: "%", swatch: .rxSeries2),
-                    .init("IO wait", value: RXFormat.oneDecimal(Double(summary.sumIOWait)), unit: "%", swatch: .rxWarning),
-                    .init("Nice", value: RXFormat.oneDecimal(Double(summary.sumNice)), unit: "%", swatch: .rxControlBorder),
+                    .init(.init("User", bundle: .module), value: RXFormat.oneDecimal(Double(summary.sumUser)), unit: "%", swatch: .rxAccent),
+                    .init(.init("System", bundle: .module), value: RXFormat.oneDecimal(Double(summary.sumSystem)), unit: "%", swatch: .rxSeries2),
+                    .init(.init("IO wait", bundle: .module), value: RXFormat.oneDecimal(Double(summary.sumIOWait)), unit: "%", swatch: .rxWarning),
+                    .init(.init("Nice", bundle: .module), value: RXFormat.oneDecimal(Double(summary.sumNice)), unit: "%", swatch: .rxControlBorder),
                 ])
                 .padding(.top, RX.Space.s5)
             }
@@ -106,7 +106,7 @@ public struct CoreGrid: View {
 
     public var body: some View {
         if cores.isEmpty {
-            HelpText("No data")
+            HelpText(.init("No data", bundle: .module))
         } else {
             let perRow = cores.count > 64 ? 16 : 8
             let tileHeight: CGFloat = cores.count > 64 ? 28 : 44
@@ -137,10 +137,10 @@ public struct MemoryCard: View {
         let swapTotal = Double(memory.swapTotal)
         let headerSize = showSwap ? swapTotal : total
         VStack(alignment: .leading, spacing: 0) {
-            CardHead(headerSize > 0 ? "Memory · \(kB(headerSize))" : "Memory") {
-                Picker("RAM or Swap", selection: $showSwap) {
-                    Text("RAM").tag(false)
-                    Text("Swap").tag(true)
+            CardHead(headerSize > 0 ? .init("Memory · \(kB(headerSize))", bundle: .module) : .init("Memory", bundle: .module)) {
+                Picker(String(localized: "RAM or Swap", bundle: .module), selection: $showSwap) {
+                    Text("RAM", bundle: .module).tag(false)
+                    Text("Swap", bundle: .module).tag(true)
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
@@ -156,12 +156,12 @@ public struct MemoryCard: View {
                 ])
                 .padding(.top, RX.Space.s3)
                 HStack(spacing: RX.Space.s4) {
-                    LegendItem("Used", value: kB(swapUsed), color: .rxAccent)
-                    LegendItem("Free", value: kB(Double(memory.swapFree)), color: .rxSurfaceSunken, outlined: true)
+                    LegendItem(.init("Used", bundle: .module), value: kB(swapUsed), color: .rxAccent)
+                    LegendItem(.init("Free", bundle: .module), value: kB(Double(memory.swapFree)), color: .rxSurfaceSunken, outlined: true)
                 }
                 .padding(.top, RX.Space.s3)
                 if swapTotal <= 0 {
-                    HelpText("No swap")
+                    HelpText(.init("No swap", bundle: .module))
                         .padding(.top, RX.Space.s3)
                 }
             } else {
@@ -173,11 +173,11 @@ public struct MemoryCard: View {
                     (Double(memory.memFree), .rxSurfaceSunken),
                 ])
                 .padding(.top, RX.Space.s3)
-                .accessibilityLabel("\(kB(status.memoryUsedKB)) used, \(kB(status.memoryCacheKB)) cache, \(kB(Double(memory.memFree))) free")
+                .accessibilityLabel(Text("\(kB(status.memoryUsedKB)) used, \(kB(status.memoryCacheKB)) cache, \(kB(Double(memory.memFree))) free", bundle: .module))
                 FlowRow {
-                    LegendItem("Used", value: kB(status.memoryUsedKB), color: .rxAccent)
-                    LegendItem("Cache", value: kB(status.memoryCacheKB), color: .rxSeries2)
-                    LegendItem("Free", value: kB(Double(memory.memFree)), color: .rxSurfaceSunken, outlined: true)
+                    LegendItem(.init("Used", bundle: .module), value: kB(status.memoryUsedKB), color: .rxAccent)
+                    LegendItem(.init("Cache", bundle: .module), value: kB(status.memoryCacheKB), color: .rxSeries2)
+                    LegendItem(.init("Free", bundle: .module), value: kB(Double(memory.memFree)), color: .rxSurfaceSunken, outlined: true)
                 }
                 .padding(.top, RX.Space.s3)
             }
@@ -220,9 +220,9 @@ public struct DiskCard: View {
         let elements = session.status.fileSystem.elements
         let shown = limit.map { Array(elements.prefix($0)) } ?? elements
         VStack(alignment: .leading, spacing: 0) {
-            CardHead("Disks")
+            CardHead(.init("Disks", bundle: .module))
             if shown.isEmpty {
-                HelpText("No data")
+                HelpText(.init("No data", bundle: .module))
                     .padding(.top, RX.Space.s2)
             } else {
                 VStack(spacing: RX.Space.s3) {
@@ -230,7 +230,7 @@ public struct DiskCard: View {
                         UsageListRow(
                             name: element.mountPoint,
                             value: "\(RXFormat.percent(Double(element.percent)))%",
-                            detail: "\(element.used) of \(element.size)"
+                            detail: String(localized: "\(element.used) of \(element.size)", bundle: .module)
                         ) {
                             UsageBar(fraction: Double(element.percent) / 100, thresholds: true)
                         }
@@ -270,7 +270,7 @@ struct UsageListRow<Bar: View>: View {
                     .font(.system(size: 12, weight: .semibold).monospacedDigit())
                     .foregroundStyle(.rxInk)
                 if !detail.isEmpty {
-                    Text("· \(detail)")
+                    Text(verbatim: "· \(detail)")
                         .font(.system(size: 12).monospacedDigit())
                         .foregroundStyle(.rxInkSecondary)
                         .lineLimit(1)
@@ -307,9 +307,9 @@ public struct ThroughputCard: View {
         let peak = samples.max() ?? 0
         let rate = RXFormat.rate(current)
         VStack(alignment: .leading, spacing: 0) {
-            CardHead(isReceive ? "Receive" : "Transmit") {
+            CardHead(isReceive ? .init("Receive", bundle: .module) : .init("Transmit", bundle: .module)) {
                 if peak > 0 {
-                    HintText("peak \(RXFormat.rateString(peak))")
+                    HintText(.init("peak \(RXFormat.rateString(peak))", bundle: .module))
                 }
             }
             .padding(.horizontal, RX.Space.s4)
@@ -342,9 +342,9 @@ public struct NetworkCard: View {
         let peak = Double(max(1, elements.map { max($0.rxBytesPerSec, $0.txBytesPerSec) }.max() ?? 1))
         VStack(alignment: .leading, spacing: 0) {
             // Totals live in the Receive and Transmit cards beside this one.
-            CardHead("Network")
+            CardHead(.init("Network", bundle: .module))
             if elements.isEmpty {
-                HelpText("No data")
+                HelpText(.init("No data", bundle: .module))
                     .padding(.top, RX.Space.s2)
             } else {
                 VStack(spacing: RX.Space.s3) {
@@ -355,8 +355,8 @@ public struct NetworkCard: View {
                             detail: "↑ \(RXFormat.rateString(Double(element.txBytesPerSec)))"
                         ) {
                             UsageBar([
-                                .init("Receive", Double(element.rxBytesPerSec) / peak / 2, .rxSeries2),
-                                .init("Transmit", Double(element.txBytesPerSec) / peak / 2, .rxAccent),
+                                .init(.init("Receive", bundle: .module), Double(element.rxBytesPerSec) / peak / 2, .rxSeries2),
+                                .init(.init("Transmit", bundle: .module), Double(element.txBytesPerSec) / peak / 2, .rxAccent),
                             ])
                         }
                     }
@@ -383,26 +383,26 @@ public struct ProcessesCard: View {
         let processes = session.status.processes
         let rows = byMemory ? processes.byMemory : processes.byCPU
         VStack(alignment: .leading, spacing: 0) {
-            CardHead("Top processes") {
-                Picker("CPU or Memory", selection: $byMemory) {
-                    Text("CPU").tag(false)
-                    Text("Memory").tag(true)
+            CardHead(.init("Top processes", bundle: .module)) {
+                Picker(String(localized: "CPU or Memory", bundle: .module), selection: $byMemory) {
+                    Text("CPU", bundle: .module).tag(false)
+                    Text("Memory", bundle: .module).tag(true)
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
                 .fixedSize()
             }
             if rows.isEmpty {
-                HelpText("No data")
+                HelpText(.init("No data", bundle: .module))
                     .padding(.top, RX.Space.s2)
             } else {
                 VStack(spacing: RX.Space.s2) {
                     HStack(spacing: RX.Space.s2) {
-                        CapsLabel("Name")
+                        CapsLabel(.init("Name", bundle: .module))
                         Spacer(minLength: RX.Space.s2)
-                        CapsLabel("CPU")
+                        CapsLabel(.init("CPU", bundle: .module))
                             .frame(width: ProcessRow.cpuWidth, alignment: .trailing)
-                        CapsLabel("Memory")
+                        CapsLabel(.init("Memory", bundle: .module))
                             .frame(width: ProcessRow.memoryWidth, alignment: .trailing)
                     }
                     ForEach(rows) { process in
@@ -444,7 +444,7 @@ struct ProcessRow: View {
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .layoutPriority(1)
-            Text(process.user.isEmpty ? "\(process.pid)" : "\(process.user) · \(process.pid)")
+            Text(verbatim: process.user.isEmpty ? "\(process.pid)" : "\(process.user) · \(process.pid)")
                 .font(.rxAxis)
                 .foregroundStyle(.rxInkTertiary)
                 .lineLimit(1)
@@ -455,7 +455,9 @@ struct ProcessRow: View {
                 .frame(width: Self.memoryWidth, alignment: .trailing)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(process.command), PID \(process.pid)\(process.user.isEmpty ? "" : ", \(process.user)"), CPU \(cpu), memory \(memory)")
+        .accessibilityLabel(process.user.isEmpty
+            ? Text("\(process.command), PID \(process.pid), CPU \(cpu), memory \(memory)", bundle: .module)
+            : Text("\(process.command), PID \(process.pid), \(process.user), CPU \(cpu), memory \(memory)", bundle: .module))
     }
 
     func value(_ text: String, emphasized: Bool) -> some View {
@@ -479,8 +481,8 @@ public struct GraphicsCard: View {
     public var body: some View {
         if let graphics = session.status.graphics, !graphics.units.isEmpty {
             VStack(alignment: .leading, spacing: 0) {
-                CardHead("Graphics · \(graphics.units.count) \(graphics.units.count == 1 ? "GPU" : "GPUs")") {
-                    HintText("Driver \(graphics.version)")
+                CardHead(.init("Graphics · \(graphics.units.count) GPUs", bundle: .module)) {
+                    HintText(.init("Driver \(graphics.version)", bundle: .module))
                 }
                 VStack(spacing: RX.Space.s4) {
                     ForEach(graphics.units) { unit in
@@ -507,25 +509,25 @@ struct GPURow: View {
                     .foregroundStyle(.rxInk)
                     .lineLimit(1)
                 Spacer(minLength: RX.Space.s2)
-                Text("Fan \(unit.fan_speed)")
+                Text("Fan \(unit.fan_speed)", bundle: .module)
                     .font(.system(size: 12).monospacedDigit())
                     .foregroundStyle(.rxInkSecondary)
                     .lineLimit(1)
             }
-            labeledBar("GPU", percent: utilisation, color: .rxAccent)
-            labeledBar("VRAM", percent: vram, color: .rxSeries2)
+            labeledBar(.init("GPU", bundle: .module), percent: utilisation, color: .rxAccent)
+            labeledBar(.init("VRAM", bundle: .module), percent: vram, color: .rxSeries2)
             if !unit.vbios_version.isEmpty {
-                HintText("vbios \(unit.vbios_version)")
+                HintText(.init("vbios \(unit.vbios_version)", bundle: .module))
             }
         }
     }
 
-    func labeledBar(_ title: String, percent: Double, color: Color) -> some View {
+    func labeledBar(_ title: LocalizedStringResource, percent: Double, color: Color) -> some View {
         HStack(spacing: RX.Space.s2) {
             CapsLabel(title)
                 .frame(width: 40, alignment: .leading)
             UsageBar(fraction: percent / 100, color: color, thresholds: true)
-            Text("\(RXFormat.percent(percent))%")
+            Text(verbatim: "\(RXFormat.percent(percent))%")
                 .font(.system(size: 12, weight: .semibold).monospacedDigit())
                 .foregroundStyle(.rxInk)
                 .frame(width: 40, alignment: .trailing)

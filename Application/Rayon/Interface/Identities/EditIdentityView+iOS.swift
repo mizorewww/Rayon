@@ -211,7 +211,7 @@
             } header: {
                 RXSectionHeader("Public Key")
             } footer: {
-                Text(trimmedPublicKey.isEmpty ? "Optional. Needed to deploy the key to servers." : (draft.keyAlgorithmLabel ?? "Public key"))
+                Text(trimmedPublicKey.isEmpty ? "Optional. Needed to deploy the key to servers." : "\(draft.keyAlgorithmLabel ?? String(localized: "Public key"))")
             }
 
             Section {
@@ -226,9 +226,9 @@
         }
 
         var privateKeyDescription: String {
-            guard !draft.privateKey.isEmpty else { return "Required for a key pair." }
+            guard !draft.privateKey.isEmpty else { return String(localized: "Required for a key pair.") }
             let header = draft.privateKey.split(separator: "\n").first.map(String.init) ?? ""
-            return "\(header) · \(draft.privateKey.utf8.count) bytes"
+            return String(localized: "\(header) · \(draft.privateKey.utf8.count) bytes")
         }
 
         func generateKeyPair() {
@@ -286,7 +286,7 @@
             let accessing = url.startAccessingSecurityScopedResource()
             defer { if accessing { url.stopAccessingSecurityScopedResource() } }
             guard let data = try? String(contentsOf: url, encoding: .utf8) else {
-                Indicator.error("The file could not be read as text.")
+                Indicator.error(String(localized: "The file could not be read as text."))
                 return
             }
             loadKey(str: data, isPrivate: isPrivate)
@@ -294,7 +294,7 @@
 
         func loadKey(str: String?, isPrivate: Bool) {
             guard let str, !str.isEmpty else {
-                Indicator.error("Unable to read")
+                Indicator.error(String(localized: "Unable to read"))
                 return
             }
             let matches = isPrivate ? RDIdentity.looksLikePrivateKey(str) : RDIdentity.looksLikePublicKey(str)
@@ -305,7 +305,7 @@
                 apply()
             } else {
                 Indicator.confirm(
-                    message: "This does not look like a \(isPrivate ? "private" : "public") key",
+                    message: isPrivate ? "This does not look like a private key" : "This does not look like a public key",
                     informative: "Load it anyway?",
                     confirmTitle: "Load"
                 ) { confirmed in
@@ -316,11 +316,11 @@
 
         func completeSheet() {
             guard !draft.username.trimmingCharacters(in: .whitespaces).isEmpty else {
-                Indicator.error("Empty Username")
+                Indicator.error(String(localized: "Empty Username"))
                 return
             }
             guard draft.isValid else {
-                Indicator.error(draft.method == .keyPair ? "A key pair needs a private key" : "Empty Password")
+                Indicator.error(draft.method == .keyPair ? String(localized: "A key pair needs a private key") : String(localized: "Empty Password"))
                 return
             }
             RayonStore.shared.save(draft.apply(to: original))
@@ -334,7 +334,7 @@
             var probe = RDIdentity()
             probe.publicKey = publicKey
             probe.privateKey = privateKey
-            return probe.keyAlgorithm.map { "\($0) public key" }
+            return probe.keyAlgorithm.map { String(localized: "\($0) public key") }
         }
     }
 

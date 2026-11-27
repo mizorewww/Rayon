@@ -5,6 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "MachineStatusView",
+    defaultLocalization: "en",
     platforms: [
         .macOS(.v15),
         .iOS(.v18),
@@ -25,6 +26,7 @@ let package = Package(
         .target(
             name: "MachineStatusView",
             dependencies: ["MachineStatus", "RayonModule", "RayonSSH"],
+            resources: [.process("Resources")],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
         .testTarget(

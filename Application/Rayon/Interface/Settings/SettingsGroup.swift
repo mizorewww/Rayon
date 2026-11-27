@@ -40,10 +40,10 @@ enum SettingsPage: Hashable {
 
     var title: String {
         switch self {
-        case .general: "General"
-        case .connection: "Connection"
+        case .general: String(localized: "General")
+        case .connection: String(localized: "Connection")
         case let .terminal(category): category.title
-        case .about: "About"
+        case .about: String(localized: "About")
         }
     }
 
@@ -59,7 +59,7 @@ enum SettingsPage: Hashable {
     /// The list, in its sections: Rayon's pages, the terminal's, then About.
     static let sections: [(title: String, pages: [SettingsPage])] = [
         ("Rayon", [.general, .connection]),
-        ("Terminal", TerminalSettingsCategory.all.map(SettingsPage.terminal)),
+        (String(localized: "Terminal"), TerminalSettingsCategory.all.map(SettingsPage.terminal)),
         ("", [.about]),
     ]
 
@@ -98,18 +98,18 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .appearance: "Appearance"
-        case .sessions: "Sessions"
-        case .recent: "Recent"
-        case .sync: "iCloud Sync"
-        case .data: "Data"
-        case .ssh: "SSH"
-        case .uuRemote: "NetEase UU Remote"
-        case .monitor: "Monitor"
-        case .terminalClipboard: "Copy on Select"
-        case .about: "Rayon"
-        case .diagnostics: "Diagnostics & Usage"
-        case .acknowledgements: "Acknowledgements"
+        case .appearance: String(localized: "Appearance")
+        case .sessions: String(localized: "Sessions")
+        case .recent: String(localized: "Recent")
+        case .sync: String(localized: "iCloud Sync")
+        case .data: String(localized: "Data")
+        case .ssh: String(localized: "SSH")
+        case .uuRemote: String(localized: "NetEase UU Remote")
+        case .monitor: String(localized: "Monitor")
+        case .terminalClipboard: String(localized: "Copy on Select")
+        case .about: String(localized: "Rayon")
+        case .diagnostics: String(localized: "Diagnostics & Usage")
+        case .acknowledgements: String(localized: "Acknowledgements")
         }
     }
 
@@ -175,7 +175,7 @@ struct SettingsGroupSection: View {
     var prefix: String?
 
     var body: some View {
-        Section(prefix.map { "\($0) › \(group.title)" } ?? group.title) {
+        Section(prefix.map { String(localized: "\($0) › \(group.title)") } ?? group.title) {
             group.rows
         }
     }

@@ -107,7 +107,7 @@
                                     }
                                     Spacer()
                                     if let folder = store.folder(machine.folderId) {
-                                        RXTag(folder.name)
+                                        RXTag("\(folder.name)")
                                     }
                                 }
                             }

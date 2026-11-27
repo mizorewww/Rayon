@@ -74,8 +74,8 @@
             let configURL = source == .folder ? url.appendingPathComponent("config") : url
             guard let text = try? String(contentsOf: configURL, encoding: .utf8) else {
                 Indicator.error(source == .folder
-                    ? "There is no readable config file in \(url.lastPathComponent)."
-                    : "Could not read \(url.lastPathComponent) as UTF-8 text.")
+                    ? String(localized: "There is no readable config file in \(url.lastPathComponent).")
+                    : String(localized: "Could not read \(url.lastPathComponent) as UTF-8 text."))
                 return
             }
             let keys = source == .folder ? url : nil
@@ -114,14 +114,14 @@
                 try? FileManager.default.removeItem(at: url)
                 Indicator.success(
                     "Backup imported",
-                    message: result.summary
+                    message: "\(result.summary)"
                 )
                 return true
             } catch BackupError.wrongPassword {
                 return false
             } catch {
                 try? FileManager.default.removeItem(at: url)
-                Indicator.error("Could not import backup: \(error.localizedDescription)")
+                Indicator.error(String(localized: "Could not import backup: \(error.localizedDescription)"))
                 return true
             }
         }
@@ -134,7 +134,7 @@
                 try PreferencesBackup.restore(from: copy)
                 Indicator.success("Settings imported")
             } catch {
-                Indicator.error("Could not import settings: \(error.localizedDescription)")
+                Indicator.error(String(localized: "Could not import settings: \(error.localizedDescription)"))
             }
         }
     }
@@ -251,7 +251,7 @@
                             try await RayonStore.shared.exportBackup(to: url, includeSecrets: includeSecrets, password: password)
                             exportDocument = try BackupDocument(data: Data(contentsOf: url))
                         } catch {
-                            Indicator.error("Could not export backup: \(error.localizedDescription)")
+                            Indicator.error(String(localized: "Could not export backup: \(error.localizedDescription)"))
                         }
                     }
                 }
@@ -271,7 +271,7 @@
                 case let .success(url):
                     Indicator.success("Exported backup to \(url.lastPathComponent)")
                 case let .failure(error):
-                    Indicator.error("Could not export backup: \(error.localizedDescription)")
+                    Indicator.error(String(localized: "Could not export backup: \(error.localizedDescription)"))
                 }
             }
             .fileImporter(isPresented: $importing, allowedContentTypes: [.item]) { result in
@@ -287,7 +287,7 @@
                             Task { _ = await DataImport.restoreBackup(copy, password: nil) }
                         }
                     } catch {
-                        Indicator.error("Could not read backup: \(error.localizedDescription)")
+                        Indicator.error(String(localized: "Could not read backup: \(error.localizedDescription)"))
                     }
                 case let .failure(error):
                     Indicator.error(error.localizedDescription)
@@ -381,7 +381,7 @@
                         do {
                             exportDocument = try BackupDocument { try PreferencesBackup.export(to: $0) }
                         } catch {
-                            Indicator.error("Could not export settings: \(error.localizedDescription)")
+                            Indicator.error(String(localized: "Could not export settings: \(error.localizedDescription)"))
                         }
                     } label: {
                         Label("Export Settings…", systemImage: "square.and.arrow.up")
@@ -411,7 +411,7 @@
             ) { result in
                 exportDocument = nil
                 if case let .failure(error) = result {
-                    Indicator.error("Could not export settings: \(error.localizedDescription)")
+                    Indicator.error(String(localized: "Could not export settings: \(error.localizedDescription)"))
                 }
             }
             .fileImporter(isPresented: $importing, allowedContentTypes: [.item]) { result in

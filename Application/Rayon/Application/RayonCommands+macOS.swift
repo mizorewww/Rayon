@@ -77,11 +77,11 @@
                 }
             } catch {
                 Logger.app.errorFile("update check failed: \(error)")
-                Indicator.alert("Unable to check for updates", message: error.localizedDescription)
+                Indicator.alert("Unable to check for updates", message: "\(error.localizedDescription)")
             }
         }
 
-        private func place(_ title: String, _ route: Route, key: KeyEquivalent) -> some View {
+        private func place(_ title: LocalizedStringResource, _ route: Route, key: KeyEquivalent) -> some View {
             Button(title) { AppRouter.shared.route = route }
                 .keyboardShortcut(terminalInFront ? nil : KeyboardShortcut(key, modifiers: .command))
         }

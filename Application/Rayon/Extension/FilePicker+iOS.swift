@@ -28,7 +28,7 @@
             self.labelViewContent = labelViewContent
         }
 
-        public init(types: [UTType], allowMultiple: Bool, title: String, onPicked completionHandler: @escaping PickedURLsCompletionHandler) where LabelView == Text {
+        public init(types: [UTType], allowMultiple: Bool, title: LocalizedStringResource, onPicked completionHandler: @escaping PickedURLsCompletionHandler) where LabelView == Text {
             self.init(types: types, allowMultiple: allowMultiple, onPicked: completionHandler) { Text(title) }
         }
 

@@ -38,7 +38,7 @@
                 guard confirmed else { return }
                 var copy = original
                 copy.id = UUID()
-                copy.name = original.name + " copy"
+                copy.name = String(localized: "\(original.name) copy")
                 store.save(copy)
             }
         }
@@ -47,8 +47,8 @@
         static func delete(_ machines: [RDMachine.ID]) {
             let store = RayonStore.shared
             guard !machines.isEmpty else { return }
-            let message = machines.count == 1
-                ? "Delete \(store.machine(machines[0])?.name ?? "this server")?"
+            let message: LocalizedStringResource = machines.count == 1
+                ? (store.machine(machines[0]).map { "Delete \($0.name)?" } ?? "Delete this server?")
                 : "Delete \(machines.count) servers?"
             Indicator.confirm(
                 message: message,

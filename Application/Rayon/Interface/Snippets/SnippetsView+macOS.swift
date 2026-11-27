@@ -110,12 +110,12 @@
                 HStack(alignment: .top, spacing: RX.Space.s3) {
                     SymbolTile(snippet.displaySymbol)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(snippet.name.isEmpty ? "Untitled" : snippet.name)
+                        Text(snippet.name.isEmpty ? "Untitled" : "\(snippet.name)")
                             .font(.rxBodyStrong)
                             .foregroundStyle(.rxInk)
                             .lineLimit(1)
                         if !detail.isEmpty {
-                            HelpText(detail)
+                            HelpText(verbatim: detail)
                                 .lineLimit(1)
                         }
                     }
@@ -159,7 +159,7 @@
         static func run(_ id: RDSnippet.ID) {
             guard let snippet = RayonStore.shared.snippet(id) else { return }
             guard !snippet.code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                Indicator.error("This snippet has no command to run.")
+                Indicator.error(String(localized: "This snippet has no command to run."))
                 return
             }
             ServerPickerSheet.present(
@@ -177,14 +177,14 @@
         static func duplicate(_ id: RDSnippet.ID) {
             guard var copy = RayonStore.shared.snippet(id) else { return }
             copy.id = UUID()
-            copy.name += " copy"
+            copy.name = String(localized: "\(copy.name) copy")
             RayonStore.shared.save(copy)
         }
 
         static func delete(_ id: RDSnippet.ID) {
             guard let snippet = RayonStore.shared.snippet(id) else { return }
             Indicator.confirm(
-                message: "Delete \(snippet.name.isEmpty ? "this snippet" : snippet.name)?",
+                message: snippet.name.isEmpty ? "Delete this snippet?" : "Delete \(snippet.name)?",
                 confirmTitle: "Delete",
                 destructive: true
             ) { confirmed in

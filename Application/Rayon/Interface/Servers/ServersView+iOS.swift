@@ -311,7 +311,7 @@
                 guard existing != nil || AppSettings.showsSessionOnConnect.value else { return }
                 SessionNavigation.shared.reveal(.server(session.machine.id), tool: .monitor)
             } catch {
-                Indicator.error("Cannot open monitor")
+                Indicator.error(String(localized: "Cannot open monitor"))
             }
         }
 
@@ -327,7 +327,7 @@
         static func duplicate(_ machine: RDMachine.ID) {
             guard var copy = RayonStore.shared.machine(machine) else { return }
             copy.id = UUID()
-            copy.name += " copy"
+            copy.name = String(localized: "\(copy.name) copy")
             RayonStore.shared.save(copy)
         }
 

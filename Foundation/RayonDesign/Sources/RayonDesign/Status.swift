@@ -68,11 +68,11 @@ public struct RXTag: View {
         case warning
     }
 
-    let text: String
+    let text: LocalizedStringResource
     let systemImage: String?
     let style: Style
 
-    public init(_ text: String, systemImage: String? = nil, style: Style = .neutral) {
+    public init(_ text: LocalizedStringResource, systemImage: String? = nil, style: Style = .neutral) {
         self.text = text
         self.systemImage = systemImage
         self.style = style
@@ -128,7 +128,7 @@ public struct RedactableText: View {
                                 .strokeBorder(Color.rxInkTertiary.opacity(0.45), lineWidth: 1)
                         )
                         .frame(height: 11)
-                        .accessibilityLabel("Hidden")
+                        .accessibilityLabel(Text("Hidden", bundle: .module))
                 }
             }
             .animation(.easeOut(duration: 0.2), value: redacted)

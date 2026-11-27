@@ -27,7 +27,7 @@
                 }
             } header: {
                 VStack(alignment: .leading, spacing: RX.Space.s5) {
-                    PageTitle(redaction == .all ? "Server" : session.machine.name)
+                    PageTitle(redaction == .all ? "Server" : "\(session.machine.name)")
                     MonitorFacts(session: session, redactAddress: redaction != .none)
                 }
             } content: {

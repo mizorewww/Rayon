@@ -18,7 +18,7 @@
             rawValue
         }
 
-        var title: String {
+        var title: LocalizedStringResource {
             switch self {
             case .license: "License"
             case .agreement: "End User License Agreement"
@@ -28,7 +28,7 @@
         var text: String {
             guard let url = Bundle.main.url(forResource: rawValue, withExtension: nil),
                   let string = try? String(contentsOf: url, encoding: .utf8)
-            else { return "The text could not be loaded." }
+            else { return String(localized: "The text could not be loaded.") }
             return string
         }
     }

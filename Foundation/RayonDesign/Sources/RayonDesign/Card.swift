@@ -39,16 +39,23 @@ public extension View {
 
 /// Uppercase `caption-caps` label in `ink-secondary`.
 public struct CapsLabel: View {
-    let text: String
+    let text: Text
     var color: Color = .rxInkSecondary
 
-    public init(_ text: String, color: Color = .rxInkSecondary) {
-        self.text = text
+    public init(_ text: LocalizedStringResource, color: Color = .rxInkSecondary) {
+        self.text = Text(text)
+        self.color = color
+    }
+
+    /// For text that is data, such as a count or a name.
+    public init(verbatim text: String, color: Color = .rxInkSecondary) {
+        self.text = Text(verbatim: text)
         self.color = color
     }
 
     public var body: some View {
-        Text(text.uppercased())
+        text
+            .textCase(.uppercase)
             .font(.rxCaption)
             .tracking(rxCapsTracking)
             .foregroundStyle(color)
@@ -58,10 +65,10 @@ public struct CapsLabel: View {
 
 /// A card's head row: caption on the left, at most one control on the right.
 public struct CardHead<Trailing: View>: View {
-    let title: String
+    let title: LocalizedStringResource
     let trailing: Trailing
 
-    public init(_ title: String, @ViewBuilder trailing: () -> Trailing) {
+    public init(_ title: LocalizedStringResource, @ViewBuilder trailing: () -> Trailing) {
         self.title = title
         self.trailing = trailing()
     }
@@ -77,15 +84,15 @@ public struct CardHead<Trailing: View>: View {
 }
 
 public extension CardHead where Trailing == EmptyView {
-    init(_ title: String) {
+    init(_ title: LocalizedStringResource) {
         self.init(title) { EmptyView() }
     }
 }
 
 /// Small scale or source hint (`axis` style, `ink-tertiary`).
 public struct HintText: View {
-    let text: String
-    public init(_ text: String) { self.text = text }
+    let text: LocalizedStringResource
+    public init(_ text: LocalizedStringResource) { self.text = text }
     public var body: some View {
         Text(text)
             .font(.rxAxis)
@@ -96,15 +103,21 @@ public struct HintText: View {
 
 /// One-sentence help text (`ink-secondary`, 11pt); `danger` when `isError`.
 public struct HelpText: View {
-    let text: String
+    let text: Text
     let isError: Bool
-    public init(_ text: String, isError: Bool = false) {
-        self.text = text
+    public init(_ text: LocalizedStringResource, isError: Bool = false) {
+        self.text = Text(text)
+        self.isError = isError
+    }
+
+    /// For text that is data, such as an error's own description.
+    public init(verbatim text: String, isError: Bool = false) {
+        self.text = Text(verbatim: text)
         self.isError = isError
     }
 
     public var body: some View {
-        Text(text)
+        text
             .font(.rxHelp)
             .foregroundStyle(isError ? Color.rxDanger : Color.rxInkSecondary)
             .fixedSize(horizontal: false, vertical: true)

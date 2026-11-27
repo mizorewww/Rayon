@@ -11,7 +11,7 @@
     struct PageScaffold<Leading: View, Trailing: View, Header: View, Content: View>: View {
         let scrolls: Bool
         let search: Binding<String>?
-        let searchPrompt: String
+        let searchPrompt: LocalizedStringResource
         let primary: ToolbarAction?
         let trailingMetrics: ToolbarCapsuleMetrics
         let leading: Leading
@@ -22,7 +22,7 @@
         init(
             scrolls: Bool = true,
             search: Binding<String>? = nil,
-            searchPrompt: String = "Search",
+            searchPrompt: LocalizedStringResource = "Search",
             primary: ToolbarAction? = nil,
             trailingMetrics: ToolbarCapsuleMetrics = .group,
             @ViewBuilder leading: () -> Leading,
@@ -78,7 +78,7 @@
         init(
             scrolls: Bool = true,
             search: Binding<String>? = nil,
-            searchPrompt: String = "Search",
+            searchPrompt: LocalizedStringResource = "Search",
             primary: ToolbarAction? = nil,
             trailingMetrics: ToolbarCapsuleMetrics = .group,
             @ViewBuilder leading: () -> Leading,
@@ -177,11 +177,11 @@
 
     private struct OptionalSearch: ViewModifier {
         let text: Binding<String>?
-        let prompt: String
+        let prompt: LocalizedStringResource
 
         func body(content: Content) -> some View {
             if let text {
-                content.searchable(text: text, placement: .toolbar, prompt: prompt)
+                content.searchable(text: text, placement: .toolbar, prompt: Text(prompt))
             } else {
                 content
             }
@@ -189,13 +189,13 @@
     }
 
     struct ToolbarAction: View {
-        let title: String
+        let title: LocalizedStringResource
         let systemImage: String
         var primary = false
         var isEnabled = true
         let action: () -> Void
 
-        init(_ title: String, systemImage: String, primary: Bool = false, isEnabled: Bool = true, action: @escaping () -> Void) {
+        init(_ title: LocalizedStringResource, systemImage: String, primary: Bool = false, isEnabled: Bool = true, action: @escaping () -> Void) {
             self.title = title
             self.systemImage = systemImage
             self.primary = primary

@@ -83,7 +83,7 @@
         var table: some View {
             Table(filtered, selection: $selection) {
                 TableColumn("Orientation") { forward in
-                    RXTag(forward.forwardOrientation.label)
+                    RXTag("\(forward.forwardOrientation.label)")
                 }
                 .width(min: 90, ideal: 115)
                 TableColumn("Bind") { forward in
@@ -92,7 +92,7 @@
                 }
                 .width(min: 60, ideal: 80)
                 TableColumn("Through") { forward in
-                    RedactableText(forward.getMachineName() ?? "No server", redacted: redaction == .all)
+                    RedactableText(forward.getMachineName() ?? String(localized: "No server"), redacted: redaction == .all)
                         .foregroundStyle(forward.usingMachine == nil ? Color.rxInkSecondary : Color.rxInk)
                         .lineLimit(1)
                 }
@@ -207,7 +207,7 @@
         var body: some View {
             SheetScaffold(
                 forward == nil ? "New Port Forward" : "Edit Port Forward",
-                lead: orientation.flowDescription(device: "This Mac")
+                lead: "\(orientation.flowDescription(device: String(localized: "This Mac")))"
             ) {
                 VStack(alignment: .leading, spacing: 14) {
                     RXField("Orientation") {

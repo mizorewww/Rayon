@@ -24,7 +24,7 @@
                 }
             }
             guard let machine = RayonStore.shared.machine(machineId) else {
-                Indicator.error("Unknown Bad Data")
+                Indicator.error(String(localized: "Unknown Bad Data"))
                 return
             }
             createSession(withMachineObject: machine, askingToResume: true)
@@ -77,7 +77,7 @@
             switch context.remoteType {
             case .machine:
                 guard let machine = RayonStore.shared.machine(context.machine.id) else {
-                    Indicator.error("This server's details could not be read.")
+                    Indicator.error(String(localized: "This server's details could not be read."))
                     return
                 }
                 createSession(withMachineObject: machine, askingToResume: true, completion: completion)

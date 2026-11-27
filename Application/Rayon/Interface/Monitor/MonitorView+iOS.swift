@@ -37,7 +37,7 @@
                 .animation(.easeOut(duration: 0.3), value: session.phase == .connected && session.status.hasData)
             }
             .background(RXBackdrop().ignoresSafeArea())
-            .navigationTitle(redaction == .all ? "Monitor" : session.machine.name)
+            .navigationTitle(redaction == .all ? String(localized: "Monitor") : session.machine.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItemGroup {
@@ -90,7 +90,7 @@
             }
         }
 
-        func fact(_ label: String, _ value: String, mono: Bool = false, redacted: Bool = false) -> some View {
+        func fact(_ label: LocalizedStringResource, _ value: String, mono: Bool = false, redacted: Bool = false) -> some View {
             VStack(alignment: .leading, spacing: RX.Space.s1) {
                 CapsLabel(label)
                 RedactableText(value, redacted: redacted)

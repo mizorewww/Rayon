@@ -55,7 +55,7 @@
                 // Next to the buttons, not at the end of the scrolled fields,
                 // where a failed Add and Connect would go unseen.
                 if let error {
-                    HelpText(error, isError: true)
+                    HelpText(verbatim: error, isError: true)
                         .padding(.top, RX.Space.s3)
                 }
             } footer: {
@@ -135,7 +135,7 @@
                             }
                         } label: {
                             Text(choices.first { $0.id == draft.proxyJumpMachineID }?.title
-                                ?? (choices.isEmpty ? "No other SSH servers saved" : "Choose a jump server…"))
+                                ?? (choices.isEmpty ? String(localized: "No other SSH servers saved") : String(localized: "Choose a jump server…")))
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -341,9 +341,9 @@
 
         /// The identity's user name, which applies while the field is empty.
         var sshUsernamePlaceholder: String {
-            guard let identity = draft.identity else { return "Use identity user name" }
+            guard let identity = draft.identity else { return String(localized: "Use identity user name") }
             let username = (store.identity(identity) ?? RDIdentity()).username
-            return username.isEmpty ? "Use identity user name" : "\(username) (from identity)"
+            return username.isEmpty ? String(localized: "Use identity user name") : String(localized: "\(username) (from identity)")
         }
 
         func load() {
@@ -369,7 +369,7 @@
                 target.lastConnection = Date()
             }
             guard store.save(target) else {
-                error = store.problem(saving: target)?.localizedDescription ?? "The server could not be saved."
+                error = store.problem(saving: target)?.localizedDescription ?? String(localized: "The server could not be saved.")
                 return nil
             }
             return target
@@ -394,13 +394,13 @@
                 let outcome = await ServerConnectionCheck.run(checked, identity: chosen, candidates: candidates, timeout: timeout)
                 connecting = false
                 if case let .unreachable(refusal) = outcome {
-                    error = refusal ?? "Could not reach \(host) on port \(port)."
+                    error = refusal ?? String(localized: "Could not reach \(host) on port \(port).")
                 } else if case let .authenticated(authenticatedWith, banner) = outcome {
                     finishCreation(banner: banner, identity: authenticatedWith)
                 } else if chosen != nil {
-                    error = "The selected identity could not sign in to \(host)."
+                    error = String(localized: "The selected identity could not sign in to \(host).")
                 } else {
-                    error = "No identity that authenticates automatically could sign in. Choose an identity."
+                    error = String(localized: "No identity that authenticates automatically could sign in. Choose an identity.")
                     picksIdentity = true
                 }
             }

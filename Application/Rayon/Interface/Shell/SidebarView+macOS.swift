@@ -89,7 +89,7 @@
             .environment(\.sidebarMetrics, metrics)
         }
 
-        private func place(_ route: Route, _ title: String, systemImage: String, badge: Int = 0) -> some View {
+        private func place(_ route: Route, _ title: LocalizedStringResource, systemImage: String, badge: Int = 0) -> some View {
             SidebarRow(isSelected: selection.wrappedValue == .place(route)) {
                 selection.wrappedValue = .place(route)
             } label: {
@@ -214,16 +214,16 @@
     }
 
     extension SidebarLabel where Title == Text {
-        init(_ title: String, systemImage: String, badge: Int = 0) {
+        init(_ title: LocalizedStringResource, systemImage: String, badge: Int = 0) {
             self.init(systemImage: systemImage, badge: badge) { Text(title) }
         }
     }
 
     /// "Manage", "Sessions": the small grey heading over a group of rows.
     private struct SidebarHeader: View {
-        let title: String
+        let title: LocalizedStringResource
 
-        init(_ title: String) {
+        init(_ title: LocalizedStringResource) {
             self.title = title
         }
 
@@ -257,9 +257,9 @@
             case let .server(id):
                 return (store.machine(id) ?? RDMachine()).name
             case let .command(id):
-                return terminals.sessionContexts.first { $0.id == id }?.displayName ?? "Terminal"
+                return terminals.sessionContexts.first { $0.id == id }?.displayName ?? String(localized: "Terminal")
             case .local:
-                return "Local Terminal"
+                return String(localized: "Local Terminal")
             }
         }
 
@@ -298,7 +298,7 @@
                     .accessibilityHidden(true)
                 }
             }
-            .help(openTools.map(\.title).joined(separator: ", ") + " open")
+            .help("\(openTools.map { String(localized: $0.title) }.formatted(.list(type: .and))) open")
             .contextMenu { menu }
         }
 

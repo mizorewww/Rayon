@@ -283,7 +283,7 @@
 
     /// One part of what Return connects to: a caps title and its value.
     private struct QuickConnectToken: View {
-        let title: String
+        let title: LocalizedStringResource
         let value: String
         let systemImage: String
         let tint: Color
@@ -293,7 +293,8 @@
                 Image(systemName: systemImage)
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(tint)
-                Text(title.uppercased())
+                Text(title)
+                    .textCase(.uppercase)
                     .font(.rxCaption)
                     .tracking(rxCapsTracking)
                     .foregroundStyle(.rxInkSecondary)
@@ -326,7 +327,7 @@
                 if title.hasPrefix("ssh ") { title.removeFirst("ssh ".count) }
                 return title
             case let .machine(id):
-                return store.machine(id)?.name ?? "Deleted server"
+                return store.machine(id)?.name ?? String(localized: "Deleted server")
             }
         }
 

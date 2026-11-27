@@ -1,0 +1,19 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "Cancel" : {},
+    "Clear search" : {},
+    "Core %lld, %@ percent" : {},
+    "End" : {},
+    "Hidden" : {},
+    "Never" : {},
+    "Now" : {},
+    "Sample" : {},
+    "Start" : {},
+    "Unknown" : {},
+    "Value" : {},
+    "Version: %@ Build: %@" : {},
+    "Working…" : {}
+  },
+  "version" : "1.0"
+}

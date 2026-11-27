@@ -22,7 +22,7 @@
                     title: "New Folder",
                     lead: "Name the folder.",
                     confirmTitle: "Create",
-                    initialText: store.availableFolderName("New Folder")
+                    initialText: store.availableFolderName(String(localized: "New Folder"))
                 ) { name in
                     dismiss()
                     guard let name else { return }
@@ -44,7 +44,7 @@
                     dismiss()
                     guard let newName else { return }
                     if let folder = RayonStore.shared.folder(named: name), !RayonStore.shared.renameFolder(folder.id, to: newName) {
-                        Indicator.error("There is already a folder named \"\(newName)\".")
+                        Indicator.error(String(localized: "There is already a folder named \"\(newName)\"."))
                     }
                 }
             }
@@ -55,9 +55,9 @@
             guard let folder = RayonStore.shared.folder(named: name) else { return }
             let plan = FolderDeletionPlan(folder: folder)
             Indicator.confirm(
-                message: plan.message,
-                informative: plan.informative,
-                confirmTitle: plan.confirmTitle,
+                message: "\(plan.message)",
+                informative: plan.informative.map { "\($0)" },
+                confirmTitle: "\(plan.confirmTitle)",
                 destructive: true
             ) { confirmed in
                 guard confirmed else { return }
@@ -127,7 +127,7 @@
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.rxInkSecondary)
                     .accessibilityHidden(true)
-                Text(name.isEmpty ? "Default" : name)
+                Text(name.isEmpty ? "Default" : "\(name)")
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.rxInkSecondary)
                 Text("\(count)")
@@ -148,7 +148,7 @@
         @ViewBuilder private var linkedStatus: some View {
             let signedIn = account.isLoggedIn && folder == account.folder(store: store)
             Text("·").foregroundStyle(.rxInkSecondary)
-            Text(signedIn ? (account.nickname.isEmpty ? "Signed in" : account.nickname) : "Signed out")
+            Text(signedIn ? (account.nickname.isEmpty ? "Signed in" : "\(account.nickname)") : "Signed out")
                 .font(.system(size: 11))
                 .foregroundStyle(signedIn ? Color.rxInkSecondary : Color.rxWarning)
                 .lineLimit(1)
@@ -160,7 +160,7 @@
                 }
                 .buttonStyle(.rx(.plain, size: .small))
                 .disabled(refreshing)
-                .help(refreshError ?? "Fetch the account's devices again")
+                .help(refreshError.map { "\($0)" } ?? "Fetch the account's devices again")
             } else {
                 Button("Sign In…") { FolderActions.linkUURemote() }
                     .buttonStyle(.rx(.plain, size: .small))
@@ -211,9 +211,9 @@
     }
 
     private struct FolderNameSheet: View {
-        let title: String
-        let lead: String
-        let confirmTitle: String
+        let title: LocalizedStringResource
+        let lead: LocalizedStringResource
+        let confirmTitle: LocalizedStringResource
         let initialText: String
         let onComplete: (String?) -> Void
 

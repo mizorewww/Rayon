@@ -15,7 +15,7 @@
             // Opened without canOpenURL first, which answers false for a
             // scheme the app does not list as one it queries.
             UIApplication.shared.open(url) { opened in
-                if !opened { Indicator.error("The Files app is not installed.") }
+                if !opened { Indicator.error(String(localized: "The Files app is not installed.")) }
             }
         }
     }

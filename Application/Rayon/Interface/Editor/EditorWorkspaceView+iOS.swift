@@ -71,7 +71,7 @@
                     editor
                 }
             }
-            .navigationTitle(current?.name ?? (redaction == .all ? "Editor" : context.machine.name))
+            .navigationTitle(current?.name ?? (redaction == .all ? String(localized: "Editor") : context.machine.name))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
             .focusedSceneValue(\.editorCommands, EditorCommandActions(
@@ -353,7 +353,7 @@
                     EmptyStateView(
                         "Can't open \(document.name)",
                         systemImage: "doc.badge.ellipsis",
-                        message: message,
+                        message: "\(message)",
                         actionTitle: "Try Again"
                     ) {
                         document.load()
@@ -422,7 +422,7 @@
 
         private var error: String? {
             if path.isEmpty || path.hasPrefix("/") { return nil }
-            return "Use an absolute path starting with /."
+            return String(localized: "Use an absolute path starting with /.")
         }
 
         private var isFile: Bool { path.hasPrefix("/") && !path.hasSuffix("/") }

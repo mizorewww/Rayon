@@ -61,7 +61,7 @@
         func openPreviewTool() {
             let machines = store.machines
             guard let name = ProcessInfo.processInfo.environment["RAYON_PREVIEW_TOOL"],
-                  let tool = ServerTool.allCases.first(where: { $0.title.lowercased() == name }),
+                  let tool = ServerTool.allCases.first(where: { $0.title.key.lowercased() == name }),
                   let machine = tool == .desktop
                   ? machines.first(where: { $0.id == Self.previewVNCID }) ?? machines.first(where: \.hasRemoteDesktop)
                   : machines.first

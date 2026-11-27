@@ -112,7 +112,7 @@
             ) { urls in
                 guard let url = urls.first else { return }
                 guard let text = try? String(contentsOf: url, encoding: .utf8) else {
-                    Indicator.error("Could not read \(url.lastPathComponent) as UTF-8 text.")
+                    Indicator.error(String(localized: "Could not read \(url.lastPathComponent) as UTF-8 text."))
                     return
                 }
                 _ = store.importOpenSSHConfig(text, baseDirectory: url.deletingLastPathComponent())
@@ -138,7 +138,7 @@
             .help(redaction.tooltip)
         }
 
-        private func item(_ title: String, systemImage: String, level: RDMachine.RedactedLevel) -> RXToolbarMenuItem {
+        private func item(_ title: LocalizedStringResource, systemImage: String, level: RDMachine.RedactedLevel) -> RXToolbarMenuItem {
             RXToolbarMenuItem(title, systemImage: systemImage, isOn: redaction == level) {
                 redaction = level
             }
@@ -354,10 +354,10 @@
         func identityName(_ machine: RDMachine) -> String {
             guard let uid = machine.associatedIdentity else {
                 // The server's own user name, tried with each automatic identity.
-                return machine.sshUsernameOverride.map { "\($0) · Automatic" } ?? "Automatic"
+                return machine.sshUsernameOverride.map { String(localized: "\($0) · Automatic") } ?? String(localized: "Automatic")
             }
             let identity = (store.identity(uid) ?? RDIdentity())
-            return identity.username.isEmpty ? "Missing" : machine.sshLoginUsername(identity: identity)
+            return identity.username.isEmpty ? String(localized: "Missing") : machine.sshLoginUsername(identity: identity)
         }
     }
 

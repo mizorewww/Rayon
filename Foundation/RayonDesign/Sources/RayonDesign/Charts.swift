@@ -20,11 +20,11 @@ public func rxUsageColor(_ percent: Double, base: Color = .rxAccent) -> Color {
 public struct UsageBar: View {
     public struct Segment {
         /// What VoiceOver names the segment by; a single-value bar needs none.
-        let label: String?
+        let label: LocalizedStringResource?
         let fraction: Double
         let color: Color
 
-        public init(_ label: String? = nil, _ fraction: Double, _ color: Color) {
+        public init(_ label: LocalizedStringResource? = nil, _ fraction: Double, _ color: Color) {
             self.label = label
             self.fraction = fraction
             self.color = color
@@ -66,7 +66,7 @@ public struct UsageBar: View {
         segments.map { segment in
             let fraction = min(1, max(0, segment.fraction.isFinite ? segment.fraction : 0))
             let percent = fraction.formatted(.percent.precision(.fractionLength(0)))
-            return segment.label.map { "\($0) \(percent)" } ?? percent
+            return segment.label.map { "\(String(localized: $0)) \(percent)" } ?? percent
         }
         .joined(separator: ", ")
     }
@@ -142,12 +142,12 @@ private struct StackedBar: View {
 
 /// Legend entry: swatch, name, bold value.
 public struct LegendItem: View {
-    let title: String
+    let title: LocalizedStringResource
     let value: String
     let color: Color
     let outlined: Bool
 
-    public init(_ title: String, value: String, color: Color, outlined: Bool = false) {
+    public init(_ title: LocalizedStringResource, value: String, color: Color, outlined: Bool = false) {
         self.title = title
         self.value = value
         self.color = color
@@ -237,7 +237,7 @@ public struct CoreTile: View {
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay(alignment: .top) {
             HStack {
-                Text("\(index)")
+                Text(index, format: .number)
                 Spacer(minLength: 0)
                 Text(RXFormat.percent(percent))
             }
@@ -249,7 +249,7 @@ public struct CoreTile: View {
         .frame(height: height)
         .animation(.easeOut(duration: 0.3), value: percent)
         .accessibilityElement()
-        .accessibilityLabel("Core \(index), \(RXFormat.percent(percent)) percent")
+        .accessibilityLabel(Text("Core \(index), \(RXFormat.percent(percent)) percent", bundle: .module))
     }
 }
 

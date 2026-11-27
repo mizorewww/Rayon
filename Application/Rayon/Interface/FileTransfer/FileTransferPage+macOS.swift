@@ -110,7 +110,7 @@
                 }
             } header: {
                 VStack(alignment: .leading, spacing: RX.Space.s2) {
-                    PageTitle(redaction == .all ? "File Transfer" : context.machine.name, subtitle: subtitle)
+                    PageTitle(redaction == .all ? "File Transfer" : "\(context.machine.name)", subtitle: "\(subtitle)")
                     HStack(spacing: RX.Space.s3) {
                         Breadcrumb(url: context.currentUrl) { path in
                             context.navigate(path: path)
@@ -128,7 +128,7 @@
                         EmptyStateView(
                             "Connection closed",
                             systemImage: "bolt.horizontal",
-                            message: context.connectionPhase == .closed ? "" : context.currentHint,
+                            message: context.connectionPhase == .closed ? nil : "\(context.currentHint)",
                             actionTitle: context.destroyedSession ? nil : "Reconnect"
                         ) {
                             context.processBootstrap()
@@ -139,7 +139,7 @@
                         VStack(spacing: RX.Space.s3) {
                             ProgressView()
                                 .rxSpinner()
-                            Text(context.currentHint.isEmpty ? "Connecting…" : context.currentHint)
+                            Text(context.currentHint.isEmpty ? "Connecting…" : "\(context.currentHint)")
                                 .font(.rxBody)
                                 .foregroundStyle(.rxInkSecondary)
                         }
@@ -254,13 +254,13 @@
                 : (current.totalUnitCount > 0 ? current.fractionCompleted : nil)
             var detail: [String] = []
             if total.totalUnitCount > 1 {
-                detail.append("\(total.completedUnitCount) of \(total.totalUnitCount)")
+                detail.append(String(localized: "\(total.completedUnitCount) of \(total.totalUnitCount)"))
             }
             if context.currentSpeed > 0 {
                 detail.append(RXFormat.rateString(Double(context.currentSpeed)))
             }
             let name = context.currentProcessingFile.isEmpty
-                ? (context.currentHint.isEmpty ? "Working…" : context.currentHint)
+                ? (context.currentHint.isEmpty ? String(localized: "Working…") : context.currentHint)
                 : URL(fileURLWithPath: context.currentProcessingFile).lastPathComponent
             return VStack(alignment: .leading, spacing: RX.Space.s2) {
                 CardHead("Transfer")
@@ -496,7 +496,7 @@
 
         @State private var text = ""
 
-        var title: String {
+        var title: LocalizedStringResource {
             switch prompt {
             case .goTo: return "Go to Folder"
             case .newFolder: return "New Folder"
@@ -507,12 +507,12 @@
         var error: String? {
             switch prompt {
             case .goTo:
-                return text.hasPrefix("/") || text.isEmpty ? nil : "Use an absolute path starting with /."
+                return text.hasPrefix("/") || text.isEmpty ? nil : String(localized: "Use an absolute path starting with /.")
             case .newFolder, .rename:
                 if text.isEmpty { return nil }
-                if !text.isValidAsFilename { return "That name contains characters a file name cannot have." }
+                if !text.isValidAsFilename { return String(localized: "That name contains characters a file name cannot have.") }
                 if case let .rename(original) = prompt, original == text { return nil }
-                if context.currentFileList.contains(where: { $0.name == text }) { return "“\(text)” already exists in this folder." }
+                if context.currentFileList.contains(where: { $0.name == text }) { return String(localized: "“\(text)” already exists in this folder.") }
                 return nil
             }
         }
@@ -520,7 +520,7 @@
         var body: some View {
             SheetScaffold(title) {
                 RXField(prompt.label, error: error) {
-                    TextField(prompt.placeholder, text: $text)
+                    TextField(String(localized: prompt.placeholder), text: $text)
                         .textFieldStyle(.roundedBorder)
                         .font(prompt.isPath ? .rxCode : .rxBody)
                         .disableAutocorrection(true)
@@ -564,14 +564,14 @@
     }
 
     private extension FilePrompt {
-        var label: String {
+        var label: LocalizedStringResource {
             switch self {
             case .goTo: return "Path"
             case .newFolder, .rename: return "Name"
             }
         }
 
-        var placeholder: String {
+        var placeholder: LocalizedStringResource {
             switch self {
             case .goTo: return "/var/log"
             case .newFolder: return "untitled folder"
@@ -579,7 +579,7 @@
             }
         }
 
-        var confirmTitle: String {
+        var confirmTitle: LocalizedStringResource {
             switch self {
             case .goTo: return "Go"
             case .newFolder: return "Create"
@@ -625,7 +625,7 @@
         }
 
         func requiresConfirmation(_ message: String, completion: @escaping (Bool) -> Void) {
-            Indicator.confirm(message: message, confirmation: completion)
+            Indicator.confirm(message: "\(message)", confirmation: completion)
         }
 
         func autoOpenInterface(_ context: FileTransferContext) {

@@ -125,7 +125,7 @@
                let window = event.window, MainWindow.ordinaryWindows.contains(window),
                let menu = NSApp.mainMenu
             {
-                let first = [menu.items.first, menu.item(withTitle: "Terminal")].compactMap(\.?.submenu)
+                let first = [menu.items.first, menu.item(withTitle: String(localized: "Terminal"))].compactMap(\.?.submenu)
                 if first.contains(where: { $0.performKeyEquivalent(with: event) }) { return true }
             }
             guard event.modifierFlags.intersection([.command, .shift, .option, .control]) == .command,
@@ -178,9 +178,9 @@
             let terminals = !TerminalManager.shared.sessionContexts.isEmpty
             let kept = TerminalManager.shared.sessionContexts.filter(\.machine.isUURemoteDevice).count
             let terminalConsequence = switch kept {
-            case 0: "Open terminal sessions will be closed."
-            case TerminalManager.shared.sessionContexts.count: "UU Remote sessions keep running on their devices, to resume next time."
-            default: "SSH sessions will be closed; UU Remote sessions keep running on their devices, to resume next time."
+            case 0: String(localized: "Open terminal sessions will be closed.")
+            case TerminalManager.shared.sessionContexts.count: String(localized: "UU Remote sessions keep running on their devices, to resume next time.")
+            default: String(localized: "SSH sessions will be closed; UU Remote sessions keep running on their devices, to resume next time.")
             }
             let unsaved = EditorCenter.shared.workspaces.contains(where: \.hasUnsavedChanges)
             Logger.app.infoFile("quit requested: terminals \(terminals), unsaved \(unsaved)")
@@ -194,13 +194,13 @@
                 return .terminateNow
             }
             let consequences = [
-                unsaved ? "Unsaved changes in the editor will be lost." : nil,
+                unsaved ? String(localized: "Unsaved changes in the editor will be lost.") : nil,
                 terminals ? terminalConsequence : nil,
             ]
             quitAsked = true
             Indicator.confirm(
                 message: "Quit Rayon?",
-                informative: consequences.compactMap { $0 }.joined(separator: " "),
+                informative: "\(consequences.compactMap { $0 }.joined(separator: " "))",
                 confirmTitle: unsaved ? "Discard Changes and Quit" : "Quit",
                 destructive: true,
                 skippable: !unsaved

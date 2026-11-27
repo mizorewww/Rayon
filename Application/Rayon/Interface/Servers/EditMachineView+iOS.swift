@@ -61,7 +61,7 @@
         var body: some View {
             List {
                 Section {
-                    TextField(draft.trimmedAddress.isEmpty ? "Name" : draft.trimmedAddress, text: $draft.name)
+                    TextField(draft.trimmedAddress.isEmpty ? String(localized: "Name") : draft.trimmedAddress, text: $draft.name)
                     TextField("Comment", text: $draft.comment)
                 } header: {
                     RXSectionHeader("Name")
@@ -89,7 +89,7 @@
                                 }
                             } label: {
                                 Text(choices.first { $0.id == draft.proxyJumpMachineID }?.machine.name
-                                    ?? (choices.isEmpty ? "No other SSH servers saved" : "Choose…"))
+                                    ?? (choices.isEmpty ? String(localized: "No other SSH servers saved") : String(localized: "Choose…")))
                             }
                         }
                     }
@@ -212,7 +212,7 @@
                     RXSectionHeader("Identity")
                 } footer: {
                     if let aid = draft.identity {
-                        Text((RayonStore.shared.identity(aid) ?? RDIdentity()).shortDescription() + "\nA user name here overrides the identity's for this server.")
+                        Text("\((RayonStore.shared.identity(aid) ?? RDIdentity()).shortDescription())\nA user name here overrides the identity's for this server.")
                     } else {
                         Text("Tries each identity that authenticates automatically. A user name here overrides the identity's for this server.")
                     }
@@ -253,7 +253,7 @@
 
                 if !isNew {
                     Section {
-                        Text(banner.isEmpty ? "None" : banner)
+                        Text(banner.isEmpty ? "None" : "\(banner)")
                             .font(.rxCode)
                             .foregroundStyle(banner.isEmpty ? Color.rxInkSecondary : Color.rxInk)
                             .textSelection(.enabled)
@@ -345,9 +345,9 @@
 
         /// The identity's user name, which applies while the field is empty.
         var sshUsernamePlaceholder: String {
-            guard let identity = draft.identity else { return "User Name (empty = identity user)" }
+            guard let identity = draft.identity else { return String(localized: "User Name (empty = identity user)") }
             let username = (RayonStore.shared.identity(identity) ?? RDIdentity()).username
-            return username.isEmpty ? "User Name (empty = identity user)" : "User Name (empty = \(username))"
+            return username.isEmpty ? String(localized: "User Name (empty = identity user)") : String(localized: "User Name (empty = \(username))")
         }
 
         /// The server as the form describes it, on top of what is saved, so
@@ -370,7 +370,7 @@
         /// Saves the server; false, with the reason shown, when it is refused.
         func save(_ machine: RDMachine) -> Bool {
             guard RayonStore.shared.save(machine) else {
-                Indicator.alert(RayonStore.shared.problem(saving: machine)?.localizedDescription ?? "The server could not be saved.")
+                Indicator.alert(RayonStore.shared.problem(saving: machine).map { "\($0.localizedDescription)" } ?? "The server could not be saved.")
                 return false
             }
             return true
@@ -397,7 +397,7 @@
                 connecting = false
                 switch outcome {
                 case let .unreachable(refusal):
-                    connectError = refusal ?? "Could not reach \(host) on port \(port)."
+                    connectError = refusal ?? String(localized: "Could not reach \(host) on port \(port).")
                 case let .authenticated(identity, banner):
                     var created = machine
                     created.associatedIdentity = identity
@@ -408,9 +408,9 @@
                     TerminalManager.shared.begin(for: created.id)
                 case .rejected:
                     if chosen != nil {
-                        connectError = "The selected identity could not sign in to \(host)."
+                        connectError = String(localized: "The selected identity could not sign in to \(host).")
                     } else {
-                        connectError = "No identity that authenticates automatically could sign in. Choose an identity."
+                        connectError = String(localized: "No identity that authenticates automatically could sign in. Choose an identity.")
                         picksIdentity = true
                     }
                 }

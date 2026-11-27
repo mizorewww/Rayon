@@ -50,7 +50,7 @@
                 do {
                     _ = try MonitorCenter.shared.begin(for: machine)
                 } catch {
-                    Indicator.error("Cannot open monitor")
+                    Indicator.error(String(localized: "Cannot open monitor"))
                 }
             case .desktop:
                 _ = RemoteDesktopManager.shared.begin(for: machine)
@@ -162,7 +162,7 @@
             case let .server(machine):
                 (RayonStore.shared.machine(machine) ?? RDMachine()).name
             case let .command(key):
-                TerminalManager.shared.terminals.first { $0.tabGroupKey == key }?.displayName ?? "Terminal"
+                TerminalManager.shared.terminals.first { $0.tabGroupKey == key }?.displayName ?? String(localized: "Terminal")
             }
         }
 

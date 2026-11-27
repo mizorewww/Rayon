@@ -37,12 +37,14 @@ public enum RXAppVersion {
     /// "Version: 1.3 Build: 4", the line at the foot of Home.
     public static var text: String {
         let info = Bundle.main.infoDictionary
-        let short = info?["CFBundleShortVersionString"] as? String ?? "Unknown"
-        let build = info?["CFBundleVersion"] as? String ?? "Unknown"
+        let unknown = String(localized: "Unknown", bundle: .module)
+        let short = info?["CFBundleShortVersionString"] as? String ?? unknown
+        let build = info?["CFBundleVersion"] as? String ?? unknown
+        let version = String(localized: "Version: \(short) Build: \(build)", bundle: .module)
         #if DEBUG
-            return "Version: \(short) Build: \(build) Debug"
+            return version + " Debug"
         #else
-            return "Version: \(short) Build: \(build)"
+            return version
         #endif
     }
 }

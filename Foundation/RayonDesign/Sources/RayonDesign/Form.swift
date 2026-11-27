@@ -39,12 +39,12 @@ public struct RXDividedStack<Content: View>: View {
 
 /// A settings row: title and one-sentence description, control right-aligned.
 public struct RXFormRow<Control: View>: View {
-    let title: String
-    let description: String?
+    let title: LocalizedStringResource
+    let description: LocalizedStringResource?
     let alignTop: Bool
     let control: Control
 
-    public init(_ title: String, description: String? = nil, alignTop: Bool = false, @ViewBuilder control: () -> Control) {
+    public init(_ title: LocalizedStringResource, description: LocalizedStringResource? = nil, alignTop: Bool = false, @ViewBuilder control: () -> Control) {
         self.title = title
         self.description = description
         self.alignTop = alignTop
@@ -57,7 +57,7 @@ public struct RXFormRow<Control: View>: View {
                 Text(title)
                     .font(.rxBody)
                     .foregroundStyle(.rxInk)
-                if let description, !description.isEmpty {
+                if let description {
                     HelpText(description)
                 }
             }
@@ -71,11 +71,11 @@ public struct RXFormRow<Control: View>: View {
 
 /// A boolean preference: title, description and a switch on the right.
 public struct SwitchRow: View {
-    let title: String
-    let description: String?
+    let title: LocalizedStringResource
+    let description: LocalizedStringResource?
     @Binding var isOn: Bool
 
-    public init(_ title: String, description: String? = nil, isOn: Binding<Bool>) {
+    public init(_ title: LocalizedStringResource, description: LocalizedStringResource? = nil, isOn: Binding<Bool>) {
         self.title = title
         self.description = description
         _isOn = isOn
@@ -96,11 +96,11 @@ public struct SwitchRow: View {
 
 /// Page-level section title with optional count and trailing controls.
 public struct SectionTitle<Trailing: View>: View {
-    let title: String
+    let title: LocalizedStringResource
     let count: Int?
     let trailing: Trailing
 
-    public init(_ title: String, count: Int? = nil, @ViewBuilder trailing: () -> Trailing) {
+    public init(_ title: LocalizedStringResource, count: Int? = nil, @ViewBuilder trailing: () -> Trailing) {
         self.title = title
         self.count = count
         self.trailing = trailing()
@@ -112,7 +112,7 @@ public struct SectionTitle<Trailing: View>: View {
                 .font(.rxSectionTitle)
                 .foregroundStyle(.rxInk)
             if let count {
-                CapsLabel("\(count)")
+                CapsLabel(verbatim: count.formatted())
             }
             Spacer(minLength: 0)
             trailing
@@ -122,7 +122,7 @@ public struct SectionTitle<Trailing: View>: View {
 }
 
 public extension SectionTitle where Trailing == EmptyView {
-    init(_ title: String, count: Int? = nil) {
+    init(_ title: LocalizedStringResource, count: Int? = nil) {
         self.init(title, count: count) { EmptyView() }
     }
 }

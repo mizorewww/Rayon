@@ -91,7 +91,7 @@
                     EmptyStateView("No matches", systemImage: "magnifyingglass")
                 }
                 ForEach(groups, id: \.name) { group in
-                    TableGroupRow(group.name.isEmpty ? "Default" : group.name)
+                    TableGroupRow(group.name.isEmpty ? "Default" : "\(group.name)")
                         .transition(.opacity)
                     ForEach(Array(group.identities.enumerated()), id: \.element.id) { index, identity in
                         IdentityRow(identity: identity, selected: selection == identity.id)
@@ -119,7 +119,7 @@
         var body: some View {
             HStack(spacing: RX.Space.s2) {
                 VStack(alignment: .leading, spacing: 1) {
-                    Text(identity.username.isEmpty ? "No username" : identity.username)
+                    Text(identity.username.isEmpty ? "No username" : "\(identity.username)")
                         .font(.rxBody)
                         .foregroundStyle(identity.username.isEmpty ? Color.rxInkSecondary : Color.rxInk)
                         .lineLimit(1)
@@ -158,7 +158,7 @@
         static func duplicate(_ id: RDIdentity.ID) {
             guard var copy = RayonStore.shared.identity(id) else { return }
             copy.id = UUID()
-            copy.comment = copy.comment.isEmpty ? "Copy" : copy.comment + " (copy)"
+            copy.comment = copy.comment.isEmpty ? String(localized: "Copy") : String(localized: "\(copy.comment) (copy)")
             RayonStore.shared.save(copy)
         }
 
@@ -169,7 +169,7 @@
             Indicator.confirm(
                 message: "Delete identity \(identity.username)?",
                 informative: users > 0
-                    ? "\(users) server\(users == 1 ? "" : "s") use it and will try automatic identities instead."
+                    ? "\(users) servers use it and will try automatic identities instead."
                     : "Its password and keys are removed from Rayon.",
                 confirmTitle: "Delete",
                 destructive: true
@@ -183,7 +183,7 @@
         static func deployPublicKey(_ publicKey: String, identityID: RDIdentity.ID) {
             let pub = publicKey.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !pub.isEmpty else {
-                Indicator.error("This identity has no public key to deploy.")
+                Indicator.error(String(localized: "This identity has no public key to deploy."))
                 return
             }
             ServerPickerSheet.present(
@@ -197,7 +197,7 @@
                     let outcome = await PublicKeyDeployment.deploy(pub, to: machines)
                     await MainActor.run {
                         if !outcome.failed.isEmpty {
-                            Indicator.error("Failed to deploy public key to: \(outcome.failed.joined(separator: ", ")).")
+                            Indicator.error(String(localized: "Failed to deploy public key to: \(outcome.failed.joined(separator: ", "))."))
                         } else if !outcome.succeeded.isEmpty {
                             PublicKeyDeployment.adopt(identity: identityID, on: machines)
                         }
@@ -225,7 +225,7 @@
         var body: some View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .center) {
-                    HelpText(usageLine.isEmpty ? "Not used by any server" : usageLine)
+                    HelpText(usageLine.isEmpty ? "Not used by any server" : "\(usageLine)")
                     Spacer()
                     Button("Revert") { draft = IdentityDraft(original) }
                         .buttonStyle(.rx(size: .small))
@@ -272,8 +272,7 @@
             let names = usedBy
             guard !names.isEmpty else { return "" }
             let shown = names.prefix(4).joined(separator: ", ")
-            let more = names.count > 4 ? " and \(names.count - 4) more" : ""
-            return "Used by \(shown)\(more)"
+            return names.count > 4 ? String(localized: "Used by \(shown) and \(names.count - 4) more") : String(localized: "Used by \(shown)")
         }
     }
 
@@ -372,8 +371,8 @@
     private struct KeyField: View {
         @Binding var text: String
         let masked: Bool
-        let placeholder: String
-        let loadTitle: String
+        let placeholder: LocalizedStringResource
+        let loadTitle: LocalizedStringResource
         let matches: (String) -> Bool
 
         var display: String {
@@ -382,7 +381,7 @@
             if masked {
                 let header = lines.first ?? ""
                 let bytes = text.utf8.count
-                return "\(header)  •••••••• \(bytes) bytes"
+                return String(localized: "\(header)  •••••••• \(bytes) bytes")
             }
             return text.trimmingCharacters(in: .whitespacesAndNewlines)
         }
@@ -417,14 +416,14 @@
             ) { urls in
                 guard let url = urls.first else { return }
                 guard let data = try? Data(contentsOf: url), let string = String(data: data, encoding: .utf8) else {
-                    Indicator.error("The file could not be read as text.")
+                    Indicator.error(String(localized: "The file could not be read as text."))
                     return
                 }
                 if matches(string) {
                     text = string
                 } else {
                     Indicator.confirm(
-                        message: "This file does not look like a \(masked ? "private" : "public") key",
+                        message: masked ? "This file does not look like a private key" : "This file does not look like a public key",
                         informative: "Load it anyway?",
                         confirmTitle: "Load"
                     ) { confirmed in
@@ -477,7 +476,7 @@
     /// A password field whose text shows only after the Mac's owner confirms
     /// with Touch ID or the login password, as on iPhone.
     private struct RevealablePasswordField: View {
-        let placeholder: String
+        let placeholder: LocalizedStringResource
         @Binding var text: String
         @State private var revealed = false
 
@@ -485,7 +484,7 @@
             HStack(spacing: RX.Space.s2) {
                 Group {
                     if revealed {
-                        TextField(placeholder, text: $text)
+                        TextField(String(localized: placeholder), text: $text)
                     } else {
                         SecureField(placeholder, text: $text)
                     }

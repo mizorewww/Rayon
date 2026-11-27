@@ -92,16 +92,16 @@
             }
         }
 
-        private func savePanel(_ title: String, name: String) -> URL? {
+        private func savePanel(_ title: LocalizedStringResource, name: String) -> URL? {
             let panel = NSSavePanel()
-            panel.title = title
+            panel.title = String(localized: title)
             panel.nameFieldStringValue = name
             panel.canCreateDirectories = true
             guard panel.runModal() == .OK else { return nil }
             return panel.url
         }
 
-        private func chooseFile(_ message: String, then action: @escaping (URL) -> Void) {
+        private func chooseFile(_ message: LocalizedStringResource, then action: @escaping (URL) -> Void) {
             OpenPanel.present(
                 message: message,
                 prompt: "Import",
@@ -123,9 +123,9 @@
             Task {
                 do {
                     try await store.exportBackup(to: url, includeSecrets: includeSecrets, password: password)
-                    statusMessage = "Exported backup to \(url.lastPathComponent)."
+                    statusMessage = String(localized: "Exported backup to \(url.lastPathComponent).")
                 } catch {
-                    Indicator.error("Could not export backup: \(error.localizedDescription)")
+                    Indicator.error(String(localized: "Could not export backup: \(error.localizedDescription)"))
                 }
             }
         }
@@ -147,12 +147,12 @@
                     let contents = try await DataBackup.load(url, password: password)
                     url.stopAccessingSecurityScopedResource()
                     let result = store.restore(contents)
-                    statusMessage = "Imported \(result.summary)"
+                    statusMessage = String(localized: "Imported \(result.summary)")
                 } catch BackupError.wrongPassword {
                     locked = LockedBackup(url: url, retry: true)
                 } catch {
                     url.stopAccessingSecurityScopedResource()
-                    Indicator.error("Could not import backup: \(error.localizedDescription)")
+                    Indicator.error(String(localized: "Could not import backup: \(error.localizedDescription)"))
                 }
             }
         }
@@ -161,9 +161,9 @@
             guard let url = savePanel("Export Rayon Settings", name: "Rayon.\(PreferencesBackup.fileExtension)") else { return }
             do {
                 try PreferencesBackup.export(to: url)
-                statusMessage = "Exported settings to \(url.lastPathComponent)."
+                statusMessage = String(localized: "Exported settings to \(url.lastPathComponent).")
             } catch {
-                Indicator.error("Could not export settings: \(error.localizedDescription)")
+                Indicator.error(String(localized: "Could not export settings: \(error.localizedDescription)"))
             }
         }
 
@@ -171,9 +171,9 @@
             chooseFile("Choose exported Rayon settings") { url in
                 do {
                     try PreferencesBackup.restore(from: url)
-                    statusMessage = "Imported settings."
+                    statusMessage = String(localized: "Imported settings.")
                 } catch {
-                    Indicator.error("Could not import settings: \(error.localizedDescription)")
+                    Indicator.error(String(localized: "Could not import settings: \(error.localizedDescription)"))
                 }
             }
         }
@@ -192,11 +192,11 @@
             ) { urls in
                 guard let url = urls.first else { return }
                 guard let text = try? String(contentsOf: url, encoding: .utf8) else {
-                    Indicator.error("Could not read \(url.lastPathComponent) as UTF-8 text.")
+                    Indicator.error(String(localized: "Could not read \(url.lastPathComponent) as UTF-8 text."))
                     return
                 }
                 let result = store.importOpenSSHConfig(text, baseDirectory: url.deletingLastPathComponent())
-                statusMessage = "Imported \(result.importedServers) servers and \(result.importedIdentities) identities from \(url.lastPathComponent)."
+                statusMessage = String(localized: "Imported \(result.importedServers) servers and \(result.importedIdentities) identities from \(url.lastPathComponent).")
             }
         }
     }

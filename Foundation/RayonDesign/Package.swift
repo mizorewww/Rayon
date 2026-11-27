@@ -5,6 +5,7 @@ import PackageDescription
 
 let package = Package(
     name: "RayonDesign",
+    defaultLocalization: "en",
     platforms: [
         .macOS(.v14),
         .iOS(.v17),
@@ -18,6 +19,7 @@ let package = Package(
     targets: [
         .target(
             name: "RayonDesign",
+            resources: [.process("Resources")],
             swiftSettings: [.swiftLanguageMode(.v5)]
         ),
     ]

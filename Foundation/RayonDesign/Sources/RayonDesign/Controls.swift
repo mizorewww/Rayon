@@ -142,14 +142,14 @@ public extension ButtonStyle where Self == RXButtonStyle {
 
 /// Icon-only 28×28 button with an accessible label and tooltip.
 public struct RXIconButton: View {
-    let title: String
+    let title: LocalizedStringResource
     let systemImage: String
     let kind: RXButtonStyle.Kind
     let size: RXButtonStyle.Size
     let action: () -> Void
 
     public init(
-        _ title: String,
+        _ title: LocalizedStringResource,
         systemImage: String,
         kind: RXButtonStyle.Kind = .bordered,
         size: RXButtonStyle.Size = .regular,
@@ -190,12 +190,13 @@ public extension View {
 
 /// Caption label above a field, optional help or error underneath.
 public struct RXField<Content: View>: View {
-    let label: String
-    let help: String?
+    let label: LocalizedStringResource
+    let help: LocalizedStringResource?
+    /// The problem with the value, as its own description says it.
     let error: String?
     let content: Content
 
-    public init(_ label: String, help: String? = nil, error: String? = nil, @ViewBuilder content: () -> Content) {
+    public init(_ label: LocalizedStringResource, help: LocalizedStringResource? = nil, error: String? = nil, @ViewBuilder content: () -> Content) {
         self.label = label
         self.help = help
         self.error = error
@@ -207,8 +208,8 @@ public struct RXField<Content: View>: View {
             CapsLabel(label)
             content
             if let error, !error.isEmpty {
-                HelpText(error, isError: true)
-            } else if let help, !help.isEmpty {
+                HelpText(verbatim: error, isError: true)
+            } else if let help {
                 HelpText(help)
             }
         }
@@ -219,17 +220,23 @@ public struct RXField<Content: View>: View {
 /// A read-only value drawn like a field.
 public struct RXValueField: View {
     let text: String
-    let placeholder: String
+    let placeholder: LocalizedStringResource?
     let monospaced: Bool
 
-    public init(_ text: String, placeholder: String = "", monospaced: Bool = false) {
+    public init(_ text: String, placeholder: LocalizedStringResource? = nil, monospaced: Bool = false) {
         self.text = text
         self.placeholder = placeholder
         self.monospaced = monospaced
     }
 
     public var body: some View {
-        Text(text.isEmpty ? placeholder : text)
+        Group {
+            if text.isEmpty, let placeholder {
+                Text(placeholder)
+            } else {
+                Text(verbatim: text)
+            }
+        }
             .font(monospaced ? .rxCode : .rxBody)
             .foregroundStyle(text.isEmpty ? Color.rxInkSecondary : Color.rxInk)
             .lineLimit(1)
@@ -247,11 +254,11 @@ public struct RXValueField: View {
 
 /// A 28pt filter field at the left of a toolbar. Filters the current list live.
 public struct RXSearchField: View {
-    let prompt: String
+    let prompt: LocalizedStringResource
     @Binding var text: String
     let width: CGFloat?
 
-    public init(_ prompt: String, text: Binding<String>, width: CGFloat? = 220) {
+    public init(_ prompt: LocalizedStringResource, text: Binding<String>, width: CGFloat? = 220) {
         self.prompt = prompt
         _text = text
         self.width = width
@@ -262,7 +269,7 @@ public struct RXSearchField: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 12))
                 .foregroundStyle(.rxInkSecondary)
-            TextField(prompt, text: $text)
+            TextField(String(localized: prompt), text: $text)
                 .textFieldStyle(.plain)
                 .font(.rxBody)
                 .disableAutocorrection(true)
@@ -275,7 +282,7 @@ public struct RXSearchField: View {
                         .foregroundStyle(.rxInkSecondary)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Clear search")
+                .accessibilityLabel(Text("Clear search", bundle: .module))
             }
         }
         .padding(.horizontal, 10)

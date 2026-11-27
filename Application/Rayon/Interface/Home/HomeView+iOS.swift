@@ -208,9 +208,9 @@
                 importData = nil
                 do {
                     let result = try store.importPasted(data, key: paste)
-                    Indicator.success("Data imported", message: result.summary)
+                    Indicator.success("Data imported", message: "\(result.summary)")
                 } catch {
-                    Indicator.error("Could not import: \(error.localizedDescription)")
+                    Indicator.error(String(localized: "Could not import: \(error.localizedDescription)"))
                 }
             } else if let data = Data(base64Encoded: paste) {
                 importData = data
@@ -234,7 +234,7 @@
                             .font(.system(size: 13, design: .monospaced))
                     case let .machine(id):
                         Image(systemName: "server.rack")
-                        RedactableText(store.machine(id)?.name ?? "Deleted server", redacted: redaction == .all)
+                        RedactableText(store.machine(id)?.name ?? String(localized: "Deleted server"), redacted: redaction == .all)
                             .font(.system(size: 13))
                     }
                 }

@@ -94,7 +94,7 @@
                 CardHead("Nearby")
                     .padding(.horizontal, RX.Space.s3)
                 if let failure = nearby.failure {
-                    HelpText(failure, isError: true)
+                    HelpText(verbatim: failure, isError: true)
                         .padding(.horizontal, RX.Space.s3)
                         .padding(.bottom, RX.Space.s2)
                 } else if nearby.hosts.isEmpty {
@@ -129,7 +129,7 @@
                         .font(.system(size: 22))
                         .foregroundStyle(account.isLoggedIn ? Color.rxAccent : Color.rxInkSecondary)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(account.isLoggedIn ? (account.nickname.isEmpty ? "Signed in" : account.nickname) : "Not signed in")
+                        Text(account.isLoggedIn ? (account.nickname.isEmpty ? "Signed in" : "\(account.nickname)") : "Not signed in")
                             .font(.rxBody)
                             .foregroundStyle(.rxInk)
                         if let failure = account.refreshError, account.isLoggedIn {

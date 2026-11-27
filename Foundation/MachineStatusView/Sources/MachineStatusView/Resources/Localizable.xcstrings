@@ -1,0 +1,108 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "%@" : {
+      "shouldTranslate" : false
+    },
+    "%@ of %@" : {},
+    "%@ used, %@ cache, %@ free" : {},
+    "%@, PID %lld, %@, CPU %@, memory %@" : {},
+    "%@, PID %lld, CPU %@, memory %@" : {},
+    "/ %lld running" : {},
+    "1 min" : {},
+    "15 min" : {},
+    "5 min" : {},
+    "Address" : {},
+    "CPU" : {},
+    "CPU or Memory" : {},
+    "Cache" : {},
+    "Can't connect" : {},
+    "Connecting…" : {},
+    "Cores" : {},
+    "Disks" : {},
+    "Driver %@" : {},
+    "Fan %@" : {},
+    "Free" : {},
+    "GPU" : {},
+    "Graphics · %lld GPUs" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Graphics · %lld GPU"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Graphics · %lld GPUs"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Hostname" : {},
+    "IO wait" : {},
+    "Load" : {},
+    "Memory" : {},
+    "Memory · %@" : {},
+    "Monitor closed" : {},
+    "Name" : {},
+    "Network" : {},
+    "Nice" : {},
+    "No data" : {},
+    "No swap" : {},
+    "OS" : {},
+    "Processes" : {},
+    "Processor" : {},
+    "Processor · %lld cores" : {
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Processor · %lld core"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "Processor · %lld cores"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "RAM" : {},
+    "RAM or Swap" : {},
+    "Receive" : {},
+    "Status isn't available" : {},
+    "Summary" : {},
+    "Summary or Cores" : {},
+    "Swap" : {},
+    "System" : {},
+    "The server isn't answering." : {},
+    "The server stopped answering." : {},
+    "This server doesn't run the status script; it needs a POSIX shell." : {},
+    "This server's details could not be read." : {},
+    "Top processes" : {},
+    "Transmit" : {},
+    "Try Again" : {},
+    "Uptime" : {},
+    "Used" : {},
+    "User" : {},
+    "VRAM" : {},
+    "peak %@" : {},
+    "vbios %@" : {}
+  },
+  "version" : "1.0"
+}

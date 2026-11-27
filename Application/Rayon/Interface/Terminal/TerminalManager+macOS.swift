@@ -39,7 +39,7 @@
             completion: @escaping (Context) -> Void = { _ in }
         ) {
             guard let machine = RayonStore.shared.machine(machineId) else {
-                Indicator.error("This server's details could not be read.")
+                Indicator.error(String(localized: "This server's details could not be read."))
                 return
             }
             createSession(withMachineObject: machine, force: force, resuming: uuSession, completion: completion)

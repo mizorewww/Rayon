@@ -11,10 +11,10 @@ import SwiftUI
 
 /// Page title plus an optional one-line subtitle.
 public struct PageTitle: View {
-    let title: String
-    let subtitle: String?
+    let title: LocalizedStringResource
+    let subtitle: LocalizedStringResource?
 
-    public init(_ title: String, subtitle: String? = nil) {
+    public init(_ title: LocalizedStringResource, subtitle: LocalizedStringResource? = nil) {
         self.title = title
         self.subtitle = subtitle
     }
@@ -27,7 +27,7 @@ public struct PageTitle: View {
                 .foregroundStyle(.rxInk)
                 .lineLimit(1)
                 .truncationMode(.middle)
-            if let subtitle, !subtitle.isEmpty {
+            if let subtitle {
                 Text(subtitle)
                     .font(.rxBody)
                     .foregroundStyle(.rxInkSecondary)
@@ -43,16 +43,16 @@ public struct PageTitle: View {
 /// What a list shows when empty: icon, heading, one sentence, the one fixing action.
 public struct EmptyStateView: View {
     let systemImage: String
-    let title: String
-    let message: String
-    let actionTitle: String?
+    let title: LocalizedStringResource
+    let message: LocalizedStringResource?
+    let actionTitle: LocalizedStringResource?
     let action: (() -> Void)?
 
     public init(
-        _ title: String,
+        _ title: LocalizedStringResource,
         systemImage: String,
-        message: String = "",
-        actionTitle: String? = nil,
+        message: LocalizedStringResource? = nil,
+        actionTitle: LocalizedStringResource? = nil,
         action: (() -> Void)? = nil
     ) {
         self.title = title
@@ -72,7 +72,7 @@ public struct EmptyStateView: View {
             Text(title)
                 .font(.system(size: 15, weight: .semibold))
                 .foregroundStyle(.rxInk)
-            if !message.isEmpty {
+            if let message {
                 Text(message)
                     .font(.rxBody)
                     .foregroundStyle(.rxInkSecondary)
@@ -80,7 +80,7 @@ public struct EmptyStateView: View {
                     .frame(maxWidth: 320)
             }
             if let actionTitle, let action {
-                Button(actionTitle, action: action)
+                Button(String(localized: actionTitle), action: action)
                     .buttonStyle(.rxPrimary)
                     .padding(.top, RX.Space.s1)
             }
@@ -122,10 +122,10 @@ public struct CodeBlock: View {
 
 /// A column caption in a table header.
 public struct TableHeaderLabel: View {
-    let text: String
+    let text: LocalizedStringResource
     let alignment: Alignment
 
-    public init(_ text: String, alignment: Alignment = .leading) {
+    public init(_ text: LocalizedStringResource, alignment: Alignment = .leading) {
         self.text = text
         self.alignment = alignment
     }
@@ -138,10 +138,10 @@ public struct TableHeaderLabel: View {
 
 /// A group row inside a table.
 public struct TableGroupRow: View {
-    let title: String
+    let title: LocalizedStringResource
     let trailing: String?
 
-    public init(_ title: String, trailing: String? = nil) {
+    public init(_ title: LocalizedStringResource, trailing: String? = nil) {
         self.title = title
         self.trailing = trailing
     }
@@ -180,12 +180,12 @@ public extension View {
 
 /// The standard sheet: title, one-line lead, body, then a footer of actions.
 public struct SheetScaffold<Content: View, Footer: View>: View {
-    let title: String
-    let lead: String?
+    let title: LocalizedStringResource
+    let lead: LocalizedStringResource?
     let content: Content
     let footer: Footer
 
-    public init(_ title: String, lead: String? = nil, @ViewBuilder content: () -> Content, @ViewBuilder footer: () -> Footer) {
+    public init(_ title: LocalizedStringResource, lead: LocalizedStringResource? = nil, @ViewBuilder content: () -> Content, @ViewBuilder footer: () -> Footer) {
         self.title = title
         self.lead = lead
         self.content = content()
@@ -198,7 +198,7 @@ public struct SheetScaffold<Content: View, Footer: View>: View {
                 Text(title)
                     .font(.rxSheetTitle)
                     .foregroundStyle(.rxInk)
-                if let lead, !lead.isEmpty {
+                if let lead {
                     Text(lead)
                         .font(.rxBody)
                         .foregroundStyle(.rxInkSecondary)
@@ -220,9 +220,9 @@ public struct SheetScaffold<Content: View, Footer: View>: View {
 
 /// Blocking "Operation in progress" HUD over a `scrim`.
 public struct ProgressHUD: View {
-    let text: String
+    let text: LocalizedStringResource?
 
-    public init(_ text: String = "Working…") {
+    public init(_ text: LocalizedStringResource? = nil) {
         self.text = text
     }
 
@@ -232,7 +232,7 @@ public struct ProgressHUD: View {
             VStack(spacing: RX.Space.s3) {
                 ProgressView()
                     .rxSpinner()
-                Text(text)
+                Text(text ?? .init("Working…", bundle: .module))
                     .font(.rxBody)
                     .foregroundStyle(.rxInk)
             }
@@ -273,7 +273,7 @@ public struct ProgressRowView: View {
                     .foregroundStyle(.rxInkSecondary)
                     .lineLimit(1)
                 if let cancel {
-                    Button("Cancel", action: cancel)
+                    Button(String(localized: "Cancel", bundle: .module), action: cancel)
                         .buttonStyle(.rx(size: .small))
                 }
             }

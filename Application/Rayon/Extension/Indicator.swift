@@ -24,6 +24,8 @@ enum Indicator {
         let title: String
         let accent: Bool
         let run: @MainActor () -> Void
+
+        static var ok: Action { Action(title: String(localized: "OK"), accent: true) {} }
     }
 
     /// AlertController draws its buttons in Rayon's accent, not its own red,
@@ -39,11 +41,11 @@ enum Indicator {
     /// Shows the whole message: a reason cut short cannot be acted on.
     static func error(_ message: String) {
         Logger.app.errorFile("presented error: \(private: message)")
-        show(title: "Error", message: message, actions: [Action(title: "OK", accent: true) {}], dismissible: true)
+        show(title: String(localized: "Error"), message: message, actions: [.ok], dismissible: true)
     }
 
-    static func alert(_ title: String, message: String = "") {
-        show(title: title, message: message, actions: [Action(title: "OK", accent: true) {}], dismissible: true)
+    static func alert(_ title: LocalizedStringResource, message: LocalizedStringResource? = nil) {
+        show(title: String(localized: title), message: message.map { String(localized: $0) } ?? "", actions: [.ok], dismissible: true)
     }
 
     /// Asks before an action: the title names the thing, the message says the
@@ -53,9 +55,9 @@ enum Indicator {
     ///   closing a session" turns off. Every other confirmation, a delete
     ///   above all, always asks.
     static func confirm(
-        message: String,
-        informative: String? = nil,
-        confirmTitle: String = "Continue",
+        message: LocalizedStringResource,
+        informative: LocalizedStringResource? = nil,
+        confirmTitle: LocalizedStringResource = "Continue",
         destructive: Bool = false,
         skippable: Bool = false,
         confirmation: @escaping (Bool) -> Void
@@ -64,26 +66,29 @@ enum Indicator {
             confirmation(true)
             return
         }
+        let title = String(localized: message)
+        let message = informative.map { String(localized: $0) } ?? ""
+        let confirmTitle = String(localized: confirmTitle)
         guard !destructive else {
-            return systemConfirm(title: message, message: informative ?? "", confirmTitle: confirmTitle, confirmation: confirmation)
+            return systemConfirm(title: title, message: message, confirmTitle: confirmTitle, confirmation: confirmation)
         }
-        show(title: message, message: informative ?? "", actions: [
-            Action(title: "Cancel", accent: false) { confirmation(false) },
+        show(title: title, message: message, actions: [
+            Action(title: String(localized: "Cancel"), accent: false) { confirmation(false) },
             Action(title: confirmTitle, accent: true) { confirmation(true) },
         ], dismissible: false)
     }
 
     static func input(
-        title: String,
-        message: String = "",
-        placeholder: String,
+        title: LocalizedStringResource,
+        message: LocalizedStringResource? = nil,
+        placeholder: LocalizedStringResource,
         text: String,
         completion: @escaping @MainActor (String) -> Void
     ) {
         present(AlertInputViewController(
-            title: .init(title),
-            message: .init(message),
-            placeholder: .init(placeholder),
+            title: .init(String(localized: title)),
+            message: .init(message.map { String(localized: $0) } ?? ""),
+            placeholder: .init(String(localized: placeholder)),
             text: text,
             doneButtonText: "OK",
             onConfirm: completion
@@ -91,8 +96,8 @@ enum Indicator {
     }
 
     #if os(iOS)
-        static func success(_ title: String, message: String? = nil) {
-            SPIndicator.present(title: title, message: message, preset: .done, haptic: .success)
+        static func success(_ title: LocalizedStringResource, message: LocalizedStringResource? = nil) {
+            SPIndicator.present(title: String(localized: title), message: message.map { String(localized: $0) }, preset: .done, haptic: .success)
         }
     #endif
 
@@ -117,7 +122,7 @@ enum Indicator {
 
         private static func systemConfirm(title: String, message: String, confirmTitle: String, confirmation: @escaping (Bool) -> Void) {
             let alert = UIAlertController(title: title, message: message.isEmpty ? nil : message, preferredStyle: .alert)
-            alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { _ in confirmation(false) })
+            alert.addAction(UIAlertAction(title: String(localized: "Cancel"), style: .cancel) { _ in confirmation(false) })
             alert.addAction(UIAlertAction(title: confirmTitle, style: .destructive) { _ in confirmation(true) })
             ModalPresenter.present(alert)
         }
@@ -128,7 +133,7 @@ enum Indicator {
             await withCheckedContinuation { continuation in
                 let answer = HostKeyAnswerOnce(continuation)
                 let alert = UIAlertController(title: question.title, message: question.message, preferredStyle: .alert)
-                alert.addAction(UIAlertAction(title: "Cancel", style: .cancel) { _ in answer.resume(.declined) })
+                alert.addAction(UIAlertAction(title: String(localized: "Cancel"), style: .cancel) { _ in answer.resume(.declined) })
                 let trust = UIAlertAction(title: question.confirmTitle, style: question.isWarning ? .destructive : .default) { _ in
                     answer.resume(.trusted)
                 }
@@ -178,7 +183,7 @@ enum Indicator {
             alert.messageText = title
             alert.informativeText = message
             alert.addButton(withTitle: confirmTitle).hasDestructiveAction = true
-            alert.addButton(withTitle: "Cancel")
+            alert.addButton(withTitle: String(localized: "Cancel"))
             Task {
                 confirmation(await ask(alert) == .alertFirstButtonReturn)
             }
@@ -193,7 +198,8 @@ enum Indicator {
             alert.accessoryView = monospacedLabel(question.keys)
             let warning = question.isWarning
             // NSAlert's first button is its default one.
-            for title in warning ? ["Cancel", question.confirmTitle] : [question.confirmTitle, "Cancel"] {
+            let cancel = String(localized: "Cancel")
+            for title in warning ? [cancel, question.confirmTitle] : [question.confirmTitle, cancel] {
                 alert.addButton(withTitle: title)
             }
             alert.buttons[warning ? 1 : 0].hasDestructiveAction = warning

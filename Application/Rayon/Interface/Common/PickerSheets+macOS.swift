@@ -12,9 +12,9 @@
     import SwiftUI
 
     struct ServerPickerSheet: View {
-        let title: String
-        let lead: String?
-        let confirmTitle: String
+        let title: LocalizedStringResource
+        let lead: LocalizedStringResource?
+        let confirmTitle: LocalizedStringResource
         let allowsMany: Bool
         /// nil when cancelled.
         let onComplete: ([RDMachine.ID]?) -> Void
@@ -26,9 +26,9 @@
         @State private var searchText = ""
 
         init(
-            title: String,
-            lead: String?,
-            confirmTitle: String,
+            title: LocalizedStringResource,
+            lead: LocalizedStringResource?,
+            confirmTitle: LocalizedStringResource,
             allowsMany: Bool,
             initialSelection: Set<RDMachine.ID> = [],
             onComplete: @escaping ([RDMachine.ID]?) -> Void
@@ -154,7 +154,7 @@
                     }
                     Spacer()
                     if let folder = store.folder(machine.folderId) {
-                        RXTag(folder.name)
+                        RXTag("\(folder.name)")
                     }
                 }
                 .padding(.horizontal, RX.Space.s2)
@@ -205,7 +205,7 @@
                                                 .foregroundStyle(.rxInkSecondary)
                                         }
                                         Spacer()
-                                        if !identity.group.isEmpty { RXTag(identity.group) }
+                                        if !identity.group.isEmpty { RXTag("\(identity.group)") }
                                     }
                                     .padding(.horizontal, RX.Space.s2)
                                     .frame(height: RX.tableRowHeight)
@@ -326,7 +326,7 @@
             case .loading:
                 VStack(spacing: RX.Space.s2) {
                     ProgressView().controlSize(.small)
-                    Text(list.status.isEmpty ? "Connecting to \(machine.name)…" : list.status)
+                    Text(list.status.isEmpty ? "Connecting to \(machine.name)…" : "\(list.status)")
                         .font(.rxCaption)
                         .foregroundStyle(.rxInkSecondary)
                         .lineLimit(1)
@@ -336,7 +336,7 @@
                 EmptyStateView(
                     "Sessions could not be listed",
                     systemImage: "exclamationmark.triangle",
-                    message: reason,
+                    message: "\(reason)",
                     actionTitle: "Try Again"
                 ) {
                     Task { await load() }
@@ -374,7 +374,7 @@
                     if !session.isDetached {
                         RXTag("Attached")
                     }
-                    if !session.shell.isEmpty { RXTag(session.shell) }
+                    if !session.shell.isEmpty { RXTag("\(session.shell)") }
                 }
                 .padding(.horizontal, RX.Space.s2)
                 .frame(height: RX.tableRowHeight)
@@ -498,7 +498,7 @@
             let online: Bool? = machine.isUURemoteDevice
                 ? uuAccount.devices.first { $0.deviceID == machine.uuDeviceID }?.isOnline ?? false
                 : nil
-            let detail = online.map { $0 ? "UU Remote · Online" : "UU Remote · Offline" }
+            let detail = online.map { $0 ? String(localized: "UU Remote · Online") : String(localized: "UU Remote · Offline") }
                 ?? "\(machine.remoteAddress):\(machine.remotePort)"
             return row(
                 .server(machine.id),
@@ -557,9 +557,9 @@
         /// selection, not a cancel.
         @MainActor
         static func present(
-            title: String,
-            lead: String? = nil,
-            confirmTitle: String,
+            title: LocalizedStringResource,
+            lead: LocalizedStringResource? = nil,
+            confirmTitle: LocalizedStringResource,
             allowsMany: Bool,
             preselected: Set<RDMachine.ID> = [],
             onComplete: @escaping ([RDMachine.ID]) -> Void

@@ -38,7 +38,7 @@
                 .onAppear {
                     SettingsEffects.start()
                     if let problem = store.launchProblem {
-                        Indicator.alert(problem)
+                        Indicator.alert("\(problem)")
                     }
                     #if DEBUG
                         runPreviewHooks()

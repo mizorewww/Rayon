@@ -9,12 +9,12 @@ import SwiftUI
 
 /// A choice in an `RXToolbarMenu`.
 public struct RXToolbarMenuItem {
-    public let title: String
+    public let title: LocalizedStringResource
     public let systemImage: String
     public let isOn: Bool
     public let action: () -> Void
 
-    public init(_ title: String, systemImage: String, isOn: Bool, action: @escaping () -> Void) {
+    public init(_ title: LocalizedStringResource, systemImage: String, isOn: Bool, action: @escaping () -> Void) {
         self.title = title
         self.systemImage = systemImage
         self.isOn = isOn
@@ -24,11 +24,11 @@ public struct RXToolbarMenuItem {
 
 /// A symbol that opens a menu of choices in a toolbar.
 public struct RXToolbarMenu: View {
-    let title: String
+    let title: LocalizedStringResource
     let systemImage: String
     let items: [RXToolbarMenuItem]
 
-    public init(_ title: String, systemImage: String, items: [RXToolbarMenuItem]) {
+    public init(_ title: LocalizedStringResource, systemImage: String, items: [RXToolbarMenuItem]) {
         self.title = title
         self.systemImage = systemImage
         self.items = items
@@ -48,6 +48,6 @@ public struct RXToolbarMenu: View {
         } label: {
             Label(title, systemImage: systemImage)
         }
-        .accessibilityLabel(title)
+        .accessibilityLabel(Text(title))
     }
 }

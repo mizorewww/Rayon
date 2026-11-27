@@ -1,0 +1,2550 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    "%@" : {
+
+    },
+    "%@\nA user name here overrides the identity's for this server." : {
+
+    },
+    "%@  •••••••• %lld bytes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@  •••••••• %2$lld bytes"
+          }
+        }
+      }
+    },
+    "%@ (copy)" : {
+
+    },
+    "%@ (from identity)" : {
+
+    },
+    "%@ This setting applies to this device only." : {
+
+    },
+    "%@ already has a terminal open" : {
+
+    },
+    "%@ copy" : {
+
+    },
+    "%@ is not open" : {
+
+    },
+    "%@ is protected by a password." : {
+
+    },
+    "%@ open" : {
+
+    },
+    "%@ public key" : {
+
+    },
+    "%@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "%@ · %lld bytes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ · %2$lld bytes"
+          }
+        }
+      }
+    },
+    "%@ · Automatic" : {
+
+    },
+    "%@ › %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ › %2$@"
+          }
+        }
+      }
+    },
+    "%@%%" : {
+
+    },
+    "%@, in the \"%@\" folder on Servers" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, in the \"%2$@\" folder on Servers"
+          }
+        }
+      }
+    },
+    "%lld" : {
+
+    },
+    "%lld Selected" : {
+
+    },
+    "%lld item%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld item%2$@"
+          }
+        }
+      }
+    },
+    "%lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "%lld of %lld finished" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld finished"
+          }
+        }
+      }
+    },
+    "%lld report%@ waiting%@. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld report%2$@ waiting%3$@. %4$@"
+          }
+        }
+      }
+    },
+    "%lld s" : {
+
+    },
+    "%lld selected" : {
+
+    },
+    "%lld server%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld server%2$@"
+          }
+        }
+      }
+    },
+    "%lld servers use it and will try automatic identities instead." : {
+
+    },
+    "/" : {
+
+    },
+    "/etc/hosts" : {
+
+    },
+    "/var/log" : {
+
+    },
+    "1080" : {
+
+    },
+    "127.0.0.1" : {
+
+    },
+    "22" : {
+
+    },
+    "5432" : {
+
+    },
+    "5433" : {
+
+    },
+    "5900" : {
+
+    },
+    "<Not Available>" : {
+
+    },
+    "A key pair needs a private key" : {
+
+    },
+    "A server's key is saved the first time you connect; a server that later presents another key is refused. %lld saved." : {
+
+    },
+    "A session keeps running on the device after its tab closes, until you end it here. Resume one, or start a new one." : {
+
+    },
+    "A terminal is open" : {
+
+    },
+    "A text file on the server, up to 4 MB." : {
+
+    },
+    "A username with a password or key." : {
+
+    },
+    "About" : {
+
+    },
+    "Accept the license?" : {
+
+    },
+    "Access Hostname" : {
+
+    },
+    "Access hostname" : {
+
+    },
+    "Account" : {
+
+    },
+    "Account…" : {
+
+    },
+    "Acknowledgements" : {
+
+    },
+    "Actions" : {
+
+    },
+    "Actions for %@" : {
+
+    },
+    "Add" : {
+
+    },
+    "Add a server" : {
+
+    },
+    "Add and Connect" : {
+
+    },
+    "Address" : {
+
+    },
+    "Addresses are hidden" : {
+
+    },
+    "Addresses hidden" : {
+
+    },
+    "Add…" : {
+
+    },
+    "Agree" : {
+
+    },
+    "Agreement…" : {
+
+    },
+    "All Groups" : {
+
+    },
+    "Also remember user@host commands typed on Home." : {
+
+    },
+    "Animate Home" : {
+
+    },
+    "Another terminal for this command is already running" : {
+
+    },
+    "Another terminal for this machine is already running" : {
+
+    },
+    "App" : {
+
+    },
+    "App container" : {
+
+    },
+    "App log" : {
+
+    },
+    "Appearance" : {
+
+    },
+    "Appearance, sessions, recent servers, timeouts, monitor and terminal behavior. Font size, touch mode and the menu bar stay on each device." : {
+
+    },
+    "Appends this identity's public key to ~/.ssh/authorized_keys on the selected servers." : {
+
+    },
+    "Ask before closing a session" : {
+
+    },
+    "Assist code" : {
+
+    },
+    "Assist code (optional)" : {
+
+    },
+    "Assist connect ID" : {
+
+    },
+    "Assist connect ID (optional)" : {
+
+    },
+    "Attached" : {
+
+    },
+    "Authenticate automatically" : {
+
+    },
+    "Authentication" : {
+
+    },
+    "Automatic" : {
+
+    },
+    "Available Identities" : {
+
+    },
+    "Back" : {
+
+    },
+    "Backup" : {
+
+    },
+    "Backup Password" : {
+
+    },
+    "Backup imported" : {
+
+    },
+    "Batch Startup" : {
+
+    },
+    "Bind" : {
+
+    },
+    "Bind port" : {
+
+    },
+    "Browse, upload and download files over SFTP" : {
+
+    },
+    "Bugs and ideas go to the project's issue tracker." : {
+
+    },
+    "Build" : {
+
+    },
+    "CPU" : {
+
+    },
+    "CPU %@%%" : {
+
+    },
+    "Can't open %@" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Cannot open monitor" : {
+
+    },
+    "Check Terminfo Again" : {
+
+    },
+    "Check for Updates…" : {
+
+    },
+    "Check the connection, then save the server" : {
+
+    },
+    "Checks the connection and finds an identity that signs in, then saves the server and opens a terminal." : {
+
+    },
+    "Choose" : {
+
+    },
+    "Choose Identity" : {
+
+    },
+    "Choose Servers" : {
+
+    },
+    "Choose VNC or UU Remote under Remote Desktop when you edit a server." : {
+
+    },
+    "Choose a jump server" : {
+
+    },
+    "Choose a jump server…" : {
+
+    },
+    "Choose a server" : {
+
+    },
+    "Choose an OpenSSH config file (e.g. ~/.ssh/config)" : {
+
+    },
+    "Choose exported Rayon settings" : {
+
+    },
+    "Choose where to save %@" : {
+
+    },
+    "Choose…" : {
+
+    },
+    "Clear Key Data" : {
+
+    },
+    "Clear Selection" : {
+
+    },
+    "Client ID (optional)" : {
+
+    },
+    "Client Secret" : {
+
+    },
+    "Client Secret (optional)" : {
+
+    },
+    "Close" : {
+
+    },
+    "Close %@" : {
+
+    },
+    "Close %@ without saving?" : {
+
+    },
+    "Close All" : {
+
+    },
+    "Close Desktop" : {
+
+    },
+    "Close Editor" : {
+
+    },
+    "Close File" : {
+
+    },
+    "Close Files" : {
+
+    },
+    "Close Find" : {
+
+    },
+    "Close Monitor" : {
+
+    },
+    "Close Session" : {
+
+    },
+    "Close Snippets" : {
+
+    },
+    "Close Tab" : {
+
+    },
+    "Close Tab%@" : {
+
+    },
+    "Close everything open on %@?" : {
+
+    },
+    "Close the editor on %@?" : {
+
+    },
+    "Close the file transfer on %@?" : {
+
+    },
+    "Close this terminal pane" : {
+
+    },
+    "Close this terminal tab?" : {
+
+    },
+    "Cloudflare Access" : {
+
+    },
+    "Cloudflare Access Service Token" : {
+
+    },
+    "Code" : {
+
+    },
+    "Command" : {
+
+    },
+    "Comment" : {
+
+    },
+    "Confirm before closing a connected terminal or quitting." : {
+
+    },
+    "Confirm before closing a connected terminal." : {
+
+    },
+    "Confirm password" : {
+
+    },
+    "Connect" : {
+
+    },
+    "Connect (↩)" : {
+
+    },
+    "Connect through" : {
+
+    },
+    "Connect with this recent command" : {
+
+    },
+    "Connecting to %@…" : {
+
+    },
+    "Connecting…" : {
+
+    },
+    "Connection" : {
+
+    },
+    "Connection closed" : {
+
+    },
+    "Connection timeout" : {
+
+    },
+    "Connects like ssh -o ProxyCommand='cloudflared access ssh --hostname %h', without cloudflared. Leave the service token empty when the application has no Access policy. The port only names the server's host key." : {
+
+    },
+    "Connects like ssh -o ProxyCommand='cloudflared access ssh --hostname %h'. Leave the service token empty when the application has no Access policy. The port only names the server's host key." : {
+
+    },
+    "Connects to the saved server %@" : {
+
+    },
+    "Continue" : {
+
+    },
+    "Copied" : {
+
+    },
+    "Copy" : {
+
+    },
+    "Copy Address" : {
+
+    },
+    "Copy Command" : {
+
+    },
+    "Copy Device ID" : {
+
+    },
+    "Copy Name" : {
+
+    },
+    "Copy Path" : {
+
+    },
+    "Copy Public Key" : {
+
+    },
+    "Copy Remote Clipboard" : {
+
+    },
+    "Copy SSH Command" : {
+
+    },
+    "Copy on Select" : {
+
+    },
+    "Copy on select" : {
+
+    },
+    "Copy text to the clipboard as soon as you finish selecting it." : {
+
+    },
+    "Could not add the server to the menu bar: its details are missing" : {
+
+    },
+    "Could not add the server to the menu bar: its identity is missing" : {
+
+    },
+    "Could not delete the data in iCloud: %@" : {
+
+    },
+    "Could not export backup: %@" : {
+
+    },
+    "Could not export settings: %@" : {
+
+    },
+    "Could not import backup: %@" : {
+
+    },
+    "Could not import settings: %@" : {
+
+    },
+    "Could not import: %@" : {
+
+    },
+    "Could not reach %@ on port %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Could not reach %1$@ on port %2$@."
+          }
+        }
+      }
+    },
+    "Could not read %@ as UTF-8 text." : {
+
+    },
+    "Could not read backup: %@" : {
+
+    },
+    "Couldn't Save" : {
+
+    },
+    "Create" : {
+
+    },
+    "Create New Identity" : {
+
+    },
+    "Dashboard" : {
+
+    },
+    "Data" : {
+
+    },
+    "Data imported" : {
+
+    },
+    "Data in iCloud" : {
+
+    },
+    "Default" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete %@?" : {
+
+    },
+    "Delete %lld servers?" : {
+
+    },
+    "Delete Folder…" : {
+
+    },
+    "Delete Identity" : {
+
+    },
+    "Delete Pending Reports" : {
+
+    },
+    "Delete Server" : {
+
+    },
+    "Delete Snippet" : {
+
+    },
+    "Delete identity %@?" : {
+
+    },
+    "Delete the forward on port %lld?" : {
+
+    },
+    "Delete this server?" : {
+
+    },
+    "Delete this snippet?" : {
+
+    },
+    "Delete what Rayon keeps in iCloud?" : {
+
+    },
+    "Deleted server" : {
+
+    },
+    "Delete…" : {
+
+    },
+    "Deploy" : {
+
+    },
+    "Deploy Public Key (ssh-copy-id)" : {
+
+    },
+    "Deploy Public Key (ssh-copy-id)…" : {
+
+    },
+    "Deploying appends the public key to ~/.ssh/authorized_keys on the servers you choose." : {
+
+    },
+    "Deploying public key" : {
+
+    },
+    "Deselect All" : {
+
+    },
+    "Desktop" : {
+
+    },
+    "Desktop devices on this account; add them as servers from the account panel." : {
+
+    },
+    "Detach from split group (keep tab open)" : {
+
+    },
+    "Detailed" : {
+
+    },
+    "Device ID" : {
+
+    },
+    "Devices" : {
+
+    },
+    "Diagnostic" : {
+
+    },
+    "Diagnostics & Usage" : {
+
+    },
+    "Diagnostics for reporting a problem." : {
+
+    },
+    "Did you mean “%@”?" : {
+
+    },
+    "Direct (TCP)" : {
+
+    },
+    "Discard Changes" : {
+
+    },
+    "Discard Changes and Close" : {
+
+    },
+    "Discard Changes and Quit" : {
+
+    },
+    "Disconnect" : {
+
+    },
+    "Don't Share" : {
+
+    },
+    "Don't Wrap Lines" : {
+
+    },
+    "Done" : {
+
+    },
+    "Double-click a text file in Files, or open one by its path." : {
+
+    },
+    "Download" : {
+
+    },
+    "Download Completed" : {
+
+    },
+    "Download Here" : {
+
+    },
+    "Download…" : {
+
+    },
+    "Drop to upload to %@" : {
+
+    },
+    "Duplicate" : {
+
+    },
+    "Duplicate %@?" : {
+
+    },
+    "Edit" : {
+
+    },
+    "Edit Identity" : {
+
+    },
+    "Edit Port Forward" : {
+
+    },
+    "Edit Server" : {
+
+    },
+    "Edit Snippet" : {
+
+    },
+    "Edit text files on this server" : {
+
+    },
+    "Edited" : {
+
+    },
+    "Editor" : {
+
+    },
+    "Edit…" : {
+
+    },
+    "Empty Address" : {
+
+    },
+    "Empty Name" : {
+
+    },
+    "Empty Password" : {
+
+    },
+    "Empty Username" : {
+
+    },
+    "Empty folder" : {
+
+    },
+    "Empty — move servers here from their menu" : {
+
+    },
+    "Enclosing Folder" : {
+
+    },
+    "End %@?" : {
+
+    },
+    "End Session" : {
+
+    },
+    "End Session…" : {
+
+    },
+    "End User License Agreement" : {
+
+    },
+    "End user license agreement" : {
+
+    },
+    "Equivalent command" : {
+
+    },
+    "Error" : {
+
+    },
+    "Every %lld s" : {
+
+    },
+    "Existing Folders" : {
+
+    },
+    "Existing Groups" : {
+
+    },
+    "Export" : {
+
+    },
+    "Export Backup" : {
+
+    },
+    "Export Backup…" : {
+
+    },
+    "Export Rayon Backup" : {
+
+    },
+    "Export Rayon Settings" : {
+
+    },
+    "Export Settings…" : {
+
+    },
+    "Exported backup to %@" : {
+
+    },
+    "Exported backup to %@." : {
+
+    },
+    "Exported settings to %@." : {
+
+    },
+    "Export…" : {
+
+    },
+    "Failed" : {
+
+    },
+    "Failed to deploy public key to: %@." : {
+
+    },
+    "Failed to load license info." : {
+
+    },
+    "Fetch and send changes without waiting." : {
+
+    },
+    "Fetch the account's devices again" : {
+
+    },
+    "File Transfer" : {
+
+    },
+    "Files" : {
+
+    },
+    "Files open in the editor have changes that are not saved. They are lost if you close." : {
+
+    },
+    "Files the app keeps, in the Files app." : {
+
+    },
+    "Files, Monitor and the editor reach the device's own SSH server through UU Remote, signed in with the identity below; on a Mac, turn on System Settings › General › Sharing › Remote Login. The terminal is UU Remote's own and needs neither." : {
+
+    },
+    "Filter by Group" : {
+
+    },
+    "Filter by group" : {
+
+    },
+    "Filter logs" : {
+
+    },
+    "Filter snippets" : {
+
+    },
+    "Filter this folder" : {
+
+    },
+    "Find in Terminal" : {
+
+    },
+    "Find in Terminal (⌘F)" : {
+
+    },
+    "Find in terminal output…" : {
+
+    },
+    "Folder" : {
+
+    },
+    "Folder Actions" : {
+
+    },
+    "Folder Name" : {
+
+    },
+    "Folder name" : {
+
+    },
+    "Forget" : {
+
+    },
+    "Forget All" : {
+
+    },
+    "Forget All…" : {
+
+    },
+    "Forget Host Key" : {
+
+    },
+    "Forget Host Key…" : {
+
+    },
+    "Forget all saved host keys?" : {
+
+    },
+    "Forget the days Rayon was used, which only leave this device as a count." : {
+
+    },
+    "Forget the host key of %@?" : {
+
+    },
+    "Forget the host key of %@? The key it presents next is saved as its key." : {
+
+    },
+    "Forward" : {
+
+    },
+    "Forward through" : {
+
+    },
+    "From the account's device list" : {
+
+    },
+    "General" : {
+
+    },
+    "Generate Ed25519" : {
+
+    },
+    "Generate Ed25519 Key Pair" : {
+
+    },
+    "Generate a new OpenSSH Ed25519 key pair in memory" : {
+
+    },
+    "Generated an Ed25519 key pair" : {
+
+    },
+    "Ghostty and its configuration catalog (MIT, Ghostty contributors)." : {
+
+    },
+    "Ghostty, its configuration catalog and app icon presets (MIT, Ghostty contributors)." : {
+
+    },
+    "GitHub" : {
+
+    },
+    "Go" : {
+
+    },
+    "Go to Folder" : {
+
+    },
+    "Go to Folder…" : {
+
+    },
+    "Go to…" : {
+
+    },
+    "Group" : {
+
+    },
+    "Hide Addresses" : {
+
+    },
+    "Hide Names and Addresses" : {
+
+    },
+    "Hide Password" : {
+
+    },
+    "Home" : {
+
+    },
+    "Host" : {
+
+    },
+    "Host Address" : {
+
+    },
+    "Host Port" : {
+
+    },
+    "Host name or IP address" : {
+
+    },
+    "Hostname" : {
+
+    },
+    "How long to wait for a server before giving up." : {
+
+    },
+    "How often an open monitor reads the server." : {
+
+    },
+    "I Agree" : {
+
+    },
+    "I have read and agree to the license" : {
+
+    },
+    "Icon" : {
+
+    },
+    "Identities" : {
+
+    },
+    "Identity" : {
+
+    },
+    "Import" : {
+
+    },
+    "Import .ssh Folder…" : {
+
+    },
+    "Import Backup…" : {
+
+    },
+    "Import Host entries, IdentityFile keys, and ProxyJump links from an OpenSSH config. Pick the whole .ssh folder so the keys it names load too." : {
+
+    },
+    "Import Host entries, IdentityFile keys, and ProxyJump links from ~/.ssh/config or another OpenSSH config file." : {
+
+    },
+    "Import Settings…" : {
+
+    },
+    "Import from File" : {
+
+    },
+    "Import from Pasteboard" : {
+
+    },
+    "Import ssh_config File…" : {
+
+    },
+    "Import ~/.ssh/config…" : {
+
+    },
+    "Imported %@" : {
+
+    },
+    "Imported %lld servers and %lld identities" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Imported %1$lld servers and %2$lld identities"
+          }
+        }
+      }
+    },
+    "Imported %lld servers and %lld identities from %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Imported %1$lld servers and %2$lld identities from %3$@."
+          }
+        }
+      }
+    },
+    "Imported settings." : {
+
+    },
+    "Include Quick Connect commands" : {
+
+    },
+    "Include passwords and keys" : {
+
+    },
+    "Including passwords and private keys." : {
+
+    },
+    "Incomplete" : {
+
+    },
+    "Insert" : {
+
+    },
+    "Install Ghostty's terminfo" : {
+
+    },
+    "Invalid Filename" : {
+
+    },
+    "Invalid Port" : {
+
+    },
+    "Issues" : {
+
+    },
+    "Its session on %@ ends, and a new terminal to the same server opens in its place." : {
+
+    },
+    "Its session on %@ ends." : {
+
+    },
+    "Its shell, and whatever runs in it, stops on %@." : {
+
+    },
+    "Jump server" : {
+
+    },
+    "Jump server (Bastion)" : {
+
+    },
+    "Keep the commands typed here under Recent" : {
+
+    },
+    "Keep your data the same on every device signed in to your iCloud account. Passwords and keys travel end-to-end encrypted." : {
+
+    },
+    "Key pair" : {
+
+    },
+    "Keys load only when you import the whole .ssh folder." : {
+
+    },
+    "Lakr Aream (@Lakr233) with @__oquery, @zlind0, @unixzii, @82flex and @xnth97. This version is not affiliated with or endorsed by them." : {
+
+    },
+    "Larger Text" : {
+
+    },
+    "Larger Text (⌘+)" : {
+
+    },
+    "Last Tab" : {
+
+    },
+    "Last banner" : {
+
+    },
+    "Last used" : {
+
+    },
+    "Last used %@ · started %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Last used %1$@ · started %2$@"
+          }
+        }
+      }
+    },
+    "Lay out as %@" : {
+
+    },
+    "Legal" : {
+
+    },
+    "Libraries" : {
+
+    },
+    "License" : {
+
+    },
+    "License…" : {
+
+    },
+    "Light or dark" : {
+
+    },
+    "Link UU Remote Account…" : {
+
+    },
+    "Listed under Quick Connect on Home." : {
+
+    },
+    "Ln %lld, Col %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Ln %1$lld, Col %2$lld"
+          }
+        }
+      }
+    },
+    "Load" : {
+
+    },
+    "Load it anyway?" : {
+
+    },
+    "Load…" : {
+
+    },
+    "Local (-L)" : {
+
+    },
+    "Local Terminal" : {
+
+    },
+    "Logs" : {
+
+    },
+    "Looking for Macs with Screen Sharing and VNC servers on this network…" : {
+
+    },
+    "Mac User Name (empty = identity user)" : {
+
+    },
+    "Mac user name" : {
+
+    },
+    "Maintained by" : {
+
+    },
+    "Make a folder, or fill one from a UU Remote account" : {
+
+    },
+    "Manage" : {
+
+    },
+    "Manage…" : {
+
+    },
+    "Manual / assist" : {
+
+    },
+    "Mem %@%%" : {
+
+    },
+    "Memory" : {
+
+    },
+    "Missing" : {
+
+    },
+    "Modified" : {
+
+    },
+    "Monitor" : {
+
+    },
+    "More" : {
+
+    },
+    "More Symbols…" : {
+
+    },
+    "Move to Folder" : {
+
+    },
+    "Name" : {
+
+    },
+    "Name the folder." : {
+
+    },
+    "Names and addresses are hidden" : {
+
+    },
+    "Names and addresses hidden" : {
+
+    },
+    "Nearby" : {
+
+    },
+    "NetEase UU Remote" : {
+
+    },
+    "Never sent: server addresses, usernames, keys, commands, files or terminal content." : {
+
+    },
+    "New File Name" : {
+
+    },
+    "New Folder" : {
+
+    },
+    "New Folder…" : {
+
+    },
+    "New Identity" : {
+
+    },
+    "New Local Terminal" : {
+
+    },
+    "New Port Forward" : {
+
+    },
+    "New Server" : {
+
+    },
+    "New Server…" : {
+
+    },
+    "New Session" : {
+
+    },
+    "New Snippet" : {
+
+    },
+    "New Terminal" : {
+
+    },
+    "New Terminal (⌘T)" : {
+
+    },
+    "New Terminal Tab" : {
+
+    },
+    "Next Match" : {
+
+    },
+    "Next Tab" : {
+
+    },
+    "Next category" : {
+
+    },
+    "No desktop devices on the account" : {
+
+    },
+    "No diagnostic entries" : {
+
+    },
+    "No file open" : {
+
+    },
+    "No identities yet" : {
+
+    },
+    "No identity that authenticates automatically could sign in. Choose an identity." : {
+
+    },
+    "No matches" : {
+
+    },
+    "No other SSH servers saved" : {
+
+    },
+    "No port forwards" : {
+
+    },
+    "No private key loaded" : {
+
+    },
+    "No public key loaded" : {
+
+    },
+    "No remote desktops" : {
+
+    },
+    "No server" : {
+
+    },
+    "No servers yet" : {
+
+    },
+    "No sessions" : {
+
+    },
+    "No snippets saved" : {
+
+    },
+    "No snippets yet" : {
+
+    },
+    "No username" : {
+
+    },
+    "None" : {
+
+    },
+    "None found. On a Mac, turn on Screen Sharing in System Settings › General › Sharing." : {
+
+    },
+    "Not Selected" : {
+
+    },
+    "Not signed in" : {
+
+    },
+    "Not used by any server" : {
+
+    },
+    "Number to keep" : {
+
+    },
+    "OK" : {
+
+    },
+    "Off" : {
+
+    },
+    "On" : {
+
+    },
+    "On the next terminal, check that the server still has Ghostty's terminfo, and install it if not" : {
+
+    },
+    "Open" : {
+
+    },
+    "Open %@" : {
+
+    },
+    "Open Another" : {
+
+    },
+    "Open Desktop" : {
+
+    },
+    "Open Editor" : {
+
+    },
+    "Open File" : {
+
+    },
+    "Open File Transfer" : {
+
+    },
+    "Open Files" : {
+
+    },
+    "Open File…" : {
+
+    },
+    "Open Identities" : {
+
+    },
+    "Open Local Terminal" : {
+
+    },
+    "Open Monitor" : {
+
+    },
+    "Open Rayon" : {
+
+    },
+    "Open Remote Desktop" : {
+
+    },
+    "Open Snippets" : {
+
+    },
+    "Open Terminal" : {
+
+    },
+    "Open Terminals" : {
+
+    },
+    "Open Terminals…" : {
+
+    },
+    "Open a VNC or UU Remote desktop" : {
+
+    },
+    "Open a local shell on this Mac (⌥⌘T)" : {
+
+    },
+    "Open a terminal session on the device through UU Remote" : {
+
+    },
+    "Open a text file from Files, or by its path." : {
+
+    },
+    "Open an SSH terminal on this server" : {
+
+    },
+    "Open terminal sessions will be closed." : {
+
+    },
+    "Open the terminal as soon as it connects." : {
+
+    },
+    "OpenSSH config" : {
+
+    },
+    "Opening %@…" : {
+
+    },
+    "Optional" : {
+
+    },
+    "Optional. Needed to deploy the key to servers." : {
+
+    },
+    "Orientation" : {
+
+    },
+    "Originally created by" : {
+
+    },
+    "Owner" : {
+
+    },
+    "Pane %lld · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Pane %1$lld · %2$@"
+          }
+        }
+      }
+    },
+    "Passphrase" : {
+
+    },
+    "Password" : {
+
+    },
+    "Passwords and keys go in only with a password; without it, the file cannot be opened." : {
+
+    },
+    "Paste Clipboard to Remote" : {
+
+    },
+    "Path" : {
+
+    },
+    "Permissions" : {
+
+    },
+    "Pick several servers and open a terminal on each" : {
+
+    },
+    "Port" : {
+
+    },
+    "Port Forward" : {
+
+    },
+    "Port forwards" : {
+
+    },
+    "Port forwards through it stop working." : {
+
+    },
+    "Preview Layout" : {
+
+    },
+    "Previous Match" : {
+
+    },
+    "Previous Tab" : {
+
+    },
+    "Previous category" : {
+
+    },
+    "Privacy" : {
+
+    },
+    "Privacy Policy" : {
+
+    },
+    "Private Key" : {
+
+    },
+    "Private key" : {
+
+    },
+    "Programs running on the server may read and write this Mac's clipboard (OSC 52), so a copy in vim or tmux lands here." : {
+
+    },
+    "Programs running on the server may read and write this device's clipboard (OSC 52), so a copy in vim or tmux lands here." : {
+
+    },
+    "ProxyJump (Bastion)" : {
+
+    },
+    "Public Key" : {
+
+    },
+    "Public key" : {
+
+    },
+    "Public key deployed" : {
+
+    },
+    "Quick Connect" : {
+
+    },
+    "Quick Connect needs an identity that authenticates automatically." : {
+
+    },
+    "Quick Connect signs in with identities set to “Authenticate automatically”. You have none yet." : {
+
+    },
+    "Quit" : {
+
+    },
+    "Quit Rayon" : {
+
+    },
+    "Quit Rayon?" : {
+
+    },
+    "Rayon" : {
+
+    },
+    "Rayon %@ (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Rayon %1$@ (%2$@)"
+          }
+        }
+      }
+    },
+    "Rayon %@ is available" : {
+
+    },
+    "Rayon is up to date" : {
+
+    },
+    "Rayon sends anonymous crash reports and feature counts to help fix bugs. It never sends your servers, usernames or terminal content." : {
+
+    },
+    "Rayon telemetry reports" : {
+
+    },
+    "Rayon's settings, apart from the data, to bring to another Mac." : {
+
+    },
+    "Rayon's settings, apart from the data, to bring to another device." : {
+
+    },
+    "Rayon's terminal is Ghostty. On a server that lacks its terminfo, Rayon adds it to ~/.terminfo once, so programs there use every feature; nothing else on the server changes. When off, or where it cannot be added, sessions run as xterm-256color." : {
+
+    },
+    "Reaches this server through an SSH tunnel opened on the jump server (ssh -J)." : {
+
+    },
+    "Read the Privacy Policy" : {
+
+    },
+    "Recent" : {
+
+    },
+    "Reconnect" : {
+
+    },
+    "Reconnect Terminal%@" : {
+
+    },
+    "Record Command" : {
+
+    },
+    "Redaction" : {
+
+    },
+    "Refresh" : {
+
+    },
+    "Refresh Devices" : {
+
+    },
+    "Refresh Screen" : {
+
+    },
+    "Reload" : {
+
+    },
+    "Reload %@ from the server?" : {
+
+    },
+    "Reload from Server" : {
+
+    },
+    "Remember recent servers" : {
+
+    },
+    "Remote (-R)" : {
+
+    },
+    "Remote Desktop" : {
+
+    },
+    "Remove" : {
+
+    },
+    "Remove Folder and Sign Out…" : {
+
+    },
+    "Remove from Menu Bar" : {
+
+    },
+    "Remove from Recent" : {
+
+    },
+    "Remove from Split Group" : {
+
+    },
+    "Remove it and stop syncing on this device." : {
+
+    },
+    "Rename" : {
+
+    },
+    "Rename Folder" : {
+
+    },
+    "Rename…" : {
+
+    },
+    "Replace" : {
+
+    },
+    "Replace the key pair?" : {
+
+    },
+    "Report a problem" : {
+
+    },
+    "Required" : {
+
+    },
+    "Required for Quick Connect." : {
+
+    },
+    "Required for a key pair." : {
+
+    },
+    "Reset Activity History" : {
+
+    },
+    "Restart nginx" : {
+
+    },
+    "Resume" : {
+
+    },
+    "Revert" : {
+
+    },
+    "Run" : {
+
+    },
+    "Run %@" : {
+
+    },
+    "Running" : {
+
+    },
+    "Runs a local SOCKS5 proxy on 127.0.0.1:%@ that tunnels all connections through the selected server (ssh -D)." : {
+
+    },
+    "Run…" : {
+
+    },
+    "SFTP" : {
+
+    },
+    "SFTP start folder" : {
+
+    },
+    "SOCKS5 (-D)" : {
+
+    },
+    "SSH" : {
+
+    },
+    "SSH Agent" : {
+
+    },
+    "SSH sessions will be closed; UU Remote sessions keep running on their devices, to resume next time." : {
+
+    },
+    "SSH, SFTP and Monitor on this server tunnel through the UU Remote session's port mapping — open the Desktop first so the tunnel is live." : {
+
+    },
+    "Save" : {
+
+    },
+    "Save a server to reach it in one click" : {
+
+    },
+    "Save and Start" : {
+
+    },
+    "Save as a VNC server and enter the Mac's user name and password" : {
+
+    },
+    "Save the server without connecting" : {
+
+    },
+    "Saved" : {
+
+    },
+    "Saved as %@" : {
+
+    },
+    "Saved host keys" : {
+
+    },
+    "Saved servers keep their address, port and identity, and open a terminal, files or a monitor." : {
+
+    },
+    "Saved to Files" : {
+
+    },
+    "Saving…" : {
+
+    },
+    "Search" : {
+
+    },
+    "Search desktops" : {
+
+    },
+    "Search forwards" : {
+
+    },
+    "Search identities" : {
+
+    },
+    "Search servers" : {
+
+    },
+    "Search settings" : {
+
+    },
+    "Search snippets" : {
+
+    },
+    "Search terminals and servers" : {
+
+    },
+    "Select All" : {
+
+    },
+    "Select SF Symbol" : {
+
+    },
+    "Select an identity" : {
+
+    },
+    "Selected" : {
+
+    },
+    "Selected Identity" : {
+
+    },
+    "Send Ctrl+Alt+Delete" : {
+
+    },
+    "Server" : {
+
+    },
+    "Servers" : {
+
+    },
+    "Servers need an identity set." : {
+
+    },
+    "Servers that only accept the current key stop accepting this identity." : {
+
+    },
+    "Servers, identities, snippets, port forwards, folders and known host keys in one file. With passwords and keys, the file is protected by a password." : {
+
+    },
+    "Service token Client ID" : {
+
+    },
+    "Sessions" : {
+
+    },
+    "Sessions could not be listed" : {
+
+    },
+    "Settings" : {
+
+    },
+    "Settings (⌘,)" : {
+
+    },
+    "Settings imported" : {
+
+    },
+    "Settings…" : {
+
+    },
+    "Share Anonymous Data" : {
+
+    },
+    "Share Diagnostic Data" : {
+
+    },
+    "Share Public Key" : {
+
+    },
+    "Share clipboard with remote programs" : {
+
+    },
+    "Shared session" : {
+
+    },
+    "Shell" : {
+
+    },
+    "Show" : {
+
+    },
+    "Show %@" : {
+
+    },
+    "Show Downloads in Files" : {
+
+    },
+    "Show Everything" : {
+
+    },
+    "Show Password" : {
+
+    },
+    "Show a session when it connects" : {
+
+    },
+    "Show another terminal beside this one, from any server. Three panes or more are laid out as a grid." : {
+
+    },
+    "Show in Menu Bar" : {
+
+    },
+    "Show in Servers" : {
+
+    },
+    "Sign In…" : {
+
+    },
+    "Sign Out" : {
+
+    },
+    "Sign in to a UU Remote account to pick a device, or paste a device id / assist code below." : {
+
+    },
+    "Sign in, and the account's devices appear in a folder on Servers." : {
+
+    },
+    "Signed in" : {
+
+    },
+    "Signed out" : {
+
+    },
+    "Signs in using the Mac's running SSH agent (SSH_AUTH_SOCK). iPhone and iPad have no SSH agent, so this identity signs in only from Rayon on a Mac." : {
+
+    },
+    "Signs in using your Mac's running SSH agent (SSH_AUTH_SOCK), including the system ssh-agent, 1Password SSH Agent, Secretive, or YubiKey/GPG agents." : {
+
+    },
+    "Signs the built-in UU Remote client in with QR code, SMS or an imported token." : {
+
+    },
+    "Size" : {
+
+    },
+    "Smaller Text" : {
+
+    },
+    "Smaller Text (⌘−)" : {
+
+    },
+    "Snippets" : {
+
+    },
+    "Some files have changes that are not saved. They are lost if you close the editor." : {
+
+    },
+    "Source Code" : {
+
+    },
+    "Source code" : {
+
+    },
+    "Split" : {
+
+    },
+    "Split Down" : {
+
+    },
+    "Split Down (⌘⇧D)" : {
+
+    },
+    "Split Down with Current Tab" : {
+
+    },
+    "Split Right" : {
+
+    },
+    "Split Right (⌘D)" : {
+
+    },
+    "Split Right with Current Tab" : {
+
+    },
+    "Split group (%lld panes) · Click to lay out as %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Split group (%1$lld panes) · Click to lay out as %2$@"
+          }
+        }
+      }
+    },
+    "Split group (%lld panes) · Tap to lay out as %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Split group (%1$lld panes) · Tap to lay out as %2$@"
+          }
+        }
+      }
+    },
+    "Split with Server" : {
+
+    },
+    "Split with Server…" : {
+
+    },
+    "Split with Server… (⌥⌘D)" : {
+
+    },
+    "Start" : {
+
+    },
+    "Start folder" : {
+
+    },
+    "Status" : {
+
+    },
+    "Stop" : {
+
+    },
+    "Stop All" : {
+
+    },
+    "Stop and Close" : {
+
+    },
+    "Stop running %@?" : {
+
+    },
+    "Switch between this server's terminal, files, editor and monitor" : {
+
+    },
+    "Switch to a terminal as soon as it opens." : {
+
+    },
+    "Sync Now" : {
+
+    },
+    "Sync now" : {
+
+    },
+    "Sync with iCloud" : {
+
+    },
+    "Syntax" : {
+
+    },
+    "Syntax highlighting" : {
+
+    },
+    "System" : {
+
+    },
+    "Tab %lld" : {
+
+    },
+    "Target" : {
+
+    },
+    "Target host" : {
+
+    },
+    "Target port" : {
+
+    },
+    "Terminal" : {
+
+    },
+    "Terminal %lld" : {
+
+    },
+    "Terminal colors are set under Colors." : {
+
+    },
+    "Terminal moved to another window" : {
+
+    },
+    "Terminal on %@" : {
+
+    },
+    "Terminal settings" : {
+
+    },
+    "Terminals, files, monitors and desktops you open show here, one row per server." : {
+
+    },
+    "That name contains characters a file name cannot have." : {
+
+    },
+    "That password does not open this backup." : {
+
+    },
+    "The Files app is not installed." : {
+
+    },
+    "The device is offline in UU Remote" : {
+
+    },
+    "The file could not be read as text." : {
+
+    },
+    "The folder and everything in it is deleted from the server. This cannot be undone." : {
+
+    },
+    "The git commit this copy was built from; \"-dirty\" when the source had uncommitted changes." : {
+
+    },
+    "The key each server presents on its next connection is saved as its key." : {
+
+    },
+    "The key the server presents on the next connection is saved as its key. Do this only when you know its keys were replaced." : {
+
+    },
+    "The moving background behind Quick Connect." : {
+
+    },
+    "The passwords differ." : {
+
+    },
+    "The port is a number from 1 to 65535." : {
+
+    },
+    "The privacy policy could not be loaded." : {
+
+    },
+    "The selected identity could not sign in to %@." : {
+
+    },
+    "The server could not be saved." : {
+
+    },
+    "The servers in it move with it." : {
+
+    },
+    "The text could not be loaded." : {
+
+    },
+    "The user name to sign in as on this server. It overrides the identity's, so one key can sign in as different users on different servers." : {
+
+    },
+    "Theme, colors, fonts and shortcuts. Font size and padding stay on each device." : {
+
+    },
+    "There is already a folder named \"%@\"." : {
+
+    },
+    "There is no readable config file in %@." : {
+
+    },
+    "This Mac" : {
+
+    },
+    "This backup is protected by a password." : {
+
+    },
+    "This cannot be undone." : {
+
+    },
+    "This does not look like a private key" : {
+
+    },
+    "This does not look like a public key" : {
+
+    },
+    "This file does not look like a private key" : {
+
+    },
+    "This file does not look like a public key" : {
+
+    },
+    "This identity has no public key to deploy." : {
+
+    },
+    "This server is already in the menu bar" : {
+
+    },
+    "This server's details could not be read." : {
+
+    },
+    "This session is open in another window." : {
+
+    },
+    "This snippet has no command to run." : {
+
+    },
+    "Through" : {
+
+    },
+    "To %lld servers" : {
+
+    },
+    "To show a server in the menu bar, choose an identity for it first (Edit Server › Identity)" : {
+
+    },
+    "Too Large to Edit" : {
+
+    },
+    "Transfer" : {
+
+    },
+    "Tries each identity that authenticates automatically. A user name here overrides the identity's for this server." : {
+
+    },
+    "Try Again" : {
+
+    },
+    "Tunnel over SSH" : {
+
+    },
+    "Turn on “Remember recent servers” in Settings to keep commands" : {
+
+    },
+    "Type user@host, user@host:port, a saved server's name or a full ssh command." : {
+
+    },
+    "UU Remote" : {
+
+    },
+    "UU Remote (PiP)" : {
+
+    },
+    "UU Remote Account" : {
+
+    },
+    "UU Remote Account & Devices…" : {
+
+    },
+    "UU Remote Account…" : {
+
+    },
+    "UU Remote Transport" : {
+
+    },
+    "UU Remote device" : {
+
+    },
+    "UU Remote device id" : {
+
+    },
+    "UU Remote sessions keep running on their devices, to resume next time." : {
+
+    },
+    "UU Remote · Offline" : {
+
+    },
+    "UU Remote · Online" : {
+
+    },
+    "Unable to check for updates" : {
+
+    },
+    "Unable to read" : {
+
+    },
+    "Unknown" : {
+
+    },
+    "Unknown Bad Data" : {
+
+    },
+    "Unknown server" : {
+
+    },
+    "Unlocks the private key, when it has one." : {
+
+    },
+    "Unsaved changes in the editor will be lost." : {
+
+    },
+    "Untitled" : {
+
+    },
+    "Up" : {
+
+    },
+    "Upload" : {
+
+    },
+    "Upload Files…" : {
+
+    },
+    "Upload to %@" : {
+
+    },
+    "Uptime" : {
+
+    },
+    "Use an absolute path starting with /." : {
+
+    },
+    "Use identity password" : {
+
+    },
+    "Use identity user name" : {
+
+    },
+    "Used by %@" : {
+
+    },
+    "Used by %@ and %lld more" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Used by %1$@ and %2$lld more"
+          }
+        }
+      }
+    },
+    "User" : {
+
+    },
+    "User Name (empty = %@)" : {
+
+    },
+    "User Name (empty = identity user)" : {
+
+    },
+    "User name" : {
+
+    },
+    "Username" : {
+
+    },
+    "VNC" : {
+
+    },
+    "VNC Password (empty = identity password)" : {
+
+    },
+    "VNC Port" : {
+
+    },
+    "VNC password" : {
+
+    },
+    "VNC port" : {
+
+    },
+    "VNC, macOS Screen Sharing and NetEase UU Remote" : {
+
+    },
+    "Version" : {
+
+    },
+    "Version %@ is the latest release." : {
+
+    },
+    "View" : {
+
+    },
+    "View Desktop Only" : {
+
+    },
+    "View Only" : {
+
+    },
+    "View What's Sent…" : {
+
+    },
+    "Waiting" : {
+
+    },
+    "Watch CPU, memory, disk and network usage" : {
+
+    },
+    "Welcome to Rayon" : {
+
+    },
+    "What's Sent" : {
+
+    },
+    "With their folders." : {
+
+    },
+    "Working…" : {
+
+    },
+    "Wrap Lines" : {
+
+    },
+    "You are running version %@." : {
+
+    },
+    "Your changes are lost if you don't save them." : {
+
+    },
+    "Your changes are replaced by the file on the server." : {
+
+    },
+    "Your data stays on this device. A device that still syncs will store its own again, so turn sync off there too." : {
+
+    },
+    "iCloud Sync" : {
+
+    },
+    "macOS Screen Sharing signs in with a Mac user name and password. Leave the VNC password empty to use the identity's; a VNC password alone uses VNC authentication." : {
+
+    },
+    "mizorewww/Rayon on GitHub" : {
+
+    },
+    "root" : {
+
+    },
+    "rotate-logs.sh" : {
+
+    },
+    "show the identity's password" : {
+
+    },
+    "ssh user@host -p 22" : {
+
+    },
+    "ssh.example.com" : {
+
+    },
+    "untitled folder" : {
+
+    },
+    "up %@" : {
+
+    },
+    "user@host:22" : {
+
+    },
+    "·" : {
+
+    },
+    "—" : {
+
+    },
+    "“%@” already exists in this folder." : {
+
+    },
+    "…" : {
+
+    },
+    "↓ %@ ↑ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "↓ %1$@ ↑ %2$@"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

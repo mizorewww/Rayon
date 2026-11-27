@@ -79,7 +79,7 @@
             case .loading:
                 VStack(spacing: RX.Space.s2) {
                     ProgressView()
-                    Text(list.status.isEmpty ? "Connecting to \(machine.name)…" : list.status)
+                    Text(list.status.isEmpty ? "Connecting to \(machine.name)…" : "\(list.status)")
                         .font(.footnote)
                         .foregroundStyle(.rxInkSecondary)
                         .lineLimit(1)
@@ -89,7 +89,7 @@
                 EmptyStateView(
                     "Sessions could not be listed",
                     systemImage: "exclamationmark.triangle",
-                    message: reason,
+                    message: "\(reason)",
                     actionTitle: "Try Again"
                 ) {
                     Task { await load() }
@@ -141,7 +141,7 @@
                     if !session.isDetached {
                         RXTag("Attached")
                     }
-                    if !session.shell.isEmpty { RXTag(session.shell) }
+                    if !session.shell.isEmpty { RXTag("\(session.shell)") }
                 }
                 .contentShape(Rectangle())
             }

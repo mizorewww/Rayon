@@ -75,7 +75,7 @@
                                     }
                                 }
                             } header: {
-                                RXSectionHeader(group.name.isEmpty ? "Default" : group.name)
+                                RXSectionHeader(group.name.isEmpty ? "Default" : "\(group.name)")
                             }
                         }
                     }
@@ -137,7 +137,7 @@
         static func duplicate(_ id: RDIdentity.ID) {
             guard var copy = RayonStore.shared.identity(id) else { return }
             copy.id = UUID()
-            copy.comment = copy.comment.isEmpty ? "Copy" : copy.comment + " (copy)"
+            copy.comment = copy.comment.isEmpty ? String(localized: "Copy") : String(localized: "\(copy.comment) (copy)")
             RayonStore.shared.save(copy)
         }
 
@@ -149,7 +149,7 @@
             Indicator.confirm(
                 message: "Delete identity \(identity.username)?",
                 informative: users > 0
-                    ? "\(users) server\(users == 1 ? "" : "s") use it and will try automatic identities instead."
+                    ? "\(users) servers use it and will try automatic identities instead."
                     : "Its password and keys are removed from Rayon.",
                 confirmTitle: "Delete",
                 destructive: true
@@ -167,7 +167,7 @@
         static func deployPublicKey(_ publicKey: String, identityID: RDIdentity.ID) {
             let pub = publicKey.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !pub.isEmpty else {
-                Indicator.error("This identity has no public key to deploy.")
+                Indicator.error(String(localized: "This identity has no public key to deploy."))
                 return
             }
             Task { @MainActor in
@@ -175,18 +175,18 @@
                 guard !machines.isEmpty else { return }
                 Indicator.success(
                     "Deploying public key",
-                    message: machines.count == 1 ? "To 1 server" : "To \(machines.count) servers"
+                    message: "To \(machines.count) servers"
                 )
                 Task {
                     let outcome = await PublicKeyDeployment.deploy(pub, to: machines)
                     await MainActor.run {
                         if !outcome.failed.isEmpty {
-                            Indicator.error("Failed to deploy public key to: \(outcome.failed.joined(separator: ", ")).")
+                            Indicator.error(String(localized: "Failed to deploy public key to: \(outcome.failed.joined(separator: ", "))."))
                         } else if !outcome.succeeded.isEmpty {
                             PublicKeyDeployment.adopt(identity: identityID, on: machines)
                             Indicator.success(
                                 "Public key deployed",
-                                message: outcome.succeeded.joined(separator: ", ")
+                                message: "\(outcome.succeeded.joined(separator: ", "))"
                             )
                         }
                     }
@@ -206,9 +206,9 @@
         var body: some View {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(identity.username.isEmpty ? "No username" : identity.username)
+                    Text(identity.username.isEmpty ? "No username" : "\(identity.username)")
                         .foregroundStyle(identity.username.isEmpty ? Color.rxInkSecondary : Color.rxInk)
-                    Text(identity.authDescription + (identity.authenticAutomatically ? " · Automatic" : ""))
+                    Text(identity.authenticAutomatically ? "\(identity.authDescription) · Automatic" : "\(identity.authDescription)")
                         .font(.caption)
                         .foregroundStyle(.rxInkSecondary)
                 }

@@ -121,7 +121,7 @@
             }
         }
 
-        func bar(_ title: String, _ percent: Double, _ color: Color) -> some View {
+        func bar(_ title: LocalizedStringResource, _ percent: Double, _ color: Color) -> some View {
             HStack(spacing: RX.Space.s2) {
                 CapsLabel(title).frame(width: 56, alignment: .leading)
                 UsageBar(fraction: percent / 100, color: color)

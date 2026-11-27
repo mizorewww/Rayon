@@ -155,7 +155,7 @@
             }
         }
 
-        func row(_ title: String, _ icon: String, _ route: Route, badge: Int) -> some View {
+        func row(_ title: LocalizedStringResource, _ icon: String, _ route: Route, badge: Int) -> some View {
             Label(title, systemImage: icon)
                 .badge(badge)
                 .tag(route)
@@ -313,7 +313,7 @@
                 }
         }
 
-        func moreRow(_ title: String, _ icon: String, count: Int? = nil) -> some View {
+        func moreRow(_ title: LocalizedStringResource, _ icon: String, count: Int? = nil) -> some View {
             HStack(spacing: RX.Space.s3) {
                 Image(systemName: icon)
                     .foregroundStyle(.rxAccent)
@@ -321,19 +321,20 @@
                 Text(title).foregroundStyle(.rxInk)
                 Spacer()
                 if let count {
-                    Text("\(count)").foregroundStyle(.rxInkSecondary).monospacedDigit()
+                    Text(count, format: .number).foregroundStyle(.rxInkSecondary).monospacedDigit()
                 }
             }
         }
     }
 
     var appVersion: String {
-        let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
+        let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? String(localized: "Unknown")
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? String(localized: "Unknown")
+        let version = String(localized: "Rayon \(short) (\(build))")
         #if DEBUG
-            return "Rayon \(short) (\(build)) · Debug"
+            return version + " · Debug"
         #else
-            return "Rayon \(short) (\(build))"
+            return version
         #endif
     }
 

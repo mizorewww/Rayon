@@ -103,8 +103,8 @@ public extension View {
 
 /// Caps section header for grouped lists.
 public struct RXSectionHeader: View {
-    let title: String
-    public init(_ title: String) { self.title = title }
+    let title: LocalizedStringResource
+    public init(_ title: LocalizedStringResource) { self.title = title }
     public var body: some View {
         CapsLabel(title)
             .textCase(nil)

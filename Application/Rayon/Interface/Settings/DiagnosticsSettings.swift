@@ -139,7 +139,7 @@ struct PrivacyPolicySheet: View {
         let language = Bundle.preferredLocalizations(from: ["en", "zh-Hans", "zh-Hant"], forPreferences: Locale.preferredLanguages).first ?? "en"
         guard let url = Bundle.main.url(forResource: "PrivacyPolicy-\(language)", withExtension: "md", subdirectory: "Privacy"),
               let markdown = try? String(contentsOf: url, encoding: .utf8)
-        else { return AttributedString("The privacy policy could not be loaded.") }
+        else { return AttributedString(localized: "The privacy policy could not be loaded.") }
         let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
         return (try? AttributedString(markdown: markdown, options: options)) ?? AttributedString(markdown)
     }

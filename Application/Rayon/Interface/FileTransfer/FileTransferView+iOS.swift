@@ -104,7 +104,7 @@
                     EmptyStateView(
                         "Connection closed",
                         systemImage: "bolt.horizontal",
-                        message: context.connectionPhase == .closed ? "" : context.currentHint,
+                        message: context.connectionPhase == .closed ? nil : "\(context.currentHint)",
                         actionTitle: "Reconnect"
                     ) {
                         context.processBootstrap()
@@ -119,7 +119,7 @@
         var hintView: some View {
             Group {
                 if !context.currentHint.isEmpty {
-                    HelpText(context.currentHint)
+                    HelpText(verbatim: context.currentHint)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
@@ -132,7 +132,7 @@
                 ? total.fractionCompleted
                 : (current.totalUnitCount > 0 ? current.fractionCompleted : nil)
             let name = context.currentProcessingFile.isEmpty
-                ? (context.currentHint.isEmpty ? "Working…" : context.currentHint)
+                ? (context.currentHint.isEmpty ? String(localized: "Working…") : context.currentHint)
                 : URL(fileURLWithPath: context.currentProcessingFile).lastPathComponent
             return VStack(alignment: .leading, spacing: RX.Space.s2) {
                 CardHead("Transfer")
@@ -268,7 +268,7 @@
                 text: ""
             ) { name in
                 guard name.isValidAsFilename else {
-                    Indicator.error("Invalid Filename")
+                    Indicator.error(String(localized: "Invalid Filename"))
                     return
                 }
                 context.createFolder(with: name)
@@ -317,7 +317,7 @@
                 text: context.currentDir
             ) { path in
                 guard !path.isEmpty, path.hasPrefix("/") else {
-                    Indicator.error("Use an absolute path starting with /.")
+                    Indicator.error(String(localized: "Use an absolute path starting with /."))
                     return
                 }
                 context.navigate(path: path)
@@ -452,7 +452,7 @@
                             text: file.name
                         ) { newValue in
                             guard newValue.isValidAsFilename else {
-                                Indicator.error("Invalid Filename")
+                                Indicator.error(String(localized: "Invalid Filename"))
                                 return
                             }
                             let base = context.currentUrl
@@ -614,7 +614,7 @@
         }
 
         func requiresConfirmation(_ message: String, completion: @escaping (Bool) -> Void) {
-            Indicator.confirm(message: message, destructive: true, confirmation: completion)
+            Indicator.confirm(message: "\(message)", destructive: true, confirmation: completion)
         }
 
         func autoOpenInterface(_ context: FileTransferContext) {

@@ -197,9 +197,9 @@
         /// "UU Remote · Online", from the account's last refresh.
         func uuStatus(_ machine: RDMachine) -> String {
             guard let device = account.devices.first(where: { $0.deviceID == machine.uuDeviceID }) else {
-                return "UU Remote"
+                return String(localized: "UU Remote")
             }
-            return device.isOnline ? "UU Remote · Online" : "UU Remote · Offline"
+            return device.isOnline ? String(localized: "UU Remote · Online") : String(localized: "UU Remote · Offline")
         }
 
         /// Shows the server's terminal, opening one if none is open.
@@ -210,13 +210,13 @@
         func identityName(_ machine: RDMachine) -> String {
             guard let uid = machine.associatedIdentity else {
                 // The server's own user name, tried with each automatic identity.
-                return machine.sshUsernameOverride.map { "\($0) · Automatic" } ?? "Automatic"
+                return machine.sshUsernameOverride.map { String(localized: "\($0) · Automatic") } ?? String(localized: "Automatic")
             }
             let identity = (store.identity(uid) ?? RDIdentity())
-            return identity.username.isEmpty ? "Missing" : machine.sshLoginUsername(identity: identity)
+            return identity.username.isEmpty ? String(localized: "Missing") : machine.sshLoginUsername(identity: identity)
         }
 
-        func infoRow(_ title: String, _ value: String) -> some View {
+        func infoRow(_ title: LocalizedStringResource, _ value: String) -> some View {
             HStack {
                 CapsLabel(title)
                 Spacer()
@@ -228,7 +228,7 @@
             .frame(height: 16)
         }
 
-        func tileBar(_ title: String, percent: Double, color: Color) -> some View {
+        func tileBar(_ title: LocalizedStringResource, percent: Double, color: Color) -> some View {
             HStack(spacing: RX.Space.s2) {
                 CapsLabel(title)
                     .frame(width: 56, alignment: .leading)

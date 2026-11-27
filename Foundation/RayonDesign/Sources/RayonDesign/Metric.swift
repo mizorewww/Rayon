@@ -42,12 +42,12 @@ public struct MetricView: View {
 
 /// Caption above a medium metric, used in a card's sub-metric row and page headers.
 public struct LabeledMetric: View {
-    let label: String
+    let label: LocalizedStringResource
     let value: String
     let unit: String
     let swatch: Color?
 
-    public init(_ label: String, value: String, unit: String = "", swatch: Color? = nil) {
+    public init(_ label: LocalizedStringResource, value: String, unit: String = "", swatch: Color? = nil) {
         self.label = label
         self.value = value
         self.unit = unit
@@ -76,13 +76,13 @@ public struct SubMetricRow: View {
 
     public struct Item: Identifiable {
         /// Stable across rebuilds; one row must not repeat a label.
-        public var id: String { label }
-        let label: String
+        public var id: String { label.key }
+        let label: LocalizedStringResource
         let value: String
         let unit: String
         let swatch: Color?
 
-        public init(_ label: String, value: String, unit: String = "", swatch: Color? = nil) {
+        public init(_ label: LocalizedStringResource, value: String, unit: String = "", swatch: Color? = nil) {
             self.label = label
             self.value = value
             self.unit = unit
@@ -112,13 +112,13 @@ public struct SubMetricRow: View {
 public struct FactsRow: View {
     public struct Fact: Identifiable {
         /// Stable across rebuilds; one row must not repeat a label.
-        public var id: String { label }
-        let label: String
+        public var id: String { label.key }
+        let label: LocalizedStringResource
         let value: String
         let monospaced: Bool
         let redacted: Bool
 
-        public init(_ label: String, value: String, monospaced: Bool = false, redacted: Bool = false) {
+        public init(_ label: LocalizedStringResource, value: String, monospaced: Bool = false, redacted: Bool = false) {
             self.label = label
             self.value = value
             self.monospaced = monospaced
@@ -216,8 +216,8 @@ public enum RXFormat {
 
     /// "2 min ago", "Yesterday" style relative dates; "Never" before 1971.
     public static func relative(_ date: Date) -> String {
-        if date.timeIntervalSince1970 < 86400 * 365 { return "Never" }
-        if abs(date.timeIntervalSinceNow) < 60 { return "Now" }
+        if date.timeIntervalSince1970 < 86400 * 365 { return String(localized: "Never", bundle: .module) }
+        if abs(date.timeIntervalSinceNow) < 60 { return String(localized: "Now", bundle: .module) }
         return relativeFormatter.localizedString(for: date, relativeTo: Date())
     }
 }

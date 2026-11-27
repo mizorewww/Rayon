@@ -276,7 +276,9 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
                     // as live forever. It fails, and the next round
                     // reconnects.
                     failures += 1
-                    setPhase(.failed(hasReading ? "The server stopped answering." : "The server isn't answering."))
+                    setPhase(.failed(hasReading
+                        ? String(localized: "The server stopped answering.", bundle: .module)
+                        : String(localized: "The server isn't answering.", bundle: .module)))
                 }
             }
             let wait = failures > 0 ? min(30, 5 * failures) : refreshInterval
@@ -350,7 +352,7 @@ public final class MonitorCenter: ObservableObject {
 
         public var errorDescription: String? {
             switch self {
-            case .malformedMachine: return "This server's details could not be read."
+            case .malformedMachine: return String(localized: "This server's details could not be read.", bundle: .module)
             }
         }
     }

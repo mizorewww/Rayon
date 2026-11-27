@@ -87,7 +87,7 @@ struct CloudSyncSettings: View {
     var body: some View {
         Toggle(isOn: $sync.preferences.isOn) {
             Text("Sync with iCloud")
-            Text(sync.preferences.isOn ? sync.statusText : "Keep your data the same on every device signed in to your iCloud account. Passwords and keys travel end-to-end encrypted.")
+            Text(sync.preferences.isOn ? "\(sync.statusText)" : "Keep your data the same on every device signed in to your iCloud account. Passwords and keys travel end-to-end encrypted.")
         }
         if sync.preferences.isOn, sync.status == .accountChanged {
             LabeledContent {
@@ -139,7 +139,7 @@ struct CloudSyncSettings: View {
                     deleting = true
                     Task {
                         if let problem = await sync.deleteCloudData() {
-                            Indicator.error("Could not delete the data in iCloud: \(problem)")
+                            Indicator.error(String(localized: "Could not delete the data in iCloud: \(problem)"))
                         }
                         deleting = false
                     }

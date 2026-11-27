@@ -14,8 +14,8 @@ struct AboutSettings: View {
     #endif
 
     private var version: String {
-        let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
+        let short = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? String(localized: "Unknown")
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? String(localized: "Unknown")
         #if DEBUG
             return "\(short) (\(build)) · Debug"
         #else
@@ -28,7 +28,7 @@ struct AboutSettings: View {
         guard let url = Bundle.main.url(forResource: "BuildInfo", withExtension: "plist"),
               let info = NSDictionary(contentsOf: url),
               let commit = info["GitCommit"] as? String, !commit.isEmpty
-        else { return "Unknown" }
+        else { return String(localized: "Unknown") }
         return commit
     }
 
@@ -68,7 +68,7 @@ struct AboutSettings: View {
     /// LabeledContent holding a Link and its Label sized wrongly in a Form,
     /// leaving a blank gap and wrapping the link under its label.
     @ViewBuilder
-    private func linkRow(_ title: String, _ detail: String, link: String, to address: String) -> some View {
+    private func linkRow(_ title: LocalizedStringResource, _ detail: LocalizedStringResource, link: LocalizedStringResource, to address: String) -> some View {
         let url = URL(string: address)!
         #if os(macOS)
             LabeledContent {
@@ -109,10 +109,10 @@ struct AcknowledgementSettings: View {
         #else
             acknowledgement("Terminal", "Ghostty and its configuration catalog (MIT, Ghostty contributors).")
         #endif
-        acknowledgement("Libraries", LicenseNotices.bundledLibraries.joined(separator: " · "))
+        acknowledgement("Libraries", "\(LicenseNotices.bundledLibraries.joined(separator: " · "))")
     }
 
-    private func acknowledgement(_ title: String, _ text: String) -> some View {
+    private func acknowledgement(_ title: LocalizedStringResource, _ text: LocalizedStringResource) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
             Text(text)

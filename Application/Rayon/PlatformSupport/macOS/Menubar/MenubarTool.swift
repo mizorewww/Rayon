@@ -30,8 +30,8 @@
         }
 
         func createRuncat(for machineId: RDMachine.ID, quiet: Bool = false) {
-            func fail(_ message: String) {
-                if !quiet { Indicator.error(message) }
+            func fail(_ message: LocalizedStringResource) {
+                if !quiet { Indicator.error(String(localized: message)) }
             }
             for item in statusItem where item.machine.id == machineId {
                 fail("This server is already in the menu bar")
