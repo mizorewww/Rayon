@@ -48,7 +48,11 @@ case $cmd in
       | gssh "mkdir -p ~/Applications/${(q)name}.incoming && tar -C ~/Applications/${(q)name}.incoming -xf - \
               && rm -rf ~/Applications/${(q)name} && mv ~/Applications/${(q)name}.incoming/${(q)name} ~/Applications/ \
               && rmdir ~/Applications/${(q)name}.incoming"
-    print -- "pushed $name -> ~/Applications/$name"
+    # Each ad-hoc build has a new signature, so keychain items an older build created
+    # would raise a login-keychain prompt that cua-driver cannot answer. Drop them;
+    # QA re-enters test credentials in the app.
+    gssh 'while security delete-generic-password -s me.mizorewww.rayon.secrets >/dev/null 2>&1; do :; done; while security delete-generic-password -s me.mizorewww.rayon.debug.secrets >/dev/null 2>&1; do :; done; true'
+    print -- "pushed $name -> ~/Applications/$name (guest keychain items for Rayon cleared)"
     ;;
   run)
     (( $# )) || die "usage: run <cmd...>"
