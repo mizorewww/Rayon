@@ -114,7 +114,7 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
     /// The words search finds the group by, besides its page and title.
     var keywords: String {
         switch self {
-        case .appearance: "appearance dark light mode theme system effects animation background home glow reduce motion"
+        case .appearance: "appearance dark light mode theme system effects animation background home glow gradient reduce motion"
         case .sessions: "open sessions automatically ask before closing confirmation quit"
         case .recent: "recent servers history quick connect commands record remember"
         case .sync: "icloud sync cloud servers identities snippets port forwards terminal settings credentials devices"

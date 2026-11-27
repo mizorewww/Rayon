@@ -25,7 +25,7 @@ struct AppearanceSettings: View {
         #endif
         Toggle(isOn: $animatesHome) {
             Text("Animate Home")
-            Text("A soft glow and drifting dots behind Quick Connect.")
+            Text("The moving background behind Quick Connect.")
         }
     }
 }

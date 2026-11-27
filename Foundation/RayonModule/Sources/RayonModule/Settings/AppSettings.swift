@@ -12,7 +12,7 @@ public enum AppSettings {
     // MARK: Appearance
 
     public static let appearance = SettingKey("appearance.mode", default: Appearance.system, scope: .synced)
-    /// The glow and drifting dots behind Quick Connect.
+    /// The moving background behind Quick Connect.
     public static let animatesHome = SettingKey("appearance.animatesHome", default: true, scope: .synced)
 
     // MARK: Sessions
