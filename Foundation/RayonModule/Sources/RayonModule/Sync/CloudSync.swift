@@ -465,8 +465,10 @@ public actor CloudSync {
             if zoneMissing {
                 engine.state.add(pendingDatabaseChanges: [.saveZone(CKRecordZone(zoneID: CloudRecordCoding.zoneID))])
             }
+            // Only these: a record left out above waits for its merge, and
+            // the engine keeps and retries transient failures itself.
             if !retry.isEmpty {
-                scheduleUploads()
+                engine.state.add(pendingRecordZoneChanges: retry)
             }
             if changed { notifyMerged() }
 
