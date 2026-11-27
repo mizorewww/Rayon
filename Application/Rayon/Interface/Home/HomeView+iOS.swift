@@ -89,7 +89,7 @@
                 Text("Quick Connect")
                     .font(.system(.headline, design: .rounded))
                     .foregroundStyle(.rxInk)
-                VStack(alignment: .leading, spacing: RX.Space.s2) {
+                VStack(spacing: RX.Space.s2) {
                     HStack(spacing: RX.Space.s2) {
                         Image(systemName: "terminal")
                             .font(.system(size: 18))
