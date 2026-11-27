@@ -33,6 +33,9 @@
                 if ProcessInfo.processInfo.environment["RAYON_BENCH_SETTINGS"] != nil {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) { Task { await settings() } }
                 }
+                if let value = ProcessInfo.processInfo.environment["RAYON_BENCH_HOME"], let count = Int(value) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { Task { await home(count) } }
+                }
                 guard let value = ProcessInfo.processInfo.environment["RAYON_BENCH_FILES"], let count = Int(value) else { return }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) { Task { await files(count) } }
             }
@@ -113,6 +116,23 @@
                 let router = AppRouter.shared
                 router.settingsSelection = "general"
                 report("open settings", [await settle { router.route = .settings }])
+                NSLog("BENCH done")
+            }
+
+            /// Enters Home from Servers `count` times; the main thread's busy
+            /// time and its longest stretch are what a stutter on entry costs.
+            static func home(_ count: Int) async {
+                let router = AppRouter.shared
+                var busy: [Double] = []
+                var stretches: [Double] = []
+                for _ in 0 ..< count {
+                    router.route = .servers
+                    try? await Task.sleep(nanoseconds: 600_000_000)
+                    busy.append(await settle { router.route = .home })
+                    stretches.append(longest)
+                }
+                report("enter home busy", busy)
+                report("enter home longest", stretches)
                 NSLog("BENCH done")
             }
         }
