@@ -115,24 +115,7 @@ enum Indicator {
 
     #if os(iOS)
         private static func present(_ alert: AlertViewController) {
-            guard let top = UIWindow.shutUpKeyWindow?.topMostViewController else {
-                // At launch the scene has no window yet.
-                Task {
-                    for await _ in NotificationCenter.default.notifications(named: UIWindow.didBecomeKeyNotification) {
-                        break
-                    }
-                    present(alert)
-                }
-                return
-            }
-            // UIKit drops a present issued while a sheet animates in or out.
-            if let coordinator = top.transitionCoordinator {
-                coordinator.animate(alongsideTransition: nil) { _ in
-                    MainActor.assumeIsolated { present(alert) }
-                }
-                return
-            }
-            top.present(alert, animated: true)
+            ModalPresenter.present(alert)
         }
     #else
         /// The key window, which is a sheet's own window while one is up.

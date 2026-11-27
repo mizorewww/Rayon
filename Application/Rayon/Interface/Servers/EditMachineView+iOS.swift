@@ -42,6 +42,7 @@
         @State var uuAssistID: String
         @State var uuAssistCode: String
         @State var openUUAccount = false
+        @State var picksIdentity = false
         @ObservedObject var uuAccount = UURemoteAccount.shared
 
         // Extra
@@ -348,6 +349,16 @@
                 }
             }
             .rxGroupedList()
+            .sheet(isPresented: $picksIdentity) {
+                NavigationStack {
+                    PickIdentityView { picked in
+                        guard let picked else { return }
+                        associatedIdentity = picked
+                        createAndConnect()
+                    }
+                }
+                .interactiveDismissDisabled()
+            }
             .sheet(isPresented: $openUUAccount) {
                 NavigationStack {
                     UURemoteAccountView(onConnectDesktop: { machineID in
@@ -470,17 +481,13 @@
                     created.lastConnection = Date()
                     guard save(created) else { return }
                     dismiss()
-                    // The terminal waits for this sheet to go.
-                    try? await Task.sleep(for: .milliseconds(500))
                     TerminalManager.shared.begin(for: created.id)
                 case .rejected:
                     if chosen != nil {
                         connectError = "The selected identity could not sign in to \(host)."
                     } else {
                         connectError = "No identity that authenticates automatically could sign in. Choose an identity."
-                        guard let picked = await RayonUtil.selectIdentity() else { return }
-                        associatedIdentity = picked
-                        createAndConnect()
+                        picksIdentity = true
                     }
                 }
             }

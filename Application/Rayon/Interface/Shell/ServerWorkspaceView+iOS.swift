@@ -112,7 +112,7 @@
             host.modalTransitionStyle = .coverVertical
             host.modalPresentationStyle = UIDevice.current.userInterfaceIdiom == .phone ? .fullScreen : .formSheet
             host.preferredContentSize = preferredPopOverSize
-            PresentationQueue.present(next: host)
+            ModalPresenter.present(host, push: true)
         }
 
         fileprivate func appeared(_ owner: SessionOwner) { onScreen[owner, default: 0] += 1 }

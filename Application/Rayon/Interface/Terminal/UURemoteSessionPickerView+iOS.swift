@@ -36,9 +36,7 @@
                 UURemoteSessionPickerView(machine: machine, onComplete: onComplete)
             }
             .tint(.rxAccent)
-            RayonUtil.presentModalSheet(rootView: picker) { presented in
-                if !presented { onComplete(nil) }
-            }
+            RayonUtil.presentModalSheet(rootView: picker)
         }
 
         var body: some View {

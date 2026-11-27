@@ -37,7 +37,6 @@
             #endif
                 .onAppear {
                     SettingsEffects.start()
-                    checkAgreement()
                     if let problem = store.launchProblem {
                         Indicator.alert(problem)
                     }
@@ -45,23 +44,11 @@
                         runPreviewHooks()
                     #endif
                 }
-                .onChange(of: store.licenseAgreed) { _ in
-                    checkAgreement()
+                .sheet(isPresented: .constant(!store.licenseAgreed)) {
+                    AgreementView()
+                        .rxSolidBars()
+                        .interactiveDismissDisabled()
                 }
-        }
-
-        func checkAgreement() {
-            guard !store.licenseAgreed else {
-                return
-            }
-            let host = UIHostingController(rootView: AgreementView().rxSolidBars())
-            host.preferredContentSize = preferredPopOverSize
-            host.isModalInPresentation = true
-            host.modalTransitionStyle = .coverVertical
-            host.modalPresentationStyle = .formSheet
-            // At launch the window is not in the hierarchy yet; the queue
-            // replays the present once it is.
-            PresentationQueue.present(next: host)
         }
     }
 #endif
