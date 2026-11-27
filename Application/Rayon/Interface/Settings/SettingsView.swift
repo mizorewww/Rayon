@@ -11,6 +11,7 @@ import AppKit
 import RayonModule
 import RayonTerminal
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     @EnvironmentObject var store: RayonStore
@@ -503,8 +504,17 @@ struct AgreementSheet: View {
 /// Backups of the data and of the settings, and the OpenSSH `~/.ssh/config`
 /// importer, under Settings -> General -> Data.
 private struct DataBackupSettings: View {
+    /// A picked backup waiting for its password.
+    private struct LockedBackup: Identifiable {
+        let url: URL
+        let retry: Bool
+        var id: URL { url }
+    }
+
     @EnvironmentObject var store: RayonStore
     @State private var statusMessage: String?
+    @State private var importingBackup = false
+    @State private var locked: LockedBackup?
 
     var body: some View {
         RXDividedStack {
@@ -523,7 +533,7 @@ private struct DataBackupSettings: View {
                     }
                     .buttonStyle(.rx)
                     Button("Import Backup…") {
-                        importBackup()
+                        importingBackup = true
                     }
                     .buttonStyle(.rx)
                 }
@@ -554,6 +564,27 @@ private struct DataBackupSettings: View {
             }
             if let statusMessage {
                 HelpText(statusMessage)
+            }
+        }
+        // SwiftUI presents both against this window once the open panel is
+        // gone; an AppKit sheet begun from the panel's completion attached
+        // to the closing panel and left the window blocked.
+        .fileImporter(isPresented: $importingBackup, allowedContentTypes: [.item]) { result in
+            switch result {
+            case let .success(url):
+                importBackup(url)
+            case let .failure(error):
+                UIBridge.presentError(with: error.localizedDescription)
+            }
+        }
+        .sheet(item: $locked) { backup in
+            BackupPasswordSheet(fileName: backup.url.lastPathComponent, retry: backup.retry) { password in
+                locked = nil
+                if let password {
+                    restoreBackup(backup.url, password: password)
+                } else {
+                    backup.url.stopAccessingSecurityScopedResource()
+                }
             }
         }
     }
@@ -594,22 +625,14 @@ private struct DataBackupSettings: View {
         }
     }
 
-    private func importBackup() {
-        chooseFile("Choose a Rayon backup") { url in
-            if DataBackup.needsPassword(url) {
-                askPassword(for: url)
-            } else {
-                restoreBackup(url, password: nil)
-            }
-        }
-    }
-
-    private func askPassword(for url: URL, retry: Bool = false) {
-        SheetPresenter.present { dismiss in
-            BackupPasswordSheet(fileName: url.lastPathComponent, retry: retry) { password in
-                dismiss()
-                if let password { restoreBackup(url, password: password) }
-            }
+    /// Keeps access to the picked file until the import ends, since a
+    /// wrong password asks again.
+    private func importBackup(_ url: URL) {
+        _ = url.startAccessingSecurityScopedResource()
+        if DataBackup.needsPassword(url) {
+            locked = LockedBackup(url: url, retry: false)
+        } else {
+            restoreBackup(url, password: nil)
         }
     }
 
@@ -617,11 +640,13 @@ private struct DataBackupSettings: View {
         Task {
             do {
                 let contents = try await DataBackup.load(url, password: password)
+                url.stopAccessingSecurityScopedResource()
                 let result = store.restore(contents)
                 statusMessage = "Imported \(result.summary)"
             } catch BackupError.wrongPassword {
-                askPassword(for: url, retry: true)
+                locked = LockedBackup(url: url, retry: true)
             } catch {
+                url.stopAccessingSecurityScopedResource()
                 UIBridge.presentError(with: "Could not import backup: \(error.localizedDescription)")
             }
         }
