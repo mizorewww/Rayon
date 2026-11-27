@@ -221,6 +221,7 @@
     struct MenubarPopoverView: View {
         @ObservedObject var session: MonitorSession
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
         let remove: () -> Void
         let dismiss: () -> Void
 
@@ -264,7 +265,7 @@
                 .filter { !$0.isEmpty }
             return HStack(alignment: .center, spacing: RX.Space.s2) {
                 VStack(alignment: .leading, spacing: 2) {
-                    RedactableText(session.machine.name, redacted: store.machineRedacted == .all)
+                    RedactableText(session.machine.name, redacted: redaction == .all)
                         .font(.rxBodyStrong)
                         .foregroundStyle(.rxInk)
                         .lineLimit(1)

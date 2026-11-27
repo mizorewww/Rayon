@@ -187,6 +187,7 @@
         let host: VNCDiscoveredHost
         let edit: (RDMachine.ID) -> Void
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
 
         var body: some View {
             let saved = store.machines.first(where: host.matches)
@@ -198,7 +199,7 @@
                     Text(host.displayName)
                         .foregroundStyle(.rxInk)
                         .lineLimit(1)
-                    RedactableText("\(host.hostName):\(host.port)", redacted: store.machineRedacted != .none)
+                    RedactableText("\(host.hostName):\(host.port)", redacted: redaction != .none)
                         .font(.footnote)
                         .foregroundStyle(.rxInkSecondary)
                         .lineLimit(1)
@@ -235,6 +236,7 @@
         let edit: () -> Void
         @ObservedObject private var account = UURemoteAccount.shared
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
 
         private var uuDevice: UUDeviceInfo? {
             account.devices.first { $0.deviceID == machine.uuDeviceID }
@@ -246,10 +248,10 @@
                     .foregroundStyle(.rxAccent)
                     .frame(width: 24)
                 VStack(alignment: .leading, spacing: 2) {
-                    RedactableText(machine.name, redacted: store.machineRedacted == .all)
+                    RedactableText(machine.name, redacted: redaction == .all)
                         .foregroundStyle(.rxInk)
                         .lineLimit(1)
-                    RedactableText(machine.remoteDesktopTarget(uuDevice: uuDevice), redacted: store.machineRedacted != .none)
+                    RedactableText(machine.remoteDesktopTarget(uuDevice: uuDevice), redacted: redaction != .none)
                         .font(.footnote)
                         .foregroundStyle(.rxInkSecondary)
                         .lineLimit(1)

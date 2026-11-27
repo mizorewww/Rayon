@@ -38,10 +38,11 @@
         @ObservedObject var workspace: EditorWorkspace
         @ObservedObject var context: FileTransferContext
         @ObservedObject var store = RayonStore.shared
+        @AppSetting(AppSettings.serverRedaction) private var redaction
         @Environment(\.dismiss) private var dismiss
         @Environment(\.inServerWorkspace) private var inServerWorkspace
 
-        @AppStorage("me.mizorewww.rayon.editor.wrapsLines") private var wrapsLines = false
+        @AppSetting(AppSettings.editorWrapsLines) private var wrapsLines
         @State private var openPrompt = false
         @State private var saveError: String?
         @State private var draggedDocumentID: EditorDocument.ID?
@@ -70,7 +71,7 @@
                     editor
                 }
             }
-            .navigationTitle(current?.name ?? (store.machineRedacted == .all ? "Editor" : context.machine.name))
+            .navigationTitle(current?.name ?? (redaction == .all ? "Editor" : context.machine.name))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
             .focusedSceneValue(\.editorCommands, EditorCommandActions(

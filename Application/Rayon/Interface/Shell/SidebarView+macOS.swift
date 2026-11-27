@@ -243,6 +243,7 @@
     private struct OwnerSidebarRow: View {
         let owner: SessionOwner
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
         @ObservedObject var terminals = TerminalManager.shared
         @ObservedObject var transfers = FileTransferManager.shared
         @ObservedObject var editors = EditorCenter.shared
@@ -282,7 +283,7 @@
                     case .local: return "laptopcomputer"
                     }
                 }()) {
-                    RedactableText(title, redacted: owner != .local && store.machineRedacted == .all)
+                    RedactableText(title, redacted: owner != .local && redaction == .all)
                         .truncationMode(.middle)
                 }
                 if case .server = owner {

@@ -17,6 +17,7 @@ struct RayonCommands: Commands {
     @FocusedValue(\.fileBrowserCommands) private var files
     @FocusedValue(\.deleteSelection) private var deleteSelection
     @ObservedObject private var store = RayonStore.shared
+    @AppSetting(AppSettings.terminalFontSize) private var fontSize
 
     var body: some Commands {
         #if os(macOS)
@@ -74,12 +75,12 @@ struct RayonCommands: Commands {
                     .disabled(terminal?.splitWithServer == nil)
             #endif
             Divider()
-            Button("Smaller Text") { store.terminalFontSize -= 1 }
+            Button("Smaller Text") { fontSize -= 1 }
                 .keyboardShortcut("-", modifiers: .command)
-                .disabled(terminal == nil || store.terminalFontSize <= 4)
-            Button("Larger Text") { store.terminalFontSize += 1 }
+                .disabled(terminal == nil || fontSize <= 4)
+            Button("Larger Text") { fontSize += 1 }
                 .keyboardShortcut("+", modifiers: .command)
-                .disabled(terminal == nil || store.terminalFontSize >= 30)
+                .disabled(terminal == nil || fontSize >= 30)
             Divider()
             Button("Previous Tab") { terminal?.cycleTab(-1) }
                 .keyboardShortcut("[", modifiers: [.command, .shift])

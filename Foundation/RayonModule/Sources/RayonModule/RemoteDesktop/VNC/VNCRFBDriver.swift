@@ -113,7 +113,7 @@ final class VNCRFBDriver: RemoteDesktopDriver {
                 password: machine.resolvedVNCPassword(identity: identity),
                 username: machine.resolvedVNCUsername(identity: identity),
                 shared: machine.vncShared,
-                timeout: max(TimeInterval(RayonStore.workerTimeoutNumber.intValue), 10),
+                timeout: max(TimeInterval(AppSettings.connectionTimeout.value), 10),
                 transport: transport
             ),
             delegate: self

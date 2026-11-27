@@ -64,7 +64,7 @@
                         text: $code,
                         language: .bash,
                         wrapsLines: true,
-                        fontSize: CGFloat(RayonStore.shared.terminalFontSize)
+                        fontSize: CGFloat(AppSettings.terminalFontSize.value)
                     )
                     .frame(height: 250)
                 } header: {

@@ -70,6 +70,7 @@
     struct ServerTile: View {
         let machine: RDMachine.ID
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
         // Observed so the dot follows a terminal opening or closing, the same
         // subscription SessionTabs makes.
         @ObservedObject var terminals = TerminalManager.shared
@@ -83,7 +84,7 @@
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(alignment: .top, spacing: RX.Space.s2) {
                         VStack(alignment: .leading, spacing: 2) {
-                            RedactableText(read.name, redacted: store.machineRedacted == .all)
+                            RedactableText(read.name, redacted: redaction == .all)
                                 .font(.rxBodyStrong)
                                 .foregroundStyle(.rxInk)
                                 .lineLimit(1)
@@ -94,7 +95,7 @@
                                     .foregroundStyle(.rxInkSecondary)
                                     .lineLimit(1)
                             } else {
-                                RedactableText(read.remoteAddress, redacted: store.machineRedacted != .none)
+                                RedactableText(read.remoteAddress, redacted: redaction != .none)
                                     .font(.rxCode)
                                     .foregroundStyle(.rxInkSecondary)
                                     .lineLimit(1)

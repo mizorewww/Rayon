@@ -15,6 +15,7 @@
         @ObservedObject var context: TerminalManager.Context
         @ObservedObject var terminals = TerminalManager.shared
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.terminalFontSize) private var fontSize
 
         @State private var draggedTabID: TerminalManager.Context.ID?
         @State private var activeSnapZone: TerminalSnapZone?
@@ -136,11 +137,11 @@
                     withAnimation(.rxQuick) { showSnippetDrawer.toggle() }
                 }
             } trailing: {
-                ToolbarAction("Smaller Text (⌘−)", systemImage: "textformat.size.smaller", isEnabled: store.terminalFontSize > 4) {
-                    store.terminalFontSize -= 1
+                ToolbarAction("Smaller Text (⌘−)", systemImage: "textformat.size.smaller", isEnabled: fontSize > 4) {
+                    fontSize -= 1
                 }
-                ToolbarAction("Larger Text (⌘+)", systemImage: "textformat.size.larger", isEnabled: store.terminalFontSize < 30) {
-                    store.terminalFontSize += 1
+                ToolbarAction("Larger Text (⌘+)", systemImage: "textformat.size.larger", isEnabled: fontSize < 30) {
+                    fontSize += 1
                 }
                 ToolbarAction("Close Tab", systemImage: "xmark") {
                     TerminalSessionActions.close(context)
@@ -453,11 +454,11 @@
                 // onAppear inside the id: it must run again for each tab shown here.
                 pane.termInterface
                     .onAppear {
-                        pane.termInterface.setTerminalFontSize(with: store.terminalFontSize, preferConfigured: true)
+                        pane.termInterface.setTerminalFontSize(with: fontSize, preferConfigured: true)
                         pane.termInterface.setActive(true, focus: isFocused)
                     }
                     .id(pane.id)
-                    .onChange(of: store.terminalFontSize) { newValue in
+                    .onChange(of: fontSize) { newValue in
                         pane.termInterface.setTerminalFontSize(with: newValue)
                     }
                     .simultaneousGesture(TapGesture().onEnded {
@@ -985,10 +986,11 @@
         @ObservedObject var context: TerminalManager.Context
         @ObservedObject var monitors = MonitorCenter.shared
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
 
         var body: some View {
             HStack(spacing: RX.Space.s4) {
-                RedactableText(endpoint, redacted: store.machineRedacted != .none)
+                RedactableText(endpoint, redacted: redaction != .none)
                     .font(.rxCode)
                 Spacer(minLength: RX.Space.s2)
                 if let session = monitors.session(for: context.machine.id) {

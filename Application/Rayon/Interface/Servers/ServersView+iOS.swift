@@ -13,6 +13,7 @@
 
     struct ServersView: View {
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
         @ObservedObject var monitors = MonitorCenter.shared
         @State private var searchKey = ""
         @State private var openNewServer = false
@@ -57,15 +58,15 @@
                     .background(RXBackdrop().ignoresSafeArea())
                 } else {
                     List {
-                        if store.machineRedacted != .none {
+                        if redaction != .none {
                             Section {
                                 HStack {
                                     Image(systemName: "eye.slash").foregroundStyle(.rxInkSecondary)
-                                    Text(store.machineRedacted == .all ? "Names and addresses are hidden" : "Addresses are hidden")
+                                    Text(redaction == .all ? "Names and addresses are hidden" : "Addresses are hidden")
                                         .font(.subheadline)
                                         .foregroundStyle(.rxInkSecondary)
                                     Spacer()
-                                    Button("Show") { store.machineRedacted = .none }
+                                    Button("Show") { redaction = .none }
                                         .font(.subheadline.weight(.semibold))
                                 }
                                 .rxListRow()
@@ -96,7 +97,7 @@
             .toolbar {
                 ToolbarItemGroup {
                     Menu {
-                        Picker("Redaction", selection: $store.machineRedacted) {
+                        Picker("Redaction", selection: $redaction) {
                             Label("Show Everything", systemImage: "eye").tag(RDMachine.RedactedLevel.none)
                             Label("Hide Addresses", systemImage: "eye.slash").tag(RDMachine.RedactedLevel.sensitive)
                             Label("Hide Names and Addresses", systemImage: "eye.slash.fill").tag(RDMachine.RedactedLevel.all)
@@ -116,7 +117,7 @@
                         }
                         .disabled(store.machines.isEmpty)
                     } label: {
-                        Label("More", systemImage: store.machineRedacted == .none ? "ellipsis.circle" : "eye.slash")
+                        Label("More", systemImage: redaction == .none ? "ellipsis.circle" : "eye.slash")
                     }
                     Button {
                         openNewServer = true
@@ -143,6 +144,7 @@
         let machine: RDMachine.ID
         let edit: () -> Void
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
         @ObservedObject var monitors = MonitorCenter.shared
 
         var body: some View {
@@ -152,7 +154,7 @@
             } label: {
                 HStack(spacing: RX.Space.s3) {
                     VStack(alignment: .leading, spacing: 2) {
-                        RedactableText(read.name, redacted: store.machineRedacted == .all)
+                        RedactableText(read.name, redacted: redaction == .all)
                             .foregroundStyle(.rxInk)
                             .lineLimit(1)
                         if read.isUURemoteDevice {
@@ -160,7 +162,7 @@
                                 .font(.footnote)
                                 .foregroundStyle(.rxInkSecondary)
                         } else {
-                            RedactableText(read.displayAddress, redacted: store.machineRedacted != .none)
+                            RedactableText(read.displayAddress, redacted: redaction != .none)
                                 .font(.rxCode)
                                 .foregroundStyle(.rxInkSecondary)
                                 .lineLimit(1)
@@ -306,7 +308,7 @@
                 let session = try MonitorCenter.shared.begin(for: machine)
                 // An existing monitor is brought forward even when sessions do
                 // not open automatically; a new one waits for the setting.
-                guard existing != nil || RayonStore.shared.openInterfaceAutomatically else { return }
+                guard existing != nil || AppSettings.showsSessionOnConnect.value else { return }
                 SessionNavigation.shared.reveal(.server(session.machine.id), tool: .monitor)
             } catch {
                 UIBridge.presentError(with: "Cannot open monitor")
@@ -318,7 +320,7 @@
         static func openDesktop(_ machine: RDMachine.ID) {
             let existing = RemoteDesktopManager.shared.session(for: machine)
             guard let session = RemoteDesktopManager.shared.begin(for: machine) else { return }
-            guard existing != nil || RayonStore.shared.openInterfaceAutomatically else { return }
+            guard existing != nil || AppSettings.showsSessionOnConnect.value else { return }
             SessionNavigation.shared.reveal(.server(session.machine.id), tool: .desktop)
         }
 

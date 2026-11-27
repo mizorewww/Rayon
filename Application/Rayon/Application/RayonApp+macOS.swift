@@ -59,9 +59,7 @@
         }
 
         func applicationDidFinishLaunching(_: Notification) {
-            AppearancePreference.applyStored()
-            RayonTerminalView.setCopyOnSelect(RayonStore.shared.terminalCopyOnSelect)
-            RayonTerminalView.setClipboardSharing(RayonStore.shared.terminalClipboardSharing)
+            SettingsEffects.start()
             installShortcutMonitor()
             installWindowPolicyObservers()
             MenubarTool.shared.restore()
@@ -181,7 +179,7 @@
                 terminating = true
                 return .terminateNow
             }
-            if RayonStore.shared.disableConformation, !unsaved {
+            if !AppSettings.confirmsClosingSession.value, !unsaved {
                 terminating = true
                 TerminalManager.shared.closeAll()
                 return .terminateNow

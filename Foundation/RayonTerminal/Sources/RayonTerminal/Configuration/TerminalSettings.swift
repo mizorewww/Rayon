@@ -269,14 +269,6 @@ public final class TerminalSettings {
 
     /// The settings as the previous release kept them in the user defaults,
     /// as a config file. Its shortcut list was the whole list, hence `clear`.
-    /// Applies settings kept the old way (a restored backup from that
-    /// release) and removes them from the user defaults.
-    public func loadLegacy(from defaults: UserDefaults) throws {
-        guard let legacy = Self.legacySettings(in: defaults) else { return }
-        try load(legacy.text)
-        defaults.removeObject(forKey: Self.legacyKey)
-    }
-
     static func legacySettings(in defaults: UserDefaults) -> GhosttyConfigText? {
         struct Storage: Decodable {
             struct Document: Decodable { let overrides: [String: [String]] }

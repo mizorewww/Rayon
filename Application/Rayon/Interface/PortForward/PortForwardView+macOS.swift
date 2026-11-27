@@ -127,6 +127,7 @@
         let edit: () -> Void
 
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
         @ObservedObject var backend = PortForwardBackend.shared
         @State private var hovered = false
 
@@ -141,7 +142,7 @@
                     .font(.rxCode)
                     .foregroundStyle(.rxInk)
                     .frame(width: ForwardColumns.bind, alignment: .leading)
-                RedactableText(forward.getMachineName() ?? "No server", redacted: store.machineRedacted == .all)
+                RedactableText(forward.getMachineName() ?? "No server", redacted: redaction == .all)
                     .font(.rxBody)
                     .foregroundStyle(forward.usingMachine == nil ? Color.rxInkSecondary : Color.rxInk)
                     .lineLimit(1)

@@ -13,6 +13,7 @@
 
     struct ServersView: View {
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
         @ObservedObject var router = AppRouter.shared
         /// The toolbar names the account item by whether one is signed in.
         @ObservedObject private var account = UURemoteAccount.shared
@@ -72,7 +73,7 @@
             } header: {
                 VStack(alignment: .leading, spacing: RX.Space.s3) {
                     PageTitle("Servers")
-                    if store.machineRedacted != .none {
+                    if redaction != .none {
                         RedactionBanner()
                     }
                 }
@@ -122,23 +123,24 @@
     /// None → Sensitive hides addresses → All hides names too.
     struct RedactionMenu: View {
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
 
         var body: some View {
             RXToolbarMenu(
                 "Privacy",
-                systemImage: store.machineRedacted == .none ? "eye" : "eye.slash",
+                systemImage: redaction == .none ? "eye" : "eye.slash",
                 items: [
                     item("Show Everything", systemImage: "eye", level: .none),
                     item("Hide Addresses", systemImage: "eye.slash", level: .sensitive),
                     item("Hide Names and Addresses", systemImage: "eye.slash.fill", level: .all),
                 ]
             )
-            .help(store.machineRedacted.tooltip)
+            .help(redaction.tooltip)
         }
 
         private func item(_ title: String, systemImage: String, level: RDMachine.RedactedLevel) -> RXToolbarMenuItem {
-            RXToolbarMenuItem(title, systemImage: systemImage, isOn: store.machineRedacted == level) {
-                store.machineRedacted = level
+            RXToolbarMenuItem(title, systemImage: systemImage, isOn: redaction == level) {
+                redaction = level
             }
         }
     }
@@ -146,15 +148,16 @@
     /// States that details are hidden and offers the way back.
     struct RedactionBanner: View {
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
 
         var body: some View {
             HStack(spacing: RX.Space.s2) {
                 Image(systemName: "eye.slash")
                     .foregroundStyle(.rxInkSecondary)
-                Text(store.machineRedacted == .all ? "Names and addresses hidden" : "Addresses hidden")
+                Text(redaction == .all ? "Names and addresses hidden" : "Addresses hidden")
                     .font(.rxBody)
                     .foregroundStyle(.rxInkSecondary)
-                Button("Show") { store.machineRedacted = .none }
+                Button("Show") { redaction = .none }
                     .buttonStyle(.rx(size: .small))
             }
             .padding(.horizontal, 12)
@@ -241,6 +244,7 @@
         @Binding var selection: RDMachine.ID?
 
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
         @State private var hovered = false
 
         var body: some View {
@@ -248,11 +252,11 @@
             ServerLiveReader(machine: machine) { state in
                 HStack(spacing: 0) {
                     VStack(alignment: .leading, spacing: 1) {
-                        RedactableText(read.name, redacted: store.machineRedacted == .all)
+                        RedactableText(read.name, redacted: redaction == .all)
                             .font(.rxBody)
                             .foregroundStyle(.rxInk)
                             .lineLimit(1)
-                        if !read.comment.isEmpty, store.machineRedacted == .none {
+                        if !read.comment.isEmpty, redaction == .none {
                             Text(read.comment)
                                 .font(.rxHelp)
                                 .foregroundStyle(.rxInkSecondary)
@@ -267,7 +271,7 @@
                             let displayAddress = (read.remotePort.isEmpty || read.remotePort == "22")
                                 ? read.remoteAddress
                                 : "\(read.remoteAddress):\(read.remotePort)"
-                            RedactableText(displayAddress, redacted: store.machineRedacted != .none)
+                            RedactableText(displayAddress, redacted: redaction != .none)
                                 .font(.rxCode)
                                 .foregroundStyle(.rxInk)
                                 .lineLimit(1)

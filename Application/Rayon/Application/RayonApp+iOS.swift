@@ -36,9 +36,7 @@
                 }
             #endif
                 .onAppear {
-                    AppearancePreference.applyStored()
-                    RayonTerminalView.setCopyOnSelect(store.terminalCopyOnSelect)
-                    RayonTerminalView.setClipboardSharing(store.terminalClipboardSharing)
+                    SettingsEffects.start()
                     checkAgreement()
                     if let problem = store.launchProblem {
                         DispatchQueue.main.asyncAfter(deadline: .now() + 1) { UIBridge.presentAlert(with: problem) }

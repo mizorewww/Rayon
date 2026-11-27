@@ -15,6 +15,7 @@
     struct MonitorView: View {
         @ObservedObject var session: MonitorSession
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
         @Environment(\.dismiss) private var dismiss
         @Environment(\.inServerWorkspace) private var inServerWorkspace
 
@@ -36,7 +37,7 @@
                 .animation(.easeOut(duration: 0.3), value: session.phase == .connected && session.status.hasData)
             }
             .background(RXBackdrop().ignoresSafeArea())
-            .navigationTitle(store.machineRedacted == .all ? "Monitor" : session.machine.name)
+            .navigationTitle(redaction == .all ? "Monitor" : session.machine.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItemGroup {
@@ -85,7 +86,7 @@
                 fact("Hostname", system.hostname.isEmpty ? "—" : system.hostname)
                 fact("System", system.releaseName.isEmpty ? "—" : system.releaseName)
                 fact("Uptime", RXFormat.duration(system.uptimeSec))
-                fact("Address", session.machine.remoteAddress, mono: true, redacted: store.machineRedacted != .none)
+                fact("Address", session.machine.remoteAddress, mono: true, redacted: redaction != .none)
             }
         }
 

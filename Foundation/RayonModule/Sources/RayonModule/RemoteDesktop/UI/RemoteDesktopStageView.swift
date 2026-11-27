@@ -108,14 +108,10 @@ public struct RemoteDesktopStageView: View {
     /// a trip to the system.
     @State private var officialAppInstalled = false
     /// How fingers drive the pointer, kept on this device for every desktop.
-    @AppStorage(RemoteDesktopTouchMode.defaultsKey) private var touchModeName = RemoteDesktopTouchMode.trackpad.rawValue
+    @AppSetting(AppSettings.remoteDesktopTouchMode) private var touchMode
     /// The screen's size in pixels: what a virtual display is made at.
     @State private var stagePixels = CGSize(width: 1920, height: 1080)
     @Environment(\.displayScale) private var displayScale
-
-    private var touchMode: RemoteDesktopTouchMode {
-        RemoteDesktopTouchMode(rawValue: touchModeName) ?? .trackpad
-    }
 
     public init(session: RemoteDesktopSession, onClose: (() -> Void)? = nil) {
         self.session = session
@@ -391,15 +387,12 @@ public struct RemoteDesktopStageView: View {
             }
         }
 
-        static let gestureHintsShownKey = "me.mizorewww.rayon.remoteDesktop.gestureHintsShown"
-
         /// How fingers work, the first few times a desktop connects, or
         /// when asked for.
         private func showGestureHint(force: Bool = false) {
-            let defaults = UserDefaults.standard
-            let shown = defaults.integer(forKey: Self.gestureHintsShownKey)
+            let shown = AppSettings.remoteDesktopGestureHintsShown.value
             guard force || shown < 3 else { return }
-            if !force { defaults.set(shown + 1, forKey: Self.gestureHintsShownKey) }
+            if !force { AppSettings.remoteDesktopGestureHintsShown.set(shown + 1) }
             let hint = switch touchMode {
             case .trackpad: "Drag to move the pointer · tap to click · two fingers to scroll or right-click · three fingers for the keyboard"
             case .direct: "Tap to click there · hold to right-click · two fingers to scroll · three fingers for the keyboard"
@@ -663,7 +656,7 @@ public struct RemoteDesktopStageView: View {
                 Section {
                     ForEach(RemoteDesktopTouchMode.allCases, id: \.self) { mode in
                         Button {
-                            touchModeName = mode.rawValue
+                            touchMode = mode
                         } label: {
                             if mode == touchMode {
                                 Label(mode.title, systemImage: "checkmark")

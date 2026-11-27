@@ -8,7 +8,7 @@
 import Foundation
 
 public extension RDMachine {
-    enum RedactedLevel: Int, Codable {
+    enum RedactedLevel: Int, Codable, Sendable {
         case none = 0
         case sensitive = 1
         case all = 2

@@ -70,20 +70,7 @@ public final class RayonStore: ObservableObject {
         self.storage = storage
         // bool(forKey:) also reads "YES"/"1" from the argument domain
         // (`-licenseAgreed YES`), and is false when the key is missing.
-        licenseAgreed = defaults.bool(forKey: Key.licenseAgreed)
-        storeRecent = Self.bool(Key.storeRecent, default: true, in: defaults)
-        saveTemporarySession = Self.bool(Key.saveTemporarySession, default: true, in: defaults)
-        let savedTimeout = Self.int(Key.timeout, default: 5, in: defaults)
-        timeout = savedTimeout > 0 ? savedTimeout : 5
-        reducedViewEffects = Self.bool(Key.reducedViewEffects, default: false, in: defaults)
-        disableConformation = Self.bool(Key.disableConformation, default: false, in: defaults)
-        monitorInterval = Self.int(Key.monitorInterval, default: 3, in: defaults)
-        terminalFontSize = Self.int(Key.terminalFontSize, default: 14, in: defaults)
-        terminalCopyOnSelect = Self.bool(Key.terminalCopyOnSelect, default: true, in: defaults)
-        terminalClipboardSharing = Self.bool(Key.terminalClipboardSharing, default: true, in: defaults)
-        maxRecentRecordCount = Self.int(Key.maxRecentRecordCount, default: 8, in: defaults)
-        openInterfaceAutomatically = Self.bool(Key.openInterfaceAutomatically, default: true, in: defaults)
-        machineRedacted = RDMachine.RedactedLevel(rawValue: defaults.integer(forKey: Key.machineRedacted)) ?? .none
+        licenseAgreed = defaults.bool(forKey: Self.licenseAgreedKey)
 
         machines = storage.records(RDMachine.self)
         identities = storage.records(RDIdentity.self)
@@ -91,6 +78,22 @@ public final class RayonStore: ObservableObject {
         snippets = storage.records(RDSnippet.self)
         portForwards = storage.records(RDPortForward.self)
         recentRecord = storage.recentConnections().compactMap(RecentConnection.init(record:))
+        // The recent list follows its settings, wherever they are changed.
+        AppSettings.remembersRecent.publisher
+            .sink { [weak self] remembers in
+                MainActor.assumeIsolated {
+                    if !remembers { self?.recentRecord = [] }
+                }
+            }
+            .store(in: &settingSubscriptions)
+        AppSettings.recentLimit.publisher
+            .sink { [weak self] limit in
+                MainActor.assumeIsolated {
+                    guard let self, self.recentRecord.count > max(1, limit) else { return }
+                    self.recentRecord = Array(self.recentRecord.prefix(max(1, limit)))
+                }
+            }
+            .store(in: &settingSubscriptions)
         #if canImport(UIKit)
             // Launched in the background before the first unlock, the
             // keychain gave no secrets; once it does, they are read.
@@ -105,6 +108,7 @@ public final class RayonStore: ObservableObject {
     #if canImport(UIKit)
         private var protectedDataObserver: (any NSObjectProtocol)?
     #endif
+    private var settingSubscriptions: Set<AnyCancellable> = []
 
     /// Reads everything from the database again, after it was changed from
     /// elsewhere (sync, a restored backup).
@@ -117,96 +121,18 @@ public final class RayonStore: ObservableObject {
         recentRecord = storage.recentConnections().compactMap(RecentConnection.init(record:))
     }
 
-    // MARK: - Settings
+    // MARK: - State
 
-    enum Key {
-        static let licenseAgreed = "licenseAgreed"
-        static let storeRecent = "me.mizorewww.rayon.storeRecent"
-        static let saveTemporarySession = "me.mizorewww.rayon.saveTemporarySession"
-        static let timeout = "me.mizorewww.rayon.timeout"
-        static let reducedViewEffects = "me.mizorewww.rayon.reducedViewEffects"
-        static let disableConformation = "me.mizorewww.rayon.disableConformation"
-        static let monitorInterval = "me.mizorewww.rayon.monitorInterval"
-        static let terminalFontSize = "me.mizorewww.rayon.terminalFontSize"
-        static let terminalCopyOnSelect = "me.mizorewww.rayon.terminalCopyOnSelect"
-        static let terminalClipboardSharing = "me.mizorewww.rayon.terminalClipboardSharing"
-        static let maxRecentRecordCount = "me.mizorewww.rayon.maxRecentRecordCount"
-        static let openInterfaceAutomatically = "me.mizorewww.rayon.openInterfaceAutomatically"
-        static let machineRedacted = "me.mizorewww.rayon.machineRedacted"
-    }
-
-    nonisolated static func int(_ key: String, default value: Int, in defaults: UserDefaults) -> Int {
-        defaults.object(forKey: key) == nil ? value : defaults.integer(forKey: key)
-    }
-
-    nonisolated static func bool(_ key: String, default value: Bool, in defaults: UserDefaults) -> Bool {
-        defaults.object(forKey: key) == nil ? value : defaults.bool(forKey: key)
-    }
+    /// Not a setting: whether this device's user accepted the license.
+    static let licenseAgreedKey = "licenseAgreed"
 
     @Published public var licenseAgreed: Bool {
-        didSet { UserDefaults.standard.set(licenseAgreed, forKey: Key.licenseAgreed) }
+        didSet { UserDefaults.standard.set(licenseAgreed, forKey: Self.licenseAgreedKey) }
     }
 
     @Published public var globalProgressInPresent: Bool = false
     public var globalProgressCount: Int = 0 {
         didSet { globalProgressInPresent = globalProgressCount != 0 }
-    }
-
-    @Published public var timeout: Int {
-        didSet { UserDefaults.standard.set(timeout, forKey: Key.timeout) }
-    }
-
-    @Published public var monitorInterval: Int {
-        didSet { UserDefaults.standard.set(monitorInterval, forKey: Key.monitorInterval) }
-    }
-
-    public var timeoutNumber: NSNumber {
-        NSNumber(value: timeout)
-    }
-
-    @Published public var openInterfaceAutomatically: Bool {
-        didSet { UserDefaults.standard.set(openInterfaceAutomatically, forKey: Key.openInterfaceAutomatically) }
-    }
-
-    @Published public var machineRedacted: RDMachine.RedactedLevel {
-        didSet { UserDefaults.standard.set(machineRedacted.rawValue, forKey: Key.machineRedacted) }
-    }
-
-    @Published public var saveTemporarySession: Bool {
-        didSet { UserDefaults.standard.set(saveTemporarySession, forKey: Key.saveTemporarySession) }
-    }
-
-    @Published public var storeRecent: Bool {
-        didSet {
-            UserDefaults.standard.set(storeRecent, forKey: Key.storeRecent)
-            if !storeRecent { recentRecord = [] }
-        }
-    }
-
-    @Published public var reducedViewEffects: Bool {
-        didSet { UserDefaults.standard.set(reducedViewEffects, forKey: Key.reducedViewEffects) }
-    }
-
-    @Published public var disableConformation: Bool {
-        didSet { UserDefaults.standard.set(disableConformation, forKey: Key.disableConformation) }
-    }
-
-    public var maxRecentRecordCount: Int {
-        didSet { UserDefaults.standard.set(maxRecentRecordCount, forKey: Key.maxRecentRecordCount) }
-    }
-
-    @Published public var terminalFontSize: Int {
-        didSet { UserDefaults.standard.set(terminalFontSize, forKey: Key.terminalFontSize) }
-    }
-
-    /// A finished selection in a terminal is copied to the clipboard.
-    @Published public var terminalCopyOnSelect: Bool {
-        didSet { UserDefaults.standard.set(terminalCopyOnSelect, forKey: Key.terminalCopyOnSelect) }
-    }
-
-    /// Programs on the remote host may read and write the clipboard (OSC 52).
-    @Published public var terminalClipboardSharing: Bool {
-        didSet { UserDefaults.standard.set(terminalClipboardSharing, forKey: Key.terminalClipboardSharing) }
     }
 }
 
@@ -474,8 +400,7 @@ extension RayonStore {
     }
 }
 
-/// Code off the main actor cannot reach `shared`; it reads its snapshot
-/// and the defaults.
+/// Code off the main actor cannot reach `shared`; it reads its snapshot.
 public extension RayonStore {
     nonisolated static func workerMachine(for id: RDMachine.ID) -> RDMachine? {
         workerSnapshot.withLock { $0.machines[id] }
@@ -490,18 +415,5 @@ public extension RayonStore {
     /// `identitiesForAutoAuth`.
     nonisolated static var workerIdentitiesForAutoAuth: [RDIdentity] {
         Self.autoAuth(workerSnapshot.withLock { Array($0.identities.values) })
-    }
-
-    nonisolated static var workerTimeoutNumber: NSNumber {
-        let value = int(Key.timeout, default: 5, in: .standard)
-        return NSNumber(value: value > 0 ? value : 5)
-    }
-
-    nonisolated static var workerMonitorInterval: Int {
-        int(Key.monitorInterval, default: 3, in: .standard)
-    }
-
-    nonisolated static var workerTerminalFontSize: Int {
-        int(Key.terminalFontSize, default: 14, in: .standard)
     }
 }

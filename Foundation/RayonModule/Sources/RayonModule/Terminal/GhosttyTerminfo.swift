@@ -20,13 +20,6 @@ public enum GhosttyTerminfo {
     /// What almost every system knows.
     public static let fallbackType = "xterm-256color"
 
-    /// Whether Rayon installs the entry on servers (Settings › SSH).
-    public static var installsAutomatically: Bool {
-        get { UserDefaults.standard.object(forKey: defaultsKey) as? Bool ?? true }
-        set { UserDefaults.standard.set(newValue, forKey: defaultsKey) }
-    }
-
-    private static let defaultsKey = "me.mizorewww.rayon.terminfo.install"
     static let cacheKey = "terminal.terminfo"
 
     /// The entry, as `infocmp -x xterm-ghostty` prints it for the compiled

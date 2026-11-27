@@ -54,23 +54,21 @@
                 onApplied: { size in
                     // One font size: the terminal's Size setting also sets the size
                     // new sessions start from.
-                    if let size { store.terminalFontSize = Int(size.rounded()) }
+                    if let size { AppSettings.terminalFontSize.set(Int(size.rounded())) }
                 }
             )
         }
     }
 
     private struct AppearanceSettings: View {
-        @ObservedObject var store = RayonStore.shared
-        @AppStorage(AppearancePreference.key) private var appearance = AppearancePreference.system.rawValue
+        @AppSetting(AppSettings.appearance) private var appearance
+        @AppSetting(AppSettings.animatesHome) private var animatesHome
 
         var body: some View {
             RXDividedStack {
                 RXFormRow("Light or dark", description: "Terminal colors are set under Colors.") {
                     Picker("Appearance", selection: $appearance) {
-                        Text("System").tag(AppearancePreference.system.rawValue)
-                        Text("Light").tag(AppearancePreference.light.rawValue)
-                        Text("Dark").tag(AppearancePreference.dark.rawValue)
+                        ForEach(Appearance.allCases, id: \.self) { Text($0.title).tag($0) }
                     }
                     .labelsHidden()
                     .fixedSize()
@@ -78,55 +76,48 @@
                 SwitchRow(
                     "Animate Home",
                     description: "A soft glow and drifting dots behind Quick Connect.",
-                    isOn: Binding(get: { !store.reducedViewEffects }, set: { store.reducedViewEffects = !$0 })
+                    isOn: $animatesHome
                 )
-            }
-            .onChange(of: appearance) { raw in
-                (AppearancePreference(rawValue: raw) ?? .system).apply()
             }
         }
     }
 
     private struct SessionSettings: View {
-        @ObservedObject var store = RayonStore.shared
+        @AppSetting(AppSettings.showsSessionOnConnect) private var showsOnConnect
+        @AppSetting(AppSettings.confirmsClosingSession) private var confirmsClose
 
         var body: some View {
             RXDividedStack {
                 SwitchRow(
                     "Show a session when it connects",
                     description: "Open the terminal as soon as it connects.",
-                    isOn: $store.openInterfaceAutomatically
+                    isOn: $showsOnConnect
                 )
                 SwitchRow(
                     "Ask before closing a session",
                     description: "Confirm before closing a connected terminal.",
-                    isOn: Binding(get: { !store.disableConformation }, set: { store.disableConformation = !$0 })
+                    isOn: $confirmsClose
                 )
             }
         }
     }
 
     private struct RecentSettings: View {
-        @ObservedObject var store = RayonStore.shared
-        @AppStorage("me.mizorewww.rayon.maxRecentRecordCount") private var recentLimit = 8
+        @AppSetting(AppSettings.remembersRecent) private var remembersRecent
+        @AppSetting(AppSettings.recentLimit) private var recentLimit
+        @AppSetting(AppSettings.remembersRecentCommands) private var remembersCommands
 
         var body: some View {
             RXDividedStack {
-                SwitchRow("Remember recent servers", description: "Listed under Quick Connect on Home.", isOn: $store.storeRecent)
+                SwitchRow("Remember recent servers", description: "Listed under Quick Connect on Home.", isOn: $remembersRecent)
                 NumberFieldRow("Number to keep", value: $recentLimit, in: 1 ... 50)
-                    .disabled(!store.storeRecent)
+                    .disabled(!remembersRecent)
                 SwitchRow(
                     "Include Quick Connect commands",
                     description: "Also remember user@host commands typed on Home.",
-                    isOn: $store.saveTemporarySession
+                    isOn: $remembersCommands
                 )
-                .disabled(!store.storeRecent)
-            }
-            .onChange(of: recentLimit) { limit in
-                store.maxRecentRecordCount = limit
-                if store.recentRecord.count > limit {
-                    store.recentRecord = Array(store.recentRecord.prefix(limit))
-                }
+                .disabled(!remembersRecent)
             }
         }
     }
@@ -166,14 +157,14 @@
     }
 
     private struct SSHSettings: View {
-        @ObservedObject var store = RayonStore.shared
+        @AppSetting(AppSettings.connectionTimeout) private var timeout
 
         var body: some View {
             RXDividedStack {
                 NumberFieldRow(
                     "Connection timeout",
                     description: "How long to wait for a server before giving up.",
-                    value: $store.timeout,
+                    value: $timeout,
                     in: 2 ... 30,
                     unit: "s"
                 )
@@ -206,15 +197,15 @@
     }
 
     private struct MonitorSettings: View {
-        @ObservedObject var store = RayonStore.shared
+        @AppSetting(AppSettings.monitorInterval) private var interval
         private let intervals = [5, 10, 15, 30, 60]
 
         var body: some View {
             RXFormRow("Refresh", description: "How often an open monitor reads the server.") {
-                Picker("Refresh", selection: Binding(get: { max(5, store.monitorInterval) }, set: { store.monitorInterval = $0 })) {
+                Picker("Refresh", selection: $interval) {
                     ForEach(intervals, id: \.self) { Text("Every \($0) s").tag($0) }
-                    if !intervals.contains(max(5, store.monitorInterval)) {
-                        Text("Every \(store.monitorInterval) s").tag(store.monitorInterval)
+                    if !intervals.contains(interval) {
+                        Text("Every \(interval) s").tag(interval)
                     }
                 }
                 .labelsHidden()
@@ -225,26 +216,21 @@
 
     /// Terminal, Mouse & Clipboard: the row above Ghostty's copy settings.
     private struct CopyOnSelectSettings: View {
-        @ObservedObject var store = RayonStore.shared
+        @AppSetting(AppSettings.terminalCopiesOnSelect) private var copiesOnSelect
+        @AppSetting(AppSettings.terminalSharesClipboard) private var sharesClipboard
 
         var body: some View {
             RXDividedStack {
                 SwitchRow(
                     "Copy on select",
                     description: "Copy text to the clipboard as soon as you finish selecting it.",
-                    isOn: $store.terminalCopyOnSelect
+                    isOn: $copiesOnSelect
                 )
-                .onChange(of: store.terminalCopyOnSelect) { enabled in
-                    RayonTerminalView.setCopyOnSelect(enabled)
-                }
                 SwitchRow(
                     "Share clipboard with remote programs",
                     description: "Programs running on the server may read and write this device's clipboard (OSC 52), so a copy in vim or tmux lands here.",
-                    isOn: $store.terminalClipboardSharing
+                    isOn: $sharesClipboard
                 )
-                .onChange(of: store.terminalClipboardSharing) { enabled in
-                    RayonTerminalView.setClipboardSharing(enabled)
-                }
             }
         }
     }

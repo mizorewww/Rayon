@@ -17,17 +17,13 @@
 
         private init() {}
 
-        private static let persistedKey = "me.mizorewww.rayon.menubarMachines"
-
         private func persist() {
-            let ids = statusItem.map(\.machine.id.uuidString)
-            UserDefaults.standard.set(ids, forKey: Self.persistedKey)
+            AppSettings.menuBarServers.set(statusItem.map(\.machine.id))
             AppDelegate.shared?.updateActivationPolicy()
         }
 
         func restore() {
-            let ids = UserDefaults.standard.stringArray(forKey: Self.persistedKey) ?? []
-            for id in ids.compactMap(UUID.init(uuidString:)) {
+            for id in AppSettings.menuBarServers.value {
                 createRuncat(for: id, quiet: true)
             }
             persist()

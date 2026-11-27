@@ -192,7 +192,7 @@
         @State private var terminalId = UUID()
         @State private var terminalView: RayonTerminalView = {
             let view = RayonTerminalView()
-            view.setTerminalFontSize(with: RayonStore.shared.terminalFontSize)
+            view.setTerminalFontSize(with: AppSettings.terminalFontSize.value)
             return view
         }()
 

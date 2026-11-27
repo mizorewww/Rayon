@@ -24,6 +24,7 @@
         @State var interfaceToken = UUID()
 
         @ObservedObject var store = RayonStore.shared
+        @AppSetting(AppSettings.terminalFontSize) private var fontSize
         @ObservedObject var terminals = TerminalManager.shared
 
         @Environment(\.dismiss) private var dismiss
@@ -223,7 +224,7 @@
                         disconnectedBanner(for: pane)
                     }
                 }
-                TerminalPaneSurface(pane: pane, token: interfaceToken, fontSize: store.terminalFontSize, compact: !canSplit)
+                TerminalPaneSurface(pane: pane, token: interfaceToken, fontSize: fontSize, compact: !canSplit)
                     .id(pane.id)
                     .simultaneousGesture(TapGesture().onEnded {
                         if focusedID != pane.id { focus(pane.id) }
@@ -371,14 +372,14 @@
                         } label: {
                             Label("Snippets", systemImage: "chevron.left.forwardslash.chevron.right")
                         }
-                        Button { store.terminalFontSize -= 1 } label: {
+                        Button { fontSize -= 1 } label: {
                             Label("Smaller Text", systemImage: "textformat.size.smaller")
                         }
-                        .disabled(store.terminalFontSize <= 4)
-                        Button { store.terminalFontSize += 1 } label: {
+                        .disabled(fontSize <= 4)
+                        Button { fontSize += 1 } label: {
                             Label("Larger Text", systemImage: "textformat.size.larger")
                         }
-                        .disabled(store.terminalFontSize >= 30)
+                        .disabled(fontSize >= 30)
                     }
                     Section {
                         Button(role: .destructive) { close(focused) } label: {
@@ -581,10 +582,11 @@
         @ObservedObject var context: TerminalContext
         @ObservedObject var monitors = MonitorCenter.shared
         @ObservedObject var store = RayonStore.shared
+        @AppSetting(AppSettings.serverRedaction) private var redaction
 
         var body: some View {
             HStack(spacing: RX.Space.s4) {
-                RedactableText(context.endpointDescription, redacted: store.machineRedacted != .none)
+                RedactableText(context.endpointDescription, redacted: redaction != .none)
                     .font(.rxCode)
                     .lineLimit(1)
                     .truncationMode(.middle)

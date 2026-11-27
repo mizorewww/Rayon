@@ -10,16 +10,6 @@
 import Foundation
 
 public struct CloudSyncPreferences: Equatable, Sendable {
-    enum Key {
-        static let on = "me.mizorewww.rayon.sync.enabled"
-        static let servers = "me.mizorewww.rayon.sync.servers"
-        static let identities = "me.mizorewww.rayon.sync.identities"
-        static let snippets = "me.mizorewww.rayon.sync.snippets"
-        static let portForwards = "me.mizorewww.rayon.sync.portForwards"
-        static let terminalSettings = "me.mizorewww.rayon.sync.terminalSettings"
-        static let appSettings = "me.mizorewww.rayon.sync.appSettings"
-    }
-
     public var isOn: Bool
     public var servers: Bool
     public var identities: Bool
@@ -46,29 +36,27 @@ public struct CloudSyncPreferences: Equatable, Sendable {
         self.appSettings = appSettings
     }
 
-    public init(defaults: UserDefaults) {
-        func flag(_ key: String, _ fallback: Bool) -> Bool {
-            defaults.object(forKey: key) == nil ? fallback : defaults.bool(forKey: key)
-        }
-        self.init(
-            isOn: flag(Key.on, false),
-            servers: flag(Key.servers, true),
-            identities: flag(Key.identities, true),
-            snippets: flag(Key.snippets, true),
-            portForwards: flag(Key.portForwards, true),
-            terminalSettings: flag(Key.terminalSettings, true),
-            appSettings: flag(Key.appSettings, true)
+    /// The choices as this device keeps them.
+    public static var stored: CloudSyncPreferences {
+        CloudSyncPreferences(
+            isOn: AppSettings.syncEnabled.value,
+            servers: AppSettings.syncsServers.value,
+            identities: AppSettings.syncsIdentities.value,
+            snippets: AppSettings.syncsSnippets.value,
+            portForwards: AppSettings.syncsPortForwards.value,
+            terminalSettings: AppSettings.syncsTerminalSettings.value,
+            appSettings: AppSettings.syncsAppSettings.value
         )
     }
 
-    public func save(to defaults: UserDefaults) {
-        defaults.set(isOn, forKey: Key.on)
-        defaults.set(servers, forKey: Key.servers)
-        defaults.set(identities, forKey: Key.identities)
-        defaults.set(snippets, forKey: Key.snippets)
-        defaults.set(portForwards, forKey: Key.portForwards)
-        defaults.set(terminalSettings, forKey: Key.terminalSettings)
-        defaults.set(appSettings, forKey: Key.appSettings)
+    public func store() {
+        AppSettings.syncEnabled.set(isOn)
+        AppSettings.syncsServers.set(servers)
+        AppSettings.syncsIdentities.set(identities)
+        AppSettings.syncsSnippets.set(snippets)
+        AppSettings.syncsPortForwards.set(portForwards)
+        AppSettings.syncsTerminalSettings.set(terminalSettings)
+        AppSettings.syncsAppSettings.set(appSettings)
     }
 
     /// The tables whose records go to iCloud and come from it.

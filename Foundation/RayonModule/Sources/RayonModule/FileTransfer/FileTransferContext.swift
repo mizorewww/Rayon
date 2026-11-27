@@ -134,7 +134,7 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable, @un
         onMainThread {
             guard self.firstConnect else { return }
             self.firstConnect = false
-            guard MainActor.assumeIsolated({ RayonStore.shared.openInterfaceAutomatically }) else { return }
+            guard AppSettings.showsSessionOnConnect.value else { return }
             FileTransferInterface.uiHandler.autoOpenInterface(self)
         }
         enqueue(needsSession: false) { _ in

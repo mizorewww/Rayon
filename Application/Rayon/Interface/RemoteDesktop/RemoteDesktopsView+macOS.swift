@@ -167,6 +167,7 @@
     private struct NearbyHostRow: View {
         let host: VNCDiscoveredHost
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
         @State private var hovered = false
 
         var body: some View {
@@ -181,7 +182,7 @@
                         .font(.rxBody)
                         .foregroundStyle(.rxInk)
                         .lineLimit(1)
-                    RedactableText("\(host.hostName):\(host.port)", redacted: store.machineRedacted != .none)
+                    RedactableText("\(host.hostName):\(host.port)", redacted: redaction != .none)
                         .font(.rxHelp)
                         .foregroundStyle(.rxInkSecondary)
                         .lineLimit(1)
@@ -215,6 +216,7 @@
         /// The open session, if any; observed so the dot follows its phase.
         let session: RemoteDesktopSession?
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
         @State private var hovered = false
 
         var body: some View {
@@ -224,11 +226,11 @@
                     .foregroundStyle(.rxAccent)
                     .frame(width: 22)
                 VStack(alignment: .leading, spacing: 1) {
-                    RedactableText(machine.name, redacted: store.machineRedacted == .all)
+                    RedactableText(machine.name, redacted: redaction == .all)
                         .font(.rxBody)
                         .foregroundStyle(.rxInk)
                         .lineLimit(1)
-                    RedactableText(target, redacted: store.machineRedacted != .none)
+                    RedactableText(target, redacted: redaction != .none)
                         .font(.rxHelp)
                         .foregroundStyle(.rxInkSecondary)
                         .lineLimit(1)

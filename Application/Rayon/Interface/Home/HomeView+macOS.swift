@@ -14,6 +14,7 @@
 
     struct HomeView: View {
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.animatesHome) private var animatesHome
 
         var body: some View {
             GeometryReader { proxy in
@@ -32,7 +33,7 @@
                 }
             }
             .background {
-                if !store.reducedViewEffects {
+                if animatesHome {
                     RXStarfield().ignoresSafeArea()
                 }
             }
@@ -49,6 +50,8 @@
     /// the way `ssh myserver` reads a Host from ~/.ssh/config.
     struct QuickConnectHero: View {
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.remembersRecentCommands) private var remembersCommands
+        @AppSetting(AppSettings.remembersRecent) private var remembersRecent
         @State private var command = ""
         @State private var suggestion: String?
         @FocusState private var focused: Bool
@@ -161,11 +164,11 @@
                 .animation(.easeOut(duration: 0.2), value: parsed)
                 .animation(.easeOut(duration: 0.2), value: savedServer?.id)
 
-                Toggle("Record Command", isOn: $store.saveTemporarySession)
+                Toggle("Record Command", isOn: $remembersCommands)
                     .toggleStyle(.checkbox)
                     .font(.system(.body, design: .rounded))
-                    .disabled(!store.storeRecent)
-                    .help(store.storeRecent
+                    .disabled(!remembersRecent)
+                    .help(remembersRecent
                         ? "Keep the commands typed here under Recent"
                         : "Turn on “Remember recent servers” in Settings to keep commands")
 
@@ -202,7 +205,7 @@
                 .help("Open a local shell on this Mac (⌥⌘T)")
                 .padding(.top, RX.Space.s2)
 
-                if store.storeRecent, store.recentRecord.contains(where: \.isCommand) {
+                if remembersRecent, store.recentRecord.contains(where: \.isCommand) {
                     VStack(spacing: RX.Space.s2) {
                         CapsLabel("Recent")
                         RXFlowLayout(spacing: RX.Space.s2, alignment: .center) {
@@ -309,6 +312,7 @@
     struct RecentChip: View {
         let record: RayonStore.RecentConnection
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
         @State private var hovered = false
 
         var title: String {
@@ -329,7 +333,7 @@
                 HStack(spacing: 6) {
                     Image(systemName: isCommand ? "terminal" : "server.rack")
                         .font(.system(size: 11))
-                    RedactableText(title, redacted: !isCommand && store.machineRedacted == .all)
+                    RedactableText(title, redacted: !isCommand && redaction == .all)
                         .font(.system(size: 12, design: isCommand ? .monospaced : .default))
                         .lineLimit(1)
                 }

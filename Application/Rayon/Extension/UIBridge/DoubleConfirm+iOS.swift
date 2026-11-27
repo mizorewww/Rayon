@@ -25,7 +25,7 @@
             nonisolated(unsafe) let confirmation = confirmation
             onMainThread {
                 MainActor.assumeIsolated {
-                    if RayonStore.shared.disableConformation, !always {
+                    if !AppSettings.confirmsClosingSession.value, !always {
                         confirmation(true)
                         return
                     }

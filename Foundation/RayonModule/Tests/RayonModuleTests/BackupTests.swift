@@ -4,6 +4,7 @@
 //
 
 import CloudKit
+import ConfigurableKit
 @testable import RayonModule
 import RayonTerminal
 import XCTest
@@ -170,43 +171,37 @@ final class BackupTests: XCTestCase {
     }
 
     func testPreferencesRoundTripWithoutDeviceState() throws {
-        let suite = "rayon-tests-\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
-        defaults.set(21, forKey: "me.mizorewww.rayon.terminalFontSize")
-        defaults.set(true, forKey: "me.mizorewww.rayon.sync.enabled")
+        let settings = UserDefaultKeyValueStorage(suite: UserDefaults(suiteName: "rayon-tests-\(UUID().uuidString)")!)
+        ConfigurableKit.set(value: 21, forKey: AppSettings.terminalFontSize.key, storage: settings)
+        ConfigurableKit.set(value: false, forKey: AppSettings.animatesHome.key, storage: settings)
+        ConfigurableKit.set(value: true, forKey: AppSettings.syncEnabled.key, storage: settings)
         let terminal = try terminalSettings("# mine\nbackground = #123456\n")
-        try PreferencesBackup.export(from: defaults, terminal: terminal, to: file)
+        try PreferencesBackup.export(from: settings, terminal: terminal, to: file)
         XCTAssertThrowsError(try DataBackup.read(file, password: nil)) {
             XCTAssertEqual($0 as? BackupError, .wrongKind)
         }
 
-        let restoredSuite = "rayon-tests-\(UUID().uuidString)"
-        let restored = try XCTUnwrap(UserDefaults(suiteName: restoredSuite))
-        defer { restored.removePersistentDomain(forName: restoredSuite) }
+        let restored = UserDefaultKeyValueStorage(suite: UserDefaults(suiteName: "rayon-tests-\(UUID().uuidString)")!)
+        ConfigurableKit.set(value: 9, forKey: AppSettings.connectionTimeout.key, storage: restored)
         let restoredTerminal = try terminalSettings()
         defer { try? restoredTerminal.load(TerminalSettings.shared.contents) }
-        try PreferencesBackup.restore(from: file, into: restored, terminal: restoredTerminal)
-        XCTAssertEqual(restored.integer(forKey: "me.mizorewww.rayon.terminalFontSize"), 21)
-        XCTAssertNil(restored.object(forKey: "me.mizorewww.rayon.sync.enabled"))
+        XCTAssertEqual(try PreferencesBackup.restore(from: file, into: restored, terminal: restoredTerminal), 2)
+        XCTAssertEqual(ConfigurableKit.value(forKey: AppSettings.terminalFontSize.key, storage: restored), 21)
+        XCTAssertEqual(ConfigurableKit.value(forKey: AppSettings.animatesHome.key, storage: restored), false)
+        // Not in the backup: reset. Never in a backup: left alone.
+        XCTAssertNil(restored.value(forKey: AppSettings.connectionTimeout.key))
+        XCTAssertNil(restored.value(forKey: AppSettings.syncEnabled.key))
         XCTAssertEqual(restoredTerminal.contents, "# mine\nbackground = #123456\n")
         XCTAssertEqual(try String(contentsOf: restoredTerminal.fileURL, encoding: .utf8), "# mine\nbackground = #123456\n")
     }
 
-    /// A backup from before config.ghostty kept the terminal settings among the preferences.
-    func testOlderPreferencesBackupRestoresTerminalSettings() throws {
-        let suite = "rayon-tests-\(UUID().uuidString)"
-        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
-        defer { defaults.removePersistentDomain(forName: suite) }
-        let legacy = ##"{"document":{"overrides":{"background":["#654321"]}}}"##
-        let values: [String: Any] = ["me.mizorewww.rayon.ghosttyConfiguration.v1": Data(legacy.utf8)]
+    /// A backup from before config.ghostty kept other keys, and the terminal among them.
+    func testOlderPreferencesBackupIsRefused() throws {
+        let values: [String: Any] = ["me.mizorewww.rayon.timeout": 12]
         let data = try PropertyListSerialization.data(fromPropertyList: values, format: .binary, options: 0)
         try BackupArchive.write([PreferencesBackup.preferencesFile: data], kind: .preferences, includesSecrets: false, password: nil, to: file)
         let terminal = try terminalSettings()
-        defer { try? terminal.load(TerminalSettings.shared.contents) }
-        try PreferencesBackup.restore(from: file, into: defaults, terminal: terminal)
-        XCTAssertTrue(terminal.contents.contains("background = #654321"))
-        XCTAssertNil(defaults.object(forKey: "me.mizorewww.rayon.ghosttyConfiguration.v1"))
+        XCTAssertThrowsError(try PreferencesBackup.restore(from: file, into: UserDefaultKeyValueStorage(suite: .standard), terminal: terminal))
     }
 
     /// A backup asking for more key derivation rounds than any Rayon writes

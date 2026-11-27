@@ -69,6 +69,7 @@
     struct ServerTile: View {
         let machine: RDMachine.ID
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
         @ObservedObject var monitors = MonitorCenter.shared
 
         var body: some View {
@@ -79,11 +80,11 @@
                 VStack(alignment: .leading, spacing: RX.Space.s3) {
                     HStack(alignment: .top) {
                         VStack(alignment: .leading, spacing: 2) {
-                            RedactableText(read.name, redacted: store.machineRedacted == .all)
+                            RedactableText(read.name, redacted: redaction == .all)
                                 .font(.headline)
                                 .foregroundStyle(.rxInk)
                                 .lineLimit(1)
-                            RedactableText(read.remoteAddress, redacted: store.machineRedacted != .none)
+                            RedactableText(read.remoteAddress, redacted: redaction != .none)
                                 .font(.rxCode)
                                 .foregroundStyle(.rxInkSecondary)
                                 .lineLimit(1)

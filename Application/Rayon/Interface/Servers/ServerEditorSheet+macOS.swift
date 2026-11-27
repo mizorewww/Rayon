@@ -432,7 +432,7 @@
             let draft = draft
             let chosen = identity.flatMap { store.identity($0) }
             let candidates = store.identitiesForAutoAuth
-            let timeout = store.timeoutNumber
+            let timeout = NSNumber(value: AppSettings.connectionTimeout.value)
             Task {
                 let outcome = await ServerConnectionCheck.run(draft, identity: chosen, candidates: candidates, timeout: timeout)
                 connecting = false

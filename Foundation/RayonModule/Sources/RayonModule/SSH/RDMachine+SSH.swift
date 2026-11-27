@@ -52,7 +52,7 @@ public extension RDMachine {
         return try await connectSSH(
             identity: identity,
             autoIdentities: RayonStore.workerIdentitiesForAutoAuth,
-            timeout: timeout ?? .seconds(max(5, RayonStore.workerTimeoutNumber.intValue)),
+            timeout: timeout ?? .seconds(max(5, AppSettings.connectionTimeout.value)),
             background: background,
             hint: hint
         )

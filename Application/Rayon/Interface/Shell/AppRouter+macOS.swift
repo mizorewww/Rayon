@@ -111,7 +111,7 @@
         }
 
         private var opensAutomatically: Bool {
-            RayonStore.shared.openInterfaceAutomatically
+            AppSettings.showsSessionOnConnect.value
         }
 
         // MARK: - Session actions

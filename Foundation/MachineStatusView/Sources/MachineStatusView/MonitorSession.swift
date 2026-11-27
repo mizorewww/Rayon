@@ -172,7 +172,7 @@ public final class MonitorSession: ObservableObject, Identifiable, Equatable {
     }
 
     private var refreshInterval: Int {
-        max(1, RayonStore.workerMonitorInterval)
+        max(1, AppSettings.monitorInterval.value)
     }
 
     private func setPhase(_ next: Phase) {

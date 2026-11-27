@@ -3,9 +3,9 @@
 //  RayonModule
 //
 //  The app settings that iCloud carries: one record holding the values of
-//  the settings that travel (AppSettingsSync says which). What belongs to
-//  the device, such as the terminal's font size, stays on it. The later
-//  change wins, as for every record.
+//  the settings `AppSettings` declares `.synced`. What belongs to the
+//  device, such as the terminal's font size, stays on it. The later change
+//  wins, as for every record.
 //
 
 import Foundation
@@ -16,7 +16,7 @@ public struct RDAppSettings: StoredRecord {
     /// There is one: every device writes the same record.
     public static let recordID = UUID(uuidString: "3B6F0D2E-8C41-4A97-B5E3-71D9A2C4F058")!
 
-    /// A setting's value, as the user defaults keep it.
+    /// A setting's value, as ConfigurableKit stores it (a JSON value).
     public enum Value: Codable, Equatable, Sendable {
         case bool(Bool)
         case int(Int)

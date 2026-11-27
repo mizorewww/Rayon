@@ -11,6 +11,7 @@
 
     struct PickMachineView: View {
         @ObservedObject var store = RayonStore.shared
+        @AppSetting(AppSettings.serverRedaction) private var redaction
 
         let canSelectMany: Bool
 
@@ -89,14 +90,14 @@
                                 HStack {
                                     Label {
                                         VStack(alignment: .leading, spacing: 2) {
-                                            RedactableText(machine.name, redacted: store.machineRedacted == .all)
+                                            RedactableText(machine.name, redacted: redaction == .all)
                                                 .foregroundStyle(.rxInk)
                                             if machine.isUURemoteDevice {
                                                 Text(isReachable(machine) ? "UU Remote · Online" : "UU Remote · Offline")
                                                     .font(.caption)
                                                     .foregroundStyle(.rxInkSecondary)
                                             } else {
-                                                RedactableText("\(machine.remoteAddress):\(machine.remotePort)", redacted: store.machineRedacted != .none)
+                                                RedactableText("\(machine.remoteAddress):\(machine.remotePort)", redacted: redaction != .none)
                                                     .font(.rxCode)
                                                     .foregroundStyle(.rxInkSecondary)
                                             }

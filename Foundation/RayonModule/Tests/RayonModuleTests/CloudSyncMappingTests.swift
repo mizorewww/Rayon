@@ -247,11 +247,6 @@ final class CloudSyncMappingTests: XCTestCase {
         XCTAssertFalse(preferences.syncs(table: KnownHostRecord.tableName))
         preferences.isOn = false
         XCTAssertFalse(preferences.syncs(table: RDMachine.tableName))
-
-        let defaults = UserDefaults(suiteName: "rayon-tests-\(UUID().uuidString)")!
-        XCTAssertEqual(CloudSyncPreferences(defaults: defaults), CloudSyncPreferences())
-        preferences.save(to: defaults)
-        XCTAssertEqual(CloudSyncPreferences(defaults: defaults), preferences)
     }
 
     /// While a kind is left out, the engine drops what it fetches of it and

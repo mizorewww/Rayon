@@ -14,6 +14,7 @@
     struct MonitorPage: View {
         @ObservedObject var session: MonitorSession
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
 
         var body: some View {
             PageScaffold {
@@ -26,8 +27,8 @@
                 }
             } header: {
                 VStack(alignment: .leading, spacing: RX.Space.s5) {
-                    PageTitle(store.machineRedacted == .all ? "Server" : session.machine.name)
-                    MonitorFacts(session: session, redactAddress: store.machineRedacted != .none)
+                    PageTitle(redaction == .all ? "Server" : session.machine.name)
+                    MonitorFacts(session: session, redactAddress: redaction != .none)
                 }
             } content: {
                 if session.phase == .connected, session.status.hasData {

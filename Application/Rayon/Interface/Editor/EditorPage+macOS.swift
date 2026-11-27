@@ -17,8 +17,9 @@
         @ObservedObject var workspace: EditorWorkspace
         @ObservedObject var context: FileTransferContext
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
 
-        @AppStorage("me.mizorewww.rayon.editor.wrapsLines") private var wrapsLines = false
+        @AppSetting(AppSettings.editorWrapsLines) private var wrapsLines
         @State private var openPrompt = false
         @State private var draggedDocumentID: EditorDocument.ID?
         @Namespace private var tabs
@@ -51,7 +52,7 @@
                     .disabled(current == nil || current?.phase == .loading)
                 ToolbarAction("Close Editor", systemImage: "xmark") { EditorSessionActions.close(workspace) }
             } header: {
-                PageTitle(store.machineRedacted == .all ? "Editor" : context.machine.name, subtitle: subtitle)
+                PageTitle(redaction == .all ? "Editor" : context.machine.name, subtitle: subtitle)
             } content: {
                 if workspace.documents.isEmpty {
                     VStack(spacing: RX.Space.s4) {
@@ -87,7 +88,7 @@
         }
 
         private var subtitle: String {
-            store.machineRedacted == .none ? context.machine.getCommand(insertLeadingSSH: false) : ""
+            redaction == .none ? context.machine.getCommand(insertLeadingSSH: false) : ""
         }
 
         // MARK: Editor

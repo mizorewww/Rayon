@@ -456,7 +456,7 @@
             let port = remotePort
             let chosen = associatedIdentity.flatMap { RayonStore.shared.identity($0) }
             let candidates = RayonStore.shared.identitiesForAutoAuth
-            let timeout = RayonStore.shared.timeoutNumber
+            let timeout = NSNumber(value: AppSettings.connectionTimeout.value)
             Task {
                 let outcome = await ServerConnectionCheck.run(draft, identity: chosen, candidates: candidates, timeout: timeout)
                 connecting = false

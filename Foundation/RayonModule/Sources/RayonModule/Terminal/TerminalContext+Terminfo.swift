@@ -12,7 +12,7 @@ import RayonSSH
 
 extension TerminalContext {
     func prepareTerminalType(on connection: SSHConnection) async -> String {
-        guard GhosttyTerminfo.installsAutomatically else { return GhosttyTerminfo.fallbackType }
+        guard AppSettings.installsTerminfo.value else { return GhosttyTerminfo.fallbackType }
         // A saved server that has it: no command at all.
         if remoteType == .machine, RayonStore.workerMachine(for: machine.id).map(GhosttyTerminfo.isCached(on:)) == true {
             return GhosttyTerminfo.terminalType

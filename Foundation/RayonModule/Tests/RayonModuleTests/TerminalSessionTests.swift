@@ -20,7 +20,7 @@ final class TerminalShutdownTests: XCTestCase {
     /// A session that ends turns the modes a program may have left on off
     /// before it says so, and keeps nothing typed for the next one.
     func testAnEndingSessionResetsTerminalModes() async throws {
-        RayonStore.shared.openInterfaceAutomatically = false
+        AppSettings.showsSessionOnConnect.set(false)
         let surface = RecordingSurface()
         // Nothing listens on port 1: the session ends at once.
         let context = TerminalContext(machine: RDMachine(remoteAddress: "127.0.0.1", remotePort: "1", name: "closed"), surface: surface)

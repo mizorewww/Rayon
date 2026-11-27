@@ -1,5 +1,5 @@
 //
-//  AppearancePreference.swift
+//  Appearance+Apply.swift
 //  Rayon
 //
 
@@ -8,16 +8,9 @@
 #else
     import UIKit
 #endif
+import RayonModule
 
-/// Appearance follows the system unless the user picks Light or Dark. It
-/// stays on this device: a Mac and a phone may want different ones.
-enum AppearancePreference: String, CaseIterable {
-    case system
-    case light
-    case dark
-
-    static let key = "me.mizorewww.rayon.appearance"
-
+extension Appearance {
     @MainActor
     func apply() {
         #if os(macOS)
@@ -38,11 +31,5 @@ enum AppearancePreference: String, CaseIterable {
                 }
             }
         #endif
-    }
-
-    @MainActor
-    static func applyStored() {
-        let raw = UserDefaults.standard.string(forKey: key) ?? AppearancePreference.system.rawValue
-        (AppearancePreference(rawValue: raw) ?? .system).apply()
     }
 }

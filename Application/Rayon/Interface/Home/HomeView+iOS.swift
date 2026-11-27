@@ -14,6 +14,8 @@
 
     struct HomeView: View {
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.animatesHome) private var animatesHome
+        @AppSetting(AppSettings.remembersRecent) private var remembersRecent
 
         var body: some View {
             GeometryReader { proxy in
@@ -21,7 +23,7 @@
                     VStack(spacing: 0) {
                         Spacer(minLength: RX.Space.s4)
                         QuickConnectCard()
-                        if store.storeRecent, !store.recentRecord.isEmpty {
+                        if remembersRecent, !store.recentRecord.isEmpty {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: RX.Space.s2) {
                                     ForEach(store.recentRecord) { record in
@@ -45,7 +47,7 @@
             .background {
                 ZStack {
                     RXBackdrop()
-                    if !store.reducedViewEffects {
+                    if animatesHome {
                         RXStarfield()
                     }
                 }
@@ -60,6 +62,8 @@
     /// A saved server's name, alone or after "ssh ", connects to that server.
     struct QuickConnectCard: View {
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.remembersRecentCommands) private var remembersCommands
+        @AppSetting(AppSettings.remembersRecent) private var remembersRecent
         @State private var command = ""
         @State private var suggestion: String?
         /// Data pasted for the hidden importer, waiting for its key.
@@ -146,16 +150,16 @@
                         .accessibilityLabel("Connects to the saved server \(savedServer.name)")
                 }
                 Button {
-                    store.saveTemporarySession.toggle()
+                    remembersCommands.toggle()
                 } label: {
-                    Label("Record Command", systemImage: store.saveTemporarySession ? "checkmark.square.fill" : "square")
+                    Label("Record Command", systemImage: remembersCommands ? "checkmark.square.fill" : "square")
                         .font(.system(.subheadline, design: .rounded))
-                        .foregroundStyle(store.saveTemporarySession ? Color.rxAccent : Color.rxInkSecondary)
+                        .foregroundStyle(remembersCommands ? Color.rxAccent : Color.rxInkSecondary)
                 }
                 .buttonStyle(.plain)
-                .disabled(!store.storeRecent)
-                .opacity(store.storeRecent ? 1 : 0.5)
-                .accessibilityValue(store.saveTemporarySession ? "On" : "Off")
+                .disabled(!remembersRecent)
+                .opacity(remembersRecent ? 1 : 0.5)
+                .accessibilityValue(remembersCommands ? "On" : "Off")
                 // Said once a command is typed: before, it read as an error
                 // on a page with nothing wrong yet.
                 if store.identitiesForAutoAuth.isEmpty, !command.isEmpty {
@@ -216,6 +220,7 @@
     struct RecentRow: View {
         let record: RayonStore.RecentConnection
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
 
         var body: some View {
             Button(action: connect) {
@@ -227,7 +232,7 @@
                             .font(.system(size: 13, design: .monospaced))
                     case let .machine(id):
                         Image(systemName: "server.rack")
-                        RedactableText(store.machine(id)?.name ?? "Deleted server", redacted: store.machineRedacted == .all)
+                        RedactableText(store.machine(id)?.name ?? "Deleted server", redacted: redaction == .all)
                             .font(.system(size: 13))
                     }
                 }

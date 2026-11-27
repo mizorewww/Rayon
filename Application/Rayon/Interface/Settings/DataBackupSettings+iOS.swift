@@ -120,7 +120,6 @@
                 let copy = try readableCopy(of: url)
                 defer { try? FileManager.default.removeItem(at: copy) }
                 try PreferencesBackup.restore(from: copy)
-                RayonStore.shared.reloadPreferences()
                 UIBridge.presentSuccess(with: "Settings imported")
             } catch {
                 UIBridge.presentError(with: "Could not import settings: \(error.localizedDescription)")

@@ -143,9 +143,9 @@ final class StorageTests: XCTestCase {
     /// Two devices' first app settings, both stamped as old: the same one
     /// wins on both, so they end up with the same settings.
     func testVersionsChangedAtTheSameTimeConverge() throws {
-        var mine = RDAppSettings(entries: [RayonStore.Key.timeout: .int(12)])
+        var mine = RDAppSettings(entries: [AppSettings.connectionTimeout.key: .int(12)])
         mine.modified = Date(timeIntervalSince1970: 0)
-        var theirs = RDAppSettings(entries: [RayonStore.Key.timeout: .int(30)])
+        var theirs = RDAppSettings(entries: [AppSettings.connectionTimeout.key: .int(30)])
         theirs.modified = mine.modified
 
         let here = RecordMerge.resolve(local: mine, remote: theirs)

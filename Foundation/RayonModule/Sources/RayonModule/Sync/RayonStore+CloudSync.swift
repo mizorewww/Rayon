@@ -17,7 +17,7 @@ public final class CloudSyncModel: ObservableObject {
     @Published public var preferences: CloudSyncPreferences {
         didSet {
             guard preferences != oldValue else { return }
-            preferences.save(to: defaults)
+            preferences.store()
             let preferences = preferences
             Task { await CloudSync.shared.apply(preferences) }
         }
@@ -25,18 +25,14 @@ public final class CloudSyncModel: ObservableObject {
 
     @Published public private(set) var status: CloudSync.Status = .off
 
-    private let defaults: UserDefaults
     private let terminalSettings: TerminalSettingsSync
     private let appSettings: AppSettingsSync
     private var observers: [any NSObjectProtocol] = []
 
-    init(store: RayonStore, defaults: UserDefaults = .standard, terminal: TerminalSettings = .shared) {
-        self.defaults = defaults
+    init(store: RayonStore, terminal: TerminalSettings = .shared) {
         terminalSettings = TerminalSettingsSync(storage: store.storage, settings: terminal)
-        appSettings = AppSettingsSync(storage: store.storage, defaults: defaults) { [weak store] in
-            store?.reloadPreferences(from: defaults)
-        }
-        preferences = CloudSyncPreferences(defaults: defaults)
+        appSettings = AppSettingsSync(storage: store.storage)
+        preferences = .stored
         observers.append(NotificationCenter.default.addObserver(
             forName: CloudSync.statusDidChange, object: nil, queue: .main
         ) { [weak self] note in

@@ -80,13 +80,8 @@ public extension RayonStore {
     }
 
     func storeRecentIfNeeded(from recent: RecentConnection) {
-        guard storeRecent, !recentRecord.contains(recent) else { return }
-        var records = recentRecord
-        records.insert(recent, at: 0)
-        if records.count > maxRecentRecordCount {
-            records.removeLast(records.count - maxRecentRecordCount)
-        }
-        recentRecord = records
+        guard AppSettings.remembersRecent.value, !recentRecord.contains(recent) else { return }
+        recentRecord = Array(([recent] + recentRecord).prefix(max(1, AppSettings.recentLimit.value)))
     }
 
     func storeRecentIfNeeded(from machine: RDMachine.ID) {
@@ -95,7 +90,7 @@ public extension RayonStore {
 
     /// Quick Connect commands are kept only while "Record command" is on.
     func storeRecentIfNeeded(from command: SSHCommandReader) {
-        guard saveTemporarySession else { return }
+        guard AppSettings.remembersRecentCommands.value else { return }
         storeRecentIfNeeded(from: .command(command: command))
     }
 }

@@ -16,6 +16,7 @@
     struct FileTransferPage: View {
         @ObservedObject var context: FileTransferContext
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
 
         @State private var filter = ""
         @State private var selection: FileTransferContext.RemoteFile?
@@ -115,7 +116,7 @@
                 }
             } header: {
                 VStack(alignment: .leading, spacing: RX.Space.s2) {
-                    PageTitle(store.machineRedacted == .all ? "File Transfer" : context.machine.name, subtitle: subtitle)
+                    PageTitle(redaction == .all ? "File Transfer" : context.machine.name, subtitle: subtitle)
                     HStack(spacing: RX.Space.s3) {
                         Breadcrumb(url: context.currentUrl) { path in
                             context.navigate(path: path)
@@ -196,7 +197,7 @@
         }
 
         var subtitle: String {
-            store.machineRedacted == .none ? context.machine.getCommand(insertLeadingSSH: false) : ""
+            redaction == .none ? context.machine.getCommand(insertLeadingSSH: false) : ""
         }
 
         // MARK: Table

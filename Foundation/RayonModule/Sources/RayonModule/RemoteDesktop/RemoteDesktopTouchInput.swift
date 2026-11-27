@@ -18,16 +18,12 @@ import Foundation
 
 /// How a finger drives the remote pointer. A pencil, a mouse and a
 /// trackpad always point where they are.
-public enum RemoteDesktopTouchMode: String, CaseIterable, Sendable {
+public enum RemoteDesktopTouchMode: String, CaseIterable, Codable, Sendable {
     /// The screen is a trackpad: the pointer moves as far as the finger,
     /// faster the faster it goes.
     case trackpad
     /// The pointer goes where the finger touches.
     case direct
-
-    /// Where the choice is kept: one for every desktop on this device, as
-    /// it is about the hand, not the server.
-    public static let defaultsKey = "me.mizorewww.rayon.remoteDesktop.touchMode"
 
     public var title: String {
         switch self {

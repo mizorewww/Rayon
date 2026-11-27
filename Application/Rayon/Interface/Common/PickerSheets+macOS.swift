@@ -20,6 +20,7 @@
         let onComplete: ([RDMachine.ID]?) -> Void
 
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
         @ObservedObject private var uuAccount = UURemoteAccount.shared
         @State private var selection: Set<RDMachine.ID>
         @State private var searchText = ""
@@ -138,7 +139,7 @@
                         .font(.system(size: 15))
                         .foregroundStyle(isSelected ? Color.rxAccent : Color.rxControlBorder)
                     VStack(alignment: .leading, spacing: 1) {
-                        RedactableText(machine.name, redacted: store.machineRedacted == .all)
+                        RedactableText(machine.name, redacted: redaction == .all)
                             .font(.rxBody)
                             .foregroundStyle(.rxInk)
                         if let online {
@@ -146,7 +147,7 @@
                                 .font(.rxCaption)
                                 .foregroundStyle(.rxInkSecondary)
                         } else {
-                            RedactableText("\(machine.remoteAddress):\(machine.remotePort)", redacted: store.machineRedacted != .none)
+                            RedactableText("\(machine.remoteAddress):\(machine.remotePort)", redacted: redaction != .none)
                                 .font(.rxCode)
                                 .foregroundStyle(.rxInkSecondary)
                         }
@@ -408,6 +409,7 @@
         let onComplete: (Choice?) -> Void
 
         @EnvironmentObject var store: RayonStore
+        @AppSetting(AppSettings.serverRedaction) private var redaction
         @ObservedObject private var terminals = TerminalManager.shared
         @ObservedObject private var uuAccount = UURemoteAccount.shared
         @State private var selection: Choice?
@@ -450,7 +452,7 @@
                                             .tab(tab.id),
                                             title: tab.displayName,
                                             detail: tab.navigationSubtitle,
-                                            redactTitle: tab.remoteType == .machine && store.machineRedacted == .all,
+                                            redactTitle: tab.remoteType == .machine && redaction == .all,
                                             systemImage: tab.closed ? "bolt.slash" : "terminal"
                                         )
                                     }
@@ -502,8 +504,8 @@
                 .server(machine.id),
                 title: machine.name,
                 detail: detail,
-                redactTitle: store.machineRedacted == .all,
-                redactDetail: online == nil && store.machineRedacted != .none,
+                redactTitle: redaction == .all,
+                redactDetail: online == nil && redaction != .none,
                 systemImage: "server.rack"
             )
             .disabled(online == false)
