@@ -21,16 +21,22 @@ extension RayonStore {
         sortedBy order: [KeyPathComparator<RDMachine>] = [KeyPathComparator(\.name, comparator: .localizedStandard)]
     ) -> [ServerGroup] {
         let matching = search.isEmpty ? machines : machines.filter { $0.isQualifiedForSearch(text: search) }
+        // One pass over the servers, not one per folder.
+        var inside: [String: [RDMachine]] = [:]
+        for machine in matching {
+            inside[folderName(of: machine), default: []].append(machine)
+        }
         // One group per name: folders of the same name from two devices
         // would list their servers twice.
         var names: [String] = []
-        for folder in folders where !names.contains(folder.name) { names.append(folder.name) }
+        var seen = Set<String>()
+        for folder in folders where seen.insert(folder.name).inserted { names.append(folder.name) }
         // A server whose folder is gone is with the default ones.
-        if matching.contains(where: { folder($0.folderId) == nil }) { names.append("") }
+        if inside[""] != nil, seen.insert("").inserted { names.append("") }
         return names.compactMap { name in
-            let inside = matching.filter { folderName(of: $0) == name }.sorted(using: order)
-            if inside.isEmpty, !search.isEmpty { return nil }
-            return ServerGroup(name: name, machines: inside)
+            let machines = inside[name]?.sorted(using: order) ?? []
+            if machines.isEmpty, !search.isEmpty { return nil }
+            return ServerGroup(name: name, machines: machines)
         }
     }
 }

@@ -17,7 +17,6 @@
     struct ServersView: View {
         @EnvironmentObject var store: RayonStore
         @AppSetting(AppSettings.serverRedaction) private var redaction
-        @ObservedObject var router = AppRouter.shared
         /// The toolbar names the account item by whether one is signed in.
         @ObservedObject private var account = UURemoteAccount.shared
 
@@ -50,7 +49,7 @@
                 }
                 .help("Make a folder, or fill one from a UU Remote account")
                 RedactionMenu()
-                Button { router.openTerminals() } label: {
+                Button { AppRouter.shared.openTerminals() } label: {
                     Label("Open Terminals…", systemImage: "rectangle.stack.badge.plus")
                 }
                 .help("Pick several servers and open a terminal on each")
@@ -73,9 +72,11 @@
                     }
                     .rxCard()
                 } else {
-                    ServersTable(groups: store.serverGroups(matching: searchText, sortedBy: sortOrder), selection: $selection, sortOrder: $sortOrder)
+                    let groups = store.serverGroups(matching: searchText, sortedBy: sortOrder)
+                    ServersTable(groups: groups, selection: $selection, sortOrder: $sortOrder)
                         .overlay {
-                            if !searchText.isEmpty, !store.machines.contains(where: { $0.isQualifiedForSearch(text: searchText) }) {
+                            // A search lists only the folders with a match.
+                            if !searchText.isEmpty, groups.isEmpty {
                                 ContentUnavailableView.search(text: searchText)
                             }
                         }
