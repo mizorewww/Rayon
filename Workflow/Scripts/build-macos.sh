@@ -91,6 +91,7 @@ sign_for_icloud() {
     for key in com.apple.application-identifier com.apple.developer.team-identifier \
         com.apple.developer.icloud-container-identifiers com.apple.developer.icloud-services \
         com.apple.developer.aps-environment keychain-access-groups \
+        com.apple.developer.icloud-container-environment \
         com.apple.developer.ubiquity-kvstore-identifier; do
         /usr/libexec/PlistBuddy -c "Delete :$key" "$entitlements" 2>/dev/null || true
     done
@@ -112,6 +113,11 @@ sign_for_icloud() {
     rm -f "$profile_plist"
     if [[ -n "$aps" ]]; then
         /usr/libexec/PlistBuddy -c "Add :com.apple.developer.aps-environment string $aps" "$entitlements"
+    fi
+    # A Developer ID build has to name CloudKit's Production environment
+    # itself; Xcode does that only for builds it exports.
+    if [[ "$aps" == production ]]; then
+        /usr/libexec/PlistBuddy -c 'Add :com.apple.developer.icloud-container-environment string Production' "$entitlements"
     fi
 
     cp "$profile" "$APP_PATH/Contents/embedded.provisionprofile"
