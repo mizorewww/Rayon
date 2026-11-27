@@ -3,6 +3,7 @@
 //  Rayon
 //
 
+import Combine
 import Foundation
 import RayonModule
 
@@ -34,9 +35,8 @@ final class UURemoteSessionList: ObservableObject {
     func load() async -> Bool {
         phase = .loading
         let watch = Task { @MainActor in
-            while !Task.isCancelled {
-                status = UURemoteConnections.shared.status(for: machine)
-                try? await Task.sleep(nanoseconds: 300_000_000)
+            for await hint in UURemoteConnections.shared.statusHints(for: machine).values {
+                status = hint
             }
         }
         defer { watch.cancel() }

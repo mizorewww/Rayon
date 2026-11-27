@@ -7,6 +7,7 @@
 //  folder, and a server's UU device as a connection target.
 //
 
+import Combine
 import Foundation
 @_exported import UURemoteKit
 
@@ -124,8 +125,9 @@ public extension UURemoteConnections {
         try await endTerminalSession(id, on: machine.uuTarget)
     }
 
-    /// What the server's UU connection is doing, for a terminal waiting on it.
-    func status(for machine: RDMachine) -> String {
-        status(of: machine.uuTarget)
+    /// What the server's UU connection is doing, for a terminal waiting on
+    /// it, as it changes.
+    func statusHints(for machine: RDMachine) -> AnyPublisher<String, Never> {
+        statusHints(of: machine.uuTarget)
     }
 }
