@@ -112,6 +112,9 @@ bash Workflow/Scripts/install-macos.sh   # Release build, installed to /Applicat
 
 Or open `App.xcworkspace` and run the **Rayon** scheme on a Mac or an iOS 18+ destination.
 
+Signing for iCloud sync, and the CloudKit schema step before a release, are in
+[docs/icloud-sync.md](docs/icloud-sync.md).
+
 ## Contributing
 
 Bugs and ideas go to [issues](https://github.com/mizorewww/Rayon/issues). Pull
