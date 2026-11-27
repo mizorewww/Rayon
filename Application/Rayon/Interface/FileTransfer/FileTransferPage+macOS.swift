@@ -30,8 +30,6 @@
         @State private var sorted: [FileTransferContext.RemoteFile] = []
         /// What the table shows: `sorted`, less what the filter leaves out.
         @State private var files: [FileTransferContext.RemoteFile] = []
-        /// Counts the changes of `files`, so the table needn't compare lists.
-        @State private var revision = 0
         /// Counts the folder listings, so a slow sort of an old one is dropped.
         @State private var listing = 0
 
@@ -50,7 +48,6 @@
         private func applyFilter() {
             let needle = filter.lowercased()
             files = needle.isEmpty ? sorted : sorted.filter { $0.name.lowercased().contains(needle) }
-            revision += 1
         }
 
         private func arrange(_ list: [FileTransferContext.RemoteFile]) {
@@ -204,17 +201,6 @@
 
         var fileTable: some View {
             VStack(spacing: 0) {
-                HStack(spacing: 0) {
-                    TableHeaderLabel("Name").frame(maxWidth: .infinity)
-                    TableHeaderLabel("Size", alignment: .trailing).frame(width: FileColumns.size)
-                    Color.clear.frame(width: FileColumns.gap, height: 1)
-                    TableHeaderLabel("Modified").frame(width: FileColumns.modified)
-                    TableHeaderLabel("Permissions").frame(width: FileColumns.permissions)
-                    TableHeaderLabel("Owner").frame(width: FileColumns.owner)
-                }
-                .padding(.horizontal, RX.Space.s3)
-                .frame(height: RX.tableHeaderHeight)
-                Hairline()
                 if files.isEmpty {
                     EmptyStateView(
                         filter.isEmpty ? "Empty folder" : "No matches",
@@ -226,7 +212,6 @@
                     FileTable(
                         files: files,
                         folder: context.currentDir,
-                        revision: revision,
                         selection: selection,
                         select: { selection = $0 },
                         open: open,
