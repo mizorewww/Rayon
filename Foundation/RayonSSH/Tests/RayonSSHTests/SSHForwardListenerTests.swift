@@ -53,4 +53,38 @@ final class SSHForwardListenerTests: XCTestCase {
             try await client.closeFuture.get()
         }
     }
+
+    /// A forward stopped before it took a waiting connection closes it:
+    /// a cancelled iteration drops what the listener buffered.
+    func testStoppingAForwardClosesTheConnectionsWaitingOnIt() async throws {
+        let server = try await TestSSHServer.start()
+        let connection = try await server.connect()
+        let free = try await ServerBootstrap(group: MultiThreadedEventLoopGroup.singleton).bind(host: "127.0.0.1", port: 0).get()
+        let port = try XCTUnwrap(free.localAddress?.port)
+        try await free.close()
+        for listen in [
+            { try await SSHForwardListener.local(port: port, targetHost: "127.0.0.1", targetPort: 22) },
+            { try await SSHForwardListener.dynamic(port: port) },
+        ] {
+            let listener = try await listen()
+            let client = try await ClientBootstrap(group: MultiThreadedEventLoopGroup.singleton)
+                .connect(host: "127.0.0.1", port: port)
+                .get()
+            try await Task.sleep(for: .milliseconds(200))
+            let forward = Task {
+                withUnsafeCurrentTask { $0?.cancel() }
+                try await connection.runForward(listener)
+            }
+            _ = try? await forward.value
+            let closed = client.eventLoop.makePromise(of: Bool.self)
+            client.closeFuture.whenComplete { _ in closed.succeed(true) }
+            client.eventLoop.scheduleTask(in: .seconds(3)) { closed.succeed(false) }
+            let didClose = try await closed.futureResult.get()
+            XCTAssertTrue(didClose, "a waiting connection stayed open")
+            client.close(promise: nil)
+        }
+        await connection.close()
+        await server.stop()
+    }
 }
+

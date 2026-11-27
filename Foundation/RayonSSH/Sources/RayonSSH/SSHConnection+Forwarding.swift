@@ -17,6 +17,7 @@
 
 import Network
 import NIOCore
+import os
 import NIOSSH
 import NIOTransportServices
 
@@ -30,56 +31,72 @@ public struct SSHForwardListener: Sendable {
     }
 
     fileprivate let kind: Kind
+    /// Connections taken and not yet handed to a forward. A cancelled
+    /// iteration drops what the listener buffered, so these are closed
+    /// here once the listener is: none is left open when a forward ends.
+    private let waiting: OSAllocatedUnfairLock<[ObjectIdentifier: Channel]>
 
     /// Listens on `127.0.0.1:port` for connections forwarded to
     /// `targetHost:targetPort` as the server sees it.
     public static func local(port: Int, targetHost: String, targetPort: Int) async throws -> SSHForwardListener {
-        let clients = try await listen(port: port) { channel in
+        let waiting = OSAllocatedUnfairLock<[ObjectIdentifier: Channel]>(initialState: [:])
+        let clients = try await listen(port: port, waiting: waiting) { channel in
             try SSHConnection.hold(channel)
             return channel
         }
-        return SSHForwardListener(kind: .local(clients, targetHost: targetHost, targetPort: targetPort))
+        return SSHForwardListener(kind: .local(clients, targetHost: targetHost, targetPort: targetPort), waiting: waiting)
     }
 
     /// Listens on `127.0.0.1:port` as a SOCKS5 proxy whose CONNECT
     /// requests are made from the server.
     public static func dynamic(port: Int) async throws -> SSHForwardListener {
-        let clients = try await listen(port: port) { channel in
+        let waiting = OSAllocatedUnfairLock<[ObjectIdentifier: Channel]>(initialState: [:])
+        let clients = try await listen(port: port, waiting: waiting) { channel in
             let target = channel.eventLoop.makePromise(of: SOCKS5Handshake.Target.self)
             try channel.pipeline.syncOperations.addHandler(SOCKS5Handshake(target: target))
             return PendingSOCKS(channel: channel, target: target.futureResult)
         }
-        return SSHForwardListener(kind: .dynamic(clients))
+        return SSHForwardListener(kind: .dynamic(clients), waiting: waiting)
     }
 
     /// Stops listening, for a listener no forward will run on, and closes
     /// the connections it took meanwhile.
     public func close() async {
         switch kind {
-        case let .local(clients, _, _): await Self.close(clients) { $0 }
-        case let .dynamic(clients): await Self.close(clients) { $0.channel }
+        case let .local(clients, _, _): try? await clients.executeThenClose { _ in }
+        case let .dynamic(clients): try? await clients.executeThenClose { _ in }
         }
+        closeWaiting()
     }
 
-    private static func close<Output: Sendable>(_ clients: NIOAsyncChannel<Output, Never>, _ channel: (Output) -> Channel) async {
-        try? await clients.executeThenClose { waiting in
-            // Once closed, the listener hands over what it took, then ends.
-            try? await clients.channel.close()
-            for try await client in waiting {
-                try? await channel(client).close()
-            }
+    /// A connection the forward serves from now on.
+    fileprivate func take(_ channel: Channel) {
+        _ = waiting.withLock { $0.removeValue(forKey: ObjectIdentifier(channel)) }
+    }
+
+    /// Closes what is still waiting; call once the listener is closed, so
+    /// that it takes nothing more.
+    fileprivate func closeWaiting() {
+        let channels = waiting.withLock { waiting in
+            defer { waiting.removeAll() }
+            return Array(waiting.values)
         }
+        for channel in channels { channel.close(promise: nil) }
     }
 
     private static func listen<Output: Sendable>(
         port: Int,
+        waiting: OSAllocatedUnfairLock<[ObjectIdentifier: Channel]>,
         _ wrap: @escaping @Sendable (Channel) throws -> Output
     ) async throws -> NIOAsyncChannel<Output, Never> {
         do {
             return try await NIOTSListenerBootstrap(group: NIOTSEventLoopGroup.singleton)
                 .childChannelOption(ChannelOptions.allowRemoteHalfClosure, value: true)
                 .bind(host: "127.0.0.1", port: port) { channel in
-                    channel.eventLoop.makeCompletedFuture { try wrap(channel) }
+                    let id = ObjectIdentifier(channel)
+                    waiting.withLock { $0[id] = channel }
+                    channel.closeFuture.whenComplete { _ in _ = waiting.withLock { $0.removeValue(forKey: id) } }
+                    return channel.eventLoop.makeCompletedFuture { try wrap(channel) }
                 }
         } catch NWError.posix(.EADDRINUSE) {
             throw SSHError.portInUse(port)
@@ -94,12 +111,15 @@ public extension SSHConnection {
     /// until cancelled or until the connection closes; the listener
     /// closes with it.
     nonisolated func runForward(_ listener: SSHForwardListener) async throws {
+        // Each case's executeThenClose has closed the listener by now.
+        defer { listener.closeWaiting() }
         try await untilClosed {
             switch listener.kind {
             case let .local(clients, targetHost, targetPort):
                 try await clients.executeThenClose { clients in
                     try await withThrowingDiscardingTaskGroup { group in
                         for try await client in clients {
+                            listener.take(client)
                             group.addTask {
                                 do {
                                     let remote = try await self.openDirectTCPIP(host: targetHost, port: targetPort)
@@ -115,6 +135,7 @@ public extension SSHConnection {
                 try await clients.executeThenClose { clients in
                     try await withThrowingDiscardingTaskGroup { group in
                         for try await client in clients {
+                            listener.take(client.channel)
                             group.addTask { await self.serveSOCKS(client) }
                         }
                     }
@@ -137,7 +158,13 @@ public extension SSHConnection {
             try await withThrowingDiscardingTaskGroup { group in
                 group.addTask {
                     await withDiscardingTaskGroup { connections in
+                        // Once stopped, the stream still hands over what it
+                        // buffered, which is closed rather than connected.
                         for await forwarded in incoming {
+                            guard !Task.isCancelled else {
+                                forwarded.close(promise: nil)
+                                continue
+                            }
                             connections.addTask {
                                 do {
                                     let local = try await Self.connect(host: targetHost, port: targetPort)
