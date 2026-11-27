@@ -102,8 +102,15 @@ public struct SFTPSession: Sendable {
     public func entries(at path: String) async throws -> [SFTPEntry] {
         try await client.listDirectory(atPath: path)
             .flatMap(\.components)
-            .filter { !$0.filename.isEmpty && $0.filename != "." && $0.filename != ".." && !$0.filename.contains("/") }
+            .filter { Self.isFileName($0.filename) }
             .map { SFTPEntry(name: $0.filename, attributes: $0.attributes) }
+    }
+
+    /// Whether `name` is one path component. Control characters are out:
+    /// URL drops a NUL, so "..\0" would become "..".
+    static func isFileName(_ name: String) -> Bool {
+        !name.isEmpty && name != "." && name != ".." && !name.contains("/")
+            && !name.unicodeScalars.contains { $0.properties.generalCategory == .control }
     }
 
     public func entry(at path: String) async throws -> SFTPEntry {
@@ -240,7 +247,12 @@ public struct SFTPSession: Sendable {
                 let path = (remote as NSString).appendingPathComponent(entry.name)
                 // The listing describes a link itself; what it points to decides.
                 if entry.isLink, (try? await self.entry(at: path))?.isDirectory != false { continue }
-                try await download(path, to: local.appendingPathComponent(entry.name), depth: depth + 1, progress: progress)
+                let child = local.appendingPathComponent(entry.name)
+                // However URL reads the name, the file lands in this folder.
+                guard child.lastPathComponent == entry.name,
+                      child.deletingLastPathComponent().standardizedFileURL.path == local.standardizedFileURL.path
+                else { continue }
+                try await download(path, to: child, depth: depth + 1, progress: progress)
             }
             return
         }

@@ -60,11 +60,11 @@ final class SFTPSessionTests: XCTestCase {
     }
 
     /// A server's listing decides the names a download writes: one that
-    /// lists "../escaped" or "a/b" must not reach outside the folder the
+    /// lists "../escaped", "a/b" or "..\\0" (which URL reads as "..") must not reach outside the folder the
     /// download goes to (CVE-2019-6111).
     func testADownloadStaysInsideItsFolder() async throws {
         let tree = FixedTreeSFTP([
-            "/srv": [("../escaped", "evil"), ("a/b", "evil"), ("", "evil"), (".", nil), ("..", nil), ("kept.txt", "kept")],
+            "/srv": [("../escaped", "evil"), ("a/b", "evil"), ("", "evil"), ("..\u{0}", "evil"), ("a\u{1}b", "evil"), ("tab\t", "evil"), (".", nil), ("..", nil), ("kept.txt", "kept")],
         ])
         let scratch = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: scratch, withIntermediateDirectories: true)
