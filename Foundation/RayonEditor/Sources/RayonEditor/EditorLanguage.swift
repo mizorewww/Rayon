@@ -11,7 +11,7 @@ public enum EditorLanguage: String, CaseIterable, Identifiable, Sendable {
 
     public var title: String {
         switch self {
-        case .plain: return "Plain Text"
+        case .plain: return String(localized: "Plain Text", bundle: .module)
         case .bash: return "Shell"
         case .c: return "C"
         case .cpp: return "C++"

@@ -5,6 +5,7 @@ import PackageDescription
 /// Runestone on iOS and CodeEditSourceEditor on macOS.
 let package = Package(
     name: "RayonEditor",
+    defaultLocalization: "en",
     platforms: [.macOS(.v14), .iOS(.v17)],
     products: [
         .library(name: "RayonEditor", targets: ["RayonEditor"]),
@@ -23,7 +24,8 @@ let package = Package(
                 .product(name: "RunestoneEditor", package: "Runestone.xcframework", condition: .when(platforms: [.iOS])),
                 .product(name: "CodeEditSourceEditor", package: "CodeEditSourceEditor", condition: .when(platforms: [.macOS])),
                 .product(name: "CodeEditLanguages", package: "CodeEditLanguages", condition: .when(platforms: [.macOS])),
-            ]
+            ],
+            resources: [.process("Resources")]
         ),
         .testTarget(
             name: "RayonEditorTests",
