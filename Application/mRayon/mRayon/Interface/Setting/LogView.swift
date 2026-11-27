@@ -51,40 +51,19 @@ struct LogView: View {
         .navigationTitle("Diagnostic")
         .toolbar {
             ToolbarItem {
-                Button {
-                    if let url = LogRedirect.shared.path {
-                        DispatchQueue.global().async {
-                            guard let data = try? Data(contentsOf: url) else { return }
-                            let str = String(decoding: data, as: UTF8.self)
-                            guard !str.isEmpty else { return }
-                            onMainThread {
-                                UIBridge.sendPasteboard(str: str)
-                            }
-                        }
-                    }
-                } label: {
-                    Label("Share Diagnostic Data", systemImage: "doc.on.doc")
+                // The log file itself, not its text: it can be megabytes,
+                // more than belongs on the clipboard.
+                ShareLink(item: LogStore.shared.logFileURL) {
+                    Label("Share Diagnostic Data", systemImage: "square.and.arrow.up")
                 }
             }
         }
     }
 
     private func reloadLogs() async {
-        guard let url = LogRedirect.shared.path else { return }
         let loaded: [String] = await Task.detached(priority: .utility) {
-            guard let handle = try? FileHandle(forReadingFrom: url) else { return [] }
-            defer { try? handle.close() }
-            let maxBytes: UInt64 = 1024 * 1024
-            let fileSize = (try? handle.seekToEnd()) ?? 0
-            let startOffset = fileSize > maxBytes ? (fileSize - maxBytes) : 0
-            try? handle.seek(toOffset: startOffset)
-            let data = (try? handle.readToEnd()) ?? Data()
-            // String(decoding:as:) safely replaces any truncated multi-byte UTF-8 sequence at startOffset
-            let text = String(decoding: data, as: UTF8.self)
-            var split = text.components(separatedBy: "\n").filter { !$0.isEmpty }
-            if startOffset > 0, !split.isEmpty {
-                split.removeFirst()
-            }
+            let text = LogStore.shared.readTail(maxBytes: 1024 * 1024)
+            let split = text.components(separatedBy: "\n").filter { !$0.isEmpty }
             return Array(split.reversed().prefix(4096))
         }.value
         lines = loaded

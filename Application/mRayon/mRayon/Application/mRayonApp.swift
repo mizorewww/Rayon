@@ -15,7 +15,7 @@ struct mRayonApp: App {
 
     init() {
         #if DEBUG
-            NSLog("\nCommand Arguments:\n" + CommandLine.arguments.joined(separator: "\n"))
+            Logger.app.debugFile("command arguments: \(CommandLine.arguments.joined(separator: " "))")
         #endif
 
         // Shared file-transfer core lives in RayonModule; register the
@@ -24,11 +24,10 @@ struct mRayonApp: App {
         TerminalInterface.uiHandler = IOSTerminalUIHandler()
         HostKeyTrust.handler = IOSHostKeyTrustHandler()
 
-        _ = LogRedirect.shared
         _ = RayonStore.shared
         CloudSyncModel.shared.start()
 
-        NSLog("static main completed")
+        Logger.app.infoFile("launched")
     }
 
     var body: some Scene {

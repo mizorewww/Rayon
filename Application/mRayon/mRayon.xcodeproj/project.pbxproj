@@ -14,7 +14,6 @@
 		500D727127CF40CC00149A43 /* EditIdentityView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500D727027CF40CC00149A43 /* EditIdentityView.swift */; };
 		500D727527CF43CE00149A43 /* FilePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 500D727427CF43CE00149A43 /* FilePicker.swift */; };
 		5013B51927E4B14E00EF01C4 /* FileTransferView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5013B51827E4B14E00EF01C4 /* FileTransferView.swift */; };
-		501B334227DF0DD100EB6261 /* LogRedirect.swift in Sources */ = {isa = PBXBuildFile; fileRef = 501B334127DF0DD100EB6261 /* LogRedirect.swift */; };
 		501B334827DF16AA00EB6261 /* LogView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 501B334727DF16AA00EB6261 /* LogView.swift */; };
 		501B334A27DF1B6F00EB6261 /* SymbolPicker in Frameworks */ = {isa = PBXBuildFile; productRef = 501B334927DF1B6F00EB6261 /* SymbolPicker */; };
 		501FF78B27CEFADD00380D59 /* mRayonApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 501FF78A27CEFADD00380D59 /* mRayonApp.swift */; };
@@ -70,7 +69,6 @@
 		500D727427CF43CE00149A43 /* FilePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilePicker.swift; sourceTree = "<group>"; };
 		5013B51827E4B14E00EF01C4 /* FileTransferView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileTransferView.swift; sourceTree = "<group>"; };
 		71D95B9630ECB74E05487376 /* EditorWorkspaceView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorWorkspaceView.swift; sourceTree = "<group>"; };
-		501B334127DF0DD100EB6261 /* LogRedirect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogRedirect.swift; sourceTree = "<group>"; };
 		501B334727DF16AA00EB6261 /* LogView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogView.swift; sourceTree = "<group>"; };
 		501FF78727CEFADD00380D59 /* mRayon.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = mRayon.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		501FF78A27CEFADD00380D59 /* mRayonApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = mRayonApp.swift; sourceTree = "<group>"; };
@@ -240,7 +238,6 @@
 			isa = PBXGroup;
 			children = (
 				501FF78A27CEFADD00380D59 /* mRayonApp.swift */,
-				501B334127DF0DD100EB6261 /* LogRedirect.swift */,
 				501FF78E27CEFADD00380D59 /* Assets.xcassets */,
 				5082A1D127D0E10000C71C0F /* EULA */,
 				5082A1D227D0E10000C71C0F /* LICENSE */,
@@ -427,7 +424,6 @@
 				50D3AEFB27D05D6D0085F899 /* EditMachineView.swift in Sources */,
 				500D726A27CF1C0800149A43 /* View.swift in Sources */,
 				50FD853A27D0445D00F6F01A /* EditSnippetView.swift in Sources */,
-				501B334227DF0DD100EB6261 /* LogRedirect.swift in Sources */,
 				500D727527CF43CE00149A43 /* FilePicker.swift in Sources */,
 				50C90AF427CF125200F60B51 /* UIBridge.swift in Sources */,
 				50D77BE727D2F0FB00177190 /* SettingView.swift in Sources */,
