@@ -23,8 +23,8 @@
 
         let files: [File]
         let folder: String
-        let selection: File?
-        let select: (File?) -> Void
+        let selection: File.ID?
+        let select: (File.ID?) -> Void
         let open: (File) -> Void
         @ViewBuilder let menu: (File) -> MenuContent
 
@@ -66,10 +66,10 @@
                 }
                 .width(min: 40, ideal: 50, max: 100)
             }
-            .contextMenu(forSelectionType: File.self) { chosen in
-                if let file = chosen.first { menu(file) }
+            .contextMenu(forSelectionType: File.ID.self) { chosen in
+                if let file = files.first(where: { chosen.contains($0.id) }) { menu(file) }
             } primaryAction: { chosen in
-                if let file = chosen.first { open(file) }
+                if let file = files.first(where: { chosen.contains($0.id) }) { open(file) }
             }
             // Another folder starts at its top.
             .id(folder)

@@ -20,7 +20,7 @@ final class FileTransferLinkTests: XCTestCase {
         XCTAssertTrue(folder.isFolder)
         XCTAssertFalse(FileTransferContext.isEditable(folder))
         let file = FileTransferContext.RemoteFile(base: base, name: "a", fstat: entry("a", type: 0o100000))
-        XCTAssertEqual(FileTransferContext.sortedForDisplay([file, folder]).map(\.name), ["data", "a"])
+        XCTAssertEqual([file, folder].sorted(using: RemoteFileComparator(.name)).map(\.name), ["data", "a"])
     }
 
     func testABrokenOrLoopingLinkIsNoFolder() {

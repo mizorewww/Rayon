@@ -11,6 +11,7 @@ import os
 import RayonSSH
 import SwiftUI
 import Logger
+import UniformTypeIdentifiers
 
 /// The session's state lives on the main actor, like the interface showing
 /// it; each operation awaits the SFTP session off it.
@@ -83,20 +84,37 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable {
     }
 
     public struct RemoteFile: Identifiable, Equatable, Hashable, Sendable {
-        public var id: RemoteFile { self }
+        /// The file's path: a reload keeps a chosen file chosen while its
+        /// size or date changes.
+        public var id: URL { url }
         public let base: URL
         public let name: String
+        public let url: URL
         /// The entry itself; for a link, the link.
         public let fstat: SFTPEntry
         /// What a link points to; nil for anything else, and for a link
         /// that is broken or loops.
         public let linkTarget: SFTPEntry?
+        /// The kind as Finder names it, read once: sorting by kind compares
+        /// it many times.
+        public let kind: String
 
         public init(base: URL, name: String, fstat: SFTPEntry, linkTarget: SFTPEntry? = nil) {
             self.base = base
             self.name = name
+            url = base.appendingPathComponent(name)
             self.fstat = fstat
             self.linkTarget = linkTarget
+            let type: UTType = if fstat.isDirectory || linkTarget?.isDirectory == true {
+                .folder
+            } else if fstat.isLink, linkTarget == nil {
+                .symbolicLink
+            } else {
+                UTType(filenameExtension: (name as NSString).pathExtension) ?? .data
+            }
+            // The system names kinds in lower case ("folder"); Finder's column starts them upper case.
+            let description = type.localizedDescription ?? UTType.data.localizedDescription ?? ""
+            kind = description.prefix(1).localizedUppercase + description.dropFirst()
         }
 
         /// A folder, or a link to one: it opens by browsing into it.
@@ -378,17 +396,23 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable {
         }
     }
 
-    public func delete(item: URL) {
-        guard connectionAvailableCheckPassed() else { return }
+    /// Deletes the items one after another, folders with all they hold;
+    /// the first that fails stops the rest.
+    public func delete(items: [URL]) {
+        guard !items.isEmpty, connectionAvailableCheckPassed() else { return }
         continueCurrentProgress = true
         enqueue { [self] sftp in
             self.isProgressRunning = true
             self.currentProgressCancelable = true
-            self.currentProcessingFile = item.path
             putInformation(String(localized: "Deleting...", bundle: .module))
             do {
-                try await sftp?.removeItem(at: item.path) { [weak self] file in
-                    Task { @MainActor in self?.currentProcessingFile = file }
+                for (index, item) in items.enumerated() {
+                    try Task.checkCancellation()
+                    totalProgress = Self.progress(index, of: items.count)
+                    currentProcessingFile = item.path
+                    try await sftp?.removeItem(at: item.path) { [weak self] file in
+                        Task { @MainActor in self?.currentProcessingFile = file }
+                    }
                 }
                 putInformation(String(localized: "Delete Completed", bundle: .module))
             } catch {
@@ -398,21 +422,10 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable {
         }
     }
 
-    public func download(from: URL, toDir: URL) {
+    /// Downloads the items into `toDir`, each under a name not taken there.
+    public func download(from items: [URL], toDir: URL) {
+        guard !items.isEmpty else { return }
         Telemetry.record(.feature(.fileTransfers))
-        let fromPath = from.path
-        var to = toDir.path
-        if !to.hasSuffix("/") { to += "/" }
-        to += from.lastPathComponent
-        let toBase = URL(fileURLWithPath: to)
-        let ext = toBase.pathExtension
-        var duplicate = 1
-        while FileManager.default.fileExists(atPath: to) {
-            duplicate += 1
-            to = toBase.deletingPathExtension().path + ".\(duplicate)"
-            if !ext.isEmpty { to += ".\(ext)" }
-        }
-        let destination = URL(fileURLWithPath: to)
         guard connectionAvailableCheckPassed() else { return }
         continueCurrentProgress = true
         enqueue { [self] sftp in
@@ -420,7 +433,12 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable {
             self.currentProgressCancelable = true
             putInformation(String(localized: "Downloading...", bundle: .module))
             do {
-                try await sftp?.download(fromPath, to: destination) { [weak self] in self?.reportProgress($0) }
+                for (index, item) in items.enumerated() {
+                    try Task.checkCancellation()
+                    totalProgress = Self.progress(index, of: items.count)
+                    let destination = Self.freeDestination(for: item, in: toDir)
+                    try await sftp?.download(item.path, to: destination) { [weak self] in self?.reportProgress($0) }
+                }
                 putInformation(String(localized: "Download Completed", bundle: .module))
                 FileTransferInterface.uiHandler.downloadCompleted()
             } catch {
@@ -428,5 +446,26 @@ public class FileTransferContext: ObservableObject, Identifiable, Equatable {
             }
             self.loadCurrentFileList()
         }
+    }
+
+    private nonisolated static func progress(_ completed: Int, of total: Int) -> Progress {
+        let progress = Progress(totalUnitCount: Int64(total))
+        progress.completedUnitCount = Int64(completed)
+        return progress
+    }
+
+    /// `item`'s name in `folder`, or "name.2.ext", "name.3.ext"… when taken.
+    nonisolated static func freeDestination(for item: URL, in folder: URL) -> URL {
+        let base = folder.appendingPathComponent(item.lastPathComponent)
+        let ext = base.pathExtension
+        var candidate = base
+        var duplicate = 1
+        while FileManager.default.fileExists(atPath: candidate.path) {
+            duplicate += 1
+            var path = base.deletingPathExtension().path + ".\(duplicate)"
+            if !ext.isEmpty { path += ".\(ext)" }
+            candidate = URL(fileURLWithPath: path)
+        }
+        return candidate
     }
 }

@@ -34,13 +34,13 @@
         @State private var listing = 0
 
         nonisolated static func sort(_ list: [FileTransferContext.RemoteFile]) -> [FileTransferContext.RemoteFile] {
-            FileTransferContext.sortedForDisplay(list)
+            list.sorted(using: RemoteFileComparator(.name))
         }
 
         private func show(sorted list: [FileTransferContext.RemoteFile]) {
             sorted = list
             // A reload reads every file anew; one that is gone is no longer chosen.
-            if let chosen = selection { selection = list.first { $0.name == chosen.name && $0.base == chosen.base } }
+            if let chosen = selection { selection = list.first { $0.id == chosen.id } }
             applyFilter()
         }
 
@@ -209,8 +209,8 @@
                     FileTable(
                         files: files,
                         folder: context.currentDir,
-                        selection: selection,
-                        select: { selection = $0 },
+                        selection: selection?.id,
+                        select: { id in selection = files.first { $0.id == id } },
                         open: open,
                         menu: menu(for:)
                     )
@@ -323,7 +323,7 @@
                 canCreateDirectories: true,
                 showsHiddenFiles: false
             ) { urls in
-                if let url = urls.first { context.download(from: remote, toDir: url) }
+                if let url = urls.first { context.download(from: [remote], toDir: url) }
             }
         }
 
@@ -337,7 +337,7 @@
                 confirmTitle: "Delete",
                 destructive: true
             ) { confirmed in
-                if confirmed { context.delete(item: item) }
+                if confirmed { context.delete(items: [item]) }
             }
         }
 

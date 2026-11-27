@@ -76,7 +76,7 @@
                     context.upload(urls: urls)
                 }
             }
-            .onReceive(context.$currentFileList) { sorted = FileTransferContext.sortedForDisplay($0) }
+            .onReceive(context.$currentFileList) { sorted = $0.sorted(using: RemoteFileComparator(.name)) }
             // iPad: files dragged in from Files or another app are uploaded here.
             .onDrop(of: [.item], isTargeted: $dropTargeted, perform: handleDrop)
             .overlay {
@@ -406,7 +406,7 @@
                 let documentDir = FileManager
                     .default
                     .urls(for: .documentDirectory, in: .userDomainMask)[0]
-                context.download(from: remoteUrl, toDir: documentDir)
+                context.download(from: [remoteUrl], toDir: documentDir)
             }
 
             @ViewBuilder private var actions: some View {
@@ -483,7 +483,7 @@
                             confirmTitle: "Delete",
                             destructive: true
                         ) { y in
-                            if y { context.delete(item: item) }
+                            if y { context.delete(items: [item]) }
                         }
                     } label: {
                         Label("Delete…", systemImage: "trash")
