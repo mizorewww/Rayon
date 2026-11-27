@@ -13,13 +13,14 @@ WORKSPACE := App.xcworkspace
 TEST_PACKAGES := $(patsubst %/Tests,%,$(wildcard Foundation/*/Tests))
 RESOLVED_PACKAGES := $(patsubst %/Package.resolved,%,$(wildcard Foundation/*/Package.resolved))
 
-.PHONY: help build build-macos build-ios test resolve scan-license clean
+.PHONY: help build build-macos build-ios test test-telemetry-server resolve scan-license clean
 
 help:
 	@echo "build         Build the Mac and iOS apps"
 	@echo "build-macos   Build the Mac app, signed with your Apple Development certificate or ad hoc"
 	@echo "build-ios     Build the iOS app for the simulator, unsigned"
 	@echo "test          Run the Swift package tests: $(notdir $(TEST_PACKAGES))"
+	@echo "test-telemetry-server  Typecheck and test the telemetry Worker in Server/Telemetry (needs bun)"
 	@echo "resolve       Resolve the workspace's and the packages' dependencies"
 	@echo "scan-license  List the resolved dependencies; fail on any missing from Resources/LICENSE"
 	@echo "clean         Remove .build/ here and in every package"
@@ -48,6 +49,10 @@ test:
 		echo "==> $$package"; \
 		swift test --package-path "$$package" || exit 1; \
 	done
+
+# Not part of `test`: it needs bun and downloads wrangler and workerd.
+test-telemetry-server:
+	cd Server/Telemetry && bun install --frozen-lockfile && bun run typecheck && bun run test
 
 resolve:
 	xcodebuild -resolvePackageDependencies -workspace $(WORKSPACE) -scheme Rayon
