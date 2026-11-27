@@ -173,7 +173,7 @@
             case .dashboard: DashboardView()
             case .servers: ServersView()
             case .identities: IdentitiesView()
-            case .snippets: SnippetView()
+            case .snippets: SnippetsView()
             case .desktops: RemoteDesktopsView()
             case .settings: SettingsView()
             case let .session(owner):
@@ -275,7 +275,7 @@
                         moreRow("Identities", "person", count: store.identities.count)
                     }
                     .rxListRow()
-                    NavigationLink { SnippetView() } label: {
+                    NavigationLink { SnippetsView() } label: {
                         moreRow("Snippets", "chevron.left.forwardslash.chevron.right", count: store.snippets.count)
                     }
                     .rxListRow()
