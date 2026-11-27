@@ -682,6 +682,24 @@ final class VNCRFBTests: XCTestCase {
         XCTAssertEqual(channel.written.count, expected)
     }
 
+    /// A desktop wider than 8K is refused before anything is allocated:
+    /// the server names the size, and each picture is a copy of it.
+    func testADesktopPast8KIsRefused() async throws {
+        for (width, refused) in [(8192, false), (8193, true)] {
+            var server = Data()
+            server.append(VNCWire.banner(major: 3, minor: 8))
+            server.append(1)
+            server.append(VNCWire.SecurityType.none.rawValue)
+            server.appendU32BE(0)
+            server.append(serverInitData(width: width, height: 1, name: "wide"))
+            let delegate = RecordingDelegate()
+            let client = VNCRFBClient(configuration: .init(host: "ignored", port: 0, password: "", shared: true, transport: MemoryChannel(Array(server))), delegate: delegate)
+            await client.run()
+            let failed = delegate.phases.contains { if case let .failed(reason) = $0 { reason.contains("too large") } else { false } }
+            XCTAssertEqual(failed, refused, "\(width): \(delegate.phases)")
+        }
+    }
+
     /// A session that fails lets go of its connection.
     func testAFailedSessionClosesItsTransport() async throws {
         let channel = MemoryChannel(Array("HTTP/1.1 400".utf8))

@@ -13,9 +13,10 @@ import Foundation
 import Synchronization
 
 final class VNCFramebuffer: Sendable {
-    /// The widest or tallest desktop accepted (a 1 GiB buffer at most);
-    /// the server names the size, so it is bounded before allocating.
-    static let maximumDimension = 16384
+    /// The widest or tallest desktop accepted: 8K and a little more, a
+    /// 256 MiB buffer at most, with a picture or two of the same size on
+    /// top. The server names the size, so it is bounded before allocating.
+    static let maximumDimension = 8192
 
     /// The session task draws; the main actor reads the size.
     private let store = Mutex(VNCFramebufferStore())
