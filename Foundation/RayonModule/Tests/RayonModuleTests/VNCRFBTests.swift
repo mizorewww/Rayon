@@ -19,11 +19,12 @@ import zlib
 /// A transport that replays a fixed buffer and records what is sent; the
 /// decoders read through the same `VNCReader` as over the network.
 private final class MemoryChannel: VNCTransport {
-    private let state: Mutex<(buffer: [UInt8], written: [UInt8])>
+    private let state: Mutex<(buffer: [UInt8], written: [UInt8], closed: Bool)>
 
-    init(_ buffer: [UInt8] = []) { state = Mutex((buffer, [])) }
+    init(_ buffer: [UInt8] = []) { state = Mutex((buffer, [], false)) }
 
     var written: [UInt8] { state.withLock { $0.written } }
+    var closed: Bool { state.withLock { $0.closed } }
 
     func receive(maximumLength: Int) async throws -> Data {
         try state.withLock { state in
@@ -38,7 +39,9 @@ private final class MemoryChannel: VNCTransport {
         state.withLock { $0.written.append(contentsOf: data) }
     }
 
-    func close() {}
+    func close() {
+        state.withLock { $0.closed = true }
+    }
 }
 
 private func makeContext(framebuffer: VNCFramebuffer, format: VNCPixelFormat = .clientRequested) -> VNCDecoders.Context {
@@ -677,6 +680,16 @@ final class VNCRFBTests: XCTestCase {
         // SetEncodings (4 + 7x4), and two FramebufferUpdateRequests (10+10).
         let expected: Int = 12 + 1 + 16 + 1 + 20 + (4 + 7 * 4) + 10 + 10
         XCTAssertEqual(channel.written.count, expected)
+    }
+
+    /// A session that fails lets go of its connection.
+    func testAFailedSessionClosesItsTransport() async throws {
+        let channel = MemoryChannel(Array("HTTP/1.1 400".utf8))
+        let delegate = RecordingDelegate()
+        let client = VNCRFBClient(configuration: .init(host: "ignored", port: 0, password: "", shared: true, transport: channel), delegate: delegate)
+        await client.run()
+        XCTAssertTrue(delegate.phases.contains { if case .failed = $0 { true } else { false } }, "\(delegate.phases)")
+        XCTAssertTrue(channel.closed)
     }
 
     /// The answer is 3.8 for 3.8 and anything newer (a later major too),

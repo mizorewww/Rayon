@@ -86,6 +86,9 @@ final class VNCRFBClient: Sendable {
     /// The session; `internal` so tests can await it over a scripted
     /// memory transport.
     func run() async {
+        // However the session ends (a failure above all), its connection
+        // goes with it.
+        defer { state.withLock { $0.transport }?.close() }
         report(phase: .connecting("Reaching \(configuration.host)"), hint: "Connecting…")
         do {
             let transport: VNCTransport = if let transport = configuration.transport {
