@@ -11,8 +11,9 @@
 		01B3BB8C084B19623AA6156B /* MachineStatusView in Frameworks */ = {isa = PBXBuildFile; productRef = BACEAFD2486E184D130E727E /* MachineStatusView */; };
 		044F6375FF0E2D3CDB066314 /* TerminalClipboardSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F8B14D36D71D3CD49CDE61B /* TerminalClipboardSettings.swift */; };
 		048A7AD1861084413CA66F29 /* SnippetEditorSheet+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF75232AABE500F80C3CC7AC /* SnippetEditorSheet+macOS.swift */; };
+		054971055911DBE26AE15A51 /* TitleBarDoubleClick.swift in Sources */ = {isa = PBXBuildFile; fileRef = F06E325B2AB0316062D4788E /* TitleBarDoubleClick.swift */; };
+		077523EBEB97CAA0050E5D10 /* EULA in Resources */ = {isa = PBXBuildFile; fileRef = 810F7FD4C87FA171E35E76C6 /* EULA */; };
 		07A6406ADF2E5B14C18F0361 /* LicenseSheet+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBBC074DA533C8EC63BD3D01 /* LicenseSheet+macOS.swift */; };
-		07D404175F0B02E70CFAA41B /* Rayon.icon in Resources */ = {isa = PBXBuildFile; fileRef = EB27690124DD7F27B4BFE967 /* Rayon.icon */; };
 		0ADA48FB160349357DE0DE10 /* HomeView+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = B32D984E65F989A5003BC29D /* HomeView+macOS.swift */; };
 		0BAC8614302AC7BBAF348DA6 /* FileTransferView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0C5A72EDFD1768CEE932329 /* FileTransferView+iOS.swift */; };
 		0CB29375DED902A66699BB07 /* RayonApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FF65F88613D8DEBFABCC991 /* RayonApp.swift */; };
@@ -38,6 +39,7 @@
 		41B8660B6D1B77C6A7F6600F /* PreviewHooks+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 202DDEC94CD2F67C49DF6918 /* PreviewHooks+iOS.swift */; };
 		43F4835D822E245FDA2BE81B /* RemoteDesktopsView+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A93629874F251ED929CADA9 /* RemoteDesktopsView+macOS.swift */; };
 		4402D5C8AC74511E486EC4BE /* SnippetView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 579465A771ECF0E568C2E717 /* SnippetView+iOS.swift */; };
+		4662EBC762E10B3E28247727 /* Rayon.icon in Resources */ = {isa = PBXBuildFile; fileRef = 8DE660EAC8BE9FA69DD24DC3 /* Rayon.icon */; };
 		48D987B8ADF0231604DE02CE /* UIViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E43D050747F750FDFB018732 /* UIViewController.swift */; };
 		4A2538F7D51D2869CCD95EFC /* TerminalTabs+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72B120F9F98EB23F7148DC36 /* TerminalTabs+iOS.swift */; };
 		4B02C664534C58F9BB72703B /* EditSnippetView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18C713FACF99C4DFC563A81D /* EditSnippetView+iOS.swift */; };
@@ -45,11 +47,11 @@
 		4C4DC1B026FF0419936E628A /* OpenPanel+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72D3BA0EADD0295E7594B69A /* OpenPanel+macOS.swift */; };
 		4E8162F6183D7DA1292C6E2C /* FolderActions+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5803CBA5AAC52206A2085C87 /* FolderActions+iOS.swift */; };
 		4FD42A8B6924024414881F02 /* BatchRunSheet+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 497F349CCADAE671712666CE /* BatchRunSheet+macOS.swift */; };
-		5023AEB7FE7A6937474FE556 /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = 65293519366BD1E95B86F2EB /* LICENSE */; };
 		506DA335AC317AAB3BB886CB /* FileTable+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 344160116EA4AF081CD63AF6 /* FileTable+macOS.swift */; };
 		50EECDBE1396B28BF067EFA2 /* TerminalPage+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 574BCE00636C1AD0B3E7D306 /* TerminalPage+macOS.swift */; };
 		533AF44F6B568F744DDF671F /* DashboardView+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082936B899509164A1AC3890 /* DashboardView+macOS.swift */; };
 		541166443130AE2BE8A2ACFF /* StatusItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 39E3EDDE9D2A98EB2014221A /* StatusItem.swift */; };
+		5443A6F3302722F18752DF95 /* Privacy in Resources */ = {isa = PBXBuildFile; fileRef = 6889F95F40A94C684D1D8F6B /* Privacy */; };
 		55ACC9139C3F0FF4E6F46C28 /* LogView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521179FEE31987BB065C6D42 /* LogView+iOS.swift */; };
 		57D4484469353BC6F0FADC21 /* Bench+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93881526957F9DFDC399ED6F /* Bench+macOS.swift */; };
 		58FB423B8D35371FB4369399 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF976BD9CB2E2407F0E7AACC /* SettingsView.swift */; };
@@ -79,10 +81,10 @@
 		947B0069349D1F17624536E1 /* TerminalView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7959B28D199CD97714A95617 /* TerminalView+iOS.swift */; };
 		9CB17ACF582117F3C32A915B /* SidebarView+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A9460495DCE9140203D7321 /* SidebarView+macOS.swift */; };
 		A2CC9D750A528CE4013E0AFD /* RemoteDesktopsView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = A325096FD5A90ABB51C819A5 /* RemoteDesktopsView+iOS.swift */; };
+		A5CDF0C8CE0726B9D472A05E /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = 3218E402827A396730F128A8 /* LICENSE */; };
 		A7900A3F89BA4CDA1B30693C /* AlertController in Frameworks */ = {isa = PBXBuildFile; productRef = FC99819CF2817E656542200D /* AlertController */; };
 		A80401BE334A8A47C965D604 /* AgreementView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92DD35551F8B3F531FAF2D1E /* AgreementView+iOS.swift */; };
 		A95334125EE608E8AAEBA54A /* TerminalContext+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCA830CEBF8760F075DB85C4 /* TerminalContext+iOS.swift */; };
-		ACD416B6A2125F56CA094199 /* Privacy in Resources */ = {isa = PBXBuildFile; fileRef = 39D57C6E58DC89ED5764BDDD /* Privacy */; };
 		AD0A1CA8D7F3989094822923 /* ServerActions+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92B3F2B0E48F627ECB88E470 /* ServerActions+macOS.swift */; };
 		AFA2D005700B5AB58E28448B /* FilesApp+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 49909667418741184D8DFDB7 /* FilesApp+iOS.swift */; };
 		B0D416E1AE6D322B6B41DC24 /* MenubarTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 02E7957B625CC60A97734088 /* MenubarTool.swift */; };
@@ -111,7 +113,6 @@
 		E6094927BFDE83EB490D228A /* RayonCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = B24EC3D2BE3F2C512AF4CE33 /* RayonCommands.swift */; };
 		E8423E2105556F0B5DBC98D2 /* ServerTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = D05AE48DF1CC0C85A4421B70 /* ServerTool.swift */; };
 		EB69FC54AB1E3106B2011446 /* DeviceOwner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94CA35B5C9475DA7487AB2ED /* DeviceOwner.swift */; };
-		EBFC3098962D37AC8E997F98 /* EULA in Resources */ = {isa = PBXBuildFile; fileRef = DA860A20B96E130A67B41F4B /* EULA */; };
 		EBFD30BF7EC88F60BA18B87A /* Pasteboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46910F2B6D3EE880A8F2A142 /* Pasteboard.swift */; };
 		F1F9247D4AC81E428C168D8B /* PageScaffold+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEB68BCA67DCAE0F20F5EA19 /* PageScaffold+macOS.swift */; };
 		F98D576A6F79A246C851A6E3 /* SymbolPicker in Frameworks */ = {isa = PBXBuildFile; productRef = 679D5A8D992D398335F44C83 /* SymbolPicker */; };
@@ -132,14 +133,13 @@
 		18C713FACF99C4DFC563A81D /* EditSnippetView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "EditSnippetView+iOS.swift"; sourceTree = "<group>"; };
 		202DDEC94CD2F67C49DF6918 /* PreviewHooks+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PreviewHooks+iOS.swift"; sourceTree = "<group>"; };
 		2149ACAE9A3E09AAC44779A1 /* MachineStatusView */ = {isa = PBXFileReference; lastKnownFileType = folder; name = MachineStatusView; path = ../../Foundation/MachineStatusView; sourceTree = SOURCE_ROOT; };
-		2208849D95BFB551AABB17A6 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		223A263F84AFBF12F7AC4E89 /* DataBackupSettings+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DataBackupSettings+iOS.swift"; sourceTree = "<group>"; };
 		2AAD00A41DF855F9DDB521E4 /* IdentityView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IdentityView+iOS.swift"; sourceTree = "<group>"; };
 		2C7CD87B933BC6EB14E4AFC2 /* InfoPlist.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; path = InfoPlist.xcstrings; sourceTree = "<group>"; };
 		30519B949F1845B161D0DBFC /* UURemoteAccountSheet+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UURemoteAccountSheet+iOS.swift"; sourceTree = "<group>"; };
+		3218E402827A396730F128A8 /* LICENSE */ = {isa = PBXFileReference; path = LICENSE; sourceTree = "<group>"; };
 		344160116EA4AF081CD63AF6 /* FileTable+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FileTable+macOS.swift"; sourceTree = "<group>"; };
 		375217688AC62A885D98F59C /* MoreMenu+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MoreMenu+macOS.swift"; sourceTree = "<group>"; };
-		39D57C6E58DC89ED5764BDDD /* Privacy */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Privacy; path = ../../Resources/Privacy; sourceTree = SOURCE_ROOT; };
 		39E0490988A2256F97D6CE80 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		39E3EDDE9D2A98EB2014221A /* StatusItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItem.swift; sourceTree = "<group>"; };
 		3A192E7F4DED6FA660A616D9 /* RayonCommands+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RayonCommands+macOS.swift"; sourceTree = "<group>"; };
@@ -148,6 +148,7 @@
 		41317BAA331C5AF4D338C81B /* DataSettings+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DataSettings+macOS.swift"; sourceTree = "<group>"; };
 		43BEDD24A016BBDEECA941DE /* RayonEditor */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RayonEditor; path = ../../Foundation/RayonEditor; sourceTree = SOURCE_ROOT; };
 		46910F2B6D3EE880A8F2A142 /* Pasteboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Pasteboard.swift; sourceTree = "<group>"; };
+		479203354F74843C86355377 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		4891BB4CCDB1EF158C7686B5 /* SnippetExecuteView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SnippetExecuteView+iOS.swift"; sourceTree = "<group>"; };
 		496B54EB8D1BEF16F00C8B8E /* FolderActions+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FolderActions+macOS.swift"; sourceTree = "<group>"; };
 		497F349CCADAE671712666CE /* BatchRunSheet+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "BatchRunSheet+macOS.swift"; sourceTree = "<group>"; };
@@ -164,8 +165,8 @@
 		5EAAB20C299B02DDA17537E0 /* RayonApp+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RayonApp+macOS.swift"; sourceTree = "<group>"; };
 		5EFD99DAA5D4CCE8E4C25C66 /* TerminalManager+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalManager+iOS.swift"; sourceTree = "<group>"; };
 		64158AA391E2A5FA827154BC /* HomeView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "HomeView+iOS.swift"; sourceTree = "<group>"; };
-		65293519366BD1E95B86F2EB /* LICENSE */ = {isa = PBXFileReference; path = LICENSE; sourceTree = "<group>"; };
 		68766FBCCF75FCB358204392 /* LicenseView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LicenseView+iOS.swift"; sourceTree = "<group>"; };
+		6889F95F40A94C684D1D8F6B /* Privacy */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Privacy; path = ../../Resources/Privacy; sourceTree = SOURCE_ROOT; };
 		68EF0B11EAAADAA8A5712883 /* MainView+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MainView+macOS.swift"; sourceTree = "<group>"; };
 		6FF65F88613D8DEBFABCC991 /* RayonApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RayonApp.swift; sourceTree = "<group>"; };
 		7109E63DD0F7034B6B1746DA /* AppRouter+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppRouter+macOS.swift"; sourceTree = "<group>"; };
@@ -175,10 +176,12 @@
 		789C0A14AD613CA687C88D63 /* UIWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIWindow.swift; sourceTree = "<group>"; };
 		78F2E26BAD5E3F7A3031797B /* AboutSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutSettings.swift; sourceTree = "<group>"; };
 		7959B28D199CD97714A95617 /* TerminalView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "TerminalView+iOS.swift"; sourceTree = "<group>"; };
+		810F7FD4C87FA171E35E76C6 /* EULA */ = {isa = PBXFileReference; path = EULA; sourceTree = "<group>"; };
 		87FA1474A2662FED06098CC1 /* FilePicker+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FilePicker+iOS.swift"; sourceTree = "<group>"; };
 		88CFA0115704680AA3974979 /* Rayon.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Rayon.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8C33FB7EDEB1D6F9AAB710CA /* FocusedCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusedCommands.swift; sourceTree = "<group>"; };
-		8C6EAA75306436DACC6EFD20 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		8CC55448A4AA3B4C451832EA /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		8DE660EAC8BE9FA69DD24DC3 /* Rayon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = Rayon.icon; sourceTree = "<group>"; };
 		8E7421FF7080E8EE418FC35E /* DiagnosticsSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsSettings.swift; sourceTree = "<group>"; };
 		92B3F2B0E48F627ECB88E470 /* ServerActions+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ServerActions+macOS.swift"; sourceTree = "<group>"; };
 		92DD35551F8B3F531FAF2D1E /* AgreementView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AgreementView+iOS.swift"; sourceTree = "<group>"; };
@@ -213,7 +216,6 @@
 		C8E247320B0E86BDCD94E59D /* ConnectionSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionSettings.swift; sourceTree = "<group>"; };
 		D05AE48DF1CC0C85A4421B70 /* ServerTool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerTool.swift; sourceTree = "<group>"; };
 		D39DB7FB8828DB64E12E7B66 /* ContentView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ContentView+iOS.swift"; sourceTree = "<group>"; };
-		DA860A20B96E130A67B41F4B /* EULA */ = {isa = PBXFileReference; path = EULA; sourceTree = "<group>"; };
 		DEB68BCA67DCAE0F20F5EA19 /* PageScaffold+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PageScaffold+macOS.swift"; sourceTree = "<group>"; };
 		DF75232AABE500F80C3CC7AC /* SnippetEditorSheet+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SnippetEditorSheet+macOS.swift"; sourceTree = "<group>"; };
 		E03C916E94043159FA948E16 /* ServersView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ServersView+iOS.swift"; sourceTree = "<group>"; };
@@ -221,9 +223,9 @@
 		E43D050747F750FDFB018732 /* UIViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UIViewController.swift; sourceTree = "<group>"; };
 		E54E20A564F4D21E1E74C519 /* RayonTerminal */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RayonTerminal; path = ../../Foundation/RayonTerminal; sourceTree = SOURCE_ROOT; };
 		E6293DC9A28B290B8453B5E3 /* UURemoteAccountSheet+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UURemoteAccountSheet+macOS.swift"; sourceTree = "<group>"; };
-		EB27690124DD7F27B4BFE967 /* Rayon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = Rayon.icon; sourceTree = "<group>"; };
 		EB8EF6F6A2D3A971B358CD88 /* Appearance+Apply.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Appearance+Apply.swift"; sourceTree = "<group>"; };
 		ECE09F11AAF262B5CEFF4B52 /* HomeBackdrop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeBackdrop.swift; sourceTree = "<group>"; };
+		F06E325B2AB0316062D4788E /* TitleBarDoubleClick.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TitleBarDoubleClick.swift; sourceTree = "<group>"; };
 		F23D3C8E150F61373705E80C /* TerminalSessionActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalSessionActions.swift; sourceTree = "<group>"; };
 		F303FA061D1A76E58FCA4BA2 /* View+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+iOS.swift"; sourceTree = "<group>"; };
 		F603B55585172E30DD6B2202 /* UURemoteSessionList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UURemoteSessionList.swift; sourceTree = "<group>"; };
@@ -251,6 +253,16 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0264FE8A54540688D0452A40 /* rdkeys */ = {
+			isa = PBXGroup;
+			children = (
+				C69F22392CEED3A9AE18C1C2 /* Configuration */,
+				22258D1EBD19C3137AED9684 /* Resources */,
+			);
+			name = rdkeys;
+			path = ../..;
+			sourceTree = "<group>";
+		};
 		14D7D996D1BAB01EF9284ED1 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
@@ -285,6 +297,17 @@
 				A7D9DB4080541BAAA9B3AD21 /* UURemoteSessionPickerView+iOS.swift */,
 			);
 			path = Terminal;
+			sourceTree = "<group>";
+		};
+		22258D1EBD19C3137AED9684 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				810F7FD4C87FA171E35E76C6 /* EULA */,
+				3218E402827A396730F128A8 /* LICENSE */,
+				6889F95F40A94C684D1D8F6B /* Privacy */,
+				8DE660EAC8BE9FA69DD24DC3 /* Rayon.icon */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		36B36F10784E127846D5F14B /* Home */ = {
@@ -354,6 +377,7 @@
 			isa = PBXGroup;
 			children = (
 				B99EA9A2DAAB20256768C7FB /* Menubar */,
+				F06E325B2AB0316062D4788E /* TitleBarDoubleClick.swift */,
 			);
 			path = macOS;
 			sourceTree = "<group>";
@@ -389,24 +413,13 @@
 			children = (
 				3EE926295E7DCBE4733F2B74 /* Application */,
 				FA52567CAC4B2A7AFB9538C3 /* Extension */,
-				B85E4390A7309ADCBB544C8A /* i18n */,
 				434551F62DEFBA53838368FB /* Interface */,
 				A37369DAE3745999930A472A /* Packages */,
 				EFF598085D15969C6B22DF81 /* PlatformSupport */,
+				0264FE8A54540688D0452A40 /* rdkeys */,
 				AEAB66D47B4D158366C5F582 /* Resources */,
 				F84C3862EBF0821AB072E580 /* Products */,
 			);
-			sourceTree = "<group>";
-		};
-		7AE992F1B540EA8A6CDCC22D /* Resources */ = {
-			isa = PBXGroup;
-			children = (
-				DA860A20B96E130A67B41F4B /* EULA */,
-				65293519366BD1E95B86F2EB /* LICENSE */,
-				39D57C6E58DC89ED5764BDDD /* Privacy */,
-				EB27690124DD7F27B4BFE967 /* Rayon.icon */,
-			);
-			path = Resources;
 			sourceTree = "<group>";
 		};
 		8E7F60AC7E8221975E1E2D90 /* PortForward */ = {
@@ -415,15 +428,6 @@
 				A14E60EDE590AD0C28643352 /* PortForwardView+macOS.swift */,
 			);
 			path = PortForward;
-			sourceTree = "<group>";
-		};
-		8F7180B595CFE451FA5FB179 /* Configuration */ = {
-			isa = PBXGroup;
-			children = (
-				8C6EAA75306436DACC6EFD20 /* Debug.xcconfig */,
-				2208849D95BFB551AABB17A6 /* Release.xcconfig */,
-			);
-			path = Configuration;
 			sourceTree = "<group>";
 		};
 		9DD5892448CE555CEBA098BE /* Identities */ = {
@@ -458,16 +462,6 @@
 				4E43E5CF37DB308FCBC06E53 /* PrivacyInfo.xcprivacy */,
 			);
 			path = Resources;
-			sourceTree = "<group>";
-		};
-		B85E4390A7309ADCBB544C8A /* i18n */ = {
-			isa = PBXGroup;
-			children = (
-				8F7180B595CFE451FA5FB179 /* Configuration */,
-				7AE992F1B540EA8A6CDCC22D /* Resources */,
-			);
-			name = i18n;
-			path = ../..;
 			sourceTree = "<group>";
 		};
 		B8DDD79AF1CECD160BC27BB2 /* Editor */ = {
@@ -505,6 +499,15 @@
 				A33CB8416F5E2EAED9B8F821 /* PickerSheets+macOS.swift */,
 			);
 			path = Common;
+			sourceTree = "<group>";
+		};
+		C69F22392CEED3A9AE18C1C2 /* Configuration */ = {
+			isa = PBXGroup;
+			children = (
+				8CC55448A4AA3B4C451832EA /* Debug.xcconfig */,
+				479203354F74843C86355377 /* Release.xcconfig */,
+			);
+			path = Configuration;
 			sourceTree = "<group>";
 		};
 		D0FE39B2EB2F535203BD18B2 /* Snippets */ = {
@@ -628,6 +631,8 @@
 			knownRegions = (
 				Base,
 				en,
+				"zh-Hans",
+				"zh-Hant",
 			);
 			mainGroup = 6510599AD2C74C381B69F2B1;
 			minimizedProjectReferenceProxies = 1;
@@ -657,13 +662,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				72E5D2C0EF09868BB5B19040 /* Assets.xcassets in Resources */,
-				EBFC3098962D37AC8E997F98 /* EULA in Resources */,
+				077523EBEB97CAA0050E5D10 /* EULA in Resources */,
 				5E9BF46F267A3773FCC04017 /* InfoPlist.xcstrings in Resources */,
-				5023AEB7FE7A6937474FE556 /* LICENSE in Resources */,
+				A5CDF0C8CE0726B9D472A05E /* LICENSE in Resources */,
 				DEACAC819BF45E404F0E7D4B /* Localizable.xcstrings in Resources */,
-				ACD416B6A2125F56CA094199 /* Privacy in Resources */,
+				5443A6F3302722F18752DF95 /* Privacy in Resources */,
 				FD2C5E820251AAB79A955F40 /* PrivacyInfo.xcprivacy in Resources */,
-				07D404175F0B02E70CFAA41B /* Rayon.icon in Resources */,
+				4662EBC762E10B3E28247727 /* Rayon.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -783,6 +788,7 @@
 				D001746A42CCB07D68A973D2 /* TerminalSessionActions.swift in Sources */,
 				4A2538F7D51D2869CCD95EFC /* TerminalTabs+iOS.swift in Sources */,
 				947B0069349D1F17624536E1 /* TerminalView+iOS.swift in Sources */,
+				054971055911DBE26AE15A51 /* TitleBarDoubleClick.swift in Sources */,
 				48D987B8ADF0231604DE02CE /* UIViewController.swift in Sources */,
 				6BE14F2785DBBE3346CE8220 /* UIWindow.swift in Sources */,
 				6E2F952CDC6E4D14D0A1ED1A /* UURemoteAccountSheet+iOS.swift in Sources */,
@@ -837,7 +843,7 @@
 		};
 		89C92FE64C8E2FA0ED4DC676 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 2208849D95BFB551AABB17A6 /* Release.xcconfig */;
+			baseConfigurationReference = 479203354F74843C86355377 /* Release.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;
@@ -934,7 +940,7 @@
 		};
 		CC0510C3660AC32597F6A46E /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8C6EAA75306436DACC6EFD20 /* Debug.xcconfig */;
+			baseConfigurationReference = 8CC55448A4AA3B4C451832EA /* Debug.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				CLANG_ANALYZER_NONNULL = YES;

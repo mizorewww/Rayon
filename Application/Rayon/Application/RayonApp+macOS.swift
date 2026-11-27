@@ -73,6 +73,7 @@
         func applicationDidFinishLaunching(_: Notification) {
             SettingsEffects.start()
             installShortcutMonitor()
+            TitleBarDoubleClick.install()
             installWindowPolicyObservers()
             MenubarTool.shared.restore()
             updateActivationPolicy()
