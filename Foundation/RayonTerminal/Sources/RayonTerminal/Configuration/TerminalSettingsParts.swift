@@ -29,29 +29,27 @@ public struct TerminalSettingsCategory: Identifiable, Hashable, Sendable {
     }
 }
 
-/// One category's settings as a form, with the terminal preview above when
-/// it helps; `header` comes first, for the app's own rows.
+/// One category's settings as a form; `header` comes first, for the app's
+/// own rows. `terminalPreview(isShown:)` around it adds the preview.
 public struct TerminalSettingsPage<Header: View>: View {
     private let category: TerminalSettingsCategory
-    @Binding private var showsPreview: Bool
     private let header: Header
 
-    public init(_ category: TerminalSettingsCategory, showsPreview: Binding<Bool>, @ViewBuilder header: () -> Header) {
+    public init(_ category: TerminalSettingsCategory, @ViewBuilder header: () -> Header) {
         self.category = category
-        _showsPreview = showsPreview
         self.header = header()
     }
 
     public var body: some View {
         if let layout = category.layout {
-            CategoryPage(category: layout, showsPreview: $showsPreview, header: AnyView(header))
+            CategoryPage(category: layout, header: AnyView(header))
         }
     }
 }
 
 public extension TerminalSettingsPage where Header == EmptyView {
-    init(_ category: TerminalSettingsCategory, showsPreview: Binding<Bool>) {
-        self.init(category, showsPreview: showsPreview) { EmptyView() }
+    init(_ category: TerminalSettingsCategory) {
+        self.init(category) { EmptyView() }
     }
 }
 

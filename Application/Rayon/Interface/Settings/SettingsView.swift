@@ -69,7 +69,8 @@ struct SettingsView: View {
                 Divider()
                 Group {
                     if search.isEmpty {
-                        SettingsPageView(page: selected, showsPreview: $showsPreview)
+                        // A new page starts at its top; its rows are all new anyway.
+                        SettingsPageView(page: selected)
                             .id(selected)
                     } else {
                         SettingsSearchResults(query: search) { id in
@@ -78,6 +79,8 @@ struct SettingsView: View {
                         }
                     }
                 }
+                // Outside the page's identity, so its terminal outlives page switches.
+                .terminalPreview(isShown: search.isEmpty && selected.previews && showsPreview)
                 .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
             }
             .toolbar {
@@ -132,7 +135,8 @@ struct SettingsView: View {
         }
 
         private func destination(_ page: SettingsPage) -> some View {
-            SettingsPageView(page: page, showsPreview: $showsPreview)
+            SettingsPageView(page: page)
+                .terminalPreview(isShown: page.previews && showsPreview)
                 .navigationTitle(page.title)
                 .toolbar { ToolbarItem(placement: .primaryAction) { moreMenu(for: page) } }
         }
@@ -148,16 +152,11 @@ struct SettingsView: View {
 
     /// The terminal's tools; Reset only where terminal settings show.
     private func tools(for page: SettingsPage?) -> some View {
-        let terminal: TerminalSettingsCategory? = if case let .terminal(category) = page {
-            category
-        } else {
-            nil
-        }
-        return TerminalSettingsTools(
+        TerminalSettingsTools(
             showsPreview: $showsPreview,
             confirmingReset: $confirmingReset,
-            previewAvailable: terminal?.previews ?? false,
-            resetAvailable: terminal != nil || page == nil
+            previewAvailable: page?.previews ?? false,
+            resetAvailable: page?.isTerminal ?? true
         )
     }
 }
@@ -178,11 +177,10 @@ private struct SettingsPageLabel: View {
 /// A page: Rayon's groups, then on a terminal page its settings.
 private struct SettingsPageView: View {
     let page: SettingsPage
-    @Binding var showsPreview: Bool
 
     var body: some View {
         if case let .terminal(category) = page {
-            TerminalSettingsPage(category, showsPreview: $showsPreview) {
+            TerminalSettingsPage(category) {
                 ForEach(page.groups) { SettingsGroupSection(group: $0) }
             }
         } else {

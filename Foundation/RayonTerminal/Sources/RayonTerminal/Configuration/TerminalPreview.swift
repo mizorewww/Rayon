@@ -5,11 +5,7 @@ import SwiftUI
 /// It shares every terminal's configuration, so it follows each change once
 /// it is applied.
 struct TerminalPreview: View {
-    @State private var terminal: RayonTerminalView = {
-        let terminal = RayonTerminalView()
-        terminal.write(TerminalPreview.sample)
-        return terminal
-    }()
+    let terminal: RayonTerminalView
 
     var body: some View {
         terminal
@@ -17,6 +13,12 @@ struct TerminalPreview: View {
             .allowsHitTesting(false)
             .accessibilityLabel(Text("Terminal preview", bundle: .module))
             .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    static func makeTerminal() -> RayonTerminalView {
+        let terminal = RayonTerminalView()
+        terminal.write(sample)
+        return terminal
     }
 
     /// Text, the 16 palette colors, bold and italic, a selection-like
@@ -33,4 +35,35 @@ struct TerminalPreview: View {
         lines.append("\(esc)1;32mrayon@server\(esc)0m:\(esc)1;34m~/project\(esc)0m$ ")
         return lines.joined(separator: "\r\n")
     }()
+}
+
+/// The preview above the pages it wraps, while `isShown`. It holds one
+/// terminal, made the first time it shows and kept while the pages change,
+/// so wrap it around the page switch rather than put it inside a page.
+private struct TerminalPreviewSlot: ViewModifier {
+    let isShown: Bool
+    @State private var terminal: RayonTerminalView?
+
+    func body(content: Content) -> some View {
+        VStack(spacing: 0) {
+            if isShown, let terminal {
+                TerminalPreview(terminal: terminal)
+                    .frame(height: 168)
+                    .padding([.horizontal, .top])
+                    .transition(.opacity)
+            }
+            content
+        }
+        .onChange(of: isShown, initial: true) { _, shown in
+            if shown, terminal == nil { terminal = TerminalPreview.makeTerminal() }
+        }
+    }
+}
+
+public extension View {
+    /// The live terminal preview above these terminal settings pages while
+    /// `isShown`; see `TerminalSettingsCategory.previews`.
+    func terminalPreview(isShown: Bool) -> some View {
+        modifier(TerminalPreviewSlot(isShown: isShown))
+    }
 }

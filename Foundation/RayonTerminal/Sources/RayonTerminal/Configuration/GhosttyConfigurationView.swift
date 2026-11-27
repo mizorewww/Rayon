@@ -103,6 +103,7 @@ private struct SettingsShell: View {
                 .frame(width: 200)
                 Divider()
                 detail
+                    .terminalPreview(isShown: search.isEmpty && (selected?.previews ?? false) && showsPreview)
                     .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
             }
             .toolbar {
@@ -126,7 +127,8 @@ private struct SettingsShell: View {
                     List {
                         ForEach(categories) { category in
                             NavigationLink {
-                                CategoryPage(category: category, showsPreview: $showsPreview)
+                                CategoryPage(category: category)
+                                    .terminalPreview(isShown: category.previews && showsPreview)
                                     .navigationTitle(category.title)
                                     .toolbar { ToolbarItem(placement: .primaryAction) { moreMenu } }
                             } label: {
@@ -163,7 +165,7 @@ private struct SettingsShell: View {
                 navigation.go(category)
             }
         } else if let selected {
-            CategoryPage(category: selected, showsPreview: $showsPreview)
+            CategoryPage(category: selected)
                 .id(selected.id)
         } else {
             ContentUnavailableView(String(localized: "Choose a category", bundle: .module), systemImage: "slider.horizontal.3")
@@ -186,33 +188,24 @@ private struct SettingsShell: View {
 
 // MARK: - Pages
 
-/// One category as a form: its groups as sections, with the terminal preview above when it helps.
+/// One category as a form: its groups as sections.
 struct CategoryPage: View {
     let category: SettingsLayout.Category
-    @Binding var showsPreview: Bool
     var header: AnyView?
     #if os(macOS)
         @State private var formHeight: CGFloat?
     #endif
 
     var body: some View {
-        VStack(spacing: 0) {
-            if category.previews, showsPreview {
-                TerminalPreview()
-                    .frame(height: 168)
-                    .padding([.horizontal, .top])
-                    .transition(.opacity)
-            }
-            #if os(macOS)
-                if category.keys.contains("keybind") {
-                    shortcutsPage
-                } else {
-                    form(category.groups)
-                }
-            #else
+        #if os(macOS)
+            if category.keys.contains("keybind") {
+                shortcutsPage
+            } else {
                 form(category.groups)
-            #endif
-        }
+            }
+        #else
+            form(category.groups)
+        #endif
     }
 
     private func form(_ groups: [SettingsLayout.Group]) -> some View {

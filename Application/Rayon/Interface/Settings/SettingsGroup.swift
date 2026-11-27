@@ -56,6 +56,15 @@ enum SettingsPage: Hashable {
         }
     }
 
+    var isTerminal: Bool {
+        if case .terminal = self { true } else { false }
+    }
+
+    /// Whether the page shows the live terminal preview.
+    var previews: Bool {
+        if case let .terminal(category) = self { category.previews } else { false }
+    }
+
     /// The list, in its sections: Rayon's pages, the terminal's, then About.
     static let sections: [(title: String, pages: [SettingsPage])] = [
         ("Rayon", [.general, .connection]),
