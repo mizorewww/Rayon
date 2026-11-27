@@ -26,6 +26,18 @@ enum GhosttyConfigImport {
         }
         return (values, skipped)
     }
+
+    #if os(macOS)
+        /// Where Ghostty reads its configuration on a Mac, in the order it
+        /// reads them; a later file wins.
+        static var ghosttyFiles: [URL] {
+            let home = FileManager.default.homeDirectoryForCurrentUser
+            let xdg = ProcessInfo.processInfo.environment["XDG_CONFIG_HOME"].map { URL(filePath: $0, directoryHint: .isDirectory) }
+                ?? home.appending(path: ".config", directoryHint: .isDirectory)
+            let support = home.appending(path: "Library/Application Support/com.mitchellh.ghostty", directoryHint: .isDirectory)
+            return [xdg.appending(path: "ghostty"), support].flatMap { [$0.appending(path: "config"), $0.appending(path: "config.ghostty")] }
+        }
+    #endif
 }
 
 struct ConfigError: LocalizedError {

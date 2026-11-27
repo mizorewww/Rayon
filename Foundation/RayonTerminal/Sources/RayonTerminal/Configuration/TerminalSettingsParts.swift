@@ -76,7 +76,7 @@ public struct TerminalSettingsSearchSections: View {
     }
 }
 
-/// Undo, Redo, the preview and Reset.
+/// Undo, Redo, the preview, Import from Ghostty and Reset.
 public struct TerminalSettingsTools: View {
     @Binding private var showsPreview: Bool
     @Binding private var confirmingReset: Bool
@@ -104,6 +104,12 @@ public struct TerminalSettingsTools: View {
         Toggle(isOn: $showsPreview.animation()) { Label(.init("Preview", bundle: .module), systemImage: "rectangle.topthird.inset.filled") }
             .disabled(!previewAvailable)
             .help(showsPreview ? String(localized: "Hide the terminal preview", bundle: .module) : String(localized: "Show a terminal preview above the settings", bundle: .module))
+        #if os(macOS)
+            Button { settings.importFromGhostty() } label: {
+                Label(.init("Import from Ghostty…", bundle: .module), systemImage: "square.and.arrow.down")
+            }
+            .help(.init("Take the settings Rayon's terminal uses from Ghostty's configuration", bundle: .module))
+        #endif
         Button(role: .destructive) { confirmingReset = true } label: {
             Label(.init("Reset Terminal Settings…", bundle: .module), systemImage: "arrow.counterclockwise")
         }
@@ -114,12 +120,16 @@ public struct TerminalSettingsTools: View {
 
 public extension View {
     /// What goes around terminal settings: why the last change was not
-    /// applied, and the confirmation `TerminalSettingsTools`' Reset asks for.
+    /// applied, what Import from Ghostty did, and the confirmation
+    /// `TerminalSettingsTools`' Reset asks for.
     /// The issue floats over the bottom edge: a safe-area inset there would
     /// make the form measure every row, not just the visible ones, on each
     /// change and page switch.
     func terminalSettingsChrome(confirmingReset: Binding<Bool>) -> some View {
         overlay(alignment: .bottom) { IssueBar() }
+        #if os(macOS)
+            .modifier(GhosttyImportAlert())
+        #endif
             .confirmationDialog(Text("Reset every terminal setting to its default?", bundle: .module), isPresented: confirmingReset) {
                 Button(.init("Reset", bundle: .module), role: .destructive) { TerminalSettings.shared.resetAll() }
             } message: {
@@ -127,3 +137,30 @@ public extension View {
             }
     }
 }
+
+#if os(macOS)
+    /// What `TerminalSettingsTools`' Import from Ghostty found.
+    private struct GhosttyImportAlert: ViewModifier {
+        private var settings: TerminalSettings {
+            .shared
+        }
+
+        func body(content: Content) -> some View {
+            let shown = Binding { settings.lastImport != nil } set: { if !$0 { settings.lastImport = nil } }
+            let result = settings.lastImport
+            content.alert(
+                result?.found == false ? Text("No Ghostty configuration found", bundle: .module) : Text("Imported from Ghostty", bundle: .module),
+                isPresented: shown,
+                presenting: result
+            ) { _ in } message: { result in
+                if !result.found {
+                    Text("Ghostty keeps its configuration in ~/.config/ghostty or ~/Library/Application Support/com.mitchellh.ghostty.", bundle: .module)
+                } else if result.skipped.isEmpty {
+                    Text("Settings imported: \(result.imported)", bundle: .module)
+                } else {
+                    Text("Settings imported: \(result.imported). Skipped, as Rayon's terminal does not use them: \(result.skipped.formatted(.list(type: .and)))", bundle: .module)
+                }
+            }
+        }
+    }
+#endif

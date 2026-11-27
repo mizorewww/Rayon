@@ -2570,6 +2570,22 @@
         }
       }
     },
+    "Ghostty keeps its configuration in ~/.config/ghostty or ~/Library/Application Support/com.mitchellh.ghostty." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ghostty 的配置位于 ~/.config/ghostty 或 ~/Library/Application Support/com.mitchellh.ghostty。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ghostty 的設定位於 ~/.config/ghostty 或 ~/Library/Application Support/com.mitchellh.ghostty。"
+          }
+        }
+      }
+    },
     "Ghostty setting: %@" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2886,6 +2902,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "影像"
+          }
+        }
+      }
+    },
+    "Import from Ghostty…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从 Ghostty 导入…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "從 Ghostty 匯入…"
+          }
+        }
+      }
+    },
+    "Imported from Ghostty" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已从 Ghostty 导入"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已從 Ghostty 匯入"
           }
         }
       }
@@ -3894,6 +3942,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "下一個類別"
+          }
+        }
+      }
+    },
+    "No Ghostty configuration found" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未找到 Ghostty 配置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "找不到 Ghostty 設定"
           }
         }
       }
@@ -5436,6 +5500,38 @@
         }
       }
     },
+    "Settings imported: %lld" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已导入的设置：%lld"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已匯入的設定：%lld"
+          }
+        }
+      }
+    },
+    "Settings imported: %lld. Skipped, as Rayon's terminal does not use them: %@" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已导入的设置：%1$lld。以下选项 Rayon 的终端不使用，已跳过：%2$@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已匯入的設定：%1$lld。以下選項 Rayon 的終端不使用，已略過：%2$@"
+          }
+        }
+      }
+    },
     "Shape" : {
       "localizations" : {
         "zh-Hans" : {
@@ -5784,6 +5880,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "風格集 %lld"
+          }
+        }
+      }
+    },
+    "Take the settings Rayon's terminal uses from Ghostty's configuration" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从 Ghostty 的配置中导入 Rayon 终端使用的设置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "從 Ghostty 的設定中匯入 Rayon 終端使用的設定"
           }
         }
       }

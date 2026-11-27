@@ -259,6 +259,32 @@ public final class TerminalSettings {
         revision += 1
     }
 
+    #if os(macOS)
+        /// What the last "Import from Ghostty…" found, until it is shown.
+        struct GhosttyImport {
+            /// No Ghostty configuration was found.
+            var found = true
+            var imported = 0
+            var skipped: [String] = []
+        }
+
+        var lastImport: GhosttyImport?
+
+        /// Sets the options Ghostty's own configuration on this Mac sets, over
+        /// these, as one change Undo takes back. Options Rayon's terminal
+        /// does not use are skipped and reported.
+        func importFromGhostty() {
+            let texts = GhosttyConfigImport.ghosttyFiles.compactMap { try? String(contentsOf: $0, encoding: .utf8) }
+            guard !texts.isEmpty else {
+                lastImport = GhosttyImport(found: false)
+                return
+            }
+            let parsed = GhosttyConfigImport.parse(texts.joined(separator: "\n"))
+            replace(with: config.merging(parsed.values) { $1 })
+            lastImport = GhosttyImport(imported: parsed.values.count, skipped: parsed.skipped)
+        }
+    #endif
+
     /// Changes that came from elsewhere (another device): applied at once,
     /// over what is being edited here, and not undone by Undo.
     func adopt(_ changes: [String: [String]?]) {
