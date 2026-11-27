@@ -20,9 +20,6 @@
 
         @StateObject private var context: BatchSnippetExecContext
         @State private var selection: RDMachine.ID?
-        @State private var tick = Date()
-
-        private let timer = Timer.publish(every: 0.5, on: .main, in: .common).autoconnect()
 
         init(snippet: RDSnippet, machines: [RDMachine.ID], close: @escaping () -> Void) {
             self.snippet = snippet
@@ -76,9 +73,6 @@
             }
             .frame(width: 820)
             .onAppear { context.start() }
-            .onReceive(timer) { date in
-                if !finished { tick = date }
-            }
         }
 
         var serverList: some View {
@@ -98,7 +92,7 @@
                                     stateLabel(state)
                                 }
                                 Spacer()
-                                Text(duration(state))
+                                duration(state)
                                     .font(.system(size: 12).monospacedDigit())
                                     .foregroundStyle(.rxInkSecondary)
                             }
@@ -128,20 +122,28 @@
             }
         }
 
-        func duration(_ state: BatchSnippetExecContext.MachineState) -> String {
-            let seconds: TimeInterval
+        @ViewBuilder
+        func duration(_ state: BatchSnippetExecContext.MachineState) -> some View {
             switch state {
-            case .waiting: return ""
-            case let .running(since): seconds = tick.timeIntervalSince(since)
-            case let .done(duration), let .failed(duration): seconds = duration
+            case .waiting:
+                EmptyView()
+            case let .running(since):
+                TimelineView(.periodic(from: since, by: 0.1)) { timeline in
+                    Text(Self.seconds(timeline.date.timeIntervalSince(since)))
+                }
+            case let .done(duration), let .failed(duration):
+                Text(Self.seconds(duration))
             }
-            return String(format: "%.1f s", max(0, seconds))
+        }
+
+        static func seconds(_ seconds: TimeInterval) -> String {
+            String(format: "%.1f s", max(0, seconds))
         }
 
         @ViewBuilder var output: some View {
             ZStack {
                 ForEach(machines, id: \.self) { machine in
-                    BatchOutputView(machine: machine, isSelected: selection == machine)
+                    BatchOutputView(machine: machine)
                         .opacity(selection == machine ? 1 : 0)
                         .allowsHitTesting(selection == machine)
                 }
@@ -158,33 +160,26 @@
     /// One server's output in a terminal surface.
     private struct BatchOutputView: View {
         let machine: RDMachine.ID
-        let isSelected: Bool
         @EnvironmentObject var context: BatchSnippetExecContext
 
-        private let timer = Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()
         @State private var terminalId = UUID()
         @State private var terminalView = RayonTerminalView()
-        @State private var drainedAfterFinish = false
 
         private func flushPending() {
             let incoming = context.requestBuffer(for: terminalId, machine: machine)
             if !incoming.isEmpty {
                 terminalView.write(incoming)
             }
-            if context.state(for: machine).isFinished {
-                drainedAfterFinish = true
-            }
         }
 
         var body: some View {
             terminalView
-                .onAppear { flushPending() }
-                .onChange(of: isSelected) { selected in
-                    if selected { flushPending() }
-                }
-                .onReceive(timer) { _ in
-                    guard isSelected || !drainedAfterFinish else { return }
-                    flushPending()
+                // A task, unlike onReceive, keeps one subscription for the
+                // view's life, so an update never drops a throttled flush.
+                .task {
+                    for await _ in context.outputChanges(for: machine).values {
+                        flushPending()
+                    }
                 }
         }
     }

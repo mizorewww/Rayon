@@ -24,6 +24,21 @@ public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendabl
     @Published public private(set) var completedCount: Int = 0
     @Published public private(set) var isRunning: Bool = false
 
+    /// Fires on any thread when a server's output grows.
+    private let outputAppended = PassthroughSubject<RDMachine.ID, Never>()
+
+    /// Once on subscribing, then whenever `machine`'s output grows: at
+    /// most every 50 ms and on the main queue, since a chatty command would
+    /// otherwise wake the view per chunk.
+    public func outputChanges(for machine: RDMachine.ID) -> AnyPublisher<Void, Never> {
+        outputAppended
+            .filter { $0 == machine }
+            .map { _ in }
+            .prepend(())
+            .throttle(for: .milliseconds(50), scheduler: DispatchQueue.main, latest: true)
+            .eraseToAnyPublisher()
+    }
+
     public init(snippet: RDSnippet, machines: [RDMachine.ID]) {
         self.snippet = snippet
         self.machines = machines
@@ -203,6 +218,7 @@ public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendabl
         safeAccess {
             self.lockedAppendToBuffer(output, for: machine)
         }
+        outputAppended.send(machine)
     }
 
     /// Command output as xterm wants it: a bare \n becomes \r\n.
@@ -219,6 +235,7 @@ public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendabl
             lastByte[machine] = previous
             lockedAppendToBuffer(String(decoding: cleaned, as: UTF8.self), for: machine)
         }
+        outputAppended.send(machine)
     }
 
     func beginExec(on machine: RDMachine.ID) async {
@@ -240,6 +257,7 @@ public final class BatchSnippetExecContext: ObservableObject, @unchecked Sendabl
             running[machine] = nil
             return completedMachines.count
         }
+        outputAppended.send(machine)
         onMainThread { [weak self] in
             guard let self else { return }
             self.completedCount = doneCount
