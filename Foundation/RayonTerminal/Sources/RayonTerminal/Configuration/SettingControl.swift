@@ -243,7 +243,7 @@ struct SettingControl: View {
         case let .list(placeholder):
             ListEditor(key: key, placeholder: placeholder)
         case let .flags(features):
-            FlagsEditor(value: value, features: features) { set($0) }
+            FlagsEditor(key: key, value: value, features: features) { set($0) }
         case let .pair(labels):
             PairEditor(value: value, labels: labels, scroll: false, fallback: []) { set($0) }
         case .scrollSpeed:
@@ -373,6 +373,7 @@ struct AddValueField: View {
 
 /// A set of switches written as `a,no-b`: only those that differ from their default.
 private struct FlagsEditor: View {
+    let key: String
     let value: String
     let features: [Setting.Feature]
     let set: (String) -> Void
@@ -390,7 +391,7 @@ private struct FlagsEditor: View {
     var body: some View {
         HStack {
             ForEach(features) { feature in
-                Toggle(feature.label, isOn: Binding(get: { isOn(feature) }, set: { on in
+                Toggle(SettingsLayout.optionName(key, value: feature.id, fallback: feature.label), isOn: Binding(get: { isOn(feature) }, set: { on in
                     var state = Dictionary(uniqueKeysWithValues: features.map { ($0.id, isOn($0)) })
                     state[feature.id] = on
                     set(features.filter { state[$0.id] != $0.defaultValue }

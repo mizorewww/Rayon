@@ -69,21 +69,24 @@ enum SettingsLayout {
                 "font-family-bold-italic", "font-style-bold-italic", "font-synthetic-style",
             ]),
             Group("features", String(localized: "Features and Variations", bundle: .module), keys: [
-                "font-feature", "font-variation", "font-variation-bold", "font-variation-italic", "font-variation-bold-italic",
+                "font-feature", "font-shaping-break", "font-variation", "font-variation-bold", "font-variation-italic", "font-variation-bold-italic",
             ]),
             Group("glyphs", String(localized: "Glyphs", bundle: .module), keys: ["font-codepoint-map", "grapheme-width-method"]),
             Group("metrics", String(localized: "Cell Metrics", bundle: .module), keys: [
                 "adjust-cell-width", "adjust-cell-height", "adjust-font-baseline",
                 "adjust-underline-position", "adjust-underline-thickness",
                 "adjust-strikethrough-position", "adjust-strikethrough-thickness",
-                "adjust-overline-position", "adjust-overline-thickness", "adjust-box-thickness",
+                "adjust-overline-position", "adjust-overline-thickness", "adjust-box-thickness", "adjust-icon-height",
             ]),
         ]),
         Category(id: "colors", title: String(localized: "Colors", bundle: .module), icon: "paintpalette", groups: [
             Group("theme", String(localized: "Theme", bundle: .module), keys: ["theme"]),
-            Group("base", String(localized: "Text and Background", bundle: .module), keys: ["foreground", "background", "bold-color", "minimum-contrast"]),
+            Group("base", String(localized: "Text and Background", bundle: .module), keys: ["foreground", "background", "bold-color", "faint-opacity", "minimum-contrast"]),
             Group("selection", String(localized: "Selection", bundle: .module), keys: ["selection-foreground", "selection-background"]),
-            Group("palette", String(localized: "Palette", bundle: .module), keys: ["palette"]),
+            Group("palette", String(localized: "Palette", bundle: .module), keys: ["palette", "palette-generate", "palette-harmonious"]),
+            Group("find", String(localized: "Find", bundle: .module), keys: [
+                "search-foreground", "search-background", "search-selected-foreground", "search-selected-background",
+            ]),
         ]),
         Category(id: "cursor", title: String(localized: "Cursor", bundle: .module), icon: "character.cursor.ibeam", groups: [
             Group("shape", String(localized: "Shape", bundle: .module), keys: ["cursor-style", "cursor-style-blink", "adjust-cursor-thickness", "adjust-cursor-height"]),
@@ -100,16 +103,29 @@ enum SettingsLayout {
                 "clipboard-trim-trailing-spaces", "selection-clear-on-copy",
                 "selection-clear-on-typing", "clipboard-paste-protection", "clipboard-paste-bracketed-safe",
             ]),
-            Group("mouse", String(localized: "Mouse", bundle: .module), keys: ["mouse-scroll-multiplier", "mouse-hide-while-typing", "mouse-shift-capture", "cursor-click-to-move", "link-url"]),
+            Group("mouse", String(localized: "Mouse", bundle: .module), keys: [
+                "mouse-scroll-multiplier", "scroll-to-bottom", "mouse-hide-while-typing", "mouse-reporting", "mouse-shift-capture",
+                "cursor-click-to-move", "link-url", "right-click-action", "middle-click-action", "click-repeat-interval", "selection-word-chars",
+            ]),
         ]),
-        Category(id: "keyboard", title: String(localized: "Keyboard", bundle: .module), icon: "keyboard", groups: [
-            Group("keybinds", String(localized: "Shortcuts", bundle: .module), keys: ["keybind"]),
-        ]),
+        Category(id: "keyboard", title: String(localized: "Keyboard", bundle: .module), icon: "keyboard", groups: keyboardGroups),
         Category(id: "advanced", title: String(localized: "Advanced", bundle: .module), icon: "slider.horizontal.3", groups: [
             Group("memory", String(localized: "Memory", bundle: .module), keys: ["scrollback-limit", "image-storage-limit"]),
-            Group("compatibility", String(localized: "Compatibility", bundle: .module), keys: ["title", "enquiry-response", "vt-kam-allowed"]),
+            Group("rendering", String(localized: "Rendering", bundle: .module), keys: ["alpha-blending", "window-colorspace"]),
+            Group("compatibility", String(localized: "Compatibility", bundle: .module), keys: [
+                "title", "title-report", "osc-color-report-format", "enquiry-response", "vt-kam-allowed",
+            ]),
         ]),
     ]
+
+    private static var keyboardGroups: [Group] {
+        var groups = [Group("keybinds", String(localized: "Shortcuts", bundle: .module), keys: ["keybind"])]
+        #if os(macOS)
+            // libghostty reads the Option key setting only on macOS.
+            groups.insert(Group("option", String(localized: "Option Key", bundle: .module), keys: ["macos-option-as-alt"]), at: 0)
+        #endif
+        return groups
+    }
 
     static let categoryOfKey: [String: Category] = {
         var result: [String: Category] = [:]
@@ -165,6 +181,26 @@ enum SettingsLayout {
         "cursor-color": (String(localized: "Fill", bundle: .module), String(localized: "Color of the cursor itself.", bundle: .module)),
         "cursor-text": (String(localized: "Text under the cursor", bundle: .module), nil),
         "cursor-opacity": (String(localized: "Opacity", bundle: .module), nil),
+        "font-shaping-break": (String(localized: "Break ligatures at", bundle: .module), String(localized: "Where text is split so no ligature forms across it.", bundle: .module)),
+        "adjust-icon-height": (String(localized: "Icon height", bundle: .module), String(localized: "Largest height of Nerd Font icons, in points or percent; Powerline symbols keep theirs.", bundle: .module)),
+        "faint-opacity": (String(localized: "Faint text opacity", bundle: .module), String(localized: "How opaque dim text is, from 0 (invisible) to 1 (solid).", bundle: .module)),
+        "palette-generate": (String(localized: "Generate extended colors", bundle: .module), String(localized: "Derive colors 16 to 255 from the 16 base colors; colors you set are kept.", bundle: .module)),
+        "palette-harmonious": (String(localized: "Reverse generated colors", bundle: .module), String(localized: "Invert the generated colors, so programs that use them suit light and dark backgrounds.", bundle: .module)),
+        "search-foreground": (String(localized: "Match text", bundle: .module), String(localized: "Text of every match while finding. Cell colors work too.", bundle: .module)),
+        "search-background": (String(localized: "Match background", bundle: .module), nil),
+        "search-selected-foreground": (String(localized: "Current match text", bundle: .module), nil),
+        "search-selected-background": (String(localized: "Current match background", bundle: .module), nil),
+        "scroll-to-bottom": (String(localized: "Scroll to the bottom", bundle: .module), String(localized: "Jump back to the newest line when you type, or when output arrives.", bundle: .module)),
+        "mouse-reporting": (String(localized: "Send the mouse to programs", bundle: .module), String(localized: "Let programs such as vim or tmux receive clicks and scrolling when they ask for them.", bundle: .module)),
+        "right-click-action": (String(localized: "Right-click", bundle: .module), nil),
+        "middle-click-action": (String(localized: "Middle-click", bundle: .module), nil),
+        "click-repeat-interval": (String(localized: "Double-click interval", bundle: .module), String(localized: "Milliseconds between clicks of a double or triple click; 0 follows the system.", bundle: .module)),
+        "selection-word-chars": (String(localized: "Word boundaries", bundle: .module), String(localized: "Characters where selecting a word by double-clicking stops.", bundle: .module)),
+        "macos-option-as-alt": (String(localized: "Use Option as Alt", bundle: .module), String(localized: "Option sends Alt sequences to programs instead of typing special characters. By default this follows the keyboard layout.", bundle: .module)),
+        "alpha-blending": (String(localized: "Blending color space", bundle: .module), String(localized: "How translucent colors and the edges of text are blended.", bundle: .module)),
+        "window-colorspace": (String(localized: "Color space", bundle: .module), String(localized: "How colors set here and by programs are read.", bundle: .module)),
+        "title-report": (String(localized: "Let programs read the title", bundle: .module), String(localized: "Answer programs that ask for the session title, which can hold private text.", bundle: .module)),
+        "osc-color-report-format": (String(localized: "Color report format", bundle: .module), String(localized: "How the terminal answers programs that ask for its colors.", bundle: .module)),
     ]
 
     static func title(_ setting: Setting) -> String {
@@ -191,6 +227,24 @@ enum SettingsLayout {
         "window-padding-color": ["background": String(localized: "Background color", bundle: .module),
         "extend": String(localized: "Extend edge cells", bundle: .module),
         "extend-always": String(localized: "Always extend edge cells", bundle: .module)],
+        "font-shaping-break": ["cursor": String(localized: "Under the cursor", bundle: .module)],
+        "scroll-to-bottom": ["keystroke": String(localized: "On typing", bundle: .module),
+        "output": String(localized: "On output", bundle: .module)],
+        "right-click-action": ["context-menu": String(localized: "Show the menu", bundle: .module),
+        "copy-or-paste": String(localized: "Copy, or paste without a selection", bundle: .module),
+        "copy": String(localized: "Copy", bundle: .module),
+        "paste": String(localized: "Paste", bundle: .module),
+        "ignore": String(localized: "Nothing", bundle: .module)],
+        "middle-click-action": ["primary-paste": String(localized: "Paste the selection", bundle: .module),
+        "ignore": String(localized: "Nothing", bundle: .module)],
+        "macos-option-as-alt": ["true": String(localized: "Both Option keys", bundle: .module),
+        "false": String(localized: "Neither", bundle: .module),
+        "left": String(localized: "Left Option key", bundle: .module),
+        "right": String(localized: "Right Option key", bundle: .module)],
+        "alpha-blending": ["native": String(localized: "Native", bundle: .module),
+        "linear": String(localized: "Linear", bundle: .module),
+        "linear-corrected": String(localized: "Linear, corrected for text", bundle: .module)],
+        "osc-color-report-format": ["none": String(localized: "Don't answer", bundle: .module)],
     ]
 
     static func optionName(_ key: String, value: String, fallback: String) -> String {

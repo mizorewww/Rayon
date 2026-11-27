@@ -724,6 +724,22 @@
         }
       }
     },
+    "Answer programs that ask for the session title, which can hold private text." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "回应请求会话标题的程序；标题可能包含隐私内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "回應請求工作階段標題的程式；標題可能包含隱私內容。"
+          }
+        }
+      }
+    },
     "Appearance" : {
       "localizations" : {
         "zh-Hans" : {
@@ -964,6 +980,22 @@
         }
       }
     },
+    "Blending color space" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "混合色彩空间"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "混合色彩空間"
+          }
+        }
+      }
+    },
     "Blink" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1124,6 +1156,22 @@
         }
       }
     },
+    "Both Option keys" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "两个 Option 键"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "兩個 Option 鍵"
+          }
+        }
+      }
+    },
     "Box drawing and blocks" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1152,6 +1200,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "盲文"
+          }
+        }
+      }
+    },
+    "Break ligatures at" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在此处断开连字"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在此處斷開連字"
           }
         }
       }
@@ -1280,6 +1344,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "字元"
+          }
+        }
+      }
+    },
+    "Characters where selecting a word by double-clicking stops." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连按两次选择单词时，遇到这些字符即停止。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "連按兩下選取單字時，遇到這些字元即停止。"
           }
         }
       }
@@ -1476,6 +1556,38 @@
         }
       }
     },
+    "Color report format" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "颜色报告格式"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顏色回報格式"
+          }
+        }
+      }
+    },
+    "Color space" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "色彩空间"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "色彩空間"
+          }
+        }
+      }
+    },
     "Colors" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1600,6 +1712,54 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "複製和貼上"
+          }
+        }
+      }
+    },
+    "Copy, or paste without a selection" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "拷贝；无所选内容时粘贴"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "拷貝；無所選內容時貼上"
+          }
+        }
+      }
+    },
+    "Current match background" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前匹配项背景"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目前符合項目背景"
+          }
+        }
+      }
+    },
+    "Current match text" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前匹配项文字"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目前符合項目文字"
           }
         }
       }
@@ -1796,6 +1956,22 @@
         }
       }
     },
+    "Derive colors 16 to 255 from the 16 base colors; colors you set are kept." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "根据 16 种基础颜色推导出 16 到 255 号颜色；你设置的颜色会保留。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "根據 16 種基礎顏色推導出 16 到 255 號顏色；你設定的顏色會保留。"
+          }
+        }
+      }
+    },
     "Detect links" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1872,6 +2048,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "不執行任何操作"
+          }
+        }
+      }
+    },
+    "Don't answer" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不回应"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不回應"
+          }
+        }
+      }
+    },
+    "Double-click interval" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连按间隔"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "連按間隔"
           }
         }
       }
@@ -2068,6 +2276,22 @@
         }
       }
     },
+    "Faint text opacity" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暗淡文本不透明度"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暗淡文字不透明度"
+          }
+        }
+      }
+    },
     "Fallback" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2112,6 +2336,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "填充"
+          }
+        }
+      }
+    },
+    "Find" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查找"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尋找"
           }
         }
       }
@@ -2230,6 +2470,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "功能鍵"
+          }
+        }
+      }
+    },
+    "Generate extended colors" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生成扩展颜色"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "產生擴充顏色"
           }
         }
       }
@@ -2506,6 +2762,22 @@
         }
       }
     },
+    "How colors set here and by programs are read." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "如何解读在此设置及由程序设置的颜色。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "如何解讀在此設定及由程式設定的顏色。"
+          }
+        }
+      }
+    },
     "How much heavier strokes are drawn while thickening is on." : {
       "localizations" : {
         "zh-Hans" : {
@@ -2518,6 +2790,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "開啟加粗時筆畫加粗的程度。"
+          }
+        }
+      }
+    },
+    "How opaque dim text is, from 0 (invisible) to 1 (solid)." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暗淡文本的不透明程度，从 0（不可见）到 1（完全不透明）。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暗淡文字的不透明程度，從 0（不可見）到 1（完全不透明）。"
+          }
+        }
+      }
+    },
+    "How the terminal answers programs that ask for its colors." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "程序查询终端颜色时，终端如何回应。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "程式查詢終端機顏色時，終端機如何回應。"
+          }
+        }
+      }
+    },
+    "How translucent colors and the edges of text are blended." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "半透明颜色和文字边缘的混合方式。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "半透明顏色和文字邊緣的混合方式。"
+          }
+        }
+      }
+    },
+    "Icon height" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "图标高度"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "圖示高度"
           }
         }
       }
@@ -2586,6 +2922,22 @@
         }
       }
     },
+    "Invert the generated colors, so programs that use them suit light and dark backgrounds." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "反转生成的颜色，让使用它们的程序在浅色和深色背景下都合适。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "反轉產生的顏色，讓使用它們的程式在淺色和深色背景下都合適。"
+          }
+        }
+      }
+    },
     "Italic font" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2646,6 +2998,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "日文假名"
+          }
+        }
+      }
+    },
+    "Jump back to the newest line when you type, or when output arrives." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在你输入或有新输出时，跳回最新一行。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在你輸入或有新輸出時，跳回最新一行。"
           }
         }
       }
@@ -2826,6 +3194,70 @@
         }
       }
     },
+    "Largest height of Nerd Font icons, in points or percent; Powerline symbols keep theirs." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nerd Font 图标的最大高度，单位为点或百分比；Powerline 符号不受影响。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nerd Font 圖示的最大高度，單位為點或百分比；Powerline 符號不受影響。"
+          }
+        }
+      }
+    },
+    "Left Option key" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "左 Option 键"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "左 Option 鍵"
+          }
+        }
+      }
+    },
+    "Let programs read the title" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "允许程序读取标题"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "允許程式讀取標題"
+          }
+        }
+      }
+    },
+    "Let programs such as vim or tmux receive clicks and scrolling when they ask for them." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当 vim、tmux 等程序请求时，让它们接收点按和滚动。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "當 vim、tmux 等程式請求時，讓它們接收點按和捲動。"
+          }
+        }
+      }
+    },
     "Letters" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2902,6 +3334,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "第 %lld 行：應為 key = value"
+          }
+        }
+      }
+    },
+    "Linear" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "线性"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "線性"
+          }
+        }
+      }
+    },
+    "Linear, corrected for text" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "线性（校正文字）"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "線性（校正文字）"
           }
         }
       }
@@ -2986,6 +3450,38 @@
         }
       }
     },
+    "Match background" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "匹配项背景"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "符合項目背景"
+          }
+        }
+      }
+    },
+    "Match text" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "匹配项文字"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "符合項目文字"
+          }
+        }
+      }
+    },
     "Mathematical operators" : {
       "localizations" : {
         "zh-Hans" : {
@@ -3062,6 +3558,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "為已滾出螢幕的行保留的記憶體。"
+          }
+        }
+      }
+    },
+    "Middle-click" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "中键点按"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "中鍵點按"
+          }
+        }
+      }
+    },
+    "Milliseconds between clicks of a double or triple click; 0 follows the system." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "连按两次或三次时两次点按之间的毫秒数；0 表示跟随系统。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "連按兩下或三下時兩次點按之間的毫秒數；0 表示跟隨系統。"
           }
         }
       }
@@ -3258,6 +3786,22 @@
         }
       }
     },
+    "Native" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "原生"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "原生"
+          }
+        }
+      }
+    },
     "Navigation" : {
       "localizations" : {
         "zh-Hans" : {
@@ -3270,6 +3814,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "導航"
+          }
+        }
+      }
+    },
+    "Neither" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "都不"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "皆不"
           }
         }
       }
@@ -3386,6 +3946,22 @@
         }
       }
     },
+    "Nothing" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无操作"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無動作"
+          }
+        }
+      }
+    },
     "Numbers" : {
       "localizations" : {
         "zh-Hans" : {
@@ -3430,6 +4006,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "開啟（程式可選擇關閉）"
+          }
+        }
+      }
+    },
+    "On output" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输出时"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "輸出時"
+          }
+        }
+      }
+    },
+    "On typing" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "输入时"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "輸入時"
           }
         }
       }
@@ -3526,6 +4134,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Option"
+          }
+        }
+      }
+    },
+    "Option Key" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Option 键"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Option 鍵"
+          }
+        }
+      }
+    },
+    "Option sends Alt sequences to programs instead of typing special characters. By default this follows the keyboard layout." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Option 向程序发送 Alt 序列，而不是输入特殊字符。默认跟随键盘布局。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Option 向程式傳送 Alt 序列，而不是輸入特殊字元。預設跟隨鍵盤配置。"
           }
         }
       }
@@ -3707,6 +4347,22 @@
       }
     },
     "Paste Selection" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粘贴所选内容"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "貼上所選內容"
+          }
+        }
+      }
+    },
+    "Paste the selection" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
@@ -4042,6 +4698,22 @@
         }
       }
     },
+    "Rendering" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "渲染"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "繪製"
+          }
+        }
+      }
+    },
     "Reset" : {
       "localizations" : {
         "zh-Hans" : {
@@ -4234,6 +4906,54 @@
         }
       }
     },
+    "Reverse generated colors" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "反转生成的颜色"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "反轉產生的顏色"
+          }
+        }
+      }
+    },
+    "Right Option key" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "右 Option 键"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "右 Option 鍵"
+          }
+        }
+      }
+    },
+    "Right-click" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "右键点按"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "右鍵點按"
+          }
+        }
+      }
+    },
     "Same as the main font" : {
       "localizations" : {
         "zh-Hans" : {
@@ -4422,6 +5142,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "滾動到頂部"
+          }
+        }
+      }
+    },
+    "Scroll to the bottom" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "滚动到底部"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "捲動到底部"
           }
         }
       }
@@ -4636,6 +5372,22 @@
         }
       }
     },
+    "Send the mouse to programs" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将鼠标发送给程序"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "將滑鼠傳送給程式"
+          }
+        }
+      }
+    },
     "Send to Terminal" : {
       "localizations" : {
         "zh-Hans" : {
@@ -4840,6 +5592,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "顯示全部 256 種顏色"
+          }
+        }
+      }
+    },
+    "Show the menu" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示菜单"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顯示選單"
           }
         }
       }
@@ -5148,6 +5916,22 @@
         }
       }
     },
+    "Text of every match while finding. Cell colors work too." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查找时每个匹配项的文字颜色，也可使用单元格颜色。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尋找時每個符合項目的文字顏色，也可使用儲存格顏色。"
+          }
+        }
+      }
+    },
     "Text size in points. ⌘+ and ⌘− change it for one session." : {
       "localizations" : {
         "zh-Hans" : {
@@ -5420,6 +6204,22 @@
         }
       }
     },
+    "Under the cursor" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "光标处"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "游標處"
+          }
+        }
+      }
+    },
     "Underline" : {
       "localizations" : {
         "zh-Hans" : {
@@ -5496,6 +6296,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "未知操作：%@"
+          }
+        }
+      }
+    },
+    "Use Option as Alt" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将 Option 用作 Alt"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "將 Option 用作 Alt"
           }
         }
       }
@@ -5676,6 +6492,22 @@
         }
       }
     },
+    "Where text is split so no ligature forms across it." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在哪些位置拆分文本，使连字不会跨越该处。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在哪些位置拆分文字，使連字不會跨越該處。"
+          }
+        }
+      }
+    },
     "Whether the cursor blinks; programs can still ask for either." : {
       "localizations" : {
         "zh-Hans" : {
@@ -5736,6 +6568,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "視窗"
+          }
+        }
+      }
+    },
+    "Word boundaries" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "单词边界"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "單字邊界"
           }
         }
       }
