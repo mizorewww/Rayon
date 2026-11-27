@@ -12,6 +12,7 @@ import Combine
 import CoreGraphics
 import Foundation
 import Logger
+import Synchronization
 #if canImport(UIKit)
     import UIKit
 #elseif canImport(AppKit)
@@ -457,62 +458,66 @@ public final class RemoteDesktopSession: ObservableObject, Identifiable {
 
 /// The latest frame and cursor a driver reported, until the main actor
 /// takes them; `post` says when a trip there is to be made.
-final class RemoteDesktopMailbox: @unchecked Sendable {
-    struct Frame {
+final class RemoteDesktopMailbox: Sendable {
+    struct Frame: Sendable {
         var picture: RemoteDesktopPicture?
         var size: CGSize
         var desktopName: String?
     }
 
-    private let lock = NSLock()
-    private var frame: Frame?
-    private var cursor: RemoteCursorInfo??
-    private var scheduled = false
-    private var frameCount = 0
+    private struct State {
+        var frame: Frame?
+        var cursor: RemoteCursorInfo??
+        var scheduled = false
+        var frameCount = 0
+
+        /// True the first time since the last take.
+        mutating func schedule() -> Bool {
+            guard !scheduled else { return false }
+            scheduled = true
+            return true
+        }
+    }
+
+    private let state = Mutex(State())
 
     /// A frame replacing any not yet taken; one without a picture keeps the
     /// waiting one's picture. True when the main actor is to be asked over.
     func post(frame picture: RemoteDesktopPicture?, size: CGSize, desktopName: String?) -> Bool {
-        lock.withLock {
-            frameCount += picture == nil ? 0 : 1
-            frame = Frame(
-                picture: picture ?? frame?.picture,
+        state.withLock { state in
+            state.frameCount += picture == nil ? 0 : 1
+            state.frame = Frame(
+                picture: picture ?? state.frame?.picture,
                 size: size,
-                desktopName: desktopName ?? frame?.desktopName
+                desktopName: desktopName ?? state.frame?.desktopName
             )
-            return schedule()
+            return state.schedule()
         }
     }
 
     func post(cursor new: RemoteCursorInfo?) -> Bool {
-        lock.withLock {
-            cursor = .some(new)
-            return schedule()
+        state.withLock { state in
+            state.cursor = .some(new)
+            return state.schedule()
         }
     }
 
-    private func schedule() -> Bool {
-        guard !scheduled else { return false }
-        scheduled = true
-        return true
-    }
-
     func take() -> (frame: Frame?, cursor: RemoteCursorInfo??) {
-        lock.withLock {
+        state.withLock { state in
             defer {
-                frame = nil
-                cursor = nil
-                scheduled = false
+                state.frame = nil
+                state.cursor = nil
+                state.scheduled = false
             }
-            return (frame, cursor)
+            return (state.frame, state.cursor)
         }
     }
 
     /// Frames posted since the last call, taken or skipped.
     func takeFrameCount() -> Int {
-        lock.withLock {
-            defer { frameCount = 0 }
-            return frameCount
+        state.withLock { state in
+            defer { state.frameCount = 0 }
+            return state.frameCount
         }
     }
 }
