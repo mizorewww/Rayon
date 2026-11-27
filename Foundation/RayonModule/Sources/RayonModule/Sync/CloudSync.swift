@@ -189,7 +189,11 @@ public actor CloudSync {
         guard let engine else { return }
         // Signed out, the engine waits for a sign-in, which it reports as
         // an account change; fetching now would only fail.
-        guard await (try? CKContainer(identifier: Self.containerIdentifier).accountStatus()) == .available else {
+        let available = await (try? CKContainer(identifier: Self.containerIdentifier).accountStatus()) == .available
+        // Sync may have been turned off, or started afresh, while this
+        // waited: that engine's outcome is no longer the status.
+        guard engine === self.engine else { return }
+        guard available else {
             publish(.noAccount)
             return
         }
@@ -197,10 +201,12 @@ public actor CloudSync {
         do {
             try await engine.fetchChanges()
             try await engine.sendChanges()
+            guard engine === self.engine else { return }
             lastSync = Date()
             publish(.idle(lastSync: lastSync))
         } catch {
             Logger.syncEngine.errorFile("sync failed: \(error)")
+            guard engine === self.engine else { return }
             publish(.failed(error.localizedDescription))
         }
     }
