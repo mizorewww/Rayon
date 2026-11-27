@@ -290,12 +290,11 @@ public struct SFTPSession: Sendable {
     }
 
     /// Deletes a remote file, link or folder with everything in it.
+    /// A link is removed itself, never what it points to.
     public func removeItem(at path: String, onItem: @escaping @Sendable (String) -> Void) async throws {
-        let parent = (path as NSString).deletingLastPathComponent
-        let name = (path as NSString).lastPathComponent
-        let entry = try await entries(at: parent.isEmpty ? "/" : parent).first { $0.name == name }
+        let entry = try await SFTPEntry(name: (path as NSString).lastPathComponent, attributes: client.getLinkAttributes(at: path))
         onItem(path)
-        guard let entry, entry.isDirectory else {
+        guard entry.isDirectory else {
             try await client.remove(at: path)
             return
         }

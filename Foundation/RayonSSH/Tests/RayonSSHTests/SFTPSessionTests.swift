@@ -44,4 +44,18 @@ final class SFTPSessionTests: XCTestCase {
             XCTAssertEqual(tree.openFolderHandles, 0, "listings left folder handles open")
         }
     }
+
+    /// Deleting asks the server about the item itself (lstat): listing
+    /// its parent to find it cost a listing of a folder that may be huge.
+    func testDeletingAFolderDoesNotListItsParent() async throws {
+        let tree = FixedTreeSFTP([
+            "/home": [("sub", nil), ("other.txt", "x")],
+            "/home/sub": [("a.txt", "a")],
+        ])
+        try await withSFTP(tree) { sftp in
+            try await sftp.removeItem(at: "/home/sub") { _ in }
+        }
+        XCTAssertEqual(tree.openedFolders, ["/home/sub"])
+        XCTAssertEqual(tree.removedPaths, ["/home/sub/a.txt", "/home/sub"])
+    }
 }
