@@ -50,13 +50,6 @@
                     } label: {
                         Label("Create New Identity", systemImage: "arrow.right")
                     }
-                    .background(
-                        NavigationLink(isActive: $openCreate) {
-                            EditIdentityView()
-                        } label: {
-                            Group {}
-                        }
-                    )
                     ForEach(store.identities) { identity in
                         Button {
                             rawSelection = identity.id
@@ -78,6 +71,9 @@
                 }
             }
             .rxGroupedList()
+            .navigationDestination(isPresented: $openCreate) {
+                EditIdentityView()
+            }
             .navigationTitle("Choose Identity")
             .toolbar {
                 ToolbarItem {
