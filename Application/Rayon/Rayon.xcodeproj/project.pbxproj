@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		01B3BB8C084B19623AA6156B /* MachineStatusView in Frameworks */ = {isa = PBXBuildFile; productRef = BACEAFD2486E184D130E727E /* MachineStatusView */; };
+		042B279CAC3ADE5A1B0B55DC /* AppearancePreference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B0CDF0BE6DB5E86E88DB85F /* AppearancePreference.swift */; };
 		048A7AD1861084413CA66F29 /* SnippetEditorSheet+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF75232AABE500F80C3CC7AC /* SnippetEditorSheet+macOS.swift */; };
 		0ADA48FB160349357DE0DE10 /* HomeView+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = B32D984E65F989A5003BC29D /* HomeView+macOS.swift */; };
 		0BAC8614302AC7BBAF348DA6 /* FileTransferView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0C5A72EDFD1768CEE932329 /* FileTransferView+iOS.swift */; };
@@ -119,6 +120,7 @@
 		2149ACAE9A3E09AAC44779A1 /* MachineStatusView */ = {isa = PBXFileReference; lastKnownFileType = folder; name = MachineStatusView; path = ../../Foundation/MachineStatusView; sourceTree = SOURCE_ROOT; };
 		223A263F84AFBF12F7AC4E89 /* DataBackupSettings+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DataBackupSettings+iOS.swift"; sourceTree = "<group>"; };
 		2AAD00A41DF855F9DDB521E4 /* IdentityView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IdentityView+iOS.swift"; sourceTree = "<group>"; };
+		2B0CDF0BE6DB5E86E88DB85F /* AppearancePreference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppearancePreference.swift; sourceTree = "<group>"; };
 		30519B949F1845B161D0DBFC /* UURemoteAccountSheet+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UURemoteAccountSheet+iOS.swift"; sourceTree = "<group>"; };
 		344160116EA4AF081CD63AF6 /* FileTable+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FileTable+macOS.swift"; sourceTree = "<group>"; };
 		3989544BFD084373F04B4B75 /* UIBridge+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIBridge+iOS.swift"; sourceTree = "<group>"; };
@@ -233,6 +235,7 @@
 			isa = PBXGroup;
 			children = (
 				92DD35551F8B3F531FAF2D1E /* AgreementView+iOS.swift */,
+				2B0CDF0BE6DB5E86E88DB85F /* AppearancePreference.swift */,
 				223A263F84AFBF12F7AC4E89 /* DataBackupSettings+iOS.swift */,
 				68766FBCCF75FCB358204392 /* LicenseView+iOS.swift */,
 				521179FEE31987BB065C6D42 /* LogView+iOS.swift */,
@@ -649,6 +652,7 @@
 			files = (
 				A80401BE334A8A47C965D604 /* AgreementView+iOS.swift in Sources */,
 				E4C3CDB570BD4945D7125016 /* AppRouter+macOS.swift in Sources */,
+				042B279CAC3ADE5A1B0B55DC /* AppearancePreference.swift in Sources */,
 				4FD42A8B6924024414881F02 /* BatchRunSheet+macOS.swift in Sources */,
 				57D4484469353BC6F0FADC21 /* Bench+macOS.swift in Sources */,
 				270027F48F064062933EE3E4 /* ContentView+iOS.swift in Sources */,

@@ -60,38 +60,6 @@
         }
     }
 
-    /// Light or dark, applied to every window of the app.
-    enum AppearancePreference: String, CaseIterable {
-        case system
-        case light
-        case dark
-
-        static let key = "me.mizorewww.rayon.appearance"
-
-        var style: UIUserInterfaceStyle {
-            switch self {
-            case .system: return .unspecified
-            case .light: return .light
-            case .dark: return .dark
-            }
-        }
-
-        @MainActor
-        func apply() {
-            for scene in UIApplication.shared.connectedScenes {
-                for window in (scene as? UIWindowScene)?.windows ?? [] {
-                    window.overrideUserInterfaceStyle = style
-                }
-            }
-        }
-
-        @MainActor
-        static func applyStored() {
-            let raw = UserDefaults.standard.string(forKey: key) ?? AppearancePreference.system.rawValue
-            (AppearancePreference(rawValue: raw) ?? .system).apply()
-        }
-    }
-
     private struct AppearanceSettings: View {
         @ObservedObject var store = RayonStore.shared
         @AppStorage(AppearancePreference.key) private var appearance = AppearancePreference.system.rawValue

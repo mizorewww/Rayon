@@ -69,30 +69,6 @@
         }
     }
 
-    /// Appearance follows the system unless the user picks Light or Dark.
-    enum AppearancePreference: String, CaseIterable {
-        case system
-        case light
-        case dark
-
-        static let key = "me.mizorewww.rayon.appearance"
-
-        @MainActor
-        func apply() {
-            switch self {
-            case .light: NSApp.appearance = NSAppearance(named: .aqua)
-            case .dark: NSApp.appearance = NSAppearance(named: .darkAqua)
-            case .system: NSApp.appearance = nil
-            }
-        }
-
-        @MainActor
-        static func applyStored() {
-            let raw = UserDefaults.standard.string(forKey: key) ?? AppearancePreference.system.rawValue
-            (AppearancePreference(rawValue: raw) ?? .system).apply()
-        }
-    }
-
     private struct AppearanceSettings: View {
         @EnvironmentObject var store: RayonStore
         @AppStorage(AppearancePreference.key) private var appearance = AppearancePreference.system.rawValue
