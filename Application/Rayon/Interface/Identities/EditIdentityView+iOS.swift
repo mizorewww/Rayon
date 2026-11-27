@@ -267,8 +267,8 @@
                         .textInputAutocapitalization(.never)
                         .disableAutocorrection(true)
                     Button {
-                        RayonUtil.deviceOwnershipAuthenticate { success in
-                            if success { showPassword = true }
+                        Task {
+                            showPassword = await DeviceOwner.confirm("show the identity's password")
                         }
                     } label: {
                         Label("Show Password", systemImage: "eye")

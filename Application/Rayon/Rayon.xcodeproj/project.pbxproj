@@ -95,6 +95,7 @@
 		E49C84E7C6517A21CDE81547 /* RayonApp+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5EAAB20C299B02DDA17537E0 /* RayonApp+macOS.swift */; };
 		E4C3CDB570BD4945D7125016 /* AppRouter+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7109E63DD0F7034B6B1746DA /* AppRouter+macOS.swift */; };
 		E6094927BFDE83EB490D228A /* RayonCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = B24EC3D2BE3F2C512AF4CE33 /* RayonCommands.swift */; };
+		EB69FC54AB1E3106B2011446 /* DeviceOwner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94CA35B5C9475DA7487AB2ED /* DeviceOwner.swift */; };
 		ED4DF613CEE5D14BCBFC5161 /* SettingsView+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54BE7E40D29FE857801EC1F /* SettingsView+macOS.swift */; };
 		F1F9247D4AC81E428C168D8B /* PageScaffold+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEB68BCA67DCAE0F20F5EA19 /* PageScaffold+macOS.swift */; };
 		F98D576A6F79A246C851A6E3 /* SymbolPicker in Frameworks */ = {isa = PBXBuildFile; productRef = 679D5A8D992D398335F44C83 /* SymbolPicker */; };
@@ -165,6 +166,7 @@
 		92DD35551F8B3F531FAF2D1E /* AgreementView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AgreementView+iOS.swift"; sourceTree = "<group>"; };
 		93881526957F9DFDC399ED6F /* Bench+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Bench+macOS.swift"; sourceTree = "<group>"; };
 		942DABEC7925BEBD536CD478 /* RayonUtil+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RayonUtil+iOS.swift"; sourceTree = "<group>"; };
+		94CA35B5C9475DA7487AB2ED /* DeviceOwner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceOwner.swift; sourceTree = "<group>"; };
 		950037C40D23B72981F9865C /* RemoteDesktopPage+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RemoteDesktopPage+macOS.swift"; sourceTree = "<group>"; };
 		9A9460495DCE9140203D7321 /* SidebarView+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SidebarView+macOS.swift"; sourceTree = "<group>"; };
 		A14E60EDE590AD0C28643352 /* PortForwardView+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PortForwardView+macOS.swift"; sourceTree = "<group>"; };
@@ -529,6 +531,7 @@
 			isa = PBXGroup;
 			children = (
 				112CCB0F9CAC4F74C4645A77 /* UIBridge */,
+				94CA35B5C9475DA7487AB2ED /* DeviceOwner.swift */,
 				87FA1474A2662FED06098CC1 /* FilePicker+iOS.swift */,
 				942DABEC7925BEBD536CD478 /* RayonUtil+iOS.swift */,
 				AB1CDB5A33CB5117A4A6D17F /* SheetPresenter+macOS.swift */,
@@ -659,6 +662,7 @@
 				3FE03A70B4EF433EDFB54560 /* DashboardView+iOS.swift in Sources */,
 				533AF44F6B568F744DDF671F /* DashboardView+macOS.swift in Sources */,
 				141B9A3D5BB5AB274C289C47 /* DataBackupSettings+iOS.swift in Sources */,
+				EB69FC54AB1E3106B2011446 /* DeviceOwner.swift in Sources */,
 				6E7C7FE185C76D7B61725220 /* DoubleConfirm+iOS.swift in Sources */,
 				2341116A566B56CBE01E803F /* DoubleConfirm+macOS.swift in Sources */,
 				FA024B8E85B605035B85E019 /* EditIdentityView+iOS.swift in Sources */,

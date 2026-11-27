@@ -7,7 +7,6 @@
 
 #if os(iOS)
     import Foundation
-    import LocalAuthentication
     import RayonModule
     import SwiftUI
     import UIKit
@@ -16,27 +15,6 @@
 
     @MainActor
     enum RayonUtil {
-        typealias DeviceOwnershipCheckSuccess = Bool
-        /// Passes when the device has no passcode: there is no owner to check.
-        static func deviceOwnershipAuthenticate(onComplete: @escaping (DeviceOwnershipCheckSuccess) -> Void) {
-            let context = LAContext()
-            guard context.canEvaluatePolicy(.deviceOwnerAuthentication, error: nil) else {
-                onComplete(true)
-                return
-            }
-            Task {
-                do {
-                    onComplete(try await context.evaluatePolicy(
-                        .deviceOwnerAuthentication,
-                        localizedReason: "Performing privacy sensitive operation requires device ownership authenticated"
-                    ))
-                } catch {
-                    debugPrint(#function, "failure", error.localizedDescription)
-                    onComplete(false)
-                }
-            }
-        }
-
         /// Presents a SwiftUI view in a form-sheet hosting controller over the
         /// topmost view controller. Shared by all modal picker flows. When the
         /// window cannot take a modal right now — a sheet is still animating

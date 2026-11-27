@@ -6,7 +6,6 @@
 //
 
 #if os(macOS)
-    import LocalAuthentication
     import RayonModule
     import SwiftUI
 
@@ -492,22 +491,10 @@
                         if revealed {
                             revealed = false
                         } else {
-                            Task { revealed = await Self.ownerConfirms() }
+                            Task { revealed = await DeviceOwner.confirm("show the identity's password") }
                         }
                     }
                 }
-            }
-        }
-
-        /// Touch ID, a paired watch or the login password. A Mac with none of
-        /// them set up cannot confirm, and the password stays hidden.
-        @MainActor
-        static func ownerConfirms() async -> Bool {
-            let context = LAContext()
-            do {
-                return try await context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: "show the identity's password")
-            } catch {
-                return false
             }
         }
     }
