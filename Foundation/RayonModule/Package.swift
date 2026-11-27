@@ -57,6 +57,7 @@ let package = Package(
             dependencies: [
                 "RayonModule",
                 "RayonSSH",
+                "RayonPTY",
                 .product(name: "BigInt", package: "BigInt"),
             ],
             resources: [.copy("Fixtures")]

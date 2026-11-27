@@ -5,8 +5,26 @@
 
 #if os(macOS)
     import Darwin
+    import os
     @testable import RayonModule
+    import RayonPTY
     import XCTest
+
+    private let testProcess = getpid()
+    /// Written to by a signal handler of this process that runs in a
+    /// forked child, before the child has reset its handlers.
+    private let inChildMarker: (read: Int32, write: Int32) = {
+        var fds: [Int32] = [0, 0]
+        pipe(&fds)
+        _ = fcntl(fds[0], F_SETFL, O_NONBLOCK)
+        return (fds[0], fds[1])
+    }()
+
+    private func markIfInChild(_: Int32) {
+        guard getpid() != testProcess else { return }
+        var byte: UInt8 = 1
+        _ = write(inChildMarker.write, &byte, 1)
+    }
 
     final class LocalPseudoTerminalTests: XCTestCase {
         /// The spawned shell owns its terminal (job control needs that), runs
@@ -93,6 +111,49 @@
             var status: Int32 = 0
             waitpid(terminal.pid, &status, 0)
             XCTAssertEqual(output.trimmingCharacters(in: .whitespacesAndNewlines), "0", "the child starts with signals blocked")
+        }
+
+        /// A signal arriving between fork and the child resetting its
+        /// handlers ran this process's handler in the child, on memory
+        /// another thread may have held when it forked. Resizing the
+        /// terminal sends SIGWINCH to the child that just made it its own:
+        /// while children spawn on it, none may run the handler.
+        func testNoHandlerOfThisProcessRunsInTheChild() throws {
+            _ = (testProcess, inChildMarker)
+            var master: Int32 = -1
+            var slave: Int32 = -1
+            var name = [CChar](repeating: 0, count: 128)
+            XCTAssertEqual(openpty(&master, &slave, &name, nil, nil), 0)
+            close(slave)
+            defer { close(master) }
+            let previous = signal(SIGWINCH, markIfInChild)
+            defer { signal(SIGWINCH, previous) }
+
+            let resizing = OSAllocatedUnfairLock(initialState: true)
+            let resized = DispatchSemaphore(value: 0)
+            Thread.detachNewThread { [master] in
+                var size = winsize(ws_row: 24, ws_col: 80, ws_xpixel: 0, ws_ypixel: 0)
+                while resizing.withLock({ $0 }) {
+                    size.ws_col = size.ws_col == 80 ? 81 : 80
+                    _ = ioctl(master, TIOCSWINSZ, &size)
+                }
+                resized.signal()
+            }
+            let argv: [UnsafeMutablePointer<CChar>?] = [strdup("true"), nil]
+            let envp: [UnsafeMutablePointer<CChar>?] = [nil]
+            defer { argv.forEach { free($0) } }
+            for _ in 0 ..< 100 {
+                let pid = rayon_pty_spawn("/usr/bin/true", argv, envp, name, "/")
+                XCTAssertGreaterThan(pid, 0)
+                var status: Int32 = 0
+                if pid > 0 { waitpid(pid, &status, 0) }
+            }
+            resizing.withLock { $0 = false }
+            resized.wait()
+
+            var marks = [UInt8](repeating: 0, count: 4096)
+            let ran = read(inChildMarker.read, &marks, marks.count)
+            XCTAssertLessThanOrEqual(ran, 0, "a handler of this process ran in \(ran) children")
         }
 
         /// A shell that outlives the hangup (here it ignores it) is reaped
