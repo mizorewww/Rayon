@@ -9,9 +9,10 @@
 import RayonDesign
 import SwiftUI
 
-/// A text field with its label: beside it on the Mac, as a Form's text
-/// field is; on iPhone and iPad, where a Form shows only the prompt, the
-/// label leads the row and the text trails it.
+/// A text field with its label leading the row and its text left-aligned.
+/// LabeledContent around a field whose own label is hidden: a labelled
+/// field in a grouped Form right-aligns its text on the Mac whatever its
+/// alignment, and shows only the prompt on iPhone and iPad.
 struct FormField: View {
     let title: LocalizedStringResource
     @Binding var text: String
@@ -29,17 +30,16 @@ struct FormField: View {
     }
 
     var body: some View {
-        #if os(macOS)
+        LabeledContent {
             field
-        #else
-            LabeledContent {
-                field
-                    .multilineTextAlignment(.trailing)
-                    .textInputAutocapitalization(code ? .never : nil)
-            } label: {
-                Text(title)
-            }
-        #endif
+                .labelsHidden()
+                .multilineTextAlignment(.leading)
+            #if os(iOS)
+                .textInputAutocapitalization(code ? .never : nil)
+            #endif
+        } label: {
+            Text(title)
+        }
     }
 
     @ViewBuilder private var field: some View {

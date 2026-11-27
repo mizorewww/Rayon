@@ -63,6 +63,7 @@ struct ServerEditor: View {
                     HStack {
                         TextField("Folder", text: $draft.folder, prompt: Text("Default"))
                             .labelsHidden()
+                            .multilineTextAlignment(.leading)
                         if !existingFolders.isEmpty {
                             Menu {
                                 Button("Default") { draft.folder = "" }
@@ -84,6 +85,7 @@ struct ServerEditor: View {
                 Section("Last banner") {
                     Text(banner.isEmpty ? "None" : "\(banner)")
                         .font(.rxCode)
+                        .multilineTextAlignment(.leading)
                         .foregroundStyle(banner.isEmpty ? Color.rxInkSecondary : Color.rxInk)
                         .textSelection(.enabled)
                 }

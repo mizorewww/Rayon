@@ -159,6 +159,7 @@ struct IdentityEditor: View {
             if !trimmedPublicKey.isEmpty {
                 Text(trimmedPublicKey)
                     .font(.rxCode)
+                    .multilineTextAlignment(.leading)
                     .lineLimit(3)
                     .truncationMode(.middle)
                     .textSelection(.enabled)

@@ -130,6 +130,7 @@ struct FolderHeader: View {
         let folder = store.folder(named: name)
         HStack(spacing: RX.Space.s2) {
             Label(name.isEmpty ? "Default" : "\(name)", systemImage: folder?.isLinked == true ? "link" : "folder")
+                .lineLimit(1)
             Text("\(count)")
                 .monospacedDigit()
                 .foregroundStyle(.rxInkSecondary)
@@ -159,7 +160,10 @@ struct FolderHeader: View {
                 #endif
             }
         }
-        .contextMenu { if !name.isEmpty { FolderMenuItems(name: name) } }
+        #if os(iOS)
+            .font(.footnote.weight(.semibold))
+        #endif
+            .contextMenu { if !name.isEmpty { FolderMenuItems(name: name) } }
     }
 }
 
