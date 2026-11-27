@@ -229,6 +229,10 @@
                         RXField("Forward through") {
                             Picker("Forward through", selection: $machine) {
                                 Text("Choose a server").tag(RDMachine.ID?.none)
+                                // A server deleted since: a tagged row, or the Picker draws blank.
+                                if let missing = machine, store.machine(missing) == nil {
+                                    Text("Choose a server").tag(RDMachine.ID?.some(missing))
+                                }
                                 ForEach(store.machines) { server in
                                     Text(server.name).tag(RDMachine.ID?.some(server.id))
                                 }

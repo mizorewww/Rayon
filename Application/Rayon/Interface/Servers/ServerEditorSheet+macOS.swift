@@ -176,6 +176,10 @@
                     RXField("Identity") {
                         Picker("Identity", selection: $draft.identity) {
                             Text("Automatic").tag(RDIdentity.ID?.none)
+                            // An identity deleted since: a tagged row, or the Picker draws blank.
+                            if let missing = draft.identity, store.identity(missing) == nil {
+                                Text("Choose…").tag(RDIdentity.ID?.some(missing))
+                            }
                             ForEach(store.identities) { item in
                                 Text(item.group.isEmpty ? item.username : "\(item.username) · \(item.group)")
                                     .tag(RDIdentity.ID?.some(item.id))
@@ -267,6 +271,10 @@
                 RXField("UU Remote device") {
                     Picker("UU Remote device", selection: $draft.uuDeviceID) {
                         Text("Manual / assist").tag("")
+                        // A device no longer on the account: a tagged row, or the Picker draws blank.
+                        if !draft.uuDeviceID.isEmpty, !uuAccount.desktopDevices.contains(where: { $0.deviceID == draft.uuDeviceID }) {
+                            Text("\(draft.uuDeviceID) · not on this account").tag(draft.uuDeviceID)
+                        }
                         ForEach(uuAccount.desktopDevices, id: \.deviceID) { device in
                             Text("\(device.alias.isEmpty ? device.deviceID : device.alias) · \(UUDeviceInfo.platformName(device.platform))")
                                 .tag(device.deviceID)
