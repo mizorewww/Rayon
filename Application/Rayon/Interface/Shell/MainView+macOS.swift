@@ -13,6 +13,9 @@
         @ObservedObject var router = AppRouter.shared
 
         @State private var openLicenseAgreement = false
+        /// This window's number: the shared router's sheet shows only in
+        /// the window that asked for it.
+        @State private var window: Int?
 
         var body: some View {
             NavigationSplitView(columnVisibility: $router.columnVisibility) {
@@ -49,7 +52,11 @@
                 }
             }
             .animation(.easeOut(duration: 0.2), value: store.globalProgressInPresent)
-            .sheet(item: $router.sheet) { sheet in
+            .background(WindowNumberReader(number: $window))
+            .sheet(item: Binding(
+                get: { router.sheet.flatMap { $0.window == nil || $0.window == window ? $0 : nil } },
+                set: { if $0 == nil { router.sheet = nil } }
+            )) { sheet in
                 sheet.content {
                     // A sheet that replaced this one stays up.
                     if router.sheet?.id == sheet.id { router.sheet = nil }
@@ -139,4 +146,31 @@
         }
     }
 
+    /// Reads the number of the window a view is in.
+    private struct WindowNumberReader: NSViewRepresentable {
+        @Binding var number: Int?
+
+        func makeNSView(context _: Context) -> Probe {
+            Probe(number: $number)
+        }
+
+        func updateNSView(_: Probe, context _: Context) {}
+
+        final class Probe: NSView {
+            let number: Binding<Int?>
+
+            init(number: Binding<Int?>) {
+                self.number = number
+                super.init(frame: .zero)
+            }
+
+            @available(*, unavailable)
+            required init?(coder _: NSCoder) { nil }
+
+            override func viewDidMoveToWindow() {
+                super.viewDidMoveToWindow()
+                number.wrappedValue = window?.windowNumber
+            }
+        }
+    }
 #endif

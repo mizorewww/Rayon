@@ -379,9 +379,11 @@
             }
         }
 
-        /// Shows `content` as the main window's sheet; `dismiss` closes it.
+        /// Shows `content` as a sheet on the main window in front (the one
+        /// a sheet or menu was used in); `dismiss` closes it.
         func present<Content: View>(@ViewBuilder _ content: @escaping (_ dismiss: @escaping () -> Void) -> Content) {
-            sheet = WindowSheet { AnyView(content($0)) }
+            let window = NSApp.mainWindow ?? MainWindow.ordinaryWindows.first(where: \.isVisible)
+            sheet = WindowSheet(window: window?.windowNumber) { AnyView(content($0)) }
         }
 
         func openSettings(_ category: String = SettingsCategory.general) {
@@ -392,6 +394,9 @@
 
     struct WindowSheet: Identifiable {
         let id = UUID()
+        /// The number of the window it shows in; nil, with no window open,
+        /// shows it in the first one that opens.
+        let window: Int?
         let content: (_ dismiss: @escaping () -> Void) -> AnyView
     }
 
