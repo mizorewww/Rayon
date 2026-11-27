@@ -76,14 +76,3 @@ public extension View {
         #endif
     }
 }
-
-private struct RXControlsAtRestKey: EnvironmentKey {
-    static let defaultValue = false
-}
-
-public extension EnvironmentValues {
-    var rxControlsAtRest: Bool {
-        get { self[RXControlsAtRestKey.self] }
-        set { self[RXControlsAtRestKey.self] = newValue }
-    }
-}

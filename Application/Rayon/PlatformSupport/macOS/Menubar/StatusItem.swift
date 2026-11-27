@@ -170,7 +170,6 @@
                     self?.closePopover()
                 }
                 .environmentObject(RayonStore.shared)
-                .environment(\.rxControlsAtRest, true)
 
                 let hosting = NSHostingController(rootView: content)
                 let pop = NSPopover()

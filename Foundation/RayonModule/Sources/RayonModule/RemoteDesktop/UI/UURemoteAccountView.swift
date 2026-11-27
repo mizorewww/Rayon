@@ -183,12 +183,11 @@ public struct UURemoteAccountView: View {
                     .foregroundStyle(Color.rxInkSecondary)
                 Spacer()
             }
-            RXSegmented(
-                selection: $loginMode,
-                options: LoginMode.allCases.map { .init($0, $0.rawValue) },
-                caps: false,
-                fullWidth: true
-            )
+            Picker("Sign in with", selection: $loginMode) {
+                ForEach(LoginMode.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
             switch loginMode {
             case .qr: qrFields
             case .sms: smsFields

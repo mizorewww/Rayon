@@ -235,17 +235,20 @@
                     .buttonStyle(.rx(.primary, size: .small))
                     .keyboardShortcut("s", modifiers: .command)
                     .disabled(!draft.differs(from: original) || !draft.isValid)
-                    RXMenuButton("More", systemImage: "ellipsis", kind: .plain, size: .small, iconOnly: true) {
+                    Menu {
                         if !draft.publicKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                            RXMenuItem("Deploy Public Key (ssh-copy-id)…") {
+                            Button("Deploy Public Key (ssh-copy-id)…") {
                                 IdentityActions.deployPublicKey(draft.publicKey, identityID: identity)
                             }
                             Divider()
                         }
-                        RXMenuItem("Duplicate") { IdentityActions.duplicate(identity) }
+                        Button("Duplicate") { IdentityActions.duplicate(identity) }
                         Divider()
-                        RXMenuItem("Delete…", role: .destructive) { IdentityActions.delete(identity) }
+                        Button("Delete…", role: .destructive) { IdentityActions.delete(identity) }
+                    } label: {
+                        Label("More", systemImage: "ellipsis")
                     }
+                    .moreMenu()
                 }
                 IdentityForm(draft: $draft)
                     .padding(.top, RX.Space.s3)
@@ -292,11 +295,13 @@
                     }
                 }
                 RXField("Authentication") {
-                    RXSegmented(selection: $draft.method, options: [
-                        .init(.keyPair, "Key pair"),
-                        .init(.password, "Password"),
-                        .init(.sshAgent, "SSH Agent"),
-                    ], caps: false, fullWidth: true)
+                    Picker("Authentication", selection: $draft.method) {
+                        Text("Key pair").tag(IdentityDraft.Method.keyPair)
+                        Text("Password").tag(IdentityDraft.Method.password)
+                        Text("SSH Agent").tag(IdentityDraft.Method.sshAgent)
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
                 }
                 if draft.method == .keyPair {
                     RXField("Private key") {

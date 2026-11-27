@@ -137,15 +137,13 @@
                         .textFieldStyle(.rx)
                 }
                 RXField("Connect through") {
-                    RXPicker(
-                        selection: $transport,
-                        options: [
-                            .init(.direct, "Direct (TCP)"),
-                            .init(.proxyJump, "ProxyJump (Bastion)"),
-                            .init(.cloudflareAccess, "Cloudflare Access"),
-                            .init(.uuRemote, "NetEase UU Remote"),
-                        ]
-                    )
+                    Picker("Connect through", selection: $transport) {
+                        Text("Direct (TCP)").tag(RDMachine.Transport.direct)
+                        Text("ProxyJump (Bastion)").tag(RDMachine.Transport.proxyJump)
+                        Text("Cloudflare Access").tag(RDMachine.Transport.cloudflareAccess)
+                        Text("NetEase UU Remote").tag(RDMachine.Transport.uuRemote)
+                    }
+                    .labelsHidden()
                 }
                 if transport == .proxyJump {
                     RXField("Jump server (Bastion)", help: "Reaches this server through an SSH tunnel opened on the jump server (ssh -J).") {
@@ -185,14 +183,12 @@
                     HelpText("Files, Monitor and the editor reach the device's own SSH server through UU Remote, signed in with the identity below; on a Mac, turn on System Settings › General › Sharing › Remote Login. The terminal is UU Remote's own and needs neither.")
                 }
                 RXField("Remote Desktop") {
-                    RXPicker(
-                        selection: $remoteDesktopProtocol,
-                        options: [
-                            .init(RDMachine.RemoteDesktopProtocolType.none, "None"),
-                            .init(.vnc, "VNC"),
-                            .init(.uuRemote, "NetEase UU Remote"),
-                        ]
-                    )
+                    Picker("Remote Desktop", selection: $remoteDesktopProtocol) {
+                        Text("None").tag(RDMachine.RemoteDesktopProtocolType.none)
+                        Text("VNC").tag(RDMachine.RemoteDesktopProtocolType.vnc)
+                        Text("NetEase UU Remote").tag(RDMachine.RemoteDesktopProtocolType.uuRemote)
+                    }
+                    .labelsHidden()
                 }
                 if remoteDesktopProtocol == .vnc {
                     vncFields
@@ -201,12 +197,14 @@
                 }
                 HStack(alignment: .top, spacing: RX.Space.s4) {
                     RXField("Identity") {
-                        RXPicker(
-                            selection: $identity,
-                            options: [.init(nil, "Automatic")] + store.identities.map { item in
-                                .init(item.id, item.group.isEmpty ? item.username : "\(item.username) · \(item.group)")
+                        Picker("Identity", selection: $identity) {
+                            Text("Automatic").tag(RDIdentity.ID?.none)
+                            ForEach(store.identities) { item in
+                                Text(item.group.isEmpty ? item.username : "\(item.username) · \(item.group)")
+                                    .tag(RDIdentity.ID?.some(item.id))
                             }
-                        )
+                        }
+                        .labelsHidden()
                     }
                     RXField("User name") {
                         TextField(sshUsernamePlaceholder, text: $sshUsername)
@@ -221,11 +219,17 @@
                             TextField("Default", text: $group)
                                 .textFieldStyle(.rx)
                             if !existingGroups.isEmpty {
-                                RXMenuButton("Existing Groups", systemImage: "chevron.down", kind: .bordered, size: .regular, iconOnly: true) {
+                                Menu {
                                     ForEach(existingGroups, id: \.self) { item in
-                                        RXMenuItem(item) { group = item }
+                                        Button(item) { group = item }
                                     }
+                                } label: {
+                                    Label("Existing Groups", systemImage: "chevron.down")
+                                        .labelStyle(.iconOnly)
                                 }
+                                .menuIndicator(.hidden)
+                                .fixedSize()
+                                .help("Existing Groups")
                             }
                         }
                     }
@@ -281,13 +285,14 @@
             }
             if !uuAccount.desktopDevices.isEmpty {
                 RXField("UU Remote device") {
-                    RXPicker(
-                        selection: $uuDeviceID,
-                        options: [.init("", "Manual / assist")]
-                            + uuAccount.desktopDevices.map {
-                                .init($0.deviceID, "\($0.alias.isEmpty ? $0.deviceID : $0.alias) · \(UUDeviceInfo.platformName($0.platform))")
-                            }
-                    )
+                    Picker("UU Remote device", selection: $uuDeviceID) {
+                        Text("Manual / assist").tag("")
+                        ForEach(uuAccount.desktopDevices, id: \.deviceID) { device in
+                            Text("\(device.alias.isEmpty ? device.deviceID : device.alias) · \(UUDeviceInfo.platformName(device.platform))")
+                                .tag(device.deviceID)
+                        }
+                    }
+                    .labelsHidden()
                 }
             }
             if uuDeviceID.isEmpty {

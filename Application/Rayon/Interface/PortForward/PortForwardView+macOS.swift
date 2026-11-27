@@ -244,11 +244,13 @@
             ) {
                 VStack(alignment: .leading, spacing: 14) {
                     RXField("Orientation") {
-                        RXSegmented(selection: $orientation, options: [
-                            .init(.listenLocal, "Local (-L)"),
-                            .init(.listenRemote, "Remote (-R)"),
-                            .init(.dynamicSOCKS, "SOCKS5 (-D)"),
-                        ], caps: false, fullWidth: true)
+                        Picker("Orientation", selection: $orientation) {
+                            Text("Local (-L)").tag(RDPortForward.ForwardOrientation.listenLocal)
+                            Text("Remote (-R)").tag(RDPortForward.ForwardOrientation.listenRemote)
+                            Text("SOCKS5 (-D)").tag(RDPortForward.ForwardOrientation.dynamicSOCKS)
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
                     }
                     HStack(alignment: .top, spacing: RX.Space.s4) {
                         RXField("Bind port", error: bindPort.isEmpty || UInt16(bindPort) != nil ? nil : "1–65535") {
@@ -257,11 +259,13 @@
                         }
                         .frame(width: 120)
                         RXField("Forward through") {
-                            RXPicker(
-                                selection: $machine,
-                                options: store.machines.map { .init(RDMachine.ID?.some($0.id), $0.name) },
-                                placeholder: "Choose a server"
-                            )
+                            Picker("Forward through", selection: $machine) {
+                                Text("Choose a server").tag(RDMachine.ID?.none)
+                                ForEach(store.machines) { server in
+                                    Text(server.name).tag(RDMachine.ID?.some(server.id))
+                                }
+                            }
+                            .labelsHidden()
                         }
                     }
                     if orientation != .dynamicSOCKS {

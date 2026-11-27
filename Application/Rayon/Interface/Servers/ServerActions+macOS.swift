@@ -133,65 +133,65 @@
             let read = (RayonStore.shared.machine(machine) ?? RDMachine())
             Group {
                 if includesTools {
-                    RXMenuItem("Open Terminal", systemImage: ServerTool.terminal.systemImage) {
+                    Button("Open Terminal", systemImage: ServerTool.terminal.systemImage) {
                         ServerTool.terminal.show(machine)
                     }
-                    RXMenuItem("Open Files", systemImage: ServerTool.files.systemImage) {
+                    Button("Open Files", systemImage: ServerTool.files.systemImage) {
                         ServerTool.files.show(machine)
                     }
-                    RXMenuItem("Open Editor", systemImage: ServerTool.editor.systemImage) {
+                    Button("Open Editor", systemImage: ServerTool.editor.systemImage) {
                         ServerTool.editor.show(machine)
                     }
-                    RXMenuItem("Open Monitor", systemImage: ServerTool.monitor.systemImage) {
+                    Button("Open Monitor", systemImage: ServerTool.monitor.systemImage) {
                         ServerTool.monitor.show(machine)
                     }
                     if read.hasRemoteDesktop {
-                        RXMenuItem("Open Desktop", systemImage: ServerTool.desktop.systemImage) {
+                        Button("Open Desktop", systemImage: ServerTool.desktop.systemImage) {
                             ServerTool.desktop.show(machine)
                         }
-                        RXMenuItem("View Desktop Only", systemImage: "eye") {
+                        Button("View Desktop Only", systemImage: "eye") {
                             router.openDesktop(machine: machine, viewOnly: true)
                         }
                     }
                 }
-                RXMenuItem("New Terminal", systemImage: "plus.rectangle") {
+                Button("New Terminal", systemImage: "plus.rectangle") {
                     router.openTerminal(machine: machine)
                 }
-                RXMenuItem("Show in Menu Bar", systemImage: "menubar.rectangle") {
+                Button("Show in Menu Bar", systemImage: "menubar.rectangle") {
                     router.showInMenuBar(machine: machine)
                 }
                 Divider()
-                RXMenuItem("Edit…", systemImage: "pencil") {
+                Button("Edit…", systemImage: "pencil") {
                     ServerActions.edit(machine)
                 }
                 MoveToFolderMenu(machine: machine)
-                RXMenuItem("Duplicate", systemImage: "plus.square.on.square") {
+                Button("Duplicate", systemImage: "plus.square.on.square") {
                     ServerActions.duplicate(machine)
                 }
                 if read.isUURemoteDevice {
                     // Its address is the device id; no ssh command reaches it.
-                    RXMenuItem("Copy Device ID", systemImage: "doc.on.doc") {
+                    Button("Copy Device ID", systemImage: "doc.on.doc") {
                         Pasteboard.copy(read.uuDeviceID)
                     }
                 } else {
-                    RXMenuItem("Copy Address", systemImage: "doc.on.doc") {
+                    Button("Copy Address", systemImage: "doc.on.doc") {
                         ServerActions.copyAddress(machine)
                     }
-                    RXMenuItem("Copy SSH Command", systemImage: "chevron.left.forwardslash.chevron.right") {
+                    Button("Copy SSH Command", systemImage: "chevron.left.forwardslash.chevron.right") {
                         ServerActions.copyCommand(machine)
                     }
                 }
-                RXMenuItem("Forget Host Key…", systemImage: "key.slash") {
+                Button("Forget Host Key…", systemImage: "key.slash") {
                     ServerActions.forgetHostKey(machine)
                 }
                 if read.hasGhosttyTerminfo {
-                    RXMenuItem("Check Terminfo Again", systemImage: "arrow.triangle.2.circlepath") {
+                    Button("Check Terminfo Again", systemImage: "arrow.triangle.2.circlepath") {
                         ServerActions.reinstallTerminfo(machine)
                     }
                     .help("On the next terminal, check that the server still has Ghostty's terminfo, and install it if not")
                 }
                 Divider()
-                RXMenuItem("Delete…", systemImage: "trash", role: .destructive) {
+                Button("Delete…", systemImage: "trash", role: .destructive) {
                     ServerActions.delete([machine])
                 }
             }

@@ -167,9 +167,12 @@
                     toolButton(tool, iconOnly: others.count > 2)
                 }
                 Spacer(minLength: 0)
-                RXMenuButton("More", systemImage: "ellipsis", kind: .plain, size: .small, iconOnly: true) {
+                Menu {
                     ServerContextMenu(machine: machine, includesTools: false)
+                } label: {
+                    Label("More", systemImage: "ellipsis")
                 }
+                .moreMenu()
             }
         }
 

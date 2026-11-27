@@ -122,14 +122,17 @@
                     Spacer(minLength: RX.Space.s2)
                     Button("Run…") { SnippetActions.run(snippet.id) }
                         .buttonStyle(.rx(size: .small))
-                    RXMenuButton("More", systemImage: "ellipsis", kind: .plain, size: .small, iconOnly: true) {
-                        RXMenuItem("Run…") { SnippetActions.run(snippet.id) }
-                        RXMenuItem("Edit…", action: edit)
-                        RXMenuItem("Duplicate") { SnippetActions.duplicate(snippet.id) }
-                        RXMenuItem("Copy Command") { Pasteboard.copy(snippet.code) }
+                    Menu {
+                        Button("Run…") { SnippetActions.run(snippet.id) }
+                        Button("Edit…", action: edit)
+                        Button("Duplicate") { SnippetActions.duplicate(snippet.id) }
+                        Button("Copy Command") { Pasteboard.copy(snippet.code) }
                         Divider()
-                        RXMenuItem("Delete…", role: .destructive) { SnippetActions.delete(snippet.id) }
+                        Button("Delete…", role: .destructive) { SnippetActions.delete(snippet.id) }
+                    } label: {
+                        Label("More", systemImage: "ellipsis")
                     }
+                    .moreMenu()
                 }
                 CodeBlock(snippet.code.trimmingCharacters(in: .whitespacesAndNewlines), lineLimit: 4)
             }

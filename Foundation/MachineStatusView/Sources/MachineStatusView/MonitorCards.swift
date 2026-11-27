@@ -61,10 +61,13 @@ public struct ProcessorCard: View {
         VStack(alignment: .leading, spacing: 0) {
             CardHead(title) {
                 if hasCores {
-                    RXSegmented(selection: $showCores, options: [
-                        .init(false, "Summary"),
-                        .init(true, "Cores"),
-                    ], caps: false)
+                    Picker("Summary or Cores", selection: $showCores) {
+                        Text("Summary").tag(false)
+                        Text("Cores").tag(true)
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .fixedSize()
                 }
             }
             MetricView(RXFormat.oneDecimal(Double(summary.sumUsed)), unit: "%")
@@ -135,10 +138,13 @@ public struct MemoryCard: View {
         let headerSize = showSwap ? swapTotal : total
         VStack(alignment: .leading, spacing: 0) {
             CardHead(headerSize > 0 ? "Memory · \(kB(headerSize))" : "Memory") {
-                RXSegmented(selection: $showSwap, options: [
-                    .init(false, "RAM"),
-                    .init(true, "Swap"),
-                ], caps: false)
+                Picker("RAM or Swap", selection: $showSwap) {
+                    Text("RAM").tag(false)
+                    Text("Swap").tag(true)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
             }
             if showSwap {
                 let swapUsed = max(0, swapTotal - Double(memory.swapFree))
@@ -378,10 +384,13 @@ public struct ProcessesCard: View {
         let rows = byMemory ? processes.byMemory : processes.byCPU
         VStack(alignment: .leading, spacing: 0) {
             CardHead("Top processes") {
-                RXSegmented(selection: $byMemory, options: [
-                    .init(false, "CPU"),
-                    .init(true, "Memory"),
-                ], caps: false)
+                Picker("CPU or Memory", selection: $byMemory) {
+                    Text("CPU").tag(false)
+                    Text("Memory").tag(true)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
             }
             if rows.isEmpty {
                 HelpText("No data")

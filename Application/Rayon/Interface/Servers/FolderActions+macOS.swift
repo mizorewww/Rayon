@@ -93,15 +93,15 @@
             // A linked folder is filled from its account, not by hand.
             let targets = store.folders.filter { !$0.isLinked }
             Menu {
-                RXMenuItem("Default") { store.moveServers([machine], toFolder: nil) }
+                Button("Default") { store.moveServers([machine], toFolder: nil) }
                     .disabled(current == nil)
                 if !targets.isEmpty { Divider() }
                 ForEach(targets) { folder in
-                    RXMenuItem(folder.name) { store.moveServers([machine], toFolder: folder.id) }
+                    Button(folder.name) { store.moveServers([machine], toFolder: folder.id) }
                         .disabled(folder.id == current)
                 }
                 Divider()
-                RXMenuItem("New Folder…") { FolderActions.newFolder(moving: [machine]) }
+                Button("New Folder…") { FolderActions.newFolder(moving: [machine]) }
             } label: {
                 Label("Move to Folder", systemImage: "folder")
             }
@@ -173,22 +173,25 @@
         }
 
         private var menu: some View {
-            RXMenuButton("Folder Actions", systemImage: "ellipsis", kind: .plain, size: .small, iconOnly: true) {
+            Menu {
                 menuItems
+            } label: {
+                Label("Folder Actions", systemImage: "ellipsis")
             }
+            .moreMenu()
         }
 
         @ViewBuilder private var menuItems: some View {
             if case .uuRemote = folder?.source {
-                RXMenuItem("UU Remote Account…") { FolderActions.linkUURemote() }
+                Button("UU Remote Account…") { FolderActions.linkUURemote() }
                 Divider()
             }
-            RXMenuItem("Rename…") { FolderActions.rename(name) }
+            Button("Rename…") { FolderActions.rename(name) }
             // A linked folder goes with its account: deleting it signs out.
             if folder?.isLinked == true {
-                RXMenuItem("Remove Folder and Sign Out…", role: .destructive) { FolderActions.delete(name) }
+                Button("Remove Folder and Sign Out…", role: .destructive) { FolderActions.delete(name) }
             } else {
-                RXMenuItem("Delete Folder…", role: .destructive) { FolderActions.delete(name) }
+                Button("Delete Folder…", role: .destructive) { FolderActions.delete(name) }
             }
         }
 
