@@ -1,0 +1,29 @@
+# Rayon telemetry ingest. Deploy steps: README.md.
+name = "rayon-telemetry"
+main = "src/index.ts"
+compatibility_date = "2026-11-01"
+
+# Served only on a route of your own domain: workers.dev is unreliable from
+# mainland China and would give the endpoint a second address.
+workers_dev = false
+preview_urls = false
+# routes = [{ pattern = "telemetry.example.com/v1/*", zone_name = "example.com" }]
+
+# No request logs anywhere: they would hold the IP addresses this Worker never reads.
+logpush = false
+[observability]
+enabled = false
+[observability.logs]
+enabled = false
+invocation_logs = false
+
+[[d1_databases]]
+binding = "DB"
+database_name = "rayon-telemetry"
+# Replace with the id `wrangler d1 create rayon-telemetry` prints.
+database_id = "00000000-0000-0000-0000-000000000000"
+migrations_dir = "migrations"
+
+[triggers]
+# Daily: crash items older than 90 days and stale nonces go.
+crons = ["17 3 * * *"]

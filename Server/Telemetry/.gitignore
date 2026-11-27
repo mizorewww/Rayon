@@ -1,0 +1,5 @@
+node_modules/
+.wrangler/
+.dev.vars
+# The root .gitignore drops *.lock; this one is the dependency pin.
+!bun.lock
