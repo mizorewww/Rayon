@@ -13,6 +13,7 @@ import SwiftUI
 @main
 struct RayonApp: App {
     @StateObject private var store = RayonStore.shared
+    @Environment(\.scenePhase) private var scenePhase
     #if os(macOS)
         @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     #endif
@@ -24,6 +25,8 @@ struct RayonApp: App {
         Self.installPlatformHandlers()
         _ = RayonStore.shared
         CloudSyncModel.shared.start()
+        Telemetry.shared.snapshot = { .rayon }
+        Telemetry.shared.start()
         Logger.app.infoFile("launched")
     }
 
@@ -31,6 +34,9 @@ struct RayonApp: App {
         WindowGroup {
             RootView()
                 .environmentObject(store)
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .active { Telemetry.shared.wake() }
+                }
         }
         #if os(macOS)
         .windowToolbarStyle(.unified)

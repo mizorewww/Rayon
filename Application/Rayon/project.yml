@@ -39,6 +39,9 @@ targets:
         buildPhase: resources
       - path: ../../Resources/LICENSE
         buildPhase: resources
+      - path: ../../Resources/Privacy
+        type: folder
+        buildPhase: resources
       - path: ../../Resources/Rayon.icon
         buildPhase: resources
         type: folder.iconcomposer

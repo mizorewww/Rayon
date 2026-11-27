@@ -18,9 +18,11 @@ extension RDPortForward.ForwardOrientation {
     }
 }
 
-extension RDIdentity {
+public extension RDIdentity {
     var telemetryAuthMethod: TelemetryReport.AuthMethod {
-        if useSSHAgent { return .agent }
+        if useSSHAgent {
+            return .agent
+        }
         return privateKey.isEmpty ? .password : .publicKey
     }
 
@@ -28,9 +30,15 @@ extension RDIdentity {
         guard !useSSHAgent, !privateKey.isEmpty else { return nil }
         // The public key names its algorithm; a PEM private key's header may.
         let text = publicKey.isEmpty ? String(privateKey.prefix(64)) : String(publicKey.prefix(32))
-        if text.contains("ed25519") { return .ed25519 }
-        if text.contains("ecdsa") || text.contains("BEGIN EC ") { return .ecdsa }
-        if text.contains("rsa") || text.contains("BEGIN RSA ") { return .rsa }
+        if text.contains("ed25519") {
+            return .ed25519
+        }
+        if text.contains("ecdsa") || text.contains("BEGIN EC ") {
+            return .ecdsa
+        }
+        if text.contains("rsa") || text.contains("BEGIN RSA ") {
+            return .rsa
+        }
         return nil
     }
 }

@@ -35,6 +35,8 @@
                             .padding(.horizontal, -RX.Space.s4)
                             .padding(.top, RX.Space.s5)
                         }
+                        TelemetryNoticeCard()
+                            .padding(.top, RX.Space.s5)
                         Spacer(minLength: RX.Space.s6)
                         Text(RXAppVersion.text)
                             .font(.system(size: 12, weight: .semibold, design: .rounded))

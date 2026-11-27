@@ -22,6 +22,8 @@
                     VStack(spacing: 0) {
                         Spacer(minLength: RX.Space.s6)
                         QuickConnectHero()
+                        TelemetryNoticeCard()
+                            .padding(.top, RX.Space.s6)
                         Spacer(minLength: RX.Space.s6)
                         Text(RXAppVersion.text)
                             .font(.system(size: 12, weight: .semibold, design: .rounded))

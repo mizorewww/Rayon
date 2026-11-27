@@ -80,6 +80,7 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
     case monitor
     case terminalClipboard
     case about
+    case diagnostics
     case acknowledgements
 
     var id: String {
@@ -91,7 +92,7 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
         case .appearance, .sessions, .recent, .sync, .data: .general
         case .ssh, .uuRemote, .monitor: .connection
         case .terminalClipboard: SettingsPage(id: "input") ?? .general
-        case .about, .acknowledgements: .about
+        case .about, .diagnostics, .acknowledgements: .about
         }
     }
 
@@ -107,6 +108,7 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
         case .monitor: "Monitor"
         case .terminalClipboard: "Copy on Select"
         case .about: "Rayon"
+        case .diagnostics: "Diagnostics & Usage"
         case .acknowledgements: "Acknowledgements"
         }
     }
@@ -124,6 +126,7 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
         case .monitor: "monitor refresh interval status"
         case .terminalClipboard: "copy on select selection clipboard pasteboard automatically share remote osc52 programs"
         case .about: "version build license source github issues agreement"
+        case .diagnostics: "diagnostics usage telemetry analytics crash reports privacy policy data sent anonymous"
         case .acknowledgements: "acknowledgements credits libraries ghostty"
         }
     }
@@ -160,6 +163,7 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
         case .monitor: MonitorSettings()
         case .terminalClipboard: TerminalClipboardSettings()
         case .about: AboutSettings()
+        case .diagnostics: DiagnosticsSettings()
         case .acknowledgements: AcknowledgementSettings()
         }
     }
