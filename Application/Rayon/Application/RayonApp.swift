@@ -37,9 +37,7 @@ struct RayonApp: App {
         #endif
         .commands {
             SidebarCommands()
-            #if os(macOS)
-                RayonCommands()
-            #endif
+            RayonCommands()
         }
     }
 }

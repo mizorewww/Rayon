@@ -2,7 +2,8 @@
 //  RayonCommands+macOS.swift
 //  Rayon
 //
-//  The Mac's menu-bar commands.
+//  The Mac's app and window commands: Settings, new servers and terminals,
+//  Close Tab, the sidebar's places and the remote desktop in front.
 //
 
 #if os(macOS)
@@ -11,11 +12,10 @@
     import RayonModule
     import SwiftUI
 
-    struct RayonCommands: Commands {
+    struct MacAppCommands: Commands {
+        /// The terminal's ⌘1…⌘9 pick its tabs, so the places give them up.
+        let terminalInFront: Bool
         @ObservedObject private var router = AppRouter.shared
-        @ObservedObject private var terminals = TerminalManager.shared
-
-        private var terminal: TerminalManager.Context? { router.terminalInFront }
         @ObservedObject private var desktops = RemoteDesktopManager.shared
 
         var body: some Commands {
@@ -57,18 +57,6 @@
                 place("Snippets", .snippets, key: "5")
                 place("Port Forward", .portForward, key: "6")
                 place("Remote Desktop", .desktops, key: "7")
-                if let terminal {
-                    Divider()
-                    let tabs = terminal.tabSiblings
-                    ForEach(Array(tabs.prefix(8).enumerated()), id: \.element.id) { index, tab in
-                        Button("Tab \(index + 1)") { AppRouter.shared.route = .terminal(tab.id) }
-                            .keyboardShortcut(KeyEquivalent(Character(String(index + 1))), modifiers: .command)
-                    }
-                    if let last = tabs.last {
-                        Button("Last Tab") { AppRouter.shared.route = .terminal(last.id) }
-                            .keyboardShortcut("9", modifiers: .command)
-                    }
-                }
                 Divider()
             }
         }
@@ -95,7 +83,7 @@
 
         private func place(_ title: String, _ route: Route, key: KeyEquivalent) -> some View {
             Button(title) { AppRouter.shared.route = route }
-                .keyboardShortcut(terminal == nil ? KeyboardShortcut(key, modifiers: .command) : nil)
+                .keyboardShortcut(terminalInFront ? nil : KeyboardShortcut(key, modifiers: .command))
         }
     }
 

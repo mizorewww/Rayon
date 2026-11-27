@@ -73,7 +73,11 @@
             .navigationTitle(current?.name ?? (store.machineRedacted == .all ? "Editor" : context.machine.name))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
-            .background { keyboardShortcuts }
+            .focusedSceneValue(\.editorCommands, EditorCommandActions(
+                save: current.map { _ in { save() } },
+                openFile: { openPrompt = true },
+                closeFile: current.map { document in { close(document) } }
+            ))
             .sheet(isPresented: $openPrompt) {
                 OpenRemoteFileSheet(folder: context.currentDir) { path in
                     workspace.open(path: path)
@@ -191,20 +195,6 @@
                     Label("More", systemImage: "ellipsis.circle")
                 }
             }
-        }
-
-        /// iPad hardware keyboard: ⌘S, ⌘O and ⌘W act on the editor in front.
-        private var keyboardShortcuts: some View {
-            Group {
-                Button("Save") { save() }
-                    .keyboardShortcut("s", modifiers: .command)
-                Button("Open File…") { openPrompt = true }
-                    .keyboardShortcut("o", modifiers: .command)
-                Button("Close File") { if let current { close(current) } }
-                    .keyboardShortcut("w", modifiers: .command)
-            }
-            .opacity(0)
-            .accessibilityHidden(true)
         }
 
         // MARK: Actions

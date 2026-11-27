@@ -103,7 +103,7 @@
             .navigationTitle(focused.navigationTitle)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar { toolbar }
-            .background { keyboardShortcuts }
+            .focusedSceneValue(\.terminalCommands, commands)
             .sheet(isPresented: Binding(get: { showSnippets && !canSplit }, set: { showSnippets = $0 })) {
                 NavigationStack {
                     TerminalSnippetPanel(context: focused, inSheet: true) {
@@ -391,36 +391,6 @@
             }
         }
 
-        /// iPad hardware keyboard: the Mac's terminal shortcuts.
-        private var keyboardShortcuts: some View {
-            Group {
-                Button("Find in Terminal") { withAnimation(.rxQuick) { showSearch.toggle() } }
-                    .keyboardShortcut("f", modifiers: .command)
-                Button("New Terminal Tab") { openAnotherTab() }
-                    .keyboardShortcut("t", modifiers: .command)
-                Button("Close Tab") { close(focused) }
-                    .keyboardShortcut("w", modifiers: .command)
-                Button("Split Right") { split(.horizontal) }
-                    .keyboardShortcut("d", modifiers: .command)
-                Button("Split Down") { split(.vertical) }
-                    .keyboardShortcut("d", modifiers: [.command, .shift])
-                Button("Smaller Text") { if store.terminalFontSize > 4 { store.terminalFontSize -= 1 } }
-                    .keyboardShortcut("-", modifiers: .command)
-                Button("Larger Text") { if store.terminalFontSize < 30 { store.terminalFontSize += 1 } }
-                    .keyboardShortcut("+", modifiers: .command)
-                Button("Previous Tab") { cycleTab(-1) }
-                    .keyboardShortcut("[", modifiers: [.command, .shift])
-                Button("Next Tab") { cycleTab(1) }
-                    .keyboardShortcut("]", modifiers: [.command, .shift])
-                ForEach(1 ... 9, id: \.self) { number in
-                    Button("Tab \(number)") { selectTab(number: number) }
-                        .keyboardShortcut(KeyEquivalent(Character("\(number)")), modifiers: .command)
-                }
-            }
-            .opacity(0)
-            .accessibilityHidden(true)
-        }
-
         // MARK: - Actions
 
         private func focus(_ id: TerminalContext.ID) {
@@ -460,6 +430,23 @@
             if !alive.contains(context.id), !inServerWorkspace { dismiss() }
         }
 
+        /// The Terminal menu's actions, for an iPad's hardware keyboard.
+        private var commands: TerminalCommandActions {
+            TerminalCommandActions(
+                find: { withAnimation(.rxQuick) { showSearch.toggle() } },
+                splitRight: canSplit ? { split(.horizontal) } : nil,
+                splitDown: canSplit ? { split(.vertical) } : nil,
+                tabCount: siblings.count,
+                selectTab: { index in
+                    let list = siblings
+                    if list.indices.contains(index) { focus(list[index].id) }
+                },
+                cycleTab: { cycleTab($0) },
+                newTab: { openAnotherTab() },
+                closeTab: { close(focused) }
+            )
+        }
+
         private func openAnotherTab() {
             TerminalManager.shared.openAnotherTab(like: focused) { created in
                 focus(created.id)
@@ -496,17 +483,6 @@
             let list = siblings
             guard list.count > 1, let index = list.firstIndex(where: { $0.id == focused.id }) else { return }
             focus(list[(index + delta + list.count) % list.count].id)
-        }
-
-        /// ⌘1…⌘8 pick that tab, ⌘9 the last, as on the Mac.
-        private func selectTab(number: Int) {
-            let list = siblings
-            guard !list.isEmpty else { return }
-            if number == 9 {
-                focus(list[list.count - 1].id)
-            } else if number - 1 < list.count {
-                focus(list[number - 1].id)
-            }
         }
     }
 

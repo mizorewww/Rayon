@@ -136,45 +136,17 @@
                     withAnimation(.rxQuick) { showSnippetDrawer.toggle() }
                 }
             } trailing: {
-                ToolbarAction("Smaller Text", systemImage: "textformat.size.smaller", isEnabled: store.terminalFontSize > 4) {
+                ToolbarAction("Smaller Text (⌘−)", systemImage: "textformat.size.smaller", isEnabled: store.terminalFontSize > 4) {
                     store.terminalFontSize -= 1
                 }
-                .keyboardShortcut("-", modifiers: .command)
-                ToolbarAction("Larger Text", systemImage: "textformat.size.larger", isEnabled: store.terminalFontSize < 30) {
+                ToolbarAction("Larger Text (⌘+)", systemImage: "textformat.size.larger", isEnabled: store.terminalFontSize < 30) {
                     store.terminalFontSize += 1
                 }
-                .keyboardShortcut("+", modifiers: .command)
                 ToolbarAction("Close Tab", systemImage: "xmark") {
                     TerminalSessionActions.close(context)
                 }
             }
-            .background {
-                Group {
-                    // ⌘F opens the find bar, or returns to its field when open.
-                    Button("Find in Terminal") {
-                        if showSearch {
-                            searchFieldFocused = true
-                        } else {
-                            withAnimation(.rxQuick) { showSearch = true }
-                        }
-                    }
-                    .keyboardShortcut("f", modifiers: .command)
-                    Button("Split Right") {
-                        splitWithNewOrExisting(orientation: .horizontal)
-                    }
-                    .keyboardShortcut("d", modifiers: .command)
-                    Button("Split Down") {
-                        splitWithNewOrExisting(orientation: .vertical)
-                    }
-                    .keyboardShortcut("d", modifiers: [.command, .shift])
-                    Button("Split with Server") {
-                        splitWithServer()
-                    }
-                    .keyboardShortcut("d", modifiers: [.command, .option])
-                }
-                .opacity(0)
-                .accessibilityHidden(true)
-            }
+            .focusedSceneValue(\.terminalCommands, commands)
             .serverToolSwitcher(
                 machine: context.remoteType == .machine && RayonStore.shared.machine(context.machine.id) != nil ? context.machine.id : nil,
                 current: .terminal
@@ -195,6 +167,33 @@
             .onDisappear {
                 for pane in visiblePanes { pane.termInterface.setActive(false, focus: false) }
             }
+        }
+
+        /// The Terminal menu's actions on this page.
+        private var commands: TerminalCommandActions {
+            let tabs = context.tabSiblings
+            let current = tabs.firstIndex { $0.id == context.id } ?? 0
+            return TerminalCommandActions(
+                find: {
+                    // Opens the find bar, or returns to its field when open.
+                    if showSearch {
+                        searchFieldFocused = true
+                    } else {
+                        withAnimation(.rxQuick) { showSearch = true }
+                    }
+                },
+                splitRight: { splitWithNewOrExisting(orientation: .horizontal) },
+                splitDown: { splitWithNewOrExisting(orientation: .vertical) },
+                splitWithServer: { splitWithServer() },
+                tabCount: tabs.count,
+                selectTab: { index in
+                    if tabs.indices.contains(index) { AppRouter.shared.route = .terminal(tabs[index].id) }
+                },
+                cycleTab: { delta in
+                    guard tabs.count > 1 else { return }
+                    AppRouter.shared.route = .terminal(tabs[(current + delta + tabs.count) % tabs.count].id)
+                }
+            )
         }
 
         private func syncActivePanes() {

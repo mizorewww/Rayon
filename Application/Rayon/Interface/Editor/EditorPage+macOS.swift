@@ -44,7 +44,6 @@
             ) {
             } trailing: {
                 ToolbarAction("Open File…", systemImage: "doc.badge.plus") { openPrompt = true }
-                    .keyboardShortcut("o", modifiers: .command)
                 ToolbarAction(wrapsLines ? "Don't Wrap Lines" : "Wrap Lines", systemImage: wrapsLines ? "text.justify.leading" : "text.word.spacing") {
                     wrapsLines.toggle()
                 }
@@ -74,18 +73,11 @@
                 }
             }
             .animation(.easeOut(duration: 0.25), value: workspace.documents.isEmpty)
-            .background {
-                // ⌘S and ⌘W act on the page in front only.
-                Group {
-                    Button("Save") { current?.save() }
-                        .keyboardShortcut("s", modifiers: .command)
-                    Button("Close File") { if let current { workspace.close(current) } }
-                        .keyboardShortcut("w", modifiers: .command)
-                        .disabled(current == nil)
-                }
-                .opacity(0)
-                .accessibilityHidden(true)
-            }
+            .focusedSceneValue(\.editorCommands, EditorCommandActions(
+                save: current?.isEdited == true && current?.saving == false ? { current?.save() } : nil,
+                openFile: { openPrompt = true },
+                closeFile: current.map { document in { workspace.close(document) } }
+            ))
             .sheet(isPresented: $openPrompt) {
                 OpenRemoteFileSheet(folder: context.currentDir) { path in
                     workspace.open(path: path)

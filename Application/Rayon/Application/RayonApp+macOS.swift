@@ -109,6 +109,18 @@
         }
 
         private func handleShortcut(_ event: NSEvent) -> Bool {
+            // The terminal view sees key equivalents before the menu bar and
+            // claims Ghostty's own bindings for them (⌘D splits, ⌘1 goes to a
+            // tab, ⌘+ resizes one surface, ⌘, opens its config), which Rayon
+            // does itself. The app menu's and the Terminal menu's shortcuts
+            // get the first chance instead; Edit's stay with the terminal.
+            if event.modifierFlags.contains(.command), NSApp.modalWindow == nil,
+               let window = event.window, MainWindow.ordinaryWindows.contains(window),
+               let menu = NSApp.mainMenu
+            {
+                let first = [menu.items.first, menu.item(withTitle: "Terminal")].compactMap(\.?.submenu)
+                if first.contains(where: { $0.performKeyEquivalent(with: event) }) { return true }
+            }
             guard event.modifierFlags.intersection([.command, .shift, .option, .control]) == .command,
                   NSApp.modalWindow == nil
             else { return false }

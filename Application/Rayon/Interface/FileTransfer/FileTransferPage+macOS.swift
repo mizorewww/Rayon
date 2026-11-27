@@ -71,6 +71,18 @@
 
         var busy: Bool { context.processConnection || context.isProgressRunning }
 
+        /// The Go menu's actions on this page.
+        private var commands: FileBrowserCommandActions {
+            let ready = !busy && context.connected
+            return FileBrowserCommandActions(
+                back: ready && context.canGoBack ? { context.goBack() } : nil,
+                forward: ready && context.canGoForward ? { context.goForward() } : nil,
+                enclosingFolder: ready && context.currentUrl.pathComponents.count > 1 ? { goUp() } : nil,
+                goToFolder: ready ? { prompt = .goTo } : nil,
+                reload: ready ? { context.loadCurrentFileList() } : nil
+            )
+        }
+
         var body: some View {
             PageScaffold(
                 scrolls: false,
@@ -85,20 +97,15 @@
             ) {
                 ToolbarAction("Back", systemImage: "chevron.left") { context.goBack() }
                     .disabled(!context.canGoBack || busy || !context.connected)
-                    .keyboardShortcut("[", modifiers: .command)
                 ToolbarAction("Forward", systemImage: "chevron.right") { context.goForward() }
                     .disabled(!context.canGoForward || busy || !context.connected)
-                    .keyboardShortcut("]", modifiers: .command)
                 ToolbarAction("Enclosing Folder", systemImage: "arrow.up") { goUp() }
                     .disabled(context.currentUrl.pathComponents.count <= 1 || busy || !context.connected)
-                    .keyboardShortcut(.upArrow, modifiers: .command)
                 ToolbarAction("Go to Folder", systemImage: "arrow.turn.down.right") { prompt = .goTo }
                     .disabled(busy || !context.connected)
-                    .keyboardShortcut("g", modifiers: [.command, .shift])
             } trailing: {
                 ToolbarAction("Reload", systemImage: "arrow.clockwise") { context.loadCurrentFileList() }
                     .disabled(busy || !context.connected)
-                    .keyboardShortcut("r", modifiers: .command)
                 ToolbarAction("New Folder", systemImage: "folder.badge.plus") { prompt = .newFolder }
                     .disabled(busy || !context.connected)
                 ToolbarAction("Upload", systemImage: "arrow.up.doc") { upload() }
@@ -168,6 +175,7 @@
                         .allowsHitTesting(false)
                 }
             }
+            .focusedSceneValue(\.fileBrowserCommands, commands)
             .sheet(item: $prompt) { prompt in
                 FilePromptSheet(prompt: prompt, context: context) { self.prompt = nil }
             }

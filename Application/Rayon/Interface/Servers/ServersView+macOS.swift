@@ -93,16 +93,8 @@
                     ServersTable(groups: groups, selection: $selection)
                 }
             }
-            .background {
-                // ⌘⌫ deletes the selected row.
-                Button("Delete") {
-                    if let selection { ServerActions.delete([selection]) }
-                }
-                .keyboardShortcut(.delete, modifiers: .command)
-                .disabled(selection == nil)
-                .opacity(0)
-                .accessibilityHidden(true)
-            }
+            // Edit › Delete… (⌘⌫) deletes the selected row.
+            .focusedSceneValue(\.deleteSelection, selection.map { selection in { ServerActions.delete([selection]) } })
         }
 
         private func importSSHConfigFromToolbar() {

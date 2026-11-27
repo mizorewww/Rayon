@@ -34,6 +34,18 @@
 
         var busy: Bool { context.processConnection || context.isProgressRunning }
 
+        /// The Go menu's actions, for an iPad's hardware keyboard.
+        private var commands: FileBrowserCommandActions {
+            let ready = !busy && context.connected
+            return FileBrowserCommandActions(
+                back: ready && context.canGoBack ? { context.goBack() } : nil,
+                forward: ready && context.canGoForward ? { context.goForward() } : nil,
+                enclosingFolder: ready && context.currentUrl.pathComponents.count > 1 ? { goUp() } : nil,
+                goToFolder: ready ? { goToFolder() } : nil,
+                reload: ready ? { context.loadCurrentFileList() } : nil
+            )
+        }
+
         var body: some View {
             Group {
                 if context.destroyedSession {
@@ -81,30 +93,7 @@
                         .allowsHitTesting(false)
                 }
             }
-            .background { keyboardShortcuts }
-        }
-
-        /// iPad hardware keyboard: the Mac's Files shortcuts.
-        private var keyboardShortcuts: some View {
-            Group {
-                Button("Back") { context.goBack() }
-                    .keyboardShortcut("[", modifiers: .command)
-                    .disabled(!context.canGoBack || busy || !context.connected)
-                Button("Forward") { context.goForward() }
-                    .keyboardShortcut("]", modifiers: .command)
-                    .disabled(!context.canGoForward || busy || !context.connected)
-                Button("Enclosing Folder") { goUp() }
-                    .keyboardShortcut(.upArrow, modifiers: .command)
-                    .disabled(context.currentUrl.pathComponents.count <= 1 || busy || !context.connected)
-                Button("Go to Folder") { goToFolder() }
-                    .keyboardShortcut("g", modifiers: [.command, .shift])
-                    .disabled(busy || !context.connected)
-                Button("Reload") { context.loadCurrentFileList() }
-                    .keyboardShortcut("r", modifiers: .command)
-                    .disabled(busy || !context.connected)
-            }
-            .opacity(0)
-            .accessibilityHidden(true)
+            .focusedSceneValue(\.fileBrowserCommands, commands)
         }
 
         var mainView: some View {
