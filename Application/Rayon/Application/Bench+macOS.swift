@@ -47,7 +47,7 @@
 
             static var longest = 0.0
 
-            static func settle(_ action: () -> Void) async -> Double {
+            static func settle(for window: Duration = .milliseconds(400), _ action: () -> Void) async -> Double {
                 let load = RunLoopLoad()
                 let activities = CFRunLoopActivity.afterWaiting.rawValue | CFRunLoopActivity.beforeWaiting.rawValue
                 let observer = CFRunLoopObserverCreateWithHandler(nil, activities, true, CFIndex.max) { _, activity in
@@ -58,7 +58,7 @@
                 }
                 CFRunLoopAddObserver(CFRunLoopGetMain(), observer, .commonModes)
                 action()
-                try? await Task.sleep(nanoseconds: 400_000_000)
+                try? await Task.sleep(for: window)
                 CFRunLoopRemoveObserver(CFRunLoopGetMain(), observer, .commonModes)
                 longest = load.stretch * 1000
                 return load.busy * 1000
@@ -121,6 +121,33 @@
                 let router = AppRouter.shared
                 router.settingsSelection = "general"
                 report("open settings", [await settle { router.route = .settings }])
+                // Every page once to load fonts and themes, then `rounds` more
+                // times: the median is what switching pages costs.
+                let rounds = Int(ProcessInfo.processInfo.environment["RAYON_BENCH_SETTINGS"] ?? "") ?? 1
+                let pages = SettingsPage.sections.flatMap(\.pages).map(\.id)
+                var switches: [String: [Double]] = [:]
+                for round in 0 ... rounds {
+                    for id in pages {
+                        let busy = await settle { router.settingsSelection = id }
+                        if round > 0 { switches[id, default: []].append(busy) }
+                    }
+                }
+                for id in pages { report("page \(id)", switches[id] ?? []) }
+                // A change as a control makes it, inside the debounce before
+                // it is applied: what each step of a slider costs to redraw.
+                for id in pages {
+                    guard case .terminal = SettingsPage(id: id) else { continue }
+                    router.settingsSelection = id
+                    try? await Task.sleep(for: .milliseconds(600))
+                    let size = ConfigBenchmark.value("font-size")
+                    var edits: [Double] = []
+                    for step in 0 ..< rounds {
+                        edits.append(await settle(for: .milliseconds(200)) { ConfigBenchmark.edit("font-size", "\(15 + step % 2)") })
+                    }
+                    report("edit \(id)", edits)
+                    ConfigBenchmark.edit("font-size", size)
+                    try? await Task.sleep(for: .milliseconds(600))
+                }
                 NSLog("BENCH done")
             }
 
