@@ -1,5 +1,5 @@
 {
-  "originHash" : "6e85d89771c8b8f8abf74961a7b190d003a2ee029676a31d817a94730fe00a38",
+  "originHash" : "3df18fc516d828457c0ff9552662da7beb4f9f2b282a56e9f670d2eb90cecbec",
   "pins" : [
     {
       "identity" : "bettercodable",
@@ -70,6 +70,15 @@
       "state" : {
         "revision" : "d7ac3f11f22ec2e820187acce8f3a3fb7aa8ddec",
         "version" : "0.12.1"
+      }
+    },
+    {
+      "identity" : "configurablekit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/ConfigurableKit",
+      "state" : {
+        "revision" : "d96d318c2bd68c4f3541ac972e410c41e452767d",
+        "version" : "4.2.2"
       }
     },
     {

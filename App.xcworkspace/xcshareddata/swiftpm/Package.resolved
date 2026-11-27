@@ -74,6 +74,15 @@
         }
       },
       {
+        "package" : "ConfigurableKit",
+        "repositoryURL" : "https://github.com/Lakr233/ConfigurableKit",
+        "state" : {
+          "branch" : null,
+          "revision" : "d96d318c2bd68c4f3541ac972e410c41e452767d",
+          "version" : "4.2.2"
+        }
+      },
+      {
         "package" : "DisplayLink",
         "repositoryURL" : "https://github.com/Lakr233/DisplayLink.git",
         "state" : {

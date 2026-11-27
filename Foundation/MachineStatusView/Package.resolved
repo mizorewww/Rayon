@@ -73,6 +73,15 @@
       }
     },
     {
+      "identity" : "configurablekit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/ConfigurableKit",
+      "state" : {
+        "revision" : "d96d318c2bd68c4f3541ac972e410c41e452767d",
+        "version" : "4.2.2"
+      }
+    },
+    {
       "identity" : "displaylink",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/DisplayLink.git",

@@ -25,6 +25,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-collections.git", from: "1.1.0"),
         .package(url: "https://github.com/weichsel/ZIPFoundation", from: "0.9.20"),
         .package(url: "https://github.com/Lakr233/DpkgVersion", from: "1.0.4"),
+        .package(url: "https://github.com/Lakr233/ConfigurableKit", from: "4.2.0"),
         .package(name: "Logger", path: "../Logger"),
         .package(name: "RayonDesign", path: "../RayonDesign"),
         .package(name: "RayonEditor", path: "../RayonEditor"),
@@ -43,6 +44,7 @@ let package = Package(
                 .product(name: "OrderedCollections", package: "swift-collections"),
                 .product(name: "ZIPFoundation", package: "ZIPFoundation"),
                 .product(name: "DpkgVersion", package: "DpkgVersion"),
+                .product(name: "ConfigurableKit", package: "ConfigurableKit"),
                 "Logger",
                 "RayonDesign",
                 "RayonEditor",
@@ -60,6 +62,7 @@ let package = Package(
                 "RayonPTY",
                 .product(name: "BigInt", package: "BigInt"),
                 .product(name: "NIOPosix", package: "swift-nio"),
+                .product(name: "ConfigurableKit", package: "ConfigurableKit"),
             ],
             resources: [.copy("Fixtures")]
         ),
