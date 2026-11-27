@@ -123,17 +123,14 @@ enum RayonTerminalConfiguration {
     }
 
     /// Applies `config` to `target` (every terminal, by default) once Ghostty
-    /// accepts both appearances of it; otherwise throws Ghostty's diagnostics
-    /// and changes nothing.
+    /// accepts it; otherwise throws Ghostty's diagnostics and changes nothing.
+    /// `setTheme` is the one validation: it loads the appearance in use and
+    /// keeps the old configuration when Ghostty reports a problem. The other
+    /// appearance differs only in the theme's colors, which are always valid,
+    /// so it needs no Ghostty of its own to check.
     static func apply(_ config: [String: [String]], to target: TerminalController? = nil) throws {
         let shared = target == nil
         let target = target ?? controller
-        let light = contents(config, dark: false)
-        let dark = contents(config, dark: true)
-        for contents in Set([light, dark]) {
-            let validation = TerminalController(configSource: .generated(contents), theme: .init())
-            if let issue = validation.lastConfigurationIssue { throw ConfigError(issue) }
-        }
         func configuration(_ dark: Bool) -> TerminalConfiguration {
             lines(for: config, dark: dark).reduce(TerminalConfiguration()) { $0.custom($1.key, $1.value) }
         }
