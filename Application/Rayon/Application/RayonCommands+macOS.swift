@@ -29,13 +29,13 @@
                     .keyboardShortcut(",", modifiers: .command)
             }
             CommandGroup(after: .newItem) {
-                Button("New Server…") { ServerActions.create() }
+                Button("New Server…", action: run { ServerActions.create() })
                     .keyboardShortcut("n", modifiers: [.command, .shift])
                 Button("New Terminal") { AppRouter.shared.newTerminal() }
                     .keyboardShortcut("t", modifiers: .command)
                 Button("New Local Terminal") { AppRouter.shared.openLocalTerminal(another: true) }
                     .keyboardShortcut("t", modifiers: [.command, .option])
-                Button("Open Terminals…") { AppRouter.shared.openTerminals() }
+                Button("Open Terminals…", action: run { AppRouter.shared.openTerminals() })
                     .keyboardShortcut("t", modifiers: [.command, .shift])
             }
             if router.route.isSession {

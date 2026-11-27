@@ -118,15 +118,15 @@ struct RayonCommands: Commands {
                 .disabled(files?.reload == nil)
         }
     }
+}
 
-    /// A page's action, held back while the Mac shows a sheet or a modal
-    /// over the window: the menu bar stays live under one.
-    private func run(_ action: (() -> Void)?) -> () -> Void {
-        {
-            #if os(macOS)
-                if MainWindow.isShowingSheetOrModal { return }
-            #endif
-            action?()
-        }
+/// A command's action, held back while the Mac shows a sheet or a modal
+/// over the window: the menu bar stays live under one.
+@MainActor func run(_ action: (() -> Void)?) -> () -> Void {
+    {
+        #if os(macOS)
+            if MainWindow.isShowingSheetOrModal { return }
+        #endif
+        action?()
     }
 }
