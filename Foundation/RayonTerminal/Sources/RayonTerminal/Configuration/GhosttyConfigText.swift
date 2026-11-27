@@ -5,21 +5,22 @@ import Foundation
 /// stays exactly as written, so the file remains the user's to edit.
 struct GhosttyConfigText: Equatable, Sendable {
     private(set) var lines: [String] {
-        didSet { keys = Self.keys(in: lines) }
+        didSet { index = Self.index(lines) }
     }
 
-    /// The keys that have a line, so Settings can count the changed settings
-    /// of every category on each redraw without reading the file again.
-    private(set) var keys: Set<String>
+    /// Each key's values, parsed once per change: Settings reads keys
+    /// hundreds of times a redraw.
+    private var index: [String: [String]]
 
     init(_ text: String = "") {
         lines = text.isEmpty ? [] : text.components(separatedBy: "\n")
-        keys = Self.keys(in: lines)
+        index = Self.index(lines)
     }
 
-    private static func keys(in lines: [String]) -> Set<String> {
-        Set(lines.compactMap { entry($0.trimmingCharacters(in: .whitespaces))?.key })
-    }
+    static func == (lhs: Self, rhs: Self) -> Bool { lhs.lines == rhs.lines }
+
+    /// The keys that have a line.
+    var keys: Set<String> { Set(index.keys) }
 
     var text: String { lines.joined(separator: "\n") }
 
@@ -38,11 +39,14 @@ struct GhosttyConfigText: Equatable, Sendable {
 
     /// The values set for `key`, in order (a repeatable key such as `keybind`
     /// may have several). Malformed lines are ignored here.
-    func values(_ key: String) -> [String] {
-        lines.compactMap { line in
-            guard let entry = Self.entry(line.trimmingCharacters(in: .whitespaces)), entry.key == key else { return nil }
-            return entry.value
+    func values(_ key: String) -> [String] { index[key] ?? [] }
+
+    private static func index(_ lines: [String]) -> [String: [String]] {
+        var index: [String: [String]] = [:]
+        for line in lines {
+            if let entry = entry(line.trimmingCharacters(in: .whitespaces)) { index[entry.key, default: []].append(entry.value) }
         }
+        return index
     }
 
     func value(_ key: String) -> String? { values(key).last }
@@ -51,16 +55,19 @@ struct GhosttyConfigText: Equatable, Sendable {
     /// such line was, or at the end. No values removes the key.
     mutating func set(_ key: String, _ values: [String]) {
         let replacement = values.map { "\(key) = \($0)" }
+        // One assignment, so the index is rebuilt once.
+        var lines = lines
         let indices = lines.indices.filter { Self.entry(lines[$0].trimmingCharacters(in: .whitespaces))?.key == key }
-        guard let first = indices.first else {
-            if !replacement.isEmpty {
-                if lines.last?.isEmpty == true { lines.removeLast() }
-                lines += replacement + [""]
-            }
+        if let first = indices.first {
+            for index in indices.reversed() { lines.remove(at: index) }
+            lines.insert(contentsOf: replacement, at: first)
+        } else if !replacement.isEmpty {
+            if lines.last?.isEmpty == true { lines.removeLast() }
+            lines += replacement + [""]
+        } else {
             return
         }
-        for index in indices.reversed() { lines.remove(at: index) }
-        lines.insert(contentsOf: replacement, at: first)
+        self.lines = lines
     }
 
     private static func entry(_ line: String) -> (key: String, value: String)? {
