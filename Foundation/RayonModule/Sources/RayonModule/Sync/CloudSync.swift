@@ -331,27 +331,32 @@ public actor CloudSync {
         }
     }
 
-    /// Fetches the records that failed to merge and merges them again.
-    private func retryFailedMerges(in database: CKDatabase) async {
-        guard !failedMerges.isEmpty else { return }
-        let ids = failedMerges.map { CKRecord.ID(recordName: $0, zoneID: CloudRecordCoding.zoneID) }
-        let results: [CKRecord.ID: Result<CKRecord, any Error>]
-        do {
-            results = try await database.records(for: ids)
-        } catch {
-            Logger.syncEngine.errorFile("fetching records to merge again failed: \(error.localizedDescription)")
-            return
-        }
+    /// Fetches the records that failed to merge and merges them again, in
+    /// requests of at most 400 records, as many as CloudKit takes at once.
+    func retryFailedMerges(
+        fetch: @Sendable ([CKRecord.ID]) async throws -> [CKRecord.ID: Result<CKRecord, any Error>]
+    ) async {
+        let names = Array(failedMerges)
         var changed = false
-        for (id, result) in results {
-            switch result {
-            case let .success(record):
-                changed = receive(record) || changed
-            case let .failure(error as CKError) where error.code == .unknownItem:
-                // Deleted there since: the deletion comes with a fetch.
-                setFailedMerges(failedMerges.subtracting([id.recordName]))
-            case .failure:
+        for start in stride(from: 0, to: names.count, by: 400) {
+            let ids = names[start ..< min(start + 400, names.count)].map { CKRecord.ID(recordName: $0, zoneID: CloudRecordCoding.zoneID) }
+            let results: [CKRecord.ID: Result<CKRecord, any Error>]
+            do {
+                results = try await fetch(ids)
+            } catch {
+                Logger.syncEngine.errorFile("fetching records to merge again failed: \(error.localizedDescription)")
                 break
+            }
+            for (id, result) in results {
+                switch result {
+                case let .success(record):
+                    changed = receive(record) || changed
+                case let .failure(error as CKError) where error.code == .unknownItem:
+                    // Deleted there since: the deletion comes with a fetch.
+                    setFailedMerges(failedMerges.subtracting([id.recordName]))
+                case .failure:
+                    break
+                }
             }
         }
         if changed { notifyMerged() }
@@ -394,7 +399,8 @@ public actor CloudSync {
             }
 
         case .didFetchChanges:
-            Task { await retryFailedMerges(in: engine.database) }
+            let database = engine.database
+            Task { await retryFailedMerges { try await database.records(for: $0) } }
 
         case let .fetchedRecordZoneChanges(changes):
             var changed = false

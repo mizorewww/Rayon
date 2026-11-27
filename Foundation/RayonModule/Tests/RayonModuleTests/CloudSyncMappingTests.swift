@@ -8,6 +8,7 @@
 //
 
 import CloudKit
+import os
 @testable import RayonModule
 import XCTest
 
@@ -201,6 +202,24 @@ final class CloudSyncMappingTests: XCTestCase {
         XCTAssertEqual(left, [])
         XCTAssertEqual(storage.record(RDMachine.self, id: server.id)?.name, "renamed there")
         XCTAssertEqual(storage.record(RDMachine.self, id: server.id)?.vncPassword, "changed")
+    }
+
+    /// CloudKit fetches at most 400 records per request: a longer retry
+    /// list used to go in one request, which fails as a whole.
+    func testRetriedMergesAreFetchedAtMost400AtATime() async throws {
+        let names = Set((0 ..< 1000).map { "RDMachine.\($0)" })
+        let retryURL = storage.databaseURL.deletingLastPathComponent().appendingPathComponent("sync-retry.json")
+        try JSONEncoder().encode(names).write(to: retryURL)
+        let sync = CloudSync(storage: storage)
+        let batches = OSAllocatedUnfairLock<[Int]>(initialState: [])
+        await sync.retryFailedMerges { ids in
+            batches.withLock { $0.append(ids.count) }
+            return Dictionary(uniqueKeysWithValues: ids.map { ($0, .failure(CKError(.unknownItem))) })
+        }
+        XCTAssertEqual(batches.withLock { $0 }.reduce(0, +), 1000)
+        XCTAssertLessThanOrEqual(batches.withLock { $0 }.max() ?? 0, 400, "\(batches.withLock { $0 })")
+        let left = await sync.failedMerges
+        XCTAssertEqual(left, [], "every record was fetched")
     }
 
     /// A change of a kind the user stopped syncing is not sent, even when
