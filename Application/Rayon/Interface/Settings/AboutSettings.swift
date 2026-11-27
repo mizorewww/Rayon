@@ -11,6 +11,10 @@ import SwiftUI
 struct AboutSettings: View {
     #if os(macOS)
         @State private var document: AboutDocument?
+    #elseif DEBUG
+        /// `RAYON_PREVIEW_LIBRARIES` pushes Libraries from here: its own row
+        /// sits below the fold, where the list has not made it yet.
+        @State private var previewsLibraries = ProcessInfo.processInfo.environment["RAYON_PREVIEW_LIBRARIES"] != nil
     #endif
 
     private var version: String {
@@ -61,6 +65,9 @@ struct AboutSettings: View {
             }
         #else
             NavigationLink("License") { LicenseView() }
+            #if DEBUG
+                .navigationDestination(isPresented: $previewsLibraries) { LibrariesView() }
+            #endif
         #endif
     }
 
@@ -101,6 +108,10 @@ struct AboutSettings: View {
 }
 
 struct AcknowledgementSettings: View {
+    #if os(macOS)
+        @State private var showsLibraries = false
+    #endif
+
     var body: some View {
         LabeledContent("Maintained by", value: "mizorewww")
         acknowledgement("Originally created by", "Lakr Aream (@Lakr233) with @__oquery, @zlind0, @unixzii, @82flex and @xnth97. This version is not affiliated with or endorsed by them.")
@@ -109,7 +120,24 @@ struct AcknowledgementSettings: View {
         #else
             acknowledgement("Terminal", "Ghostty and its configuration catalog (MIT, Ghostty contributors).")
         #endif
-        acknowledgement("Libraries", "\(LicenseNotices.bundledLibraries.joined(separator: " · "))")
+        #if os(macOS)
+            LabeledContent {
+                Button("Show Libraries…") { showsLibraries = true }
+            } label: {
+                Text("Libraries")
+                Text("Each library Rayon ships, its repository and its license.")
+            }
+            .sheet(isPresented: $showsLibraries) { LibrariesView() }
+            #if DEBUG
+                .task { showsLibraries = ProcessInfo.processInfo.environment["RAYON_PREVIEW_LIBRARIES"] != nil }
+            #endif
+        #else
+            NavigationLink {
+                LibrariesView()
+            } label: {
+                LabeledContent("Libraries", value: LibraryNotice.bundled.count, format: .number)
+            }
+        #endif
     }
 
     private func acknowledgement(_ title: LocalizedStringResource, _ text: LocalizedStringResource) -> some View {

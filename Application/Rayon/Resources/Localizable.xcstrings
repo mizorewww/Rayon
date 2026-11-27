@@ -3812,6 +3812,22 @@
         }
       }
     },
+    "Each library Rayon ships, its repository and its license." : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rayon 附带的每个库、其仓库和许可证。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rayon 附帶的每個程式庫、其儲存庫和授權。"
+          }
+        }
+      }
+    },
     "Edit" : {
       "localizations" : {
         "zh-Hans" : {
@@ -6752,6 +6768,22 @@
         }
       }
     },
+    "No Library Selected" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未选择库"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未選擇程式庫"
+          }
+        }
+      }
+    },
     "No desktop devices on the account" : {
       "localizations" : {
         "zh-Hans" : {
@@ -6828,6 +6860,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "沒有可自動認證的身份能夠登入。請選擇一個身份。"
+          }
+        }
+      }
+    },
+    "No license file" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无许可证文件"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無授權檔案"
           }
         }
       }
@@ -9285,6 +9333,22 @@
         }
       }
     },
+    "Search libraries" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜索库"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜尋程式庫"
+          }
+        }
+      }
+    },
     "Search servers" : {
       "localizations" : {
         "zh-Hans" : {
@@ -9745,6 +9809,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "顯示全部"
+          }
+        }
+      }
+    },
+    "Show Libraries…" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示库…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顯示程式庫…"
           }
         }
       }

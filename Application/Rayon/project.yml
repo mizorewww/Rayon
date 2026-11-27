@@ -41,6 +41,8 @@ targets:
         buildPhase: resources
       - path: ../../Resources/LICENSE
         buildPhase: resources
+      - path: ../../Resources/Libraries.json
+        buildPhase: resources
       - path: ../../Resources/Privacy
         type: folder
         buildPhase: resources
