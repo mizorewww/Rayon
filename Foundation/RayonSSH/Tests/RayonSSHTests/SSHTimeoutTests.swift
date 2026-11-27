@@ -3,7 +3,8 @@
 //  RayonSSHTests
 //
 //  A server that accepts the connection and then says nothing is given
-//  the connection's timeout, and a cancelled connect ends at once.
+//  the connection's timeout, one slow to sign in is given all of it, and a
+//  cancelled connect ends at once.
 //
 
 import NIOCore
@@ -57,6 +58,18 @@ final class SSHTimeoutTests: XCTestCase {
             XCTAssertTrue(reason.contains("WebSocket upgrade"), reason)
         }
         XCTAssertLessThan(ContinuousClock.now - started, .seconds(3))
+    }
+
+    /// Citadel gave up on signing in after a fixed 10 seconds, whatever
+    /// the connection's timeout: a slow server, or an agent waiting for
+    /// Touch ID, read as one out of reach.
+    func testSigningInMayTakeAsLongAsTheTimeout() async throws {
+        let server = try await TestSSHServer.start(signInDelay: .seconds(11))
+        let started = ContinuousClock.now
+        let connection = try await server.connect(timeout: .seconds(30))
+        XCTAssertGreaterThan(ContinuousClock.now - started, .seconds(10))
+        await connection.close()
+        await server.stop()
     }
 
     func testCancellingAConnectEndsIt() async throws {

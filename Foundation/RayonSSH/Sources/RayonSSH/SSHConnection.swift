@@ -199,12 +199,15 @@ public actor SSHConnection {
         // maximum packet, 128 KB by default: a download then waits for a
         // round trip every 128 KB. 2 MB is OpenSSH's window.
         settings.protocolOptions = [.maximumPacketSize(1 << 21)]
-        // The handshake and sign-in get the connection's timeout too, and
-        // end when the task is cancelled. Citadel gives up only after its
-        // own 10 seconds, and a closed channel (one through a jump host
-        // waits for the bastion to confirm) does not end it sooner, so
-        // this does not wait for Citadel. The deadline is kept off the
-        // channel's event loop, which a sign request to the agent holds.
+        // The handshake and sign-in get the connection's timeout, extended
+        // by the time the agent waits for the person, and end when the
+        // task is cancelled. Citadel's own 10 seconds would cut off a slow
+        // server or a Touch ID prompt, so it is turned off, and a closed
+        // channel (one through a jump host waits for the bastion to
+        // confirm) does not end Citadel's wait, so this does not wait for
+        // Citadel. The deadline is kept off the channel's event loop,
+        // which a sign request to the agent holds.
+        settings.loginTimeout = nil
         let signedIn = channel.eventLoop.makePromise(of: SSHClient.self)
         let started = ContinuousClock.now
         let waitedBefore = agentWait?.waited ?? .zero
