@@ -117,8 +117,11 @@ public struct TerminalSettingsTools: View {
 public extension View {
     /// What goes around terminal settings: why the last change was not
     /// applied, and the confirmation `TerminalSettingsTools`' Reset asks for.
+    /// The issue floats over the bottom edge: a safe-area inset there would
+    /// make the form measure every row, not just the visible ones, on each
+    /// change and page switch.
     func terminalSettingsChrome(confirmingReset: Binding<Bool>) -> some View {
-        safeAreaInset(edge: .bottom) { IssueBar() }
+        overlay(alignment: .bottom) { IssueBar() }
             .confirmationDialog(Text("Reset every terminal setting to its default?", bundle: .module), isPresented: confirmingReset) {
                 Button(.init("Reset", bundle: .module), role: .destructive) { TerminalSettings.shared.resetAll() }
             } message: {
