@@ -35,24 +35,24 @@ public actor SSHConnectionPool {
     ) async throws -> SSHLease {
         let key = Self.key(for: machine)
         if let entry = entries[key] {
-            // A connection that has dropped since is replaced. One that is
-            // still connecting is shared even when it fails: those who
-            // waited for it share the failure rather than each connecting
-            // (and asking about the host key) again.
-            if case let .success((connection, _)) = await entry.connecting.result,
-               !connection.isActive, entries[key]?.id == entry.id
-            {
-                entries[key] = nil
+            // Counted before waiting: were the connect to fail meanwhile,
+            // the first lease giving up would otherwise drop the entry,
+            // and this one connect (and ask about the host key) again.
+            // One still connecting is shared even when it fails.
+            entries[key]?.leases += 1
+            guard case let .success((connection, _)) = await entry.connecting.result, !connection.isActive else {
+                return try await finish(entry, key: key)
             }
+            // It has dropped since: replaced.
+            if entries[key]?.id == entry.id { entries[key] = nil }
+            return try await lease(for: machine, background: background, hint: hint)
         }
-        let entry: Entry
-        if let existing = entries[key] {
-            entry = existing
-        } else {
-            entry = Entry(connecting: Task { try await machine.connectSSH(background: background, hint: hint) })
-            entries[key] = entry
-        }
-        entries[key]?.leases += 1
+        let entry = Entry(connecting: Task { try await machine.connectSSH(background: background, hint: hint) }, leases: 1)
+        entries[key] = entry
+        return try await finish(entry, key: key)
+    }
+
+    private func finish(_ entry: Entry, key: String) async throws -> SSHLease {
         do {
             let (connection, identity) = try await entry.connecting.value
             return SSHLease(connection: connection, identity: identity) { [weak self] in

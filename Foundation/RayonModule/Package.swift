@@ -59,6 +59,7 @@ let package = Package(
                 "RayonSSH",
                 "RayonPTY",
                 .product(name: "BigInt", package: "BigInt"),
+                .product(name: "NIOPosix", package: "swift-nio"),
             ],
             resources: [.copy("Fixtures")]
         ),
