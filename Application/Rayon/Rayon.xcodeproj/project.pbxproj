@@ -57,6 +57,7 @@
 		6BE14F2785DBBE3346CE8220 /* UIWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 789C0A14AD613CA687C88D63 /* UIWindow.swift */; };
 		6CFC9192EEB229EF6AA4EA6C /* MonitorPage+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BA464F99BA28F5390418B68 /* MonitorPage+macOS.swift */; };
 		6E2F952CDC6E4D14D0A1ED1A /* UURemoteAccountSheet+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30519B949F1845B161D0DBFC /* UURemoteAccountSheet+iOS.swift */; };
+		72366AC02B20085EBB6480EC /* SPIndicator in Frameworks */ = {isa = PBXBuildFile; platformFilters = (ios, ); productRef = 46DB13677D651D54DE9A7A99 /* SPIndicator */; };
 		72E5D2C0EF09868BB5B19040 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 39E0490988A2256F97D6CE80 /* Assets.xcassets */; };
 		72EFBD5A781D44D2B0593431 /* FolderActions+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 496B54EB8D1BEF16F00C8B8E /* FolderActions+macOS.swift */; };
 		75640C9BDCC96E2D5815E223 /* LicenseView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68766FBCCF75FCB358204392 /* LicenseView+iOS.swift */; };
@@ -87,6 +88,7 @@
 		B678CCEF95EC53603CE84038 /* RayonCommands+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A192E7F4DED6FA660A616D9 /* RayonCommands+macOS.swift */; };
 		BB0CCF64B24775610335BBAA /* View+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = F303FA061D1A76E58FCA4BA2 /* View+iOS.swift */; };
 		BF4F523F41DE4B5EBDA2F6E7 /* UURemoteAccountSheet+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6293DC9A28B290B8453B5E3 /* UURemoteAccountSheet+macOS.swift */; };
+		C08C8176C8CBA23BF1E2A114 /* HomeBackdrop.swift in Sources */ = {isa = PBXBuildFile; fileRef = ECE09F11AAF262B5CEFF4B52 /* HomeBackdrop.swift */; };
 		C3A482C870617D3DB80D12C4 /* AboutSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78F2E26BAD5E3F7A3031797B /* AboutSettings.swift */; };
 		C41EDBD7C19CF238439B244C /* FocusedCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C33FB7EDEB1D6F9AAB710CA /* FocusedCommands.swift */; };
 		C489818FBEF2F12602C88624 /* RayonUtil+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 942DABEC7925BEBD536CD478 /* RayonUtil+iOS.swift */; };
@@ -109,7 +111,7 @@
 		EBFD30BF7EC88F60BA18B87A /* Pasteboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 46910F2B6D3EE880A8F2A142 /* Pasteboard.swift */; };
 		F1F9247D4AC81E428C168D8B /* PageScaffold+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = DEB68BCA67DCAE0F20F5EA19 /* PageScaffold+macOS.swift */; };
 		F61AF0CC32FB4C37EBDF2EBC /* Privacy in Resources */ = {isa = PBXBuildFile; fileRef = 5277FB833EF14A636A5A2C09 /* Privacy */; };
-		F7167E2C34F15D359E10A931 /* SPIndicator in Frameworks */ = {isa = PBXBuildFile; platformFilters = (ios, ); productRef = 46DB13677D651D54DE9A7A99 /* SPIndicator */; };
+		F7167E2C34F15D359E10A931 /* ColorfulX in Frameworks */ = {isa = PBXBuildFile; productRef = 127779DD98D4B80E064918CB /* ColorfulX */; };
 		F98D576A6F79A246C851A6E3 /* SymbolPicker in Frameworks */ = {isa = PBXBuildFile; productRef = 679D5A8D992D398335F44C83 /* SymbolPicker */; };
 		FA024B8E85B605035B85E019 /* EditIdentityView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = B8BC83D8881657A297C46C79 /* EditIdentityView+iOS.swift */; };
 		FD2C5E820251AAB79A955F40 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 4E43E5CF37DB308FCBC06E53 /* PrivacyInfo.xcprivacy */; };
@@ -217,6 +219,7 @@
 		E54E20A564F4D21E1E74C519 /* RayonTerminal */ = {isa = PBXFileReference; lastKnownFileType = folder; name = RayonTerminal; path = ../../Foundation/RayonTerminal; sourceTree = SOURCE_ROOT; };
 		E6293DC9A28B290B8453B5E3 /* UURemoteAccountSheet+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UURemoteAccountSheet+macOS.swift"; sourceTree = "<group>"; };
 		EB8EF6F6A2D3A971B358CD88 /* Appearance+Apply.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Appearance+Apply.swift"; sourceTree = "<group>"; };
+		ECE09F11AAF262B5CEFF4B52 /* HomeBackdrop.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeBackdrop.swift; sourceTree = "<group>"; };
 		F23D3C8E150F61373705E80C /* TerminalSessionActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalSessionActions.swift; sourceTree = "<group>"; };
 		F303FA061D1A76E58FCA4BA2 /* View+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "View+iOS.swift"; sourceTree = "<group>"; };
 		F603B55585172E30DD6B2202 /* UURemoteSessionList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UURemoteSessionList.swift; sourceTree = "<group>"; };
@@ -237,7 +240,8 @@
 				01B3BB8C084B19623AA6156B /* MachineStatusView in Frameworks */,
 				F98D576A6F79A246C851A6E3 /* SymbolPicker in Frameworks */,
 				A7900A3F89BA4CDA1B30693C /* AlertController in Frameworks */,
-				F7167E2C34F15D359E10A931 /* SPIndicator in Frameworks */,
+				F7167E2C34F15D359E10A931 /* ColorfulX in Frameworks */,
+				72366AC02B20085EBB6480EC /* SPIndicator in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -296,6 +300,7 @@
 			children = (
 				FE843CBA37E6F4D806A35FB3 /* DashboardView+iOS.swift */,
 				082936B899509164A1AC3890 /* DashboardView+macOS.swift */,
+				ECE09F11AAF262B5CEFF4B52 /* HomeBackdrop.swift */,
 				64158AA391E2A5FA827154BC /* HomeView+iOS.swift */,
 				B32D984E65F989A5003BC29D /* HomeView+macOS.swift */,
 			);
@@ -591,6 +596,7 @@
 				BACEAFD2486E184D130E727E /* MachineStatusView */,
 				679D5A8D992D398335F44C83 /* SymbolPicker */,
 				FC99819CF2817E656542200D /* AlertController */,
+				127779DD98D4B80E064918CB /* ColorfulX */,
 				46DB13677D651D54DE9A7A99 /* SPIndicator */,
 			);
 			productName = Rayon;
@@ -623,6 +629,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				60C6870EC5BE1DB901360632 /* XCRemoteSwiftPackageReference "AlertController" */,
+				CD97C59ADEA9061B1CD7B473 /* XCRemoteSwiftPackageReference "ColorfulX" */,
 				F3D09B64EDC4128D697CC336 /* XCRemoteSwiftPackageReference "SPIndicator" */,
 				61FAF13AFABC6423128F2B60 /* XCLocalSwiftPackageReference "../../Foundation/MachineStatus" */,
 				A59C0E1D447AE65C2257C1A8 /* XCLocalSwiftPackageReference "../../Foundation/MachineStatusView" */,
@@ -713,6 +720,7 @@
 				4E8162F6183D7DA1292C6E2C /* FolderActions+iOS.swift in Sources */,
 				72EFBD5A781D44D2B0593431 /* FolderActions+macOS.swift in Sources */,
 				B46985049F950FE751B30BA8 /* GeneralSettings.swift in Sources */,
+				C08C8176C8CBA23BF1E2A114 /* HomeBackdrop.swift in Sources */,
 				E264C226203517E36CA50B37 /* HomeView+iOS.swift in Sources */,
 				0ADA48FB160349357DE0DE10 /* HomeView+macOS.swift in Sources */,
 				30377E2ADCDC320AC25CCA23 /* IdentitiesView+macOS.swift in Sources */,
@@ -1042,6 +1050,14 @@
 				minimumVersion = 3.0.0;
 			};
 		};
+		CD97C59ADEA9061B1CD7B473 /* XCRemoteSwiftPackageReference "ColorfulX" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Lakr233/ColorfulX";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 6.2.1;
+			};
+		};
 		F3D09B64EDC4128D697CC336 /* XCRemoteSwiftPackageReference "SPIndicator" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/ivanvorobei/SPIndicator";
@@ -1056,6 +1072,11 @@
 		08929048713DE59C22E8E2D1 /* RayonTerminal */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = RayonTerminal;
+		};
+		127779DD98D4B80E064918CB /* ColorfulX */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CD97C59ADEA9061B1CD7B473 /* XCRemoteSwiftPackageReference "ColorfulX" */;
+			productName = ColorfulX;
 		};
 		1F9D3E0CB0D3A8B5CC89EBFE /* RayonEditor */ = {
 			isa = XCSwiftPackageProductDependency;

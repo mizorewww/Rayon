@@ -3,7 +3,7 @@
 //  Rayon
 //
 //  Home, laid out as the first Rayon had it: the app icon, Quick Connect,
-//  recent connections and the version, over a soft glow with drifting dots.
+//  recent connections and the version, over a slowly drifting colour wash.
 //  The server tiles are on Dashboard.
 //
 
@@ -50,7 +50,7 @@
                 ZStack {
                     RXBackdrop()
                     if animatesHome {
-                        RXStarfield()
+                        HomeBackdrop()
                     }
                 }
                 .ignoresSafeArea()

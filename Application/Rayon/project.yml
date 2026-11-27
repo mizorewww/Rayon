@@ -16,6 +16,7 @@ packages:
   SymbolPicker: { path: ../../Foundation/SymbolPicker }
   AlertController: { url: https://github.com/Lakr233/AlertController, from: 3.0.0 }
   SPIndicator: { url: https://github.com/ivanvorobei/SPIndicator, from: 1.6.5 }
+  ColorfulX: { url: https://github.com/Lakr233/ColorfulX, from: 6.2.1 }
 configFiles:
   Debug: ../../Configuration/Debug.xcconfig
   Release: ../../Configuration/Release.xcconfig
@@ -96,6 +97,7 @@ targets:
       - package: MachineStatusView
       - package: SymbolPicker
       - package: AlertController
+      - package: ColorfulX
       # Toasts; the Mac shows none.
       - package: SPIndicator
         destinationFilters: [iOS]
