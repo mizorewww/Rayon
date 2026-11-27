@@ -23,10 +23,15 @@ public final class ConfigNavigation: ObservableObject {
         selection = id
     }
 
-    var canGoBack: Bool { index > 0 }
-    var canGoForward: Bool { index + 1 < history.count }
+    public var canGoBack: Bool {
+        index > 0
+    }
 
-    func step(_ delta: Int) {
+    public var canGoForward: Bool {
+        index + 1 < history.count
+    }
+
+    public func step(_ delta: Int) {
         let next = index + delta
         guard history.indices.contains(next) else { return }
         index = next
@@ -42,7 +47,7 @@ public struct ConfigHostSettingsSection: Identifiable {
     let keywords: String
     let content: AnyView
 
-    @MainActor public init<Content: View>(id: String, keywords: String, @ViewBuilder content: () -> Content) {
+    @MainActor public init(id: String, keywords: String, @ViewBuilder content: () -> some View) {
         self.id = id
         self.keywords = keywords
         self.content = AnyView(content())
@@ -88,7 +93,9 @@ public struct GhosttyConfigurationView: View {
             active: active
         )
         .onAppear {
-            if let onApplied { TerminalSettings.shared.onFontSizeChange = { onApplied($0) } }
+            if let onApplied {
+                TerminalSettings.shared.onFontSizeChange = { onApplied($0) }
+            }
         }
     }
 
@@ -113,24 +120,26 @@ private struct SettingsShell: View {
     let hostSections: [String: ConfigHostSettingsSection]
     let embedded: Bool
     let active: Bool
-    private var settings: TerminalSettings { .shared }
+    private var settings: TerminalSettings {
+        .shared
+    }
+
     @State private var search = ""
     @State private var showsPreview = true
     @State private var confirmReset = false
 
-    private var selected: SettingsLayout.Category? { categories.first { $0.id == navigation.selection } }
+    private var selected: SettingsLayout.Category? {
+        categories.first { $0.id == navigation.selection }
+    }
 
     var body: some View {
         content
-            .safeAreaInset(edge: .bottom) { IssueBar() }
-            .confirmationDialog("Reset every terminal setting to its default?", isPresented: $confirmReset) {
-                Button("Reset", role: .destructive) { settings.resetAll() }
-            } message: {
-                Text("Rayon's General and Connection preferences are kept.")
-            }
+            .terminalSettingsChrome(confirmingReset: $confirmReset)
             .onAppear {
                 #if DEBUG
-                    if let text = ProcessInfo.processInfo.environment["RAYON_PREVIEW_SEARCH"] { search = text }
+                    if let text = ProcessInfo.processInfo.environment["RAYON_PREVIEW_SEARCH"] {
+                        search = text
+                    }
                 #endif
                 if !categories.contains(where: { $0.id == navigation.selection }) {
                     navigation.go(categories.first?.id ?? "text")
@@ -141,7 +150,7 @@ private struct SettingsShell: View {
     // MARK: Layout
 
     #if os(macOS)
-        @ViewBuilder private var content: some View {
+        private var content: some View {
             HStack(spacing: 0) {
                 List(selection: Binding(get: { search.isEmpty ? navigation.selection : nil }, set: { id in
                     guard let id else { return }
@@ -181,11 +190,15 @@ private struct SettingsShell: View {
                 }
             }
             .modifier(SearchField(text: $search, active: active))
-            .onChange(of: active) { _, now in if !now { search = "" } }
+            .onChange(of: active) {
+                _, now in if !now {
+                    search = ""
+                }
+            }
             .frame(minWidth: embedded ? 700 : 960, minHeight: 560)
         }
     #else
-        @ViewBuilder private var content: some View {
+        private var content: some View {
             Group {
                 if search.isEmpty {
                     List {
@@ -242,35 +255,13 @@ private struct SettingsShell: View {
         }
     }
 
-    /// Undo, Redo, Reset, the preview and the file.
-    @ViewBuilder private var tools: some View {
-        let _ = settings.revision
-        let terminal = selected?.section == .terminal || !search.isEmpty
-        Button { settings.undo() } label: { Label("Undo", systemImage: "arrow.uturn.backward") }
-            .disabled(!settings.undoManager.canUndo)
-            .help("Undo the last terminal setting change")
-        Button { settings.redo() } label: { Label("Redo", systemImage: "arrow.uturn.forward") }
-            .disabled(!settings.undoManager.canRedo)
-            .help("Redo")
-        Toggle(isOn: $showsPreview.animation()) { Label("Preview", systemImage: "rectangle.topthird.inset.filled") }
-            .disabled(!(selected?.previews ?? false) || !search.isEmpty)
-            .help(showsPreview ? "Hide the terminal preview" : "Show a terminal preview above the settings")
-        #if os(macOS)
-            Button { NSWorkspace.shared.activateFileViewerSelecting([settings.fileURL]) } label: {
-                Label("Show config.ghostty in Finder", systemImage: "doc.text.magnifyingglass")
-            }
-            .disabled(!FileManager.default.fileExists(atPath: settings.fileURL.path))
-            .help("The file the terminal settings are kept in")
-        #else
-            if FileManager.default.fileExists(atPath: settings.fileURL.path) {
-                ShareLink(item: settings.fileURL) { Label("Share config.ghostty", systemImage: "square.and.arrow.up") }
-            }
-        #endif
-        Button(role: .destructive) { confirmReset = true } label: {
-            Label("Reset Terminal Settings…", systemImage: "arrow.counterclockwise")
-        }
-        .disabled(!terminal)
-        .help("Reset every terminal setting to its default")
+    private var tools: some View {
+        TerminalSettingsTools(
+            showsPreview: $showsPreview,
+            confirmingReset: $confirmReset,
+            previewAvailable: (selected?.previews ?? false) && search.isEmpty,
+            resetAvailable: selected?.section == .terminal || !search.isEmpty
+        )
     }
 
     private func changedCount(_ category: SettingsLayout.Category) -> Int {
@@ -297,10 +288,11 @@ private struct SettingsShell: View {
 
 /// One category as a form: its groups as sections, the app's rows and
 /// Ghostty settings alike, with the terminal preview above when it helps.
-private struct CategoryPage: View {
+struct CategoryPage: View {
     let category: SettingsLayout.Category
     let hostSections: [String: ConfigHostSettingsSection]
     @Binding var showsPreview: Bool
+    var header: AnyView?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -314,6 +306,7 @@ private struct CategoryPage: View {
                 if let note = category.note {
                     Section { Text(note).foregroundStyle(.secondary) }
                 }
+                header
                 ForEach(category.groups) { group in
                     GroupSection(group: group, keys: group.keys, hostSections: hostSections)
                 }
@@ -332,7 +325,9 @@ private struct GroupSection: View {
 
     var body: some View {
         let hosts = group.items.compactMap { item -> ConfigHostSettingsSection? in
-            if case let .host(id) = item { return hostSections[id] }
+            if case let .host(id) = item {
+                return hostSections[id]
+            }
             return nil
         }
         let settings = keys.compactMap { SettingCatalog.shared.setting($0) }
@@ -345,7 +340,9 @@ private struct GroupSection: View {
             } header: {
                 Text(group.title)
             } footer: {
-                if let footer = group.footer { Text(footer) }
+                if let footer = group.footer {
+                    Text(footer)
+                }
             }
         }
     }
@@ -353,13 +350,15 @@ private struct GroupSection: View {
 
 /// Every setting and app group matching all the words typed, under their
 /// categories, each with a way to its category.
-private struct SearchResults: View {
+struct SearchResults: View {
     let query: String
     let categories: [SettingsLayout.Category]
     let hostSections: [String: ConfigHostSettingsSection]
     let show: (String) -> Void
 
-    private var tokens: [Substring] { query.lowercased().split(whereSeparator: \.isWhitespace) }
+    private var tokens: [Substring] {
+        query.lowercased().split(whereSeparator: \.isWhitespace)
+    }
 
     private func matches(_ text: String) -> Bool {
         let text = text.lowercased()
@@ -375,15 +374,18 @@ private struct SearchResults: View {
     }
 
     private func settingMatches(_ key: String, in category: SettingsLayout.Category, _ group: SettingsLayout.Group) -> Bool {
-        if key == "keybind", Self.shortcutsMatch(query) { return true }
+        if key == "keybind", Self.shortcutsMatch(query) {
+            return true
+        }
         guard let setting = SettingCatalog.shared.setting(key) else { return false }
         let options = (setting.widget?.options ?? []).map { SettingsLayout.optionName(key, value: $0.value, fallback: $0.name) }
         return matches(([setting.key, setting.name, setting.plainDescription, SettingsLayout.title(setting),
                          SettingsLayout.summary(setting), category.title, group.title] + options).joined(separator: " "))
     }
 
-    var body: some View {
-        let results = categories.compactMap { category -> (SettingsLayout.Category, [(SettingsLayout.Group, [String])])? in
+    /// The groups with a match, under their categories.
+    var results: [(SettingsLayout.Category, [(SettingsLayout.Group, [String])])] {
+        categories.compactMap { category -> (SettingsLayout.Category, [(SettingsLayout.Group, [String])])? in
             let groups = category.groups.compactMap { group -> (SettingsLayout.Group, [String])? in
                 let hostMatch = group.items.contains { item in
                     guard case let .host(id) = item, let host = hostSections[id] else { return false }
@@ -394,32 +396,47 @@ private struct SearchResults: View {
             }
             return groups.isEmpty ? nil : (category, groups)
         }
+    }
+
+    var body: some View {
+        let results = results
         if results.isEmpty {
             ContentUnavailableView.search(text: query)
         } else {
-            Form {
-                ForEach(results, id: \.0.id) { category, groups in
-                    Section {
-                        Button("Show \(category.title)", systemImage: category.icon) { show(category.id) }
-                    }
-                    ForEach(groups, id: \.0.id) { group, keys in
-                        GroupSection(
-                            group: SettingsLayout.Group(group.id, "\(category.title) › \(group.title)", group.items),
-                            keys: keys,
-                            hostSections: group.items.contains { if case .host = $0 { true } else { false } } ? hostSections : [:],
-                            query: query
-                        )
-                    }
-                }
+            Form { sections(results) }
+                .formStyle(.grouped)
+        }
+    }
+
+    /// The results as form sections, for a form that shows more.
+    func sections(_ results: [(SettingsLayout.Category, [(SettingsLayout.Group, [String])])]) -> some View {
+        ForEach(results, id: \.0.id) { category, groups in
+            Section {
+                Button("Show \(category.title)", systemImage: category.icon) { show(category.id) }
             }
-            .formStyle(.grouped)
+            ForEach(groups, id: \.0.id) { group, keys in
+                GroupSection(
+                    group: SettingsLayout.Group(group.id, "\(category.title) › \(group.title)", group.items),
+                    keys: keys,
+                    hostSections: group.items.contains {
+                        if case .host = $0 {
+                            true
+                        } else {
+                            false
+                        }
+                    } ? hostSections : [:],
+                    query: query
+                )
+            }
         }
     }
 }
 
 /// Why the last change was not applied, until it is dismissed or one is.
-private struct IssueBar: View {
-    private var settings: TerminalSettings { .shared }
+struct IssueBar: View {
+    private var settings: TerminalSettings {
+        .shared
+    }
 
     var body: some View {
         if let issue = settings.issue {
