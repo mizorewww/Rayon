@@ -299,14 +299,26 @@ final class SSHLiveTests: XCTestCase {
         await connection.close()
     }
 
-    /// A stopped command ends on the server: by SIGTERM, or, when it
-    /// ignores that as some servers ignore signal requests, by the SIGHUP of
-    /// its pseudo-terminal going away.
+    /// A command (a snippet run included) has no terminal: pagers, sudo
+    /// prompts and `[ -t 1 ]` rc files would wait on one for input.
+    func testACommandRunsWithoutATerminal() async throws {
+        let connection = try await connect([.password(password)])
+        let result = try await connection.execute("[ -t 0 ] || [ -t 1 ] && echo terminal || echo none")
+        XCTAssertEqual(String(decoding: result.output, as: UTF8.self), "none\n")
+        await connection.close()
+    }
+
+    /// A stopped command ends on the server by the SIGTERM of the signal
+    /// request: without a terminal, closing the channel alone would leave
+    /// it running. The trap proves the TERM reached the command.
     func testAStoppedCommandEndsOnTheServer() async throws {
         let connection = try await connect([.password(password)])
-        for (command, pseudoTerminal) in [("sleep 120", false), ("trap '' TERM; sleep 121", true)] {
-            let sleeper = command.components(separatedBy: "; ").last!
-            let run = Task { try await connection.execute(command, pseudoTerminal: pseudoTerminal) { _, _ in } }
+        let marker = "/tmp/rayon-got-term-\(UUID().uuidString)"
+        for (command, sleeper) in [
+            ("sleep 120", "sleep 120"),
+            ("trap 'touch \(marker); kill $!; exit' TERM; sleep 121 & wait", "sleep 121"),
+        ] {
+            let run = Task { try await connection.execute(command) { _, _ in } }
             var running = ""
             for _ in 0 ..< 50 where running.isEmpty {
                 try await Task.sleep(for: .milliseconds(100))
@@ -322,6 +334,8 @@ final class SSHLiveTests: XCTestCase {
             }
             XCTAssertEqual(left, "", "\(sleeper) outlived its stop")
         }
+        let trapped = try await connection.execute("test -e \(marker) && rm \(marker)").status
+        XCTAssertEqual(trapped, 0, "the command never got SIGTERM")
         await connection.close()
     }
 
