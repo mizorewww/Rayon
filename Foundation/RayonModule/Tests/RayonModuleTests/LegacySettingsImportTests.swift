@@ -79,6 +79,20 @@ final class LegacySettingsImportTests: XCTestCase {
         }
     }
 
+    /// 2.8's single "sync settings" switch, turned off, keeps both the app
+    /// and the terminal settings out of iCloud.
+    func testTheSettingsSyncSwitchCoversBothScopes() {
+        defaults.set(true, forKey: "me.mizorewww.rayon.sync.enabled")
+        defaults.set(false, forKey: "me.mizorewww.rayon.sync.settings")
+
+        LegacySettingsImport.run(defaults: defaults, storage: storage)
+
+        XCTAssertEqual(value(AppSettings.syncEnabled), true)
+        XCTAssertEqual(value(AppSettings.syncsAppSettings), false)
+        XCTAssertEqual(value(AppSettings.syncsTerminalSettings), false)
+        XCTAssertNil(defaults.object(forKey: "me.mizorewww.rayon.sync.settings"))
+    }
+
     /// A setting already under its new key is not overwritten, and the old
     /// key goes anyway, so a later launch changes nothing.
     func testANewValueWinsAndTheOldKeyGoes() {

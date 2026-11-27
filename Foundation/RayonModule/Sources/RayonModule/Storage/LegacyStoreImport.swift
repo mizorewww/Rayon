@@ -39,7 +39,7 @@ enum LegacyStoreImport {
         /// number or flag, so they never were written.)
         static let obsolete = [
             "machineRedacted", "openInterfaceAutomatically",
-            "me.mizorewww.rayon.sync.settings", "me.mizorewww.rayon.debug.sync",
+            "me.mizorewww.rayon.debug.sync",
         ]
     }
 
