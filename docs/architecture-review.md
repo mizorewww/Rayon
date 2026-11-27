@@ -88,7 +88,7 @@ UU 远程（当前位于 `Foundation/RayonModule/Sources/RayonModule/RemoteDeskt
   - 删除 `RayonEditor` 中 macOS 分支手写的 TextKit 1 行号尺与每次按键主线程跑 4 遍全文正则的 `MacSyntaxHighlighter`。
   - 对齐 FlowDown 直接采用预编译跨端 **`Lakr233/Runestone.xcframework`**（或在纯 AppKit 目标下采用成熟的 Tree-sitter 编辑器组件如 `CodeEditSourceEditor` / `STTextView`），实现双端一致的增量语法树高亮与大文件流畅滚动。
 - **UI 组件库与系统原生控件归位**：
-  - 引入 FlowDown 同款 **`Lakr233/AlertController`**、**`UIEffectKit`** 与 **`SPIndicator`**，彻底替换双端 `UIBridge`、`0.1s Timer` 弹窗轮询队列、40 字符错误截断与悬空 `UIHostingController`；
+  - 引入 FlowDown 同款 **`Lakr233/AlertController`** 与 **`SPIndicator`**，彻底替换双端 `UIBridge`、`0.1s Timer` 弹窗轮询队列、40 字符错误截断与悬空 `UIHostingController`；不引入 `Lakr233/UIEffectKit`：它提供的是 Metal 碎玻璃/粒子爆散转场与点阵闪光装饰（FlowDown 仅在模型详情卡片用了 `ShimmerGridPointsView`，`Indicator.swift` 并不依赖它），与弹窗通知无关，Rayon 也没有它能替换的手写特效（窗口毛玻璃已是系统 `NSVisualEffectView`，Home 背景另有方案）；
   - 引入 **`Lakr233/ColorfulX`** 替换手写 CPU `Canvas` 星空动画 `RXStarfield`；
   - 用系统原生 **`Swift Charts`** 替换手绘 `Sparkline` / `UsageBar`；
   - 用原生 `Table`（支持列宽调整、表头排序、键盘导航与多选）、原生 `Picker`/`Menu`、语义化动态字号替换 `RayonDesign` 中的伪表格与无滚动 Popover，重写或替换损坏的 `SymbolPicker`；
@@ -125,7 +125,7 @@ UU 远程（当前位于 `Foundation/RayonModule/Sources/RayonModule/RemoteDeskt
 | **Rayon 云端同步** | `Sync/*`（KVS 1MB 单键整包、自定义信封、PBKDF2 口令、30s 轮询） | `CKSyncEngine` + `CKRecord.encryptedValues`（内联加密，带大小上限；不用 `CKAsset`） | FlowDown `Storage/Sync` |
 | **Rayon 设置管理** | 4 套 `UserDefaults` 混写 + 双端手写设置页 + `GhosttyConfigurationView` 劫持 | `ConfigurableKit` (`Lakr233/ConfigurableKit`) | FlowDown `Value+*.swift` & `SettingController` |
 | **Rayon 代码编辑器** | macOS 手写 `LineNumberRulerView` + 主线程全文 4 遍正则 `MacSyntaxHighlighter` | `Lakr233/Runestone.xcframework`（或 AppKit 下 `STTextView` / `CodeEditSourceEditor`） | FlowDown `CodeEditorController` |
-| **Rayon 弹窗与通知** | 双端 `UIBridge`、`DoubleConfirm`、`0.1s` 轮询 `PresentationQueue`、40 字截断 Toast | `Lakr233/AlertController` + `Lakr233/UIEffectKit` + `SPIndicator` | FlowDown `Indicator.swift` |
+| **Rayon 弹窗与通知** | 双端 `UIBridge`、`DoubleConfirm`、`0.1s` 轮询 `PresentationQueue`、40 字截断 Toast | `Lakr233/AlertController` + `SPIndicator` | FlowDown `Indicator.swift` |
 | **Rayon 通用控件与表格** | `RayonDesign`（私有 `_VariadicView`、无滚动 `RXPicker`/`RXMenuButton`、假表头 `FileTable`、旧 `SymbolPicker`） | 原生 `NavigationSplitView`、`Form(.grouped)`、`Table`、`Picker`、`Menu`、`ListViewKit` | Apple 原生框架 / FlowDown |
 | **Rayon 图表与动效** | `Charts.swift` 手算折线 `Path`、`Welcome.swift` CPU 30fps `RXStarfield`、菜单栏 20Hz `Timer` | 原生 `Swift Charts` + `Lakr233/ColorfulX` + `Lakr233/DisplayLink` | Apple 原生框架 / FlowDown |
 | **Rayon 终端配置预览** | 4,304 行网页移植配置器 + `ConfigSandbox.swift` 309 行内存假 Shell | 保留全部设置项的原生数据驱动配置器 + `BlossomColorPicker` + 真实只读 `RayonTerminalView` 预览 + `config.ghostty` | `libghostty-spm` 原生能力 |
