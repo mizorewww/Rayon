@@ -28,12 +28,13 @@ Rayon is an SSH / server workflow client for macOS and iOS: terminals, files, po
   - `PlatformSupport/macOS`, `PlatformSupport/iOS` — glue only one platform has (the Mac's menu-bar status item, UIKit presentation).
   - `Resources/` — the asset catalog, `InfoPlist/Info-{macOS,iOS}.plist`, `Entitlements/Entitlements-{macOS,iOS}.entitlements`, the privacy manifest.
 - `Configuration/` — `Version.xcconfig` (the version of every platform), `Base.xcconfig` (bundle id and signing per SDK), `Debug` / `Release`.
-- `Foundation/*` — Swift packages: `RayonSSH` (the SSH client on SwiftNIO SSH and Citadel: connections, channels, SFTP, forwards; Docker-backed live tests in `Tests/Docker`), `RayonModule` (models, store, SSH sessions, sync, remote desktop), `RayonTerminal` (Ghostty terminal), `RayonEditor`, `RayonDesign`, `MachineStatus` / `MachineStatusView` (monitoring), `Keychain`.
+- `Foundation/*` — Swift packages: `RayonSSH` (the SSH client on SwiftNIO SSH and Citadel: connections, channels, SFTP, forwards; Docker-backed live tests in `Tests/Docker`), `RayonModule` (models, store, SSH sessions, sync, remote desktop), `RayonTerminal` (Ghostty terminal), `RayonEditor`, `RayonDesign`, `MachineStatus` / `MachineStatusView` (monitoring), `Logger` (os.Logger categories and the log file), `Telemetry` (opt-in diagnostics and usage reports).
+- `Server/Telemetry` — the Cloudflare Worker (D1) that receives telemetry reports; `make test-telemetry-server` typechecks and tests it.
 - `Workflow/Scripts` — build, install and release scripts, behind the root `Makefile`.
 
 ## Build & Verify
 
-- `make` lists the targets. `make build-macos` builds the Mac app (Debug bundle id `me.mizorewww.rayon.debug`, its own sandbox container), `make build-ios` the iOS app for the simulator, `make test` runs every Swift package's tests; `CONFIGURATION=Release` switches configuration. Products land in `.build/DerivedData`. Or open `App.xcworkspace`.
+- `make` lists the targets. `make build-macos` builds the Mac app (Debug bundle id `me.mizorewww.rayon.debug`, so its preferences, its `~/Library/Application Support/me.mizorewww.rayon.debug` data and its keychain group are its own; the app is not sandboxed, and development-signed builds share iCloud's Development environment), `make build-ios` the iOS app for the simulator, `make test` runs every Swift package's tests; `CONFIGURATION=Release` switches configuration. Products land in `.build/DerivedData`. Or open `App.xcworkspace`.
 - The app takes its version from `Configuration/Version.xcconfig` on every platform. `make scan-license` fails when a pinned dependency is missing from `Resources/LICENSE`; add its notice when you add a dependency.
 - CI (`.github/workflows/ci.yml`) runs `make build-macos`, `make build-ios`, `make test` and `make scan-license` on every pull request; auto-merge waits for it.
 - A change is done when it builds for every platform it touches, its tests pass, and the affected feature works in the running app.
