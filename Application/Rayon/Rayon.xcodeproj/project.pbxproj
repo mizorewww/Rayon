@@ -208,7 +208,6 @@
 		BF976BD9CB2E2407F0E7AACC /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		C06FA8CD33BCACA3FE0634A5 /* RayonApp+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RayonApp+iOS.swift"; sourceTree = "<group>"; };
 		C271F9345D5AE7980B3BE9F8 /* MonitorView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MonitorView+iOS.swift"; sourceTree = "<group>"; };
-		C6006ADAF2B77180217E116A /* SymbolPicker */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SymbolPicker; path = ../../Foundation/SymbolPicker; sourceTree = SOURCE_ROOT; };
 		C8E247320B0E86BDCD94E59D /* ConnectionSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionSettings.swift; sourceTree = "<group>"; };
 		CF7FCDDEC6CDFF3B5D86B26C /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		D05AE48DF1CC0C85A4421B70 /* ServerTool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerTool.swift; sourceTree = "<group>"; };
@@ -444,7 +443,6 @@
 				43BEDD24A016BBDEECA941DE /* RayonEditor */,
 				B8F1927DE9F6CD648AA8DDE3 /* RayonModule */,
 				E54E20A564F4D21E1E74C519 /* RayonTerminal */,
-				C6006ADAF2B77180217E116A /* SymbolPicker */,
 			);
 			name = Packages;
 			sourceTree = "<group>";
@@ -634,12 +632,12 @@
 				60C6870EC5BE1DB901360632 /* XCRemoteSwiftPackageReference "AlertController" */,
 				CD97C59ADEA9061B1CD7B473 /* XCRemoteSwiftPackageReference "ColorfulX" */,
 				F3D09B64EDC4128D697CC336 /* XCRemoteSwiftPackageReference "SPIndicator" */,
+				F8344144E9BAF2DC745D47FD /* XCRemoteSwiftPackageReference "SymbolPicker" */,
 				61FAF13AFABC6423128F2B60 /* XCLocalSwiftPackageReference "../../Foundation/MachineStatus" */,
 				A59C0E1D447AE65C2257C1A8 /* XCLocalSwiftPackageReference "../../Foundation/MachineStatusView" */,
 				8DC229B9F4692D9A2AEDCAC3 /* XCLocalSwiftPackageReference "../../Foundation/RayonEditor" */,
 				6E1E836AD3F3D2BB83F2AE31 /* XCLocalSwiftPackageReference "../../Foundation/RayonModule" */,
 				361D507B1F32AE0526A1E267 /* XCLocalSwiftPackageReference "../../Foundation/RayonTerminal" */,
-				88289D6E7AF2BBC940E7039D /* XCLocalSwiftPackageReference "../../Foundation/SymbolPicker" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = F84C3862EBF0821AB072E580 /* Products */;
@@ -1031,10 +1029,6 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../../Foundation/RayonModule;
 		};
-		88289D6E7AF2BBC940E7039D /* XCLocalSwiftPackageReference "../../Foundation/SymbolPicker" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../Foundation/SymbolPicker;
-		};
 		8DC229B9F4692D9A2AEDCAC3 /* XCLocalSwiftPackageReference "../../Foundation/RayonEditor" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../../Foundation/RayonEditor;
@@ -1070,6 +1064,14 @@
 				minimumVersion = 1.6.5;
 			};
 		};
+		F8344144E9BAF2DC745D47FD /* XCRemoteSwiftPackageReference "SymbolPicker" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/xnth97/SymbolPicker";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.6.2;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1093,6 +1095,7 @@
 		};
 		679D5A8D992D398335F44C83 /* SymbolPicker */ = {
 			isa = XCSwiftPackageProductDependency;
+			package = F8344144E9BAF2DC745D47FD /* XCRemoteSwiftPackageReference "SymbolPicker" */;
 			productName = SymbolPicker;
 		};
 		69E839275A4207A4C244C717 /* RayonModule */ = {

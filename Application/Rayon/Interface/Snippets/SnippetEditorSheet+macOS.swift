@@ -75,6 +75,11 @@
                             Button("More Symbols…") { showAllSymbols = true }
                                 .rxLinkButton()
                                 .font(.rxHelp)
+                                // Picking a symbol closes it; clicking away
+                                // leaves the symbol as it was.
+                                .popover(isPresented: $showAllSymbols, arrowEdge: .bottom) {
+                                    SymbolPicker(symbol: $symbol)
+                                }
                         }
                     }
                     RXField("Command") {
@@ -118,9 +123,6 @@
                     .disabled(name.trimmingCharacters(in: .whitespaces).isEmpty)
             }
             .frame(width: 560)
-            .sheet(isPresented: $showAllSymbols) {
-                SymbolPicker(symbol: $symbol)
-            }
             .onAppear(perform: load)
         }
 

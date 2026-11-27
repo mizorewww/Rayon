@@ -17,9 +17,6 @@
       location = "group:Foundation/RayonSSH">
    </FileRef>
    <FileRef
-      location = "group:Foundation/SymbolPicker">
-   </FileRef>
-   <FileRef
       location = "group:Foundation/RayonTerminal">
    </FileRef>
    <FileRef

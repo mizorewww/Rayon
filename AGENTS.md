@@ -28,7 +28,7 @@ Rayon is an SSH / server workflow client for macOS and iOS: terminals, files, po
   - `PlatformSupport/macOS`, `PlatformSupport/iOS` — glue only one platform has (the Mac's menu-bar status item, UIKit presentation).
   - `Resources/` — the asset catalog, `InfoPlist/Info-{macOS,iOS}.plist`, `Entitlements/Entitlements-{macOS,iOS}.entitlements`, the privacy manifest.
 - `Configuration/` — `Version.xcconfig` (the version of every platform), `Base.xcconfig` (bundle id and signing per SDK), `Debug` / `Release`.
-- `Foundation/*` — Swift packages: `RayonSSH` (the SSH client on SwiftNIO SSH and Citadel: connections, channels, SFTP, forwards; Docker-backed live tests in `Tests/Docker`), `RayonModule` (models, store, SSH sessions, sync, remote desktop), `RayonTerminal` (Ghostty terminal), `RayonEditor`, `RayonDesign`, `MachineStatus` / `MachineStatusView` (monitoring), `SymbolPicker`, `Keychain`.
+- `Foundation/*` — Swift packages: `RayonSSH` (the SSH client on SwiftNIO SSH and Citadel: connections, channels, SFTP, forwards; Docker-backed live tests in `Tests/Docker`), `RayonModule` (models, store, SSH sessions, sync, remote desktop), `RayonTerminal` (Ghostty terminal), `RayonEditor`, `RayonDesign`, `MachineStatus` / `MachineStatusView` (monitoring), `Keychain`.
 - `Workflow/Scripts` — build, install and release scripts, behind the root `Makefile`.
 
 ## Build & Verify

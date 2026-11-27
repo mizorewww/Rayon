@@ -13,10 +13,10 @@ packages:
   RayonEditor: { path: ../../Foundation/RayonEditor }
   MachineStatus: { path: ../../Foundation/MachineStatus }
   MachineStatusView: { path: ../../Foundation/MachineStatusView }
-  SymbolPicker: { path: ../../Foundation/SymbolPicker }
   AlertController: { url: https://github.com/Lakr233/AlertController, from: 3.0.0 }
   SPIndicator: { url: https://github.com/ivanvorobei/SPIndicator, from: 1.6.5 }
   ColorfulX: { url: https://github.com/Lakr233/ColorfulX, from: 6.2.1 }
+  SymbolPicker: { url: https://github.com/xnth97/SymbolPicker, from: 1.6.2 }
 configFiles:
   Debug: ../../Configuration/Debug.xcconfig
   Release: ../../Configuration/Release.xcconfig
