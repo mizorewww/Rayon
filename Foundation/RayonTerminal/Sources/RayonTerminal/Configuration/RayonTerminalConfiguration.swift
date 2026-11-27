@@ -80,27 +80,11 @@ enum RayonTerminalConfiguration {
         return result
     }()
 
-    /// The settings that take effect inside Rayon. The rest belong to the
-    /// standalone Ghostty app (windows, tabs, its process, GTK, its icon, the
-    /// blur behind its window), to Linux (`freetype-load-flags`) or to Rayon's
-    /// own preferences, and stay in the file without effect.
-    nonisolated static let supportedKeys: Set<String> = [
-        "background", "foreground", "background-opacity", "background-opacity-cells",
-        "selection-background", "selection-foreground", "selection-clear-on-typing", "selection-clear-on-copy",
-        "cursor-color", "cursor-text", "cursor-style", "cursor-style-blink", "cursor-opacity", "cursor-click-to-move",
-        "palette", "bold-color", "minimum-contrast", "keybind", "font-size",
-        "font-family", "font-family-bold", "font-family-italic", "font-family-bold-italic", "font-feature",
-        "font-variation", "font-variation-bold", "font-variation-italic", "font-variation-bold-italic",
-        "font-thicken", "font-thicken-strength", "font-style", "font-style-bold", "font-style-italic", "font-style-bold-italic",
-        "font-codepoint-map", "font-synthetic-style", "grapheme-width-method",
-        "adjust-cell-width", "adjust-cell-height", "adjust-font-baseline", "adjust-underline-position", "adjust-underline-thickness",
-        "adjust-strikethrough-position", "adjust-strikethrough-thickness", "adjust-cursor-thickness", "adjust-cursor-height",
-        "adjust-box-thickness", "adjust-overline-position", "adjust-overline-thickness",
-        "mouse-hide-while-typing", "mouse-shift-capture", "mouse-scroll-multiplier", "scrollback-limit",
-        "window-padding-x", "window-padding-y", "window-padding-balance", "window-padding-color",
-        "clipboard-trim-trailing-spaces", "clipboard-paste-protection", "clipboard-paste-bracketed-safe",
-        "link-url", "image-storage-limit", "title", "vt-kam-allowed", "enquiry-response",
-    ]
+    /// The settings that take effect inside Rayon: the ones Settings shows
+    /// outside Ghostty App, but `theme`, which `lines` resolves into colors.
+    nonisolated static let supportedKeys: Set<String> = Set(
+        SettingsLayout.categories.filter { $0.id != SettingsLayout.Category.ghosttyID }.flatMap(\.keys)
+    ).subtracting(["theme"])
 
     nonisolated static let supportedActions: Set<String> = [
         "ignore", "unbind", "csi", "esc", "text", "cursor_key", "reset", "copy_to_clipboard", "paste_from_clipboard",
