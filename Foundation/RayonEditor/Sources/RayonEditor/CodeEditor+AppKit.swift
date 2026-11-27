@@ -98,7 +98,8 @@ public struct CodeEditor: View {
 /// read after the editor appeared, a file loaded again. SourceEditor takes
 /// its binding's text once, when it is made, and from then on only writes
 /// the binding.
-final class EditorTextSync: TextViewCoordinator {
+@MainActor
+final class EditorTextSync: @preconcurrency TextViewCoordinator {
     private weak var controller: TextViewController?
 
     func prepareCoordinator(controller: TextViewController) {
@@ -120,7 +121,7 @@ extension EditorTheme {
     /// of Rayon in light and dark mode rather than as a separate tool. Built
     /// once: the editor reloads whenever its configuration compares unequal,
     /// and fresh dynamic colours never compare equal.
-    static let rayon = EditorTheme(
+    @MainActor static let rayon = EditorTheme(
         text: Attribute(color: NSColor(Color.rxInk)),
         insertionPoint: NSColor(Color.rxAccent),
         invisibles: Attribute(color: NSColor(Color.rxInkTertiary)),

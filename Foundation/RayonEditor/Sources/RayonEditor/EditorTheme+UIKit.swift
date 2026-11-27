@@ -6,7 +6,8 @@ import UIKit
 
 /// Editor colours drawn from the app's tokens, so the editor reads as part of
 /// Rayon in light and dark mode rather than as a separate tool.
-final class EditorTheme: Runestone.Theme {
+/// Immutable, so a file can be parsed with it off the main actor.
+final class EditorTheme: Runestone.Theme, Sendable {
     let font: UIFont
     let lineNumberFont: UIFont
 

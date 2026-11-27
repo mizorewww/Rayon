@@ -97,7 +97,8 @@ public struct CodeEditor: UIViewRepresentable {
         }
     }
 
-    public final class Coordinator: NSObject, TextViewDelegate {
+    @MainActor
+    public final class Coordinator: NSObject, @preconcurrency TextViewDelegate {
         var parent: CodeEditor
         var lastText = ""
         var lastLanguage = EditorLanguage.plain
@@ -116,27 +117,28 @@ public struct CodeEditor: UIViewRepresentable {
             lastFontSize = parent.fontSize
             let theme = EditorTheme(size: parent.fontSize)
             let loaded = parent.language
-            let language = loaded.treeSitter
-            nonisolated(unsafe) let weakView = WeakBox(view)
             view.isEditable = false
             loads += 1
             inFlightLoads += 1
             let load = loads
-            DispatchQueue.global(qos: .userInitiated).async {
-                let state: TextViewState = language.map { TextViewState(text: text, theme: theme, language: $0) }
-                    ?? TextViewState(text: text, theme: theme)
-                nonisolated(unsafe) let ready = state
-                DispatchQueue.main.async { [weak self] in
-                    guard let self else { return }
-                    self.inFlightLoads = max(0, self.inFlightLoads - 1)
-                    guard self.loads == load, let view = weakView.value else { return }
-                    view.setState(ready)
-                    view.isEditable = true
-                    if self.lastLanguage != loaded {
-                        view.setLanguageMode(self.lastLanguage.treeSitter.map { TreeSitterLanguageMode(language: $0) } ?? PlainTextLanguageMode())
-                    }
+            Task { [weak self, weak view] in
+                let ready = await Self.makeState(text: text, theme: theme, language: loaded)
+                guard let self else { return }
+                self.inFlightLoads = max(0, self.inFlightLoads - 1)
+                guard self.loads == load, let view else { return }
+                view.setState(ready)
+                view.isEditable = true
+                if self.lastLanguage != loaded {
+                    view.setLanguageMode(self.lastLanguage.treeSitter.map { TreeSitterLanguageMode(language: $0) } ?? PlainTextLanguageMode())
                 }
             }
+        }
+
+        /// Parsing a large file takes a while; it runs off the main actor.
+        @concurrent
+        private static func makeState(text: String, theme: EditorTheme, language: EditorLanguage) async -> sending TextViewState {
+            language.treeSitter.map { TextViewState(text: text, theme: theme, language: $0) }
+                ?? TextViewState(text: text, theme: theme)
         }
 
         public func textViewDidChange(_ textView: TextView) {
@@ -159,11 +161,6 @@ private struct Pair: CharacterPair {
         self.leading = leading
         self.trailing = trailing
     }
-}
-
-private final class WeakBox<Value: AnyObject> {
-    weak var value: Value?
-    init(_ value: Value) { self.value = value }
 }
 
 #endif
