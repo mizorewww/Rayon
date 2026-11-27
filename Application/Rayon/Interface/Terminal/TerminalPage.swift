@@ -501,6 +501,9 @@ struct TerminalPage: View {
                     .focused($searchFieldFocused)
                     .onSubmit { context.termInterface.showNextMatch() }
                     .onChange(of: searchQuery) { context.termInterface.search($0) }
+                    // Esc in the field closes the bar; the terminal gets the
+                    // focus back when the bar goes.
+                    .onExitCommand { withAnimation(.rxQuick) { showSearch = false } }
                 if !searchQuery.isEmpty {
                     Button {
                         context.termInterface.showNextMatch(backwards: true)
