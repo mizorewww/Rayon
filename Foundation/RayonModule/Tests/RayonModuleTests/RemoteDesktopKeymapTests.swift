@@ -75,4 +75,61 @@ final class RemoteDesktopKeymapTests: XCTestCase {
             XCTAssertNotNil(RemoteDesktopKeymap.windowsVKForCarbon[keyCode], "HID 0x\(String(usage, radix: 16))")
         }
     }
+
+    /// Under a modifier of the bar, text from the software keyboard goes as
+    /// the keys that type it.
+    func testCharactersBecomeKeys() throws {
+        let c = try XCTUnwrap(RemoteDesktopKeymap.key(typing: "c"))
+        XCTAssertEqual(c.stroke.keyCode, 8)
+        XCTAssertEqual(c.stroke.keySym, 0x63)
+        XCTAssertFalse(c.shift)
+
+        let capital = try XCTUnwrap(RemoteDesktopKeymap.key(typing: "C"))
+        XCTAssertEqual(capital.stroke.keyCode, 8)
+        XCTAssertTrue(capital.shift)
+
+        let bang = try XCTUnwrap(RemoteDesktopKeymap.key(typing: "!"))
+        XCTAssertEqual(bang.stroke.keyCode, 18)
+        XCTAssertTrue(bang.shift)
+
+        let newline = try XCTUnwrap(RemoteDesktopKeymap.key(typing: "\n"))
+        XCTAssertEqual(newline.stroke.keySym, 0xFF0D)
+
+        XCTAssertNil(RemoteDesktopKeymap.key(typing: "中"))
+    }
+
+    // MARK: Sticky modifiers
+
+    func testModifierHoldsForOneKey() {
+        var modifiers = RemoteDesktopStickyModifiers()
+        XCTAssertEqual(modifiers.tap(.control, at: 0), .armed)
+        XCTAssertEqual(modifiers.active, [.control])
+        XCTAssertEqual(modifiers.consume(), [.control])
+        XCTAssertEqual(modifiers[.control], .inactive)
+        XCTAssertEqual(modifiers.consume(), [])
+    }
+
+    func testDoubleTapLocksUntilTappedAgain() {
+        var modifiers = RemoteDesktopStickyModifiers()
+        modifiers.tap(.shift, at: 0)
+        XCTAssertEqual(modifiers.tap(.shift, at: 0.1), .locked)
+        XCTAssertEqual(modifiers.consume(), [])
+        XCTAssertEqual(modifiers[.shift], .locked)
+        XCTAssertEqual(modifiers.tap(.shift, at: 5), .inactive)
+    }
+
+    func testSlowSecondTapLetsGo() {
+        var modifiers = RemoteDesktopStickyModifiers()
+        modifiers.tap(.option, at: 0)
+        XCTAssertEqual(modifiers.tap(.option, at: 1), .inactive)
+    }
+
+    func testResetLetsGoOfEverything() {
+        var modifiers = RemoteDesktopStickyModifiers()
+        modifiers.tap(.control, at: 0)
+        modifiers.tap(.command, at: 0)
+        modifiers.tap(.command, at: 0.1)
+        XCTAssertEqual(modifiers.reset(), [.control, .command])
+        XCTAssertTrue(modifiers.active.isEmpty)
+    }
 }

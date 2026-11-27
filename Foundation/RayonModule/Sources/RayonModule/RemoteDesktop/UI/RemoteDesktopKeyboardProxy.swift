@@ -44,6 +44,14 @@
             override var editingInteractionConfiguration: UIEditingInteractionConfiguration { .none }
         #endif
 
+        /// The keyboard went away, by Hide Keyboard or the system's own key:
+        /// the bar's modifiers let go with it.
+        override func resignFirstResponder() -> Bool {
+            let resigned = super.resignFirstResponder()
+            if resigned { canvas?.releaseModifiers() }
+            return resigned
+        }
+
         // MARK: Hardware keys
 
         override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
@@ -78,10 +86,11 @@
         }
 
         /// A press is the input method's while it composes (its arrows pick,
-        /// its Return commits) and when it types text by itself; any other
-        /// is a key for the host.
+        /// its Return commits) and when it types text by itself; any other,
+        /// or any under a modifier of the bar, is a key for the host.
         private func sendsAsKey(_ press: UIPress) -> Bool {
             guard let key = press.key, markedTextRange == nil else { return false }
+            if canvas?.hasStickyModifiers == true { return true }
             if !key.modifierFlags.isDisjoint(with: [.control, .alternate, .command]) { return true }
             guard let scalar = key.characters.unicodeScalars.first, scalar.value >= 0x20, scalar.value != 0x7F else { return true }
             return VNCKeySyms.keySym(forCharacter: key.characters) == nil

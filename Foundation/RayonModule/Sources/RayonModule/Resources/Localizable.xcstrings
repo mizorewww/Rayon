@@ -636,6 +636,22 @@
         }
       }
     },
+    "Alt+F4" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alt+F4"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alt+F4"
+          }
+        }
+      }
+    },
     "Alt+Tab" : {
       "localizations" : {
         "zh-Hans" : {
@@ -892,6 +908,38 @@
         }
       }
     },
+    "Cmd+Space" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cmd+Space"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cmd+Space"
+          }
+        }
+      }
+    },
+    "Cmd+Tab" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cmd+Tab"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cmd+Tab"
+          }
+        }
+      }
+    },
     "Code" : {
       "localizations" : {
         "zh-Hans" : {
@@ -920,6 +968,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "簡訊中的驗證碼"
+          }
+        }
+      }
+    },
+    "Command or Windows" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Command 或 Windows"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Command 或 Windows"
           }
         }
       }
@@ -1404,6 +1468,22 @@
         }
       }
     },
+    "Ctrl+Shift+Esc" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ctrl+Shift+Esc"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ctrl+Shift+Esc"
+          }
+        }
+      }
+    },
     "Dark" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1662,18 +1742,18 @@
         }
       }
     },
-    "Done" : {
+    "Down Arrow" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "完成"
+            "value" : "下箭头"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "完成"
+            "value" : "下箭頭"
           }
         }
       }
@@ -1802,6 +1882,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Esc"
+          }
+        }
+      }
+    },
+    "Escape" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退出键"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "退出鍵"
           }
         }
       }
@@ -1998,6 +2094,22 @@
         }
       }
     },
+    "Forward Delete" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "向前删除"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "向前刪除"
+          }
+        }
+      }
+    },
     "Forward ended" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2126,6 +2238,22 @@
         }
       }
     },
+    "Hide Keyboard" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隐藏键盘"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隱藏鍵盤"
+          }
+        }
+      }
+    },
     "Hide Names and Addresses" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2138,6 +2266,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "隱藏名稱和位址"
+          }
+        }
+      }
+    },
+    "Holds for the next key; tap twice to keep it down" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按住到下一个键；连按两下保持按住"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按住到下一個鍵；連按兩下保持按住"
           }
         }
       }
@@ -2372,6 +2516,22 @@
         }
       }
     },
+    "Key Combinations" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "组合键"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "組合鍵"
+          }
+        }
+      }
+    },
     "Key Pair" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2448,6 +2608,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "按鍵"
+          }
+        }
+      }
+    },
+    "Left Arrow" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "左箭头"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "左箭頭"
           }
         }
       }
@@ -3012,6 +3188,22 @@
         }
       }
     },
+    "Option or Alt" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Option 或 Alt"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Option 或 Alt"
+          }
+        }
+      }
+    },
     "Original · 20 Mbps" : {
       "localizations" : {
         "zh-Hans" : {
@@ -3104,6 +3296,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已暫停：iCloud 帳號已更改。尚未向目前登入的帳號傳送任何內容。"
+          }
+        }
+      }
+    },
+    "PgDn" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PgDn"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PgDn"
+          }
+        }
+      }
+    },
+    "PgUp" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PgUp"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PgUp"
           }
         }
       }
@@ -3658,6 +3882,22 @@
         }
       }
     },
+    "Right Arrow" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "右箭头"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "右箭頭"
+          }
+        }
+      }
+    },
     "Running" : {
       "localizations" : {
         "zh-Hans" : {
@@ -3934,6 +4174,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Shell 已結束（退出碼 %lld）"
+          }
+        }
+      }
+    },
+    "Shift" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shift"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shift"
           }
         }
       }
@@ -5612,6 +5868,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "未知金鑰"
+          }
+        }
+      }
+    },
+    "Up Arrow" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上箭头"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上箭頭"
           }
         }
       }

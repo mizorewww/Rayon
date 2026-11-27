@@ -153,4 +153,43 @@ enum RemoteDesktopKeymap {
         let keySym = VNCKeySyms.keySym(forKeyCode: keyCode, characters: characters)
         return RemoteDesktopKeyStroke(keyCode: keyCode, keySym: keySym, characters: characters, isDown: isDown)
     }
+
+    /// The US-layout key that types `character`, and whether it takes
+    /// Shift: how text typed on the software keyboard under a sticky
+    /// modifier becomes a key combination (Ctrl+C, not the letter c).
+    static func key(typing character: Character) -> (stroke: RemoteDesktopKeyStroke, shift: Bool)? {
+        let text = String(character)
+        guard let (keyCode, shift) = keyForCharacter[character] else { return nil }
+        let keySym = VNCKeySyms.keySym(forKeyCode: keyCode, characters: text)
+        return (RemoteDesktopKeyStroke(keyCode: keyCode, keySym: keySym, characters: text, isDown: true), shift)
+    }
+
+    private static let keyForCharacter: [Character: (UInt16, Bool)] = {
+        var table: [Character: (UInt16, Bool)] = [:]
+        let letters = Array("abcdefghijklmnopqrstuvwxyz")
+        for (offset, letter) in letters.enumerated() {
+            guard let code = carbonForHID[0x04 + offset] else { continue }
+            table[letter] = (code, false)
+            table[Character(letter.uppercased())] = (code, true)
+        }
+        // The digit row (HID 0x1E-0x27) and the punctuation keys, each with
+        // what Shift makes of it.
+        let pairs: [(usage: Int, plain: Character, shifted: Character)] = [
+            (0x1E, "1", "!"), (0x1F, "2", "@"), (0x20, "3", "#"), (0x21, "4", "$"), (0x22, "5", "%"),
+            (0x23, "6", "^"), (0x24, "7", "&"), (0x25, "8", "*"), (0x26, "9", "("), (0x27, "0", ")"),
+            (0x2D, "-", "_"), (0x2E, "=", "+"), (0x2F, "[", "{"), (0x30, "]", "}"), (0x31, "\\", "|"),
+            (0x33, ";", ":"), (0x34, "'", "\""), (0x35, "`", "~"), (0x36, ",", "<"), (0x37, ".", ">"),
+            (0x38, "/", "?"),
+        ]
+        for pair in pairs {
+            guard let code = carbonForHID[pair.usage] else { continue }
+            table[pair.plain] = (code, false)
+            table[pair.shifted] = (code, true)
+        }
+        table[" "] = (49, false)
+        table["\t"] = (48, false)
+        table["\n"] = (36, false)
+        table["\r"] = (36, false)
+        return table
+    }()
 }

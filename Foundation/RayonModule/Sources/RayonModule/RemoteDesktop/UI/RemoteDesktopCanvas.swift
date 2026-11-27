@@ -570,10 +570,10 @@ public final class RemoteDesktopCanvasView: UIView {
         }
         session?.sendKeys([stroke])
         if isDown, !isModifier, !key.modifierFlags.contains(.command) { startKeyRepeat(press, stroke) }
+        if !isDown, !isModifier { releaseArmedModifiers() }
         return true
     }
 
-    /// UIKit reports a held key once; the repeat is the text system's,
     /// Keys iPadOS keeps for itself (Tab and the arrows move focus, Escape
     /// dismisses, Home and End scroll, Backspace goes back) unless a key
     /// command claims them first; such a command may come instead of the
@@ -618,7 +618,7 @@ public final class RemoteDesktopCanvasView: UIView {
         else { return }
         keysFromCommands.insert(usage)
         DispatchQueue.main.async { [weak self] in self?.keysFromCommands.remove(usage) }
-        session?.sendKeys(RemoteDesktopSpecialKeys.click(stroke))
+        sendKey(stroke)
     }
 
     /// The text a key's KeySym names: what it types with Shift but without
@@ -633,6 +633,7 @@ public final class RemoteDesktopCanvasView: UIView {
         return key.characters
     }
 
+    /// UIKit reports a held key once; the repeat is the text system's,
     /// which these keys never reach. The host repeats a key whose down
     /// comes again (RFB leaves the repeat to the client), so a held key
     /// sends its down again, at AppKit's default rate: iPadOS shows no
@@ -673,71 +674,95 @@ public final class RemoteDesktopCanvasView: UIView {
     /// away and takes hardware keys again.
     func toggleKeyboard() {
         if keyboardProxy.isFirstResponder {
-            _ = keyboardProxy.resignFirstResponder()
-            _ = becomeFirstResponder()
+            hideKeyboard()
         } else {
             _ = keyboardProxy.becomeFirstResponder()
         }
     }
 
-    /// Esc, Tab, the arrows and Done over the software keyboard.
-    lazy var keyboardAccessory: UIView = {
-        let bar = UIToolbar()
-        bar.sizeToFit()
-        let space = UIBarButtonItem(barButtonSystemItem: .flexibleSpace, target: nil, action: nil)
-        func item(_ title: String, _ selector: Selector) -> UIBarButtonItem {
-            UIBarButtonItem(title: title, style: .plain, target: self, action: selector)
-        }
-        bar.items = [
-            item(String(localized: "Esc", bundle: .module), #selector(accessoryEscape)),
-            item(String(localized: "Tab", bundle: .module), #selector(accessoryTab)),
-            item("◀︎", #selector(accessoryLeft)),
-            item("▲", #selector(accessoryUp)),
-            item("▼", #selector(accessoryDown)),
-            item("▶︎", #selector(accessoryRight)),
-            space,
-            item(String(localized: "Done", bundle: .module), #selector(accessoryDone)),
-        ]
-        return bar
-    }()
-
-    @objc private func accessoryEscape() {
-        session?.keyPressed(keyCode: 53, keySym: 0xFF1B, characters: "\u{1B}", isDown: true)
-        session?.keyPressed(keyCode: 53, keySym: 0xFF1B, characters: "\u{1B}", isDown: false)
+    /// Puts the software keyboard away; the bar's modifiers let go with it.
+    func hideKeyboard() {
+        releaseModifiers()
+        _ = keyboardProxy.resignFirstResponder()
+        _ = becomeFirstResponder()
     }
 
-    @objc private func accessoryTab() {
-        session?.keyPressed(keyCode: 48, keySym: 0xFF09, characters: "\t", isDown: true)
-        session?.keyPressed(keyCode: 48, keySym: 0xFF09, characters: "\t", isDown: false)
+    /// The keys a touch keyboard lacks, over it.
+    lazy var keyboardAccessory = RemoteDesktopKeyboardBar(canvas: self)
+
+    // MARK: - Sticky modifiers
+
+    /// The bar's modifiers are down on the host while they show active, so
+    /// a click or a key from anywhere takes them along.
+    private var stickyModifiers = RemoteDesktopStickyModifiers()
+
+    var hasStickyModifiers: Bool { !stickyModifiers.active.isEmpty }
+
+    func modifierActivation(_ modifier: RemoteDesktopStickyModifiers.Modifier) -> RemoteDesktopStickyModifiers.Activation {
+        stickyModifiers[modifier]
     }
 
-    @objc private func accessoryLeft() { accessoryArrow(123, sym: 0xFF51) }
-    @objc private func accessoryUp() { accessoryArrow(126, sym: 0xFF52) }
-    @objc private func accessoryDown() { accessoryArrow(125, sym: 0xFF54) }
-    @objc private func accessoryRight() { accessoryArrow(124, sym: 0xFF53) }
-
-    private func accessoryArrow(_ code: UInt16, sym: UInt32) {
-        session?.keyPressed(keyCode: code, keySym: sym, characters: "", isDown: true)
-        session?.keyPressed(keyCode: code, keySym: sym, characters: "", isDown: false)
+    func tapModifier(_ modifier: RemoteDesktopStickyModifiers.Modifier) {
+        let wasDown = stickyModifiers[modifier] != .inactive
+        let isDown = stickyModifiers.tap(modifier, at: CACurrentMediaTime()) != .inactive
+        if isDown != wasDown { session?.sendKeys([modifier.stroke.with(isDown: isDown)]) }
+        keyboardAccessory.refresh()
     }
 
-    @objc private func accessoryDone() {
-        if keyboardProxy.isFirstResponder { toggleKeyboard() }
+    /// A key was sent: the modifiers held for it let go.
+    private func releaseArmedModifiers() {
+        let released = stickyModifiers.consume()
+        guard !released.isEmpty else { return }
+        session?.sendKeys(released.reversed().map { $0.stroke.with(isDown: false) })
+        keyboardAccessory.refresh()
     }
 
-    /// Text from the software keyboard.
+    func releaseModifiers() {
+        let released = stickyModifiers.reset()
+        guard !released.isEmpty else { return }
+        session?.sendKeys(released.reversed().map { $0.stroke.with(isDown: false) })
+        keyboardAccessory.refresh()
+    }
+
+    /// A key from the bar, pressed and let go under the bar's modifiers.
+    func sendKey(_ key: RemoteDesktopKeyStroke) {
+        sendKeys(RemoteDesktopSpecialKeys.click(key))
+    }
+
+    func sendKeys(_ strokes: [RemoteDesktopKeyStroke]) {
+        session?.sendKeys(strokes)
+        releaseArmedModifiers()
+    }
+
+    // MARK: - Typed text
+
+    /// Text from the software keyboard. Under a modifier of the bar it is
+    /// a combination, so each character goes as the key that types it.
     func insertTyped(_ text: String) {
-        if text == "\n" || text == "\r" {
-            session?.keyPressed(keyCode: 36, keySym: 0xFF0D, characters: "\r", isDown: true)
-            session?.keyPressed(keyCode: 36, keySym: 0xFF0D, characters: "\r", isDown: false)
+        guard hasStickyModifiers || text == "\n" || text == "\r" else {
+            session?.typeText(text)
             return
         }
-        session?.typeText(text)
+        // Under the bar's Shift a letter is a capital, whatever the touch
+        // keyboard's own Shift: a VNC server types the KeySym it gets
+        // exactly, letting go of Shift for a small one.
+        let shifted = stickyModifiers[.shift] != .inactive
+        var strokes: [RemoteDesktopKeyStroke] = []
+        for character in shifted ? text.uppercased() : text {
+            guard let (key, shift) = RemoteDesktopKeymap.key(typing: character) else {
+                session?.sendKeys(strokes)
+                strokes = []
+                session?.typeText(String(character))
+                continue
+            }
+            let needsShift = shift && !shifted
+            strokes += needsShift ? RemoteDesktopSpecialKeys.combo([RemoteDesktopSpecialKeys.shift], key) : RemoteDesktopSpecialKeys.click(key)
+        }
+        sendKeys(strokes)
     }
 
     func deleteTypedBackward() {
-        session?.keyPressed(keyCode: 51, keySym: 0xFF08, characters: "\u{7F}", isDown: true)
-        session?.keyPressed(keyCode: 51, keySym: 0xFF08, characters: "\u{7F}", isDown: false)
+        sendKey(RemoteDesktopSpecialKeys.backspace)
     }
 }
 

@@ -30,6 +30,11 @@ public struct RemoteDesktopKeyStroke: Sendable {
         self.characters = characters
         self.isDown = isDown
     }
+
+    /// The same key, going the other way.
+    func with(isDown: Bool) -> RemoteDesktopKeyStroke {
+        RemoteDesktopKeyStroke(keyCode: keyCode, keySym: keySym, characters: characters, isDown: isDown)
+    }
 }
 
 /// Special-key sequences every target understands, encoded as Carbon
@@ -68,6 +73,19 @@ public enum RemoteDesktopSpecialKeys {
     /// Ctrl+Alt+Del: the Windows secure attention sequence.
     public static var ctrlAltDelete: [RemoteDesktopKeyStroke] {
         combo([control, alt], deleteForward)
+    }
+
+    /// The combinations the system keeps for itself on an iPad or that need
+    /// three fingers on the bar, for the iOS keyboard bar's menu.
+    static var combinations: [(title: String, strokes: [RemoteDesktopKeyStroke])] {
+        [
+            (String(localized: "Ctrl+Alt+Del", bundle: .module), ctrlAltDelete),
+            (String(localized: "Ctrl+Shift+Esc", bundle: .module), combo([control, shift], escape)),
+            (String(localized: "Alt+Tab", bundle: .module), combo([alt], tab)),
+            (String(localized: "Alt+F4", bundle: .module), combo([alt], functionKey(4))),
+            (String(localized: "Cmd+Tab", bundle: .module), combo([`super`], tab)),
+            (String(localized: "Cmd+Space", bundle: .module), combo([`super`], RemoteDesktopKeyStroke(keyCode: 49, keySym: 0x20, characters: " ", isDown: true))),
+        ]
     }
 
     /// Expands a key into a down+up pair.
