@@ -679,6 +679,32 @@ final class VNCRFBTests: XCTestCase {
         XCTAssertEqual(channel.written.count, expected)
     }
 
+    /// The answer is 3.8 for 3.8 and anything newer (a later major too),
+    /// 3.7 for 3.7, and 3.3 for the rest; the security handshake that
+    /// follows is the answered version's.
+    func testVersionNegotiationAnswersAVersionRFBDefines() async throws {
+        for (major, minor, answered) in [(3, 8, 8), (3, 889, 8), (5, 0, 8), (4, 1, 8), (3, 7, 7), (3, 5, 3), (3, 4, 3), (3, 3, 3)] {
+            var server = Data()
+            server.append(VNCWire.banner(major: major, minor: minor))
+            if answered == 3 {
+                server.appendU32BE(UInt32(VNCWire.SecurityType.none.rawValue))
+            } else {
+                server.append(1)
+                server.append(VNCWire.SecurityType.none.rawValue)
+                if answered == 8 { server.appendU32BE(0) }
+            }
+            server.append(serverInitData(width: 4, height: 2, name: "v"))
+            let channel = MemoryChannel(Array(server))
+            let delegate = RecordingDelegate()
+            let client = VNCRFBClient(configuration: .init(host: "ignored", port: 0, password: "", shared: true, transport: channel), delegate: delegate)
+            await client.run()
+            let label = "\(major).\(minor)"
+            XCTAssertEqual(String(decoding: channel.written.prefix(12), as: UTF8.self), String(format: "RFB 003.%03d\n", answered), label)
+            XCTAssertTrue(delegate.phases.contains(.connected), "\(label): \(delegate.phases)")
+            XCTAssertEqual(delegate.desktopName, "v", label)
+        }
+    }
+
     /// A server whose own format is a colour map is fine: the client asks
     /// for true colour before any pixel comes.
     func testAColourMapServerFormatIsAccepted() async throws {

@@ -144,17 +144,22 @@ final class VNCRFBClient: Sendable {
         guard let version = VNCWire.parseBanner(banner) else {
             throw RemoteDesktopFailure("The server is not speaking RFB.")
         }
-        // Answer the best version both support: 3.3 only if the server is
-        // that old; otherwise 3.8 (the failure-reason string exists only
-        // on 3.8).
-        let answerMinor = version.minor < 8 ? version.minor : 8
+        // Answer a version RFB defines: 3.8 for 3.8 or anything newer (a
+        // later major included, Apple's 3.889 too), 3.7 for 3.7, and 3.3
+        // for the rest (3.4 to 3.6 are 3.3 in all but name). What follows
+        // is the answered version's handshake.
+        let answerMinor = switch (version.major, version.minor) {
+        case let (major, minor) where major > 3 || (major == 3 && minor >= 8): 8
+        case (3, 7): 7
+        default: 3
+        }
         transport.send(VNCWire.banner(major: 3, minor: answerMinor))
         let protocol38 = answerMinor >= 8
 
         // Security negotiation.
         report(phase: .authenticating, hint: "Authenticating…")
         var offered: [UInt8] = []
-        if version.minor == 3 {
+        if answerMinor == 3 {
             // 3.3 sends one u32 type directly; 0 means the connection is
             // refused outright and a reason string follows.
             let type = try await reader.read(exactly: 4).readU32BE(at: 0).clampedToUInt8()
@@ -178,7 +183,7 @@ final class VNCRFBClient: Sendable {
             password: configuration.password
         )
 
-        if version.minor != 3 {
+        if answerMinor != 3 {
             transport.send(Data([selected]))
         }
 
