@@ -16,7 +16,6 @@
     struct FileTransferPage: View {
         @ObservedObject var context: FileTransferContext
         @EnvironmentObject var store: RayonStore
-        @Environment(\.isActivePage) private var isActive
 
         @State private var filter = ""
         @State private var selection: FileTransferContext.RemoteFile?
@@ -176,9 +175,8 @@
             .onReceive(context.$currentFileList) { arrange($0) }
             .onChange(of: filter) { _ in applyFilter() }
             // The mouse's back and forward buttons, and a swipe, step through
-            // the folders while this page is the one shown.
-            .onAppear { pointerHistory.update(active: isActive, context: context) }
-            .onChange(of: isActive) { active in pointerHistory.update(active: active, context: context) }
+            // the folders while this page is on screen.
+            .onAppear { pointerHistory.update(active: true, context: context) }
             .onDisappear { pointerHistory.update(active: false, context: context) }
             #if DEBUG
                 .onReceive(NotificationCenter.default.publisher(for: .benchFiles)) { note in

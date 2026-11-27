@@ -95,17 +95,6 @@
         }
     }
 
-    private struct ActivePageKey: EnvironmentKey {
-        static let defaultValue = true
-    }
-
-    extension EnvironmentValues {
-        var isActivePage: Bool {
-            get { self[ActivePageKey.self] }
-            set { self[ActivePageKey.self] = newValue }
-        }
-    }
-
     extension View {
         func pageToolbar<Leading: View, Trailing: View>(
             primary: ToolbarAction? = nil,
@@ -122,7 +111,6 @@
         let trailing: Trailing
         let primary: ToolbarAction?
         let trailingMetrics: ToolbarCapsuleMetrics
-        @Environment(\.isActivePage) private var isActive
         @Environment(\.serverToolSwitch) private var toolSwitch
 
         private var hasTrailing: Bool { Trailing.self != EmptyView.self }
@@ -130,50 +118,46 @@
         func body(content: Content) -> some View {
             if #available(macOS 26.0, *) {
                 content.toolbar {
-                    if isActive {
-                        ToolbarItemGroup(placement: .navigation) { leading }
-                        if let toolSwitch {
-                            ToolbarItem(placement: .principal) {
-                                ServerToolSwitcher(machine: toolSwitch.machine, current: toolSwitch.current)
-                            }
-                        } else {
-                            ToolbarSpacer(.flexible)
+                    ToolbarItemGroup(placement: .navigation) { leading }
+                    if let toolSwitch {
+                        ToolbarItem(placement: .principal) {
+                            ServerToolSwitcher(machine: toolSwitch.machine, current: toolSwitch.current)
                         }
-                        if hasTrailing {
-                            ToolbarItemGroup(placement: .automatic) {
-                                trailing
-                            }
+                    } else {
+                        ToolbarSpacer(.flexible)
+                    }
+                    if hasTrailing {
+                        ToolbarItemGroup(placement: .automatic) {
+                            trailing
                         }
-                        if hasTrailing, primary != nil {
-                            ToolbarSpacer(.fixed)
-                        }
-                        if let primary {
-                            ToolbarItem(placement: .primaryAction) {
-                                primary
-                            }
+                    }
+                    if hasTrailing, primary != nil {
+                        ToolbarSpacer(.fixed)
+                    }
+                    if let primary {
+                        ToolbarItem(placement: .primaryAction) {
+                            primary
                         }
                     }
                 }
             } else {
                 content.toolbar {
-                    if isActive {
-                        ToolbarItemGroup(placement: .navigation) { leading }
-                        if let toolSwitch {
-                            ToolbarItem(placement: .principal) {
-                                ServerToolSwitcher(machine: toolSwitch.machine, current: toolSwitch.current)
-                            }
-                        } else {
-                            ToolbarItem(placement: .principal) {
-                                Spacer()
-                            }
+                    ToolbarItemGroup(placement: .navigation) { leading }
+                    if let toolSwitch {
+                        ToolbarItem(placement: .principal) {
+                            ServerToolSwitcher(machine: toolSwitch.machine, current: toolSwitch.current)
                         }
-                        ToolbarItemGroup(placement: .automatic) {
-                            trailing
+                    } else {
+                        ToolbarItem(placement: .principal) {
+                            Spacer()
                         }
-                        if let primary {
-                            ToolbarItem(placement: .primaryAction) {
-                                primary
-                            }
+                    }
+                    ToolbarItemGroup(placement: .automatic) {
+                        trailing
+                    }
+                    if let primary {
+                        ToolbarItem(placement: .primaryAction) {
+                            primary
                         }
                     }
                 }
@@ -194,10 +178,9 @@
     private struct OptionalSearch: ViewModifier {
         let text: Binding<String>?
         let prompt: String
-        @Environment(\.isActivePage) private var isActive
 
         func body(content: Content) -> some View {
-            if let text, isActive {
+            if let text {
                 content.searchable(text: text, placement: .toolbar, prompt: prompt)
             } else {
                 content

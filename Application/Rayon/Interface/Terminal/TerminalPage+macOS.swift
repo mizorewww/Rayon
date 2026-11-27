@@ -23,7 +23,6 @@
         @State private var searchQuery = ""
         @FocusState private var searchFieldFocused: Bool
         @State private var showSnippetDrawer = false
-        @Environment(\.isActivePage) private var isActive
 
         private var currentSplitGroup: TerminalManager.SplitGroup? {
             terminals.splitGroup(containing: context.id)
@@ -150,33 +149,31 @@
                 }
             }
             .background {
-                if isActive {
-                    Group {
-                        // ⌘F opens the find bar, or returns to its field when open.
-                        Button("Find in Terminal") {
-                            if showSearch {
-                                searchFieldFocused = true
-                            } else {
-                                withAnimation(.rxQuick) { showSearch = true }
-                            }
+                Group {
+                    // ⌘F opens the find bar, or returns to its field when open.
+                    Button("Find in Terminal") {
+                        if showSearch {
+                            searchFieldFocused = true
+                        } else {
+                            withAnimation(.rxQuick) { showSearch = true }
                         }
-                        .keyboardShortcut("f", modifiers: .command)
-                        Button("Split Right") {
-                            splitWithNewOrExisting(orientation: .horizontal)
-                        }
-                        .keyboardShortcut("d", modifiers: .command)
-                        Button("Split Down") {
-                            splitWithNewOrExisting(orientation: .vertical)
-                        }
-                        .keyboardShortcut("d", modifiers: [.command, .shift])
-                        Button("Split with Server") {
-                            splitWithServer()
-                        }
-                        .keyboardShortcut("d", modifiers: [.command, .option])
                     }
-                    .opacity(0)
-                    .accessibilityHidden(true)
+                    .keyboardShortcut("f", modifiers: .command)
+                    Button("Split Right") {
+                        splitWithNewOrExisting(orientation: .horizontal)
+                    }
+                    .keyboardShortcut("d", modifiers: .command)
+                    Button("Split Down") {
+                        splitWithNewOrExisting(orientation: .vertical)
+                    }
+                    .keyboardShortcut("d", modifiers: [.command, .shift])
+                    Button("Split with Server") {
+                        splitWithServer()
+                    }
+                    .keyboardShortcut("d", modifiers: [.command, .option])
                 }
+                .opacity(0)
+                .accessibilityHidden(true)
             }
             .serverToolSwitcher(
                 machine: context.remoteType == .machine && RayonStore.shared.machine(context.machine.id) != nil ? context.machine.id : nil,
@@ -194,8 +191,9 @@
             .onChange(of: terminals.splitGroups) { _ in
                 syncActivePanes()
             }
-            .onChange(of: isActive) { _ in
-                syncActivePanes()
+            // Off screen, the terminals stop drawing; their sessions go on.
+            .onDisappear {
+                for pane in visiblePanes { pane.termInterface.setActive(false, focus: false) }
             }
         }
 
@@ -205,10 +203,6 @@
             let visibleIDs = Set(panes.map(\.id))
             for session in terminals.sessionContexts where !visibleIDs.contains(session.id) {
                 session.termInterface.setActive(false, focus: false)
-            }
-            guard isActive else {
-                for pane in panes { pane.termInterface.setActive(false, focus: false) }
-                return
             }
             for pane in panes where pane.id != focused.id {
                 pane.termInterface.setActive(true, focus: false)

@@ -13,7 +13,6 @@
         @ObservedObject var router = AppRouter.shared
 
         @State private var openLicenseAgreement = false
-        @State private var settingsOpened = false
 
         var body: some View {
             NavigationSplitView(columnVisibility: $router.columnVisibility) {
@@ -23,25 +22,19 @@
                 ZStack {
                     RXWindowBackground()
                         .ignoresSafeArea()
-                    if !router.route.isSession, router.route != .settings {
-                        content
+                    // Only the page in front is mounted. What outlives it — a
+                    // terminal's surface, a desktop's connection, a folder's
+                    // history, the editor's files — is in the session models.
+                    if router.route.isSession {
+                        SessionPage(route: router.route)
+                    } else {
+                        place
                             .id(router.route)
                             .transition(.asymmetric(
                                 insertion: .opacity.combined(with: .offset(y: 6)),
                                 removal: .opacity
                             ))
                     }
-                    if settingsOpened || router.route == .settings {
-                        SettingsView(active: router.route == .settings)
-                            .opacity(router.route == .settings ? 1 : 0)
-                            .animation(router.route == .settings ? .easeOut(duration: 0.16) : nil, value: router.route == .settings)
-                            .allowsHitTesting(router.route == .settings)
-                            .accessibilityHidden(router.route != .settings)
-                    }
-                    SessionPages(route: router.route)
-                }
-                .onChange(of: router.route == .settings) { shown in
-                    if shown { settingsOpened = true }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .animation(.easeOut(duration: 0.2), value: router.route.isSession ? nil : router.route)
@@ -68,7 +61,7 @@
             }
         }
 
-        @ViewBuilder var content: some View {
+        @ViewBuilder var place: some View {
             switch router.route {
             case .home:
                 HomeView()
@@ -84,13 +77,18 @@
                 PortForwardView()
             case .desktops:
                 RemoteDesktopsView()
-            case .settings, .terminal, .monitor, .transfer, .editor, .desktop:
+            case .settings:
+                SettingsView()
+            case .terminal, .monitor, .transfer, .editor, .desktop:
                 EmptyView()
             }
         }
     }
 
-    private struct SessionPages: View {
+    /// The session page the route shows. Terminal tabs share one page, which
+    /// keeps its find bar and snippet drawer as the tabs switch; every other
+    /// session gets a page of its own.
+    private struct SessionPage: View {
         let route: Route
         @ObservedObject var terminals = TerminalManager.shared
         @ObservedObject var transfers = FileTransferManager.shared
@@ -98,46 +96,31 @@
         @ObservedObject var monitors = MonitorCenter.shared
         @ObservedObject var desktops = RemoteDesktopManager.shared
 
-        private var activeTerminalContext: TerminalManager.Context? {
-            guard case let .terminal(id) = route else { return nil }
-            return terminals.sessionContexts.first { $0.id == id }
-        }
-
         var body: some View {
-            ZStack {
-                if let activeTerminal = activeTerminalContext {
-                    TerminalPage(context: activeTerminal)
-                        .environment(\.isActivePage, true)
-                        .zIndex(1)
+            switch route {
+            case let .terminal(id):
+                if let context = terminals.sessionContexts.first(where: { $0.id == id }) {
+                    TerminalPage(context: context)
                 }
-                ForEach(transfers.transfers) { context in
-                    FileTransferPage(context: context)
-                        .sessionPage(active: route == .transfer(context.id))
+            case let .transfer(id):
+                if let context = transfers.transfers.first(where: { $0.id == id }) {
+                    FileTransferPage(context: context).id(id)
                 }
-                ForEach(editors.workspaces) { workspace in
-                    EditorPage(workspace: workspace)
-                        .sessionPage(active: route == .editor(workspace.id))
+            case let .editor(id):
+                if let workspace = editors.workspaces.first(where: { $0.id == id }) {
+                    EditorPage(workspace: workspace).id(id)
                 }
-                ForEach(monitors.sessions) { session in
-                    MonitorPage(session: session)
-                        .sessionPage(active: route == .monitor(session.id))
+            case let .monitor(id):
+                if let session = monitors.sessions.first(where: { $0.id == id }) {
+                    MonitorPage(session: session).id(id)
                 }
-                ForEach(desktops.sessions) { session in
-                    RemoteDesktopPage(session: session)
-                        .sessionPage(active: route == .desktop(session.id))
+            case let .desktop(id):
+                if let session = desktops.sessions.first(where: { $0.id == id }) {
+                    RemoteDesktopPage(session: session).id(id)
                 }
+            default:
+                EmptyView()
             }
-        }
-    }
-
-    private extension View {
-        func sessionPage(active: Bool) -> some View {
-            opacity(active ? 1 : 0)
-                .animation(active ? .easeOut(duration: 0.16) : nil, value: active)
-                .allowsHitTesting(active)
-                .accessibilityHidden(!active)
-                .zIndex(active ? 1 : 0)
-                .environment(\.isActivePage, active)
         }
     }
 

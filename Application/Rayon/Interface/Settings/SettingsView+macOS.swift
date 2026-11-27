@@ -17,8 +17,6 @@
     struct SettingsView: View {
         @EnvironmentObject var store: RayonStore
         @ObservedObject var router = AppRouter.shared
-        /// False while Settings is kept out of sight.
-        var active = true
 
         var body: some View {
             GhosttyConfigurationView(
@@ -61,7 +59,7 @@
                     },
                 ],
                 navigation: router.settingsNavigation,
-                active: active,
+                active: true,
                 onApplied: { size in
                     // One font size: the terminal's Font Size setting also sets the
                     // size ⌘+ and ⌘− start from.

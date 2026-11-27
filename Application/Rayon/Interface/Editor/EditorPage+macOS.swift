@@ -17,7 +17,6 @@
         @ObservedObject var workspace: EditorWorkspace
         @ObservedObject var context: FileTransferContext
         @EnvironmentObject var store: RayonStore
-        @Environment(\.isActivePage) private var isActive
 
         @AppStorage("me.mizorewww.rayon.editor.wrapsLines") private var wrapsLines = false
         @State private var openPrompt = false
@@ -77,17 +76,15 @@
             .animation(.easeOut(duration: 0.25), value: workspace.documents.isEmpty)
             .background {
                 // ⌘S and ⌘W act on the page in front only.
-                if isActive {
-                    Group {
-                        Button("Save") { current?.save() }
-                            .keyboardShortcut("s", modifiers: .command)
-                        Button("Close File") { if let current { workspace.close(current) } }
-                            .keyboardShortcut("w", modifiers: .command)
-                            .disabled(current == nil)
-                    }
-                    .opacity(0)
-                    .accessibilityHidden(true)
+                Group {
+                    Button("Save") { current?.save() }
+                        .keyboardShortcut("s", modifiers: .command)
+                    Button("Close File") { if let current { workspace.close(current) } }
+                        .keyboardShortcut("w", modifiers: .command)
+                        .disabled(current == nil)
                 }
+                .opacity(0)
+                .accessibilityHidden(true)
             }
             .sheet(isPresented: $openPrompt) {
                 OpenRemoteFileSheet(folder: context.currentDir) { path in
