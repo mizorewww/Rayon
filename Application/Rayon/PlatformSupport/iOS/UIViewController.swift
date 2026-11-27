@@ -27,13 +27,22 @@
     /// Presents over the app's topmost view controller once the way is clear.
     /// UIKit drops a present issued while a sheet animates in or out, and at
     /// launch the scene has no window yet: the present follows the transition
-    /// in flight, or the first window to become key.
+    /// in flight, the first window to become key, or, while the top controller
+    /// is between windows, the run loop's next turn.
     @MainActor
     enum ModalPresenter {
         /// - Parameter push: UIViewController.present(next:) semantics, pushed
         ///   when the topmost controller sits in a navigation controller.
         static func present(_ controller: UIViewController, push: Bool = false) {
-            guard let top = UIWindow.shutUpKeyWindow?.topMostViewController, top.viewIfLoaded?.window != nil else {
+            let window = UIWindow.shutUpKeyWindow
+            guard let top = window?.topMostViewController, top.viewIfLoaded?.window != nil else {
+                if window?.isKeyWindow == true {
+                    // The window is key already, so no didBecomeKey is coming.
+                    RunLoop.main.perform {
+                        MainActor.assumeIsolated { present(controller, push: push) }
+                    }
+                    return
+                }
                 Task {
                     for await _ in NotificationCenter.default.notifications(named: UIWindow.didBecomeKeyNotification) {
                         break
