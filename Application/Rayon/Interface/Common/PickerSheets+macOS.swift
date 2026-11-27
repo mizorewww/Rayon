@@ -257,19 +257,20 @@
     /// (closed, Rayon quit, or the connection dropped): one of them, or a new
     /// one. Ending a session is done here and nowhere else.
     struct UURemoteSessionPickerSheet: View {
-        enum Choice { case new, resume(UInt32) }
+        typealias Choice = UURemoteSessionChoice
 
         let machine: RDMachine
         /// nil when cancelled.
         let onComplete: (Choice?) -> Void
 
-        private enum Phase { case loading, failed(String), loaded }
-
-        @State private var phase = Phase.loading
-        @State private var sessions: [UUTerminalSession] = []
-        @State private var selection: UInt32?
+        @StateObject private var list: UURemoteSessionList
         @State private var ending: UUTerminalSession?
-        @State private var status = ""
+
+        init(machine: RDMachine, onComplete: @escaping (Choice?) -> Void) {
+            self.machine = machine
+            self.onComplete = onComplete
+            _list = StateObject(wrappedValue: UURemoteSessionList(machine: machine))
+        }
 
         var body: some View {
             SheetScaffold(
@@ -288,10 +289,10 @@
                     )
             } footer: {
                 Button("End Session…") {
-                    ending = sessions.first { $0.id == selection }
+                    ending = list.sessions.first { $0.id == list.selection }
                 }
                 .buttonStyle(.rxDanger)
-                .disabled(selection == nil)
+                .disabled(list.selection == nil)
                 Spacer()
                 Button("Cancel") { onComplete(nil) }
                     .buttonStyle(.rx)
@@ -299,11 +300,11 @@
                 Button("New Session") { onComplete(.new) }
                     .buttonStyle(.rx)
                 Button("Resume") {
-                    if let selection { onComplete(.resume(selection)) }
+                    if let selection = list.selection { onComplete(.resume(selection)) }
                 }
                 .buttonStyle(.rxPrimary)
                 .keyboardShortcut(.defaultAction)
-                .disabled(selection == nil)
+                .disabled(list.selection == nil)
             }
             .frame(width: 520)
             .task { await load() }
@@ -320,11 +321,11 @@
         }
 
         @ViewBuilder private var content: some View {
-            switch phase {
+            switch list.phase {
             case .loading:
                 VStack(spacing: RX.Space.s2) {
                     ProgressView().controlSize(.small)
-                    Text(status.isEmpty ? "Connecting to \(machine.name)…" : status)
+                    Text(list.status.isEmpty ? "Connecting to \(machine.name)…" : list.status)
                         .font(.rxCaption)
                         .foregroundStyle(.rxInkSecondary)
                         .lineLimit(1)
@@ -342,7 +343,7 @@
             case .loaded:
                 ScrollView {
                     RXDividedStack {
-                        ForEach(sessions) { session in
+                        ForEach(list.sessions) { session in
                             row(session)
                         }
                     }
@@ -352,9 +353,9 @@
         }
 
         private func row(_ session: UUTerminalSession) -> some View {
-            let isSelected = selection == session.id
+            let isSelected = list.selection == session.id
             return Button {
-                selection = session.id
+                list.selection = session.id
             } label: {
                 HStack(spacing: RX.Space.s3) {
                     Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
@@ -364,7 +365,7 @@
                         Text(session.name)
                             .font(.rxBody)
                             .foregroundStyle(.rxInk)
-                        Text("Last used \(Self.relative(session.lastActive)) · started \(session.createdAt.formatted(date: .abbreviated, time: .shortened))")
+                        Text("Last used \(UURemoteSessionList.relative(session.lastActive)) · started \(session.createdAt.formatted(date: .abbreviated, time: .shortened))")
                             .font(.rxCaption)
                             .foregroundStyle(.rxInkSecondary)
                     }
@@ -383,48 +384,12 @@
             .simultaneousGesture(TapGesture(count: 2).onEnded { onComplete(.resume(session.id)) })
         }
 
-        private static func relative(_ date: Date) -> String {
-            let formatter = RelativeDateTimeFormatter()
-            formatter.unitsStyle = .full
-            return formatter.localizedString(for: date, relativeTo: Date())
-        }
-
         private func load() async {
-            phase = .loading
-            let watch = Task { @MainActor in
-                while !Task.isCancelled {
-                    status = UURemoteConnections.shared.status(for: machine)
-                    try? await Task.sleep(nanoseconds: 300_000_000)
-                }
-            }
-            defer { watch.cancel() }
-            do {
-                let available = try await TerminalManager.shared.resumableUUSessions(for: machine)
-                // Nothing to resume: straight to a new one.
-                if available.isEmpty {
-                    onComplete(.new)
-                    return
-                }
-                sessions = available
-                if selection.map({ id in !available.contains { $0.id == id } }) ?? true {
-                    selection = (available.first(where: \.isDetached) ?? available.first)?.id
-                }
-                phase = .loaded
-            } catch {
-                phase = .failed(error.localizedDescription)
-            }
+            if await !list.load() { onComplete(.new) }
         }
 
         private func end(_ session: UUTerminalSession) async {
-            do {
-                try await UURemoteConnections.shared.endSession(session.id, on: machine)
-            } catch {
-                phase = .failed(error.localizedDescription)
-                return
-            }
-            sessions.removeAll { $0.id == session.id }
-            if selection == session.id { selection = sessions.first?.id }
-            if sessions.isEmpty { onComplete(.new) }
+            if await !list.end(session) { onComplete(.new) }
         }
     }
 

@@ -12,7 +12,7 @@
     import SwiftUI
 
     struct UURemoteSessionPickerView: View {
-        enum Choice { case new, resume(UInt32) }
+        typealias Choice = UURemoteSessionChoice
 
         let machine: RDMachine
         /// nil when cancelled.
@@ -20,13 +20,14 @@
 
         @Environment(\.dismiss) private var dismiss
 
-        private enum Phase { case loading, failed(String), loaded }
-
-        @State private var phase = Phase.loading
-        @State private var sessions: [UUTerminalSession] = []
-        @State private var selection: UInt32?
+        @StateObject private var list: UURemoteSessionList
         @State private var ending: UUTerminalSession?
-        @State private var status = ""
+
+        init(machine: RDMachine, onComplete: @escaping (Choice?) -> Void) {
+            self.machine = machine
+            self.onComplete = onComplete
+            _list = StateObject(wrappedValue: UURemoteSessionList(machine: machine))
+        }
 
         /// Presents the picker over the app; `onComplete` hears the choice once.
         @MainActor
@@ -54,12 +55,12 @@
                         Button("New Session") { finish(.new) }
                             .keyboardShortcut("n", modifiers: .command)
                         Button {
-                            if let selection { finish(.resume(selection)) }
+                            if let selection = list.selection { finish(.resume(selection)) }
                         } label: {
                             Text("Resume").bold()
                         }
                         .keyboardShortcut(.defaultAction)
-                        .disabled(selection == nil)
+                        .disabled(list.selection == nil)
                     }
                 }
                 .task { await load() }
@@ -76,11 +77,11 @@
         }
 
         @ViewBuilder private var content: some View {
-            switch phase {
+            switch list.phase {
             case .loading:
                 VStack(spacing: RX.Space.s2) {
                     ProgressView()
-                    Text(status.isEmpty ? "Connecting to \(machine.name)…" : status)
+                    Text(list.status.isEmpty ? "Connecting to \(machine.name)…" : list.status)
                         .font(.footnote)
                         .foregroundStyle(.rxInkSecondary)
                         .lineLimit(1)
@@ -99,7 +100,7 @@
             case .loaded:
                 List {
                     Section {
-                        ForEach(sessions) { session in
+                        ForEach(list.sessions) { session in
                             row(session)
                                 .rxListRow()
                                 .swipeActions {
@@ -123,9 +124,9 @@
         }
 
         private func row(_ session: UUTerminalSession) -> some View {
-            let isSelected = selection == session.id
+            let isSelected = list.selection == session.id
             return Button {
-                selection = session.id
+                list.selection = session.id
             } label: {
                 HStack(spacing: RX.Space.s3) {
                     Image(systemName: isSelected ? "largecircle.fill.circle" : "circle")
@@ -134,7 +135,7 @@
                     VStack(alignment: .leading, spacing: 2) {
                         Text(session.name)
                             .foregroundStyle(.rxInk)
-                        Text("Last used \(Self.relative(session.lastActive)) · started \(session.createdAt.formatted(date: .abbreviated, time: .shortened))")
+                        Text("Last used \(UURemoteSessionList.relative(session.lastActive)) · started \(session.createdAt.formatted(date: .abbreviated, time: .shortened))")
                             .font(.caption)
                             .foregroundStyle(.rxInkSecondary)
                     }
@@ -154,48 +155,12 @@
             onComplete(choice)
         }
 
-        private static func relative(_ date: Date) -> String {
-            let formatter = RelativeDateTimeFormatter()
-            formatter.unitsStyle = .full
-            return formatter.localizedString(for: date, relativeTo: Date())
-        }
-
         private func load() async {
-            phase = .loading
-            let watch = Task { @MainActor in
-                while !Task.isCancelled {
-                    status = UURemoteConnections.shared.status(for: machine)
-                    try? await Task.sleep(nanoseconds: 300_000_000)
-                }
-            }
-            defer { watch.cancel() }
-            do {
-                let available = try await TerminalManager.shared.resumableUUSessions(for: machine)
-                // Nothing to resume: straight to a new one.
-                if available.isEmpty {
-                    finish(.new)
-                    return
-                }
-                sessions = available
-                if selection.map({ id in !available.contains { $0.id == id } }) ?? true {
-                    selection = (available.first(where: \.isDetached) ?? available.first)?.id
-                }
-                phase = .loaded
-            } catch {
-                phase = .failed(error.localizedDescription)
-            }
+            if await !list.load() { finish(.new) }
         }
 
         private func end(_ session: UUTerminalSession) async {
-            do {
-                try await UURemoteConnections.shared.endSession(session.id, on: machine)
-            } catch {
-                phase = .failed(error.localizedDescription)
-                return
-            }
-            sessions.removeAll { $0.id == session.id }
-            if selection == session.id { selection = sessions.first?.id }
-            if sessions.isEmpty { finish(.new) }
+            if await !list.end(session) { finish(.new) }
         }
     }
 
