@@ -251,9 +251,9 @@
             Button("Download…") { download(file) }
             Divider()
             Button("Rename…") { prompt = .rename(file.name) }
-            Button("Copy Name") { UIBridge.sendPasteboard(str: file.name) }
+            Button("Copy Name") { Pasteboard.copy(file.name) }
             Button("Copy Path") {
-                UIBridge.sendPasteboard(str: context.currentUrl.appendingPathComponent(file.name).path)
+                Pasteboard.copy(context.currentUrl.appendingPathComponent(file.name).path)
             }
             Divider()
             Button("Delete…", role: .destructive) { delete(file) }
@@ -312,7 +312,7 @@
         }
 
         func upload() {
-            UIBridge.openPanel(
+            OpenPanel.present(
                 message: "Upload to \(context.currentDir)",
                 prompt: "Upload",
                 directory: nil,
@@ -328,7 +328,7 @@
 
         func download(_ file: FileTransferContext.RemoteFile) {
             let remote = context.currentUrl.appendingPathComponent(file.name)
-            UIBridge.openPanel(
+            OpenPanel.present(
                 message: "Choose where to save \(file.name)",
                 prompt: "Download Here",
                 directory: nil,
@@ -344,13 +344,12 @@
 
         func delete(_ file: FileTransferContext.RemoteFile) {
             let item = context.currentUrl.appendingPathComponent(file.name)
-            UIBridge.requiresConfirmation(
+            Indicator.confirm(
                 message: "Delete \(file.name)?",
                 informative: file.fstat.isDirectory
                     ? "The folder and everything in it is deleted from the server. This cannot be undone."
                     : "The file is deleted from the server. This cannot be undone.",
-                confirmTitle: "Delete",
-                destructive: true
+                confirmTitle: "Delete"
             ) { confirmed in
                 if confirmed { context.delete(item: item) }
             }
@@ -613,13 +612,12 @@
         static func close(_ context: FileTransferContext) {
             let unsaved = EditorCenter.shared.workspaces.first { $0.id == context.id }?.hasUnsavedChanges == true
             if context.isProgressRunning || unsaved {
-                UIBridge.requiresConfirmation(
+                Indicator.confirm(
                     message: "Close the file transfer on \(context.machine.name)?",
                     informative: unsaved
                         ? "Files open in the editor have changes that are not saved. They are lost if you close."
                         : "A transfer is still running and will be interrupted.",
                     confirmTitle: unsaved ? "Discard Changes" : "Close",
-                    destructive: true,
                     always: unsaved
                 ) { confirmed in
                     if confirmed { FileTransferManager.shared.end(for: context.id) }
@@ -627,6 +625,24 @@
             } else {
                 FileTransferManager.shared.end(for: context.id)
             }
+        }
+    }
+
+    /// Bridges RayonModule's shared file-transfer core to the Mac app's UI.
+    /// RayonModule calls it on the main thread.
+    @MainActor
+    final class MacFileTransferUIHandler: @preconcurrency FileTransferUIHandler {
+        func presentError(_ message: String) {
+            Indicator.error(message)
+        }
+
+        func requiresConfirmation(_ message: String, completion: @escaping (Bool) -> Void) {
+            Indicator.confirm(message: message, confirmation: completion)
+        }
+
+        func autoOpenInterface(_ context: FileTransferContext) {
+            if AppRouter.shared.route == .editor(context.id) { return }
+            AppRouter.shared.route = .transfer(context.id)
         }
     }
 

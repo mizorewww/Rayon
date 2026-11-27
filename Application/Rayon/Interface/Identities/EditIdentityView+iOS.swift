@@ -183,7 +183,7 @@
                         .truncationMode(.middle)
                         .textSelection(.enabled)
                     Button {
-                        UIBridge.sendPasteboard(str: trimmedPublicKey)
+                        Pasteboard.copy(trimmedPublicKey)
                     } label: {
                         Label("Copy Public Key", systemImage: "doc.on.doc")
                     }
@@ -234,10 +234,10 @@
         func generateKeyPair() {
             let replace = {
                 draft.generateEd25519KeyPair()
-                UIBridge.presentSuccess(with: "Generated an Ed25519 key pair")
+                Indicator.success("Generated an Ed25519 key pair")
             }
             guard draft.privateKey.isEmpty else {
-                UIBridge.requiresConfirmation(
+                Indicator.confirm(
                     message: "Replace the key pair?",
                     informative: "Servers that only accept the current key stop accepting this identity.",
                     confirmTitle: "Replace"
@@ -285,7 +285,7 @@
             let accessing = url.startAccessingSecurityScopedResource()
             defer { if accessing { url.stopAccessingSecurityScopedResource() } }
             guard let data = try? String(contentsOf: url, encoding: .utf8) else {
-                UIBridge.presentError(with: "The file could not be read as text.")
+                Indicator.error("The file could not be read as text.")
                 return
             }
             loadKey(str: data, isPrivate: isPrivate)
@@ -293,7 +293,7 @@
 
         func loadKey(str: String?, isPrivate: Bool) {
             guard let str, !str.isEmpty else {
-                UIBridge.presentError(with: "Unable to read")
+                Indicator.error("Unable to read")
                 return
             }
             let matches = isPrivate ? RDIdentity.looksLikePrivateKey(str) : RDIdentity.looksLikePublicKey(str)
@@ -303,11 +303,10 @@
             if matches {
                 apply()
             } else {
-                UIBridge.requiresConfirmation(
+                Indicator.confirm(
                     message: "This does not look like a \(isPrivate ? "private" : "public") key",
                     informative: "Load it anyway?",
-                    confirmTitle: "Load",
-                    destructive: false
+                    confirmTitle: "Load"
                 ) { confirmed in
                     if confirmed { apply() }
                 }
@@ -316,11 +315,11 @@
 
         func completeSheet() {
             guard !draft.username.trimmingCharacters(in: .whitespaces).isEmpty else {
-                UIBridge.presentError(with: "Empty Username")
+                Indicator.error("Empty Username")
                 return
             }
             guard draft.isValid else {
-                UIBridge.presentError(with: draft.method == .keyPair ? "A key pair needs a private key" : "Empty Password")
+                Indicator.error(draft.method == .keyPair ? "A key pair needs a private key" : "Empty Password")
                 return
             }
             RayonStore.shared.save(draft.apply(to: original))

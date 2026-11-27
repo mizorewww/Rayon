@@ -44,7 +44,7 @@
                     dismiss()
                     guard let newName else { return }
                     if let folder = RayonStore.shared.folder(named: name), !RayonStore.shared.renameFolder(folder.id, to: newName) {
-                        UIBridge.presentError(with: "There is already a folder named \"\(newName)\".")
+                        Indicator.error("There is already a folder named \"\(newName)\".")
                     }
                 }
             }
@@ -54,11 +54,10 @@
         static func delete(_ name: String) {
             guard let folder = RayonStore.shared.folder(named: name) else { return }
             let plan = FolderDeletionPlan(folder: folder)
-            UIBridge.requiresConfirmation(
+            Indicator.confirm(
                 message: plan.message,
                 informative: plan.informative,
-                confirmTitle: plan.confirmTitle,
-                destructive: true
+                confirmTitle: plan.confirmTitle
             ) { confirmed in
                 guard confirmed else { return }
                 MainActor.assumeIsolated {

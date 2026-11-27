@@ -185,7 +185,7 @@
             .contextMenu {
                 Button("Edit…", action: edit).disabled(running)
                 Button("Duplicate") { PortForwardActions.duplicate(forward.id) }
-                Button("Copy SSH Command") { UIBridge.sendPasteboard(str: forward.getCommand() ?? "") }
+                Button("Copy SSH Command") { Pasteboard.copy(forward.getCommand() ?? "") }
                     .disabled(forward.getCommand() == nil)
                 Divider()
                 Button("Delete…", role: .destructive) { PortForwardActions.delete(forward.id) }
@@ -204,10 +204,9 @@
         @MainActor
         static func delete(_ id: RDPortForward.ID) {
             guard let forward = RayonStore.shared.portForward(id) else { return }
-            UIBridge.requiresConfirmation(
+            Indicator.confirm(
                 message: "Delete the forward on port \(forward.bindPort)?",
-                confirmTitle: "Delete",
-                destructive: true
+                confirmTitle: "Delete"
             ) { confirmed in
                 guard confirmed else { return }
                 PortForwardBackend.shared.endSession(withPortForwardID: id)

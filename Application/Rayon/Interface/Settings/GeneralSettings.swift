@@ -132,7 +132,7 @@ struct CloudSyncSettings: View {
                     deleting = true
                     Task {
                         if let problem = await sync.deleteCloudData() {
-                            UIBridge.presentError(with: "Could not delete the data in iCloud: \(problem)")
+                            Indicator.error("Could not delete the data in iCloud: \(problem)")
                         }
                         deleting = false
                     }

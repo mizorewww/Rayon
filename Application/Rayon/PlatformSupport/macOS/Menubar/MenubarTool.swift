@@ -31,7 +31,7 @@
 
         func createRuncat(for machineId: RDMachine.ID, quiet: Bool = false) {
             func fail(_ message: String) {
-                if !quiet { UIBridge.presentError(with: message, delay: 0) }
+                if !quiet { Indicator.error(message) }
             }
             for item in statusItem where item.machine.id == machineId {
                 fail("This server is already in the menu bar")

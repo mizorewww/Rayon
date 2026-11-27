@@ -59,10 +59,9 @@
                     if finished {
                         close()
                     } else {
-                        UIBridge.requiresConfirmation(
+                        Indicator.confirm(
                             message: "Stop running \(snippet.name)?",
-                            confirmTitle: "Stop and Close",
-                            destructive: true
+                            confirmTitle: "Stop and Close"
                         ) { confirmed in
                             guard confirmed else { return }
                             context.stopAll()

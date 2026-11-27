@@ -208,9 +208,9 @@
                 importData = nil
                 do {
                     let result = try store.importPasted(data, key: paste)
-                    UIBridge.presentSuccess(with: "Data imported", subtitle: result.summary)
+                    Indicator.success("Data imported", message: result.summary)
                 } catch {
-                    UIBridge.presentError(with: "Could not import: \(error.localizedDescription)")
+                    Indicator.error("Could not import: \(error.localizedDescription)")
                 }
             } else if let data = Data(base64Encoded: paste) {
                 importData = data
@@ -246,7 +246,7 @@
             }
             .buttonStyle(.plain)
             .contextMenu {
-                Button("Copy Command") { UIBridge.sendPasteboard(str: record.equivalentSSHCommand) }
+                Button("Copy Command") { Pasteboard.copy(record.equivalentSSHCommand) }
                 Button("Remove from Recent", role: .destructive) {
                     store.recentRecord.removeAll { $0.id == record.id }
                 }

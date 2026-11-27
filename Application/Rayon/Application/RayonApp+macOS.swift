@@ -13,12 +13,9 @@
     extension RayonApp {
         /// The Mac's answers to the dialogs RayonModule asks for.
         @MainActor static func installPlatformHandlers() {
-            PortForwardBackend.shared.onError = { UIBridge.presentError(with: $0) }
+            PortForwardBackend.shared.onError = { Indicator.error($0) }
             FileTransferInterface.uiHandler = MacFileTransferUIHandler()
-            HostKeyTrust.handler = MacHostKeyTrustHandler()
-            if let problem = RayonStore.shared.launchProblem {
-                UIBridge.presentError(with: problem, delay: 1)
-            }
+            HostKeyTrust.handler = HostKeyTrustPrompt()
         }
     }
 
@@ -26,6 +23,9 @@
     struct RootView: View {
         var body: some View {
             MainView()
+                .onAppear {
+                    if let problem = RayonStore.shared.launchProblem { Indicator.error(problem) }
+                }
         }
     }
 
@@ -189,11 +189,10 @@
                 terminals ? terminalConsequence : nil,
             ]
             quitAsked = true
-            UIBridge.requiresConfirmation(
+            Indicator.confirm(
                 message: "Quit Rayon?",
                 informative: consequences.compactMap { $0 }.joined(separator: " "),
                 confirmTitle: unsaved ? "Discard Changes and Quit" : "Quit",
-                destructive: true,
                 always: unsaved
             ) { confirmed in
                 MainActor.assumeIsolated {

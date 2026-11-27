@@ -36,7 +36,7 @@ private struct HostKeysRow: View {
     var body: some View {
         LabeledContent {
             Button("Forget All…") {
-                UIBridge.requiresConfirmation(
+                Indicator.confirm(
                     message: "Forget all saved host keys?",
                     informative: "The key each server presents on its next connection is saved as its key.",
                     confirmTitle: "Forget All"

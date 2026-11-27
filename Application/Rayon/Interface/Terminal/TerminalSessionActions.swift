@@ -19,11 +19,10 @@ enum TerminalSessionActions {
         guard manager.sessionAlive(forContext: context.id), !context.machine.isUURemoteDevice else {
             return perform()
         }
-        UIBridge.requiresConfirmation(
+        Indicator.confirm(
             message: "Close this terminal tab?",
             informative: informative ?? "Its session on \(context.displayName) ends.",
-            confirmTitle: "Close Tab",
-            destructive: true
+            confirmTitle: "Close Tab"
         ) { confirmed in
             if confirmed { MainActor.assumeIsolated { perform() } }
         }

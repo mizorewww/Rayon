@@ -11,9 +11,13 @@
     import SwiftUI
 
     enum RayonUtil {
+        /// A sheet, a modal panel or an alert is up: the window's own
+        /// shortcuts wait for it.
         @MainActor static var isShowingSheetOrModal: Bool {
             if NSApp.modalWindow != nil { return true }
-            return MainWindow.ordinaryWindows.contains { $0.attachedSheet != nil }
+            return MainWindow.ordinaryWindows.contains { window in
+                window.attachedSheet != nil || window.contentViewController?.presentedViewControllers?.isEmpty == false
+            }
         }
     }
 
@@ -24,7 +28,7 @@
             size: CGSize? = nil,
             @ViewBuilder content: @escaping (_ dismiss: @escaping () -> Void) -> Content
         ) {
-            guard let parentWindow = UIBridge.sheetParentWindow else { return }
+            guard let parentWindow = NSApp.keyWindow ?? NSApp.mainWindow else { return }
             weak var sheetWindowRef: NSWindow?
             let dismiss = {
                 if let sheetWindow = sheetWindowRef {

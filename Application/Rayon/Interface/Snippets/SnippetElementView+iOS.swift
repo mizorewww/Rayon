@@ -38,7 +38,7 @@
                     Menu {
                         Button {
                             guard !snippet.code.isEmpty else {
-                                UIBridge.presentError(with: "This snippet has no command to run.")
+                                Indicator.error("This snippet has no command to run.")
                                 return
                             }
                             RayonUtil.createExecuteFor(snippet: snippet)
@@ -59,13 +59,13 @@
                             Label("Duplicate", systemImage: "plus.square.on.square")
                         }
                         Button {
-                            UIBridge.sendPasteboard(str: snippet.code)
+                            Pasteboard.copy(snippet.code)
                         } label: {
                             Label("Copy Command", systemImage: "doc.on.doc")
                         }
                         Divider()
                         Button(role: .destructive) {
-                            UIBridge.requiresConfirmation(message: "Delete \(snippet.name)?") { confirmed in
+                            Indicator.confirm(message: "Delete \(snippet.name)?") { confirmed in
                                 if confirmed { store.deleteSnippets([identity]) }
                             }
                         } label: {

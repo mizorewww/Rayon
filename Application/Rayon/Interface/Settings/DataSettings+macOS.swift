@@ -77,7 +77,7 @@
                 case let .success(url):
                     importBackup(url)
                 case let .failure(error):
-                    UIBridge.presentError(with: error.localizedDescription)
+                    Indicator.error(error.localizedDescription)
                 }
             }
             .sheet(item: $locked) { backup in
@@ -102,7 +102,7 @@
         }
 
         private func chooseFile(_ message: String, then action: @escaping (URL) -> Void) {
-            UIBridge.openPanel(
+            OpenPanel.present(
                 message: message,
                 prompt: "Import",
                 directory: nil,
@@ -125,7 +125,7 @@
                     try await store.exportBackup(to: url, includeSecrets: includeSecrets, password: password)
                     statusMessage = "Exported backup to \(url.lastPathComponent)."
                 } catch {
-                    UIBridge.presentError(with: "Could not export backup: \(error.localizedDescription)")
+                    Indicator.error("Could not export backup: \(error.localizedDescription)")
                 }
             }
         }
@@ -152,7 +152,7 @@
                     locked = LockedBackup(url: url, retry: true)
                 } catch {
                     url.stopAccessingSecurityScopedResource()
-                    UIBridge.presentError(with: "Could not import backup: \(error.localizedDescription)")
+                    Indicator.error("Could not import backup: \(error.localizedDescription)")
                 }
             }
         }
@@ -163,7 +163,7 @@
                 try PreferencesBackup.export(to: url)
                 statusMessage = "Exported settings to \(url.lastPathComponent)."
             } catch {
-                UIBridge.presentError(with: "Could not export settings: \(error.localizedDescription)")
+                Indicator.error("Could not export settings: \(error.localizedDescription)")
             }
         }
 
@@ -173,14 +173,14 @@
                     try PreferencesBackup.restore(from: url)
                     statusMessage = "Imported settings."
                 } catch {
-                    UIBridge.presentError(with: "Could not import settings: \(error.localizedDescription)")
+                    Indicator.error("Could not import settings: \(error.localizedDescription)")
                 }
             }
         }
 
         private func importSSHConfig() {
             let sshDir = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(".ssh")
-            UIBridge.openPanel(
+            OpenPanel.present(
                 message: "Choose an OpenSSH config file (e.g. ~/.ssh/config)",
                 prompt: "Import",
                 directory: sshDir,
@@ -192,7 +192,7 @@
             ) { urls in
                 guard let url = urls.first else { return }
                 guard let text = try? String(contentsOf: url, encoding: .utf8) else {
-                    UIBridge.presentError(with: "Could not read \(url.lastPathComponent) as UTF-8 text.")
+                    Indicator.error("Could not read \(url.lastPathComponent) as UTF-8 text.")
                     return
                 }
                 let result = store.importOpenSSHConfig(text, baseDirectory: url.deletingLastPathComponent())

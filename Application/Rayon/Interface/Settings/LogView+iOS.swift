@@ -32,7 +32,7 @@
                             .textSelection(.enabled)
                             .contextMenu {
                                 Button {
-                                    UIBridge.sendPasteboard(str: line)
+                                    Pasteboard.copy(line)
                                 } label: {
                                     Label("Copy", systemImage: "doc.on.doc")
                                 }

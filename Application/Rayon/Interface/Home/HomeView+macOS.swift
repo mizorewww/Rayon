@@ -348,7 +348,7 @@
             .buttonStyle(.plain)
             .onHover { hovered = $0 }
             .contextMenu {
-                Button("Copy Command") { UIBridge.sendPasteboard(str: record.equivalentSSHCommand) }
+                Button("Copy Command") { Pasteboard.copy(record.equivalentSSHCommand) }
                 Divider()
                 Button("Remove from Recent", role: .destructive) {
                     store.recentRecord.removeAll { $0.id == record.id }

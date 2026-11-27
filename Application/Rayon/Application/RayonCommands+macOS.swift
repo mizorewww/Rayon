@@ -65,19 +65,20 @@
             let manager = UpdateManager.shared
             do {
                 guard let package = try await manager.availableUpdate() else {
-                    UIBridge.alert(message: "Rayon is up to date", informative: "Version \(manager.currentVersion) is the latest release.")
+                    Indicator.alert("Rayon is up to date", message: "Version \(manager.currentVersion) is the latest release.")
                     return
                 }
-                UIBridge.alert(
+                Indicator.confirm(
                     message: "Rayon \(package.version) is available",
                     informative: "You are running version \(manager.currentVersion).",
-                    buttons: ["Download", "Later"]
-                ) { index, _ in
-                    if index == 0 { UIBridge.open(url: package.downloadURL) }
+                    confirmTitle: "Download",
+                    always: true
+                ) { download in
+                    if download { NSWorkspace.shared.open(package.downloadURL) }
                 }
             } catch {
                 Logger.app.errorFile("update check failed: \(error)")
-                UIBridge.alert(message: "Unable to check for updates", informative: error.localizedDescription)
+                Indicator.alert("Unable to check for updates", message: error.localizedDescription)
             }
         }
 
@@ -108,7 +109,7 @@
             .keyboardShortcut("v", modifiers: [.command, .shift])
             .disabled(!connected)
             Button("Copy Remote Clipboard") {
-                UIBridge.sendPasteboard(str: session.remoteClipboard)
+                Pasteboard.copy(session.remoteClipboard)
             }
             .disabled(!state.hasRemoteClipboard)
             Divider()

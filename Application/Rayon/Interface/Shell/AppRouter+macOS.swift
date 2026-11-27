@@ -138,7 +138,7 @@
                 }
             }
             if !another, TerminalManager.shared.sessionContexts.contains(where: { $0.machine.id == machine }) {
-                UIBridge.requiresConfirmation(
+                Indicator.confirm(
                     message: "\(object.name) already has a terminal open",
                     confirmTitle: "Open Another"
                 ) { confirmed in
@@ -175,7 +175,7 @@
                 let session = try MonitorCenter.shared.begin(for: machine)
                 route = .monitor(session.id)
             } catch {
-                UIBridge.presentError(with: error.localizedDescription)
+                Indicator.error(error.localizedDescription)
             }
         }
 

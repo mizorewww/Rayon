@@ -261,14 +261,14 @@
                 let read = (RayonStore.shared.machine(machine) ?? RDMachine())
                 if read.isUURemoteDevice {
                     // Its address is the device id; no ssh command reaches it.
-                    Button { UIBridge.sendPasteboard(str: read.uuDeviceID) } label: {
+                    Button { Pasteboard.copy(read.uuDeviceID) } label: {
                         Label("Copy Device ID", systemImage: "doc.on.doc")
                     }
                 } else {
-                    Button { UIBridge.sendPasteboard(str: "\(read.remoteAddress):\(read.remotePort)") } label: {
+                    Button { Pasteboard.copy("\(read.remoteAddress):\(read.remotePort)") } label: {
                         Label("Copy Address", systemImage: "doc.on.doc")
                     }
-                    Button { UIBridge.sendPasteboard(str: read.getCommand()) } label: {
+                    Button { Pasteboard.copy(read.getCommand()) } label: {
                         Label("Copy SSH Command", systemImage: "chevron.left.forwardslash.chevron.right")
                     }
                 }
@@ -311,7 +311,7 @@
                 guard existing != nil || AppSettings.showsSessionOnConnect.value else { return }
                 SessionNavigation.shared.reveal(.server(session.machine.id), tool: .monitor)
             } catch {
-                UIBridge.presentError(with: "Cannot open monitor")
+                Indicator.error("Cannot open monitor")
             }
         }
 
@@ -335,7 +335,7 @@
         @MainActor
         static func forgetHostKey(_ machine: RDMachine.ID) {
             guard let read = RayonStore.shared.machine(machine) else { return }
-            UIBridge.requiresConfirmation(message: "Forget the host key of \(read.name)? The key it presents next is saved as its key.") { confirmed in
+            Indicator.confirm(message: "Forget the host key of \(read.name)? The key it presents next is saved as its key.") { confirmed in
                 guard confirmed else { return }
                 read.forgetHostKey()
             }
@@ -351,7 +351,7 @@
         @MainActor
         static func delete(_ machine: RDMachine.ID) {
             let name = (RayonStore.shared.machine(machine) ?? RDMachine()).name
-            UIBridge.requiresConfirmation(
+            Indicator.confirm(
                 message: "Delete \(name)?",
                 informative: "This cannot be undone.",
                 confirmTitle: "Delete"

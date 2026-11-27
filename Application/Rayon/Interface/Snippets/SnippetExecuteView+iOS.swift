@@ -86,7 +86,7 @@
                 dismiss()
                 return
             }
-            UIBridge.requiresConfirmation(
+            Indicator.confirm(
                 message: "Stop running \(snippet.name)?",
                 confirmTitle: "Stop and Close"
             ) { confirmed in

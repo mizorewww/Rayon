@@ -15,7 +15,7 @@
         @MainActor static func installPlatformHandlers() {
             FileTransferInterface.uiHandler = IOSFileTransferUIHandler()
             TerminalInterface.uiHandler = IOSTerminalUIHandler()
-            HostKeyTrust.handler = IOSHostKeyTrustHandler()
+            HostKeyTrust.handler = HostKeyTrustPrompt()
         }
     }
 
@@ -39,7 +39,7 @@
                     SettingsEffects.start()
                     checkAgreement()
                     if let problem = store.launchProblem {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { UIBridge.presentAlert(with: problem) }
+                        Indicator.alert(problem)
                     }
                     #if DEBUG
                         runPreviewHooks()

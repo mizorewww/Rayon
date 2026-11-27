@@ -73,7 +73,7 @@
             }
             let configURL = source == .folder ? url.appendingPathComponent("config") : url
             guard let text = try? String(contentsOf: configURL, encoding: .utf8) else {
-                UIBridge.presentError(with: source == .folder
+                Indicator.error(source == .folder
                     ? "There is no readable config file in \(url.lastPathComponent)."
                     : "Could not read \(url.lastPathComponent) as UTF-8 text.")
                 return
@@ -84,9 +84,9 @@
                 baseDirectory: configURL.deletingLastPathComponent(),
                 keyDirectory: keys
             )
-            UIBridge.presentSuccess(
-                with: "Imported \(result.importedServers) servers and \(result.importedIdentities) identities",
-                subtitle: source == .file && result.importedIdentities > 0
+            Indicator.success(
+                "Imported \(result.importedServers) servers and \(result.importedIdentities) identities",
+                message: source == .file && result.importedIdentities > 0
                     ? "Keys load only when you import the whole .ssh folder."
                     : nil
             )
@@ -112,16 +112,16 @@
                 let contents = try await DataBackup.load(url, password: password)
                 let result = RayonStore.shared.restore(contents)
                 try? FileManager.default.removeItem(at: url)
-                UIBridge.presentSuccess(
-                    with: "Backup imported",
-                    subtitle: result.summary
+                Indicator.success(
+                    "Backup imported",
+                    message: result.summary
                 )
                 return true
             } catch BackupError.wrongPassword {
                 return false
             } catch {
                 try? FileManager.default.removeItem(at: url)
-                UIBridge.presentError(with: "Could not import backup: \(error.localizedDescription)")
+                Indicator.error("Could not import backup: \(error.localizedDescription)")
                 return true
             }
         }
@@ -132,9 +132,9 @@
                 let copy = try readableCopy(of: url)
                 defer { try? FileManager.default.removeItem(at: copy) }
                 try PreferencesBackup.restore(from: copy)
-                UIBridge.presentSuccess(with: "Settings imported")
+                Indicator.success("Settings imported")
             } catch {
-                UIBridge.presentError(with: "Could not import settings: \(error.localizedDescription)")
+                Indicator.error("Could not import settings: \(error.localizedDescription)")
             }
         }
     }
@@ -164,7 +164,7 @@
                 case let .success(url):
                     DataImport.importSSHConfig(from: url, source: picked)
                 case let .failure(error):
-                    UIBridge.presentError(with: error.localizedDescription)
+                    Indicator.error(error.localizedDescription)
                 }
             }
         }
@@ -196,7 +196,7 @@
             PreferencesRow()
             SSHConfigRow()
             LabeledContent {
-                Button("Show") { UIBridge.openFileContainer() }
+                Button("Show") { FilesApp.showDocuments() }
             } label: {
                 Text("App container")
                 Text("Files the app keeps, in the Files app.")
@@ -251,7 +251,7 @@
                             try await RayonStore.shared.exportBackup(to: url, includeSecrets: includeSecrets, password: password)
                             exportDocument = try BackupDocument(data: Data(contentsOf: url))
                         } catch {
-                            UIBridge.presentError(with: "Could not export backup: \(error.localizedDescription)")
+                            Indicator.error("Could not export backup: \(error.localizedDescription)")
                         }
                     }
                 }
@@ -269,9 +269,9 @@
                 exportDocument = nil
                 switch result {
                 case let .success(url):
-                    UIBridge.presentSuccess(with: "Exported backup to \(url.lastPathComponent)")
+                    Indicator.success("Exported backup to \(url.lastPathComponent)")
                 case let .failure(error):
-                    UIBridge.presentError(with: "Could not export backup: \(error.localizedDescription)")
+                    Indicator.error("Could not export backup: \(error.localizedDescription)")
                 }
             }
             .fileImporter(isPresented: $importing, allowedContentTypes: [.item]) { result in
@@ -287,10 +287,10 @@
                             Task { _ = await DataImport.restoreBackup(copy, password: nil) }
                         }
                     } catch {
-                        UIBridge.presentError(with: "Could not read backup: \(error.localizedDescription)")
+                        Indicator.error("Could not read backup: \(error.localizedDescription)")
                     }
                 case let .failure(error):
-                    UIBridge.presentError(with: error.localizedDescription)
+                    Indicator.error(error.localizedDescription)
                 }
             }
             .alert(
@@ -381,7 +381,7 @@
                         do {
                             exportDocument = try BackupDocument { try PreferencesBackup.export(to: $0) }
                         } catch {
-                            UIBridge.presentError(with: "Could not export settings: \(error.localizedDescription)")
+                            Indicator.error("Could not export settings: \(error.localizedDescription)")
                         }
                     } label: {
                         Label("Export Settings…", systemImage: "square.and.arrow.up")
@@ -411,13 +411,13 @@
             ) { result in
                 exportDocument = nil
                 if case let .failure(error) = result {
-                    UIBridge.presentError(with: "Could not export settings: \(error.localizedDescription)")
+                    Indicator.error("Could not export settings: \(error.localizedDescription)")
                 }
             }
             .fileImporter(isPresented: $importing, allowedContentTypes: [.item]) { result in
                 switch result {
                 case let .success(url): DataImport.restorePreferences(from: url)
-                case let .failure(error): UIBridge.presentError(with: error.localizedDescription)
+                case let .failure(error): Indicator.error(error.localizedDescription)
                 }
             }
         }

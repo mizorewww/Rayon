@@ -13,11 +13,10 @@
     extension EditorWorkspace {
         func close(_ document: EditorDocument) {
             guard document.isEdited else { return remove(document) }
-            UIBridge.requiresConfirmation(
+            Indicator.confirm(
                 message: "Close \(document.name) without saving?",
                 informative: "Your changes are lost if you don't save them.",
                 confirmTitle: "Discard Changes",
-                destructive: true,
                 always: true
             ) { confirmed in
                 MainActor.assumeIsolated {
@@ -31,11 +30,10 @@
         @MainActor
         static func close(_ workspace: EditorWorkspace) {
             guard workspace.hasUnsavedChanges else { return EditorCenter.shared.end(workspace.id) }
-            UIBridge.requiresConfirmation(
+            Indicator.confirm(
                 message: "Close the editor on \(workspace.context.machine.name)?",
                 informative: "Some files have changes that are not saved. They are lost if you close the editor.",
                 confirmTitle: "Discard Changes",
-                destructive: true,
                 always: true
             ) { confirmed in
                 if confirmed { EditorCenter.shared.end(workspace.id) }

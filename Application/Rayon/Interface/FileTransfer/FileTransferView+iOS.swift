@@ -238,7 +238,7 @@
                         Label("Open Editor", systemImage: "square.and.pencil")
                     }
                     Section {
-                        Button { UIBridge.openFileContainer() } label: {
+                        Button { FilesApp.showDocuments() } label: {
                             Label("Show Downloads in Files", systemImage: "doc.viewfinder")
                         }
                     }
@@ -261,15 +261,14 @@
         }
 
         func newFolder() {
-            UIBridge.askForInputText(
+            Indicator.input(
                 title: "New Folder",
                 message: "",
                 placeholder: "Folder Name",
-                payload: "",
-                canCancel: true
+                text: ""
             ) { name in
                 guard name.isValidAsFilename else {
-                    UIBridge.presentError(with: "Invalid Filename")
+                    Indicator.error("Invalid Filename")
                     return
                 }
                 context.createFolder(with: name)
@@ -311,15 +310,14 @@
         }
 
         func goToFolder() {
-            UIBridge.askForInputText(
+            Indicator.input(
                 title: "Go to Folder",
                 message: "",
                 placeholder: "/var/log",
-                payload: context.currentDir,
-                canCancel: true
+                text: context.currentDir
             ) { path in
                 guard !path.isEmpty, path.hasPrefix("/") else {
-                    UIBridge.presentError(with: "Use an absolute path starting with /.")
+                    Indicator.error("Use an absolute path starting with /.")
                     return
                 }
                 context.navigate(path: path)
@@ -434,28 +432,27 @@
                 }
                 Section {
                     Button {
-                        UIBridge.sendPasteboard(str: file.name)
+                        Pasteboard.copy(file.name)
                     } label: {
                         Label("Copy Name", systemImage: "doc.on.doc")
                     }
                     Button {
                         let path = context.currentUrl.appendingPathComponent(file.name).path
-                        UIBridge.sendPasteboard(str: path)
+                        Pasteboard.copy(path)
                     } label: {
                         Label("Copy Path", systemImage: "link")
                     }
                 }
                 Section {
                     Button {
-                        UIBridge.askForInputText(
+                        Indicator.input(
                             title: "Rename",
                             message: "",
                             placeholder: "New File Name",
-                            payload: file.name,
-                            canCancel: true
+                            text: file.name
                         ) { newValue in
                             guard newValue.isValidAsFilename else {
-                                UIBridge.presentError(with: "Invalid Filename")
+                                Indicator.error("Invalid Filename")
                                 return
                             }
                             let base = context.currentUrl
@@ -478,7 +475,7 @@
                 Section {
                     Button(role: .destructive) {
                         let item = context.currentUrl.appendingPathComponent(file.name)
-                        UIBridge.requiresConfirmation(
+                        Indicator.confirm(
                             message: "Delete \(file.name)?",
                             informative: file.fstat.isDirectory
                                 ? "The folder and everything in it is deleted from the server. This cannot be undone."
@@ -590,7 +587,7 @@
                 then()
             }
             if context.isProgressRunning || unsaved {
-                UIBridge.requiresConfirmation(
+                Indicator.confirm(
                     message: "Close the file transfer on \(context.machine.name)?",
                     informative: unsaved
                         ? "Files open in the editor have changes that are not saved. They are lost if you close."
@@ -606,24 +603,24 @@
         }
     }
 
-    /// Bridges RayonModule's shared file-transfer core to UIKit UI.
-    final class IOSFileTransferUIHandler: FileTransferUIHandler {
+    /// Bridges RayonModule's shared file-transfer core to the iOS app's UI.
+    /// RayonModule calls it on the main thread.
+    @MainActor
+    final class IOSFileTransferUIHandler: @preconcurrency FileTransferUIHandler {
         func presentError(_ message: String) {
-            UIBridge.presentError(with: message)
+            Indicator.error(message)
         }
 
         func requiresConfirmation(_ message: String, completion: @escaping (Bool) -> Void) {
-            UIBridge.requiresConfirmation(message: message, confirmation: completion)
+            Indicator.confirm(message: message, confirmation: completion)
         }
 
         func autoOpenInterface(_ context: FileTransferContext) {
-            MainActor.assumeIsolated {
-                SessionNavigation.shared.reveal(.server(context.machine.id), tool: .files)
-            }
+            SessionNavigation.shared.reveal(.server(context.machine.id), tool: .files)
         }
 
         func downloadCompleted() {
-            UIBridge.presentSuccess(with: "Download Completed", subtitle: "Saved to Files")
+            Indicator.success("Download Completed", message: "Saved to Files")
         }
     }
 

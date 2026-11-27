@@ -126,7 +126,7 @@
                         RXMenuItem("Run…") { SnippetActions.run(snippet.id) }
                         RXMenuItem("Edit…", action: edit)
                         RXMenuItem("Duplicate") { SnippetActions.duplicate(snippet.id) }
-                        RXMenuItem("Copy Command") { UIBridge.sendPasteboard(str: snippet.code) }
+                        RXMenuItem("Copy Command") { Pasteboard.copy(snippet.code) }
                         Divider()
                         RXMenuItem("Delete…", role: .destructive) { SnippetActions.delete(snippet.id) }
                     }
@@ -143,7 +143,7 @@
                 Button("Run…") { SnippetActions.run(snippet.id) }
                 Button("Edit…", action: edit)
                 Button("Duplicate") { SnippetActions.duplicate(snippet.id) }
-                Button("Copy Command") { UIBridge.sendPasteboard(str: snippet.code) }
+                Button("Copy Command") { Pasteboard.copy(snippet.code) }
                 Divider()
                 Button("Delete…", role: .destructive) { SnippetActions.delete(snippet.id) }
             }
@@ -156,7 +156,7 @@
         static func run(_ id: RDSnippet.ID) {
             guard let snippet = RayonStore.shared.snippet(id) else { return }
             guard !snippet.code.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                UIBridge.presentError(with: "This snippet has no command to run.")
+                Indicator.error("This snippet has no command to run.")
                 return
             }
             ServerPickerPanel.present(
@@ -182,10 +182,9 @@
 
         static func delete(_ id: RDSnippet.ID) {
             guard let snippet = RayonStore.shared.snippet(id) else { return }
-            UIBridge.requiresConfirmation(
+            Indicator.confirm(
                 message: "Delete \(snippet.name.isEmpty ? "this snippet" : snippet.name)?",
-                confirmTitle: "Delete",
-                destructive: true
+                confirmTitle: "Delete"
             ) { confirmed in
                 if confirmed { RayonStore.shared.deleteSnippets([id]) }
             }

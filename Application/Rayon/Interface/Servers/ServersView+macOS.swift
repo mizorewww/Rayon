@@ -100,7 +100,7 @@
 
         private func importSSHConfigFromToolbar() {
             let sshDir = URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent(".ssh")
-            UIBridge.openPanel(
+            OpenPanel.present(
                 message: "Choose an OpenSSH config file (e.g. ~/.ssh/config)",
                 prompt: "Import",
                 directory: sshDir,
@@ -112,7 +112,7 @@
             ) { urls in
                 guard let url = urls.first else { return }
                 guard let text = try? String(contentsOf: url, encoding: .utf8) else {
-                    UIBridge.presentError(with: "Could not read \(url.lastPathComponent) as UTF-8 text.")
+                    Indicator.error("Could not read \(url.lastPathComponent) as UTF-8 text.")
                     return
                 }
                 _ = store.importOpenSSHConfig(text, baseDirectory: url.deletingLastPathComponent())

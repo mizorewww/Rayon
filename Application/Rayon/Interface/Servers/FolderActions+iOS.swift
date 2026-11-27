@@ -16,12 +16,11 @@
         @MainActor
         static func newFolder(moving servers: [RDMachine.ID] = []) {
             let store = RayonStore.shared
-            UIBridge.askForInputText(
+            Indicator.input(
                 title: "New Folder",
                 message: "Name the folder.",
                 placeholder: "Folder name",
-                payload: store.availableFolderName("New Folder"),
-                canCancel: true
+                text: store.availableFolderName("New Folder")
             ) { text in
                 let name = text.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !name.isEmpty else { return }
@@ -32,17 +31,16 @@
 
         @MainActor
         static func rename(_ name: String) {
-            UIBridge.askForInputText(
+            Indicator.input(
                 title: "Rename Folder",
                 message: "The servers in it move with it.",
                 placeholder: "Folder name",
-                payload: name,
-                canCancel: true
+                text: name
             ) { text in
                 let newName = text.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !newName.isEmpty else { return }
                 if let folder = RayonStore.shared.folder(named: name), !RayonStore.shared.renameFolder(folder.id, to: newName) {
-                    UIBridge.presentError(with: "There is already a folder named \"\(newName)\".")
+                    Indicator.error("There is already a folder named \"\(newName)\".")
                 }
             }
         }
@@ -51,7 +49,7 @@
         static func delete(_ name: String) {
             guard let folder = RayonStore.shared.folder(named: name) else { return }
             let plan = FolderDeletionPlan(folder: folder)
-            UIBridge.requiresConfirmation(
+            Indicator.confirm(
                 message: plan.message,
                 informative: plan.informative,
                 confirmTitle: plan.confirmTitle
@@ -68,7 +66,7 @@
                 do {
                     try await UURemoteAccount.shared.refreshDevices()
                 } catch {
-                    UIBridge.presentError(with: error.localizedDescription)
+                    Indicator.error(error.localizedDescription)
                 }
             }
         }

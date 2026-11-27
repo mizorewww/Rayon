@@ -11,7 +11,7 @@
         func begin(for machineId: RDMachine.ID, force: Bool = false) {
             if !force {
                 for terminal in terminals where terminal.machine.id == machineId {
-                    UIBridge.requiresConfirmation(
+                    Indicator.confirm(
                         message: "Another terminal for this machine is already running"
                     ) { confirmed in
                         guard confirmed else { return }
@@ -23,7 +23,7 @@
                 }
             }
             guard let machine = RayonStore.shared.machine(machineId) else {
-                UIBridge.presentError(with: "Unknown Bad Data")
+                Indicator.error("Unknown Bad Data")
                 return
             }
             createSession(withMachineObject: machine, askingToResume: true)
@@ -32,7 +32,7 @@
         func begin(for command: SSHCommandReader, force: Bool = false) {
             if !force {
                 for terminal in terminals where terminal.command == command {
-                    UIBridge.requiresConfirmation(
+                    Indicator.confirm(
                         message: "Another terminal for this command is already running"
                     ) { confirmed in
                         guard confirmed else { return }
@@ -75,7 +75,7 @@
             switch context.remoteType {
             case .machine:
                 guard let machine = RayonStore.shared.machine(context.machine.id) else {
-                    UIBridge.presentError(with: "This server's details could not be read.")
+                    Indicator.error("This server's details could not be read.")
                     return
                 }
                 createSession(withMachineObject: machine, askingToResume: true, completion: completion)

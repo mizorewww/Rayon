@@ -16,7 +16,7 @@
         ) {
             let index = sessionContexts.firstIndex { $0.machine.id == machine.id }
             if index != nil, !force {
-                UIBridge.requiresConfirmation(
+                Indicator.confirm(
                     message: "\(machine.name) already has a terminal open",
                     confirmTitle: "Open Another"
                 ) { confirmed in
@@ -38,7 +38,7 @@
             completion: @escaping (Context) -> Void = { _ in }
         ) {
             guard let machine = RayonStore.shared.machine(machineId) else {
-                UIBridge.presentError(with: "This server's details could not be read.")
+                Indicator.error("This server's details could not be read.")
                 return
             }
             createSession(withMachineObject: machine, force: force, resuming: uuSession, completion: completion)

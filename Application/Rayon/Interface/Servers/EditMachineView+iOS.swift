@@ -332,7 +332,7 @@
                 if let identity = inEditWith {
                     Section {
                         Button {
-                            UIBridge.requiresConfirmation(
+                            Indicator.confirm(
                                 message: "Delete this server?"
                             ) { confirmed in
                                 if confirmed {
@@ -418,15 +418,15 @@
 
         func validate() -> Bool {
             guard !trimmedAddress.isEmpty else {
-                UIBridge.presentError(with: "Empty Address")
+                Indicator.error("Empty Address")
                 return false
             }
             guard portIsValid else {
-                UIBridge.presentError(with: "Invalid Port")
+                Indicator.error("Invalid Port")
                 return false
             }
             guard transport != .proxyJump || proxyJumpMachineID != nil else {
-                UIBridge.presentError(with: "Choose a jump server")
+                Indicator.error("Choose a jump server")
                 return false
             }
             return true
@@ -435,7 +435,7 @@
         /// Saves the server; false, with the reason shown, when it is refused.
         func save(_ machine: RDMachine) -> Bool {
             guard RayonStore.shared.save(machine) else {
-                UIBridge.presentAlert(with: RayonStore.shared.problem(saving: machine)?.localizedDescription ?? "The server could not be saved.")
+                Indicator.alert(RayonStore.shared.problem(saving: machine)?.localizedDescription ?? "The server could not be saved.")
                 return false
             }
             return true

@@ -74,7 +74,7 @@
                 if let identity = inEditWith {
                     Section {
                         Button {
-                            UIBridge.requiresConfirmation(
+                            Indicator.confirm(
                                 message: "Delete this snippet?"
                             ) { confirmed in
                                 if confirmed {
@@ -107,7 +107,7 @@
 
         func completeSheet() {
             guard !name.trimmingCharacters(in: .whitespaces).isEmpty else {
-                UIBridge.presentError(with: "Empty Name")
+                Indicator.error("Empty Name")
                 return
             }
 

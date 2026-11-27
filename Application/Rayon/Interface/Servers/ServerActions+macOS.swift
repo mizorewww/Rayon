@@ -31,7 +31,7 @@
         static func duplicate(_ machine: RDMachine.ID) {
             let store = RayonStore.shared
             guard let original = store.machine(machine) else { return }
-            UIBridge.requiresConfirmation(
+            Indicator.confirm(
                 message: "Duplicate \(original.name)?",
                 confirmTitle: "Duplicate"
             ) { confirmed in
@@ -50,11 +50,10 @@
             let message = machines.count == 1
                 ? "Delete \(store.machine(machines[0])?.name ?? "this server")?"
                 : "Delete \(machines.count) servers?"
-            UIBridge.requiresConfirmation(
+            Indicator.confirm(
                 message: message,
                 informative: "Port forwards through it stop working.",
-                confirmTitle: "Delete",
-                destructive: true
+                confirmTitle: "Delete"
             ) { confirmed in
                 guard confirmed else { return }
                 for machine in machines {
@@ -77,7 +76,7 @@
 
         static func forgetHostKey(_ machine: RDMachine.ID) {
             guard let read = RayonStore.shared.machine(machine) else { return }
-            UIBridge.requiresConfirmation(
+            Indicator.confirm(
                 message: "Forget the host key of \(read.name)?",
                 informative: "The key the server presents on the next connection is saved as its key. Do this only when you know its keys were replaced.",
                 confirmTitle: "Forget"
@@ -89,12 +88,12 @@
 
         static func copyAddress(_ machine: RDMachine.ID) {
             guard let read = RayonStore.shared.machine(machine) else { return }
-            UIBridge.sendPasteboard(str: "\(read.remoteAddress):\(read.remotePort)")
+            Pasteboard.copy("\(read.remoteAddress):\(read.remotePort)")
         }
 
         static func copyCommand(_ machine: RDMachine.ID) {
             guard let read = RayonStore.shared.machine(machine) else { return }
-            UIBridge.sendPasteboard(str: read.getCommand { RayonStore.shared.machine($0) })
+            Pasteboard.copy(read.getCommand { RayonStore.shared.machine($0) })
         }
     }
 
@@ -172,7 +171,7 @@
                 if read.isUURemoteDevice {
                     // Its address is the device id; no ssh command reaches it.
                     RXMenuItem("Copy Device ID", systemImage: "doc.on.doc") {
-                        UIBridge.sendPasteboard(str: read.uuDeviceID)
+                        Pasteboard.copy(read.uuDeviceID)
                     }
                 } else {
                     RXMenuItem("Copy Address", systemImage: "doc.on.doc") {

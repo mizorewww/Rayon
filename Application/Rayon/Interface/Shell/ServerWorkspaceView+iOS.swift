@@ -50,7 +50,7 @@
                 do {
                     _ = try MonitorCenter.shared.begin(for: machine)
                 } catch {
-                    UIBridge.presentError(with: "Cannot open monitor")
+                    Indicator.error("Cannot open monitor")
                 }
             case .desktop:
                 _ = RemoteDesktopManager.shared.begin(for: machine)

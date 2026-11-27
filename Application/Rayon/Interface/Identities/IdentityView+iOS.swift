@@ -113,7 +113,7 @@
                         Label("Deploy Public Key (ssh-copy-id)…", systemImage: "square.and.arrow.up.on.square")
                     }
                     Button {
-                        UIBridge.sendPasteboard(str: publicKey)
+                        Pasteboard.copy(publicKey)
                     } label: {
                         Label("Copy Public Key", systemImage: "doc.on.doc")
                     }
@@ -146,7 +146,7 @@
             let store = RayonStore.shared
             guard let identity = store.identity(id) else { return }
             let users = store.machines.filter { $0.associatedIdentity == id }.count
-            UIBridge.requiresConfirmation(
+            Indicator.confirm(
                 message: "Delete identity \(identity.username)?",
                 informative: users > 0
                     ? "\(users) server\(users == 1 ? "" : "s") use it and will try automatic identities instead."
@@ -166,26 +166,26 @@
         static func deployPublicKey(_ publicKey: String, identityID: RDIdentity.ID) {
             let pub = publicKey.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !pub.isEmpty else {
-                UIBridge.presentError(with: "This identity has no public key to deploy.")
+                Indicator.error("This identity has no public key to deploy.")
                 return
             }
             Task { @MainActor in
                 let machines = await RayonUtil.selectMachine()
                 guard !machines.isEmpty else { return }
-                UIBridge.presentSuccess(
-                    with: "Deploying public key",
-                    subtitle: machines.count == 1 ? "To 1 server" : "To \(machines.count) servers"
+                Indicator.success(
+                    "Deploying public key",
+                    message: machines.count == 1 ? "To 1 server" : "To \(machines.count) servers"
                 )
                 Task {
                     let outcome = await PublicKeyDeployment.deploy(pub, to: machines)
                     await MainActor.run {
                         if !outcome.failed.isEmpty {
-                            UIBridge.presentError(with: "Failed to deploy public key to: \(outcome.failed.joined(separator: ", ")).")
+                            Indicator.error("Failed to deploy public key to: \(outcome.failed.joined(separator: ", ")).")
                         } else if !outcome.succeeded.isEmpty {
                             PublicKeyDeployment.adopt(identity: identityID, on: machines)
-                            UIBridge.presentSuccess(
-                                with: "Public key deployed",
-                                subtitle: outcome.succeeded.joined(separator: ", ")
+                            Indicator.success(
+                                "Public key deployed",
+                                message: outcome.succeeded.joined(separator: ", ")
                             )
                         }
                     }

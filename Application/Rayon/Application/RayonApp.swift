@@ -23,6 +23,7 @@ struct RayonApp: App {
             Logger.app.debugFile("command arguments: \(private: CommandLine.arguments.joined(separator: " "))")
         #endif
         Self.installPlatformHandlers()
+        Indicator.configure()
         _ = RayonStore.shared
         CloudSyncModel.shared.start()
         Telemetry.shared.snapshot = { .rayon }

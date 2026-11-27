@@ -14,6 +14,8 @@ packages:
   MachineStatus: { path: ../../Foundation/MachineStatus }
   MachineStatusView: { path: ../../Foundation/MachineStatusView }
   SymbolPicker: { path: ../../Foundation/SymbolPicker }
+  AlertController: { url: https://github.com/Lakr233/AlertController, from: 3.0.0 }
+  SPIndicator: { url: https://github.com/ivanvorobei/SPIndicator, from: 1.6.5 }
 configFiles:
   Debug: ../../Configuration/Debug.xcconfig
   Release: ../../Configuration/Release.xcconfig
@@ -93,6 +95,10 @@ targets:
       - package: MachineStatus
       - package: MachineStatusView
       - package: SymbolPicker
+      - package: AlertController
+      # Toasts; the Mac shows none.
+      - package: SPIndicator
+        destinationFilters: [iOS]
 schemes:
   Rayon:
     build:

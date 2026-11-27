@@ -145,7 +145,7 @@
                     Divider()
                 }
                 Button("Duplicate") { IdentityActions.duplicate(identity.id) }
-                Button("Copy Public Key") { UIBridge.sendPasteboard(str: identity.publicKey) }
+                Button("Copy Public Key") { Pasteboard.copy(identity.publicKey) }
                     .disabled(identity.publicKey.isEmpty)
                 Divider()
                 Button("Delete…", role: .destructive) { IdentityActions.delete(identity.id) }
@@ -166,13 +166,12 @@
             let store = RayonStore.shared
             guard let identity = store.identity(id) else { return }
             let users = store.machines.filter { $0.associatedIdentity == id }.count
-            UIBridge.requiresConfirmation(
+            Indicator.confirm(
                 message: "Delete identity \(identity.username)?",
                 informative: users > 0
                     ? "\(users) server\(users == 1 ? "" : "s") use it and will try automatic identities instead."
                     : "Its password and keys are removed from Rayon.",
-                confirmTitle: "Delete",
-                destructive: true
+                confirmTitle: "Delete"
             ) { confirmed in
                 guard confirmed else { return }
                 store.deleteIdentities([id])
@@ -183,7 +182,7 @@
         static func deployPublicKey(_ publicKey: String, identityID: RDIdentity.ID) {
             let pub = publicKey.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !pub.isEmpty else {
-                UIBridge.presentError(with: "This identity has no public key to deploy.")
+                Indicator.error("This identity has no public key to deploy.")
                 return
             }
             ServerPickerPanel.present(
@@ -197,7 +196,7 @@
                     let outcome = await PublicKeyDeployment.deploy(pub, to: machines)
                     await MainActor.run {
                         if !outcome.failed.isEmpty {
-                            UIBridge.presentError(with: "Failed to deploy public key to: \(outcome.failed.joined(separator: ", ")).")
+                            Indicator.error("Failed to deploy public key to: \(outcome.failed.joined(separator: ", ")).")
                         } else if !outcome.succeeded.isEmpty {
                             PublicKeyDeployment.adopt(identity: identityID, on: machines)
                         }
@@ -388,7 +387,7 @@
                 if !text.isEmpty {
                     if !masked {
                         RXIconButton("Copy", systemImage: "doc.on.doc") {
-                            UIBridge.sendPasteboard(str: text)
+                            Pasteboard.copy(text)
                         }
                     }
                     RXIconButton("Remove", systemImage: "minus.circle") { text = "" }
@@ -400,7 +399,7 @@
         }
 
         func load() {
-            UIBridge.openPanel(
+            OpenPanel.present(
                 message: nil,
                 prompt: nil,
                 directory: URL(fileURLWithPath: "\(NSHomeDirectory())/.ssh/"),
@@ -412,13 +411,13 @@
             ) { urls in
                 guard let url = urls.first else { return }
                 guard let data = try? Data(contentsOf: url), let string = String(data: data, encoding: .utf8) else {
-                    UIBridge.presentError(with: "The file could not be read as text.")
+                    Indicator.error("The file could not be read as text.")
                     return
                 }
                 if matches(string) {
                     text = string
                 } else {
-                    UIBridge.requiresConfirmation(
+                    Indicator.confirm(
                         message: "This file does not look like a \(masked ? "private" : "public") key",
                         informative: "Load it anyway?",
                         confirmTitle: "Load"

@@ -157,11 +157,10 @@
         private func reload() {
             guard let current else { return }
             guard current.isEdited else { return current.load() }
-            UIBridge.requiresConfirmation(
+            Indicator.confirm(
                 message: "Reload \(current.name) from the server?",
                 informative: "Your changes are replaced by the file on the server.",
                 confirmTitle: "Reload",
-                destructive: true,
                 always: true
             ) { confirmed in
                 MainActor.assumeIsolated {

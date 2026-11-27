@@ -26,10 +26,9 @@
                     HStack {
                         Spacer()
                         Button {
-                            UIBridge.requiresConfirmation(
+                            Indicator.confirm(
                                 message: "Accept the license?",
-                                confirmTitle: "Agree",
-                                destructive: false
+                                confirmTitle: "Agree"
                             ) { yes in
                                 if yes {
                                     RayonStore.shared.licenseAgreed = true
