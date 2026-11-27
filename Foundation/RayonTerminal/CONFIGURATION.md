@@ -60,13 +60,4 @@ connected to nothing, showing a fixed ANSI sample with the applied settings.
 every option, themes, file preservation, apply/reject/undo, legacy migration,
 shortcut semantics, compound values and live surface/font continuity.
 
-For an isolated native UI harness, run:
-
-```sh
-bash Workflow/Scripts/build-configuration-preview.sh
-```
-
-This creates `.build/DerivedData/RayonConfigurationPreview.app` with its own
-bundle identity and settings file, without opening Rayon's account store.
-
 Data refresh instructions live in `Workflow/Scripts/GhosttyConfig/README.md`.

@@ -2,7 +2,7 @@ import SwiftUI
 
 // The terminal's settings as parts an app arranges in its own Settings: the
 // categories to list, a category's page, search, the tools and what goes
-// around them. `GhosttyConfigurationView` is the same parts on their own.
+// around them.
 
 /// A category of terminal settings (Text, Colors, …).
 public struct TerminalSettingsCategory: Identifiable, Hashable, Sendable {
