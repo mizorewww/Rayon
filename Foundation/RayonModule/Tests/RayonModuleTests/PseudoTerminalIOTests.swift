@@ -74,15 +74,17 @@
         func testTheDescriptorOutlivesAReaderStillAtWork() throws {
             let terminal = try spawn("echo hello; exec sleep 30")
             defer { reap(terminal) }
-            let reading = DispatchSemaphore(value: 0)
+            let reading = expectation(description: "the reader is at work")
+            // Holding the reader's own dispatch thread mid-read is what this
+            // test is about, so it blocks on a semaphore rather than awaiting.
             let release = DispatchSemaphore(value: 0)
             let once = OSAllocatedUnfairLock(initialState: false)
             let io = PseudoTerminalIO(descriptor: terminal.master) { _ in
                 guard once.withLock({ first in defer { first = true }; return !first }) else { return }
-                reading.signal()
+                reading.fulfill()
                 release.wait()
             } ended: {}
-            XCTAssertEqual(reading.wait(timeout: .now() + 5), .success)
+            wait(for: [reading], timeout: 5)
             io.close()
             Thread.sleep(forTimeInterval: 0.2)
             XCTAssertTrue(isOpen(terminal.master), "closed under a reader")

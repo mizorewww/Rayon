@@ -22,12 +22,12 @@ final class AppSettingsSyncTests: XCTestCase {
     private let remembersRecent = AppSettings.remembersRecent.key
     private let redaction = AppSettings.serverRedaction.key
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         test = try TestStorage()
         settings = UserDefaultKeyValueStorage(suite: UserDefaults(suiteName: "rayon-tests-\(UUID().uuidString)")!)
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         test = nil
         settings = nil
     }

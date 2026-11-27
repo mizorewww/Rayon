@@ -118,7 +118,7 @@
         /// another thread may have held when it forked. Resizing the
         /// terminal sends SIGWINCH to the child that just made it its own:
         /// while children spawn on it, none may run the handler.
-        func testNoHandlerOfThisProcessRunsInTheChild() throws {
+        func testNoHandlerOfThisProcessRunsInTheChild() async throws {
             _ = (testProcess, inChildMarker)
             var master: Int32 = -1
             var slave: Int32 = -1
@@ -130,14 +130,12 @@
             defer { signal(SIGWINCH, previous) }
 
             let resizing = OSAllocatedUnfairLock(initialState: true)
-            let resized = DispatchSemaphore(value: 0)
-            Thread.detachNewThread { [master] in
+            let resizer = Task.detached { [master] in
                 var size = winsize(ws_row: 24, ws_col: 80, ws_xpixel: 0, ws_ypixel: 0)
                 while resizing.withLock({ $0 }) {
                     size.ws_col = size.ws_col == 80 ? 81 : 80
                     _ = ioctl(master, TIOCSWINSZ, &size)
                 }
-                resized.signal()
             }
             let argv: [UnsafeMutablePointer<CChar>?] = [strdup("true"), nil]
             let envp: [UnsafeMutablePointer<CChar>?] = [nil]
@@ -149,7 +147,7 @@
                 if pid > 0 { waitpid(pid, &status, 0) }
             }
             resizing.withLock { $0 = false }
-            resized.wait()
+            await resizer.value
 
             var marks = [UInt8](repeating: 0, count: 4096)
             let ran = read(inChildMarker.read, &marks, marks.count)

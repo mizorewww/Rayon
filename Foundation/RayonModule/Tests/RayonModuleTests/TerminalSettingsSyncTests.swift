@@ -16,11 +16,11 @@ final class TerminalSettingsSyncTests: XCTestCase {
     private var test: TestStorage!
     private var storage: RayonStorage { test.storage }
 
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         test = try TestStorage()
     }
 
-    override func tearDown() {
+    override func tearDown() async throws {
         // The scratch settings applied themselves to the shared terminal configuration.
         try? TerminalSettings.shared.load(TerminalSettings.shared.contents)
         test = nil
