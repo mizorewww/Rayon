@@ -1,0 +1,188 @@
+{
+  "authMethod" : [
+    "password",
+    "publicKey",
+    "agent",
+    "keyboardInteractive"
+  ],
+  "channel" : [
+    "appStore",
+    "direct",
+    "testFlight",
+    "debug"
+  ],
+  "connectionOutcome" : [
+    "success",
+    "authFailed",
+    "timeout",
+    "refused",
+    "hostKeyMismatch",
+    "dnsFailed",
+    "other"
+  ],
+  "countBucket" : [
+    "0",
+    "1",
+    "2",
+    "6",
+    "21",
+    "101"
+  ],
+  "deviceClass" : [
+    "mac-appleSilicon",
+    "mac-intel",
+    "iPhone",
+    "iPad"
+  ],
+  "diagnosticKind" : [
+    "crash",
+    "hang",
+    "cpuException",
+    "diskWriteException"
+  ],
+  "feature" : [
+    "terminalSessionsOpened",
+    "sftpBrowsed",
+    "fileTransfers",
+    "editorOpened",
+    "monitorOpened",
+    "vncSessions",
+    "uuRemoteSessions",
+    "snippetsRun"
+  ],
+  "frameOrigin" : [
+    "app",
+    "system",
+    "other"
+  ],
+  "hangDuration" : [
+    "under1s",
+    "under3s",
+    "under10s",
+    "under30s",
+    "over30s"
+  ],
+  "keyType" : [
+    "ed25519",
+    "ecdsa",
+    "rsa"
+  ],
+  "language" : [
+    "en",
+    "zh-Hans",
+    "zh-Hant",
+    "other"
+  ],
+  "latencyBucket" : [
+    "under100ms",
+    "under300ms",
+    "under1s",
+    "under3s",
+    "over3s"
+  ],
+  "level" : [
+    "0",
+    "1",
+    "2",
+    "3"
+  ],
+  "megabyteSteps" : [
+    "0",
+    "50",
+    "100",
+    "250",
+    "500",
+    "1000",
+    "2000",
+    "4000",
+    "8000"
+  ],
+  "millisecondSteps" : [
+    "0",
+    "100",
+    "300",
+    "1000",
+    "3000",
+    "10000",
+    "30000"
+  ],
+  "objcExceptionClass" : [
+    "NSException"
+  ],
+  "objcExceptionName" : [
+    "NSGenericException",
+    "NSRangeException",
+    "NSInvalidArgumentException",
+    "NSInternalInconsistencyException",
+    "NSMallocException",
+    "NSObjectInaccessibleException",
+    "NSObjectNotAvailableException",
+    "NSDestinationInvalidException",
+    "NSPortTimeoutException",
+    "NSInvalidSendPortException",
+    "NSInvalidReceivePortException",
+    "NSPortSendException",
+    "NSPortReceiveException",
+    "NSCharacterConversionException",
+    "NSFileHandleOperationException",
+    "NSInvalidArchiveOperationException",
+    "NSInvalidUnarchiveOperationException",
+    "NSUndefinedKeyException",
+    "NSInconsistentArchiveException",
+    "NSParseErrorException",
+    "NSImageCacheException",
+    "NSInternalScriptError",
+    "NSAccessibilityException",
+    "NSWindowServerCommunicationException",
+    "NSInvalidUbiquitousKeyValueStoreException",
+    "CALayerInvalidGeometry",
+    "CALayerInvalid"
+  ],
+  "platform" : [
+    "macOS",
+    "iOS",
+    "iPadOS"
+  ],
+  "portForwardKind" : [
+    "local",
+    "remote",
+    "dynamic"
+  ],
+  "redactionMode" : [
+    "none",
+    "address",
+    "all"
+  ],
+  "regionGroup" : [
+    "EEA",
+    "CN",
+    "other"
+  ],
+  "remoteOSFamily" : [
+    "linux",
+    "darwin",
+    "bsd",
+    "other"
+  ],
+  "secondSteps" : [
+    "0",
+    "10",
+    "60",
+    "300",
+    "1800",
+    "3600",
+    "14400"
+  ],
+  "terminationReason" : [
+    "signal",
+    "codeSigning",
+    "watchdog",
+    "jetsam",
+    "runningBoard",
+    "frontBoard",
+    "dyld",
+    "libsystem",
+    "objc",
+    "other"
+  ]
+}

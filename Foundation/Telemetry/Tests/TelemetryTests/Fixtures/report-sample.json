@@ -1,0 +1,179 @@
+[
+  {
+    "appVersion" : "5.2.0",
+    "channel" : "appStore",
+    "detail" : {
+      "connectLatency" : {
+        "over3s" : 0,
+        "under100ms" : 0,
+        "under1s" : 2,
+        "under300ms" : 6,
+        "under3s" : 0
+      },
+      "metrics" : {
+        "cpuTime" : 60,
+        "diskWrites" : 0,
+        "hangTime" : 1000,
+        "launchTime" : 300,
+        "peakMemory" : 250
+      },
+      "remoteOSFamily" : {
+        "bsd" : 0,
+        "darwin" : 1,
+        "linux" : 2,
+        "other" : 0
+      }
+    },
+    "deviceClass" : "mac-appleSilicon",
+    "diagnostics" : [
+      {
+        "appVersion" : "5.2.0",
+        "callStacks" : [
+          {
+            "frames" : [
+              {
+                "binaryUUID" : "70B89F27-1634-3580-A695-57CDB41D7743",
+                "offset" : 165304,
+                "origin" : "app",
+                "sampleCount" : 1,
+                "subFrames" : [
+                  {
+                    "binaryUUID" : "9156BE86-F2A8-3E54-B5C5-4AB0FA1D0BCB",
+                    "offset" : 4242,
+                    "origin" : "system",
+                    "sampleCount" : 1,
+                    "subFrames" : [
+                      {
+                        "origin" : "other",
+                        "sampleCount" : 1,
+                        "subFrames" : [
+
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "threadAttributed" : true
+          }
+        ],
+        "exceptionCode" : 0,
+        "exceptionType" : 1,
+        "hangDuration" : "under3s",
+        "kind" : "crash",
+        "objcExceptionClass" : "NSException",
+        "objcExceptionName" : "NSInvalidArgumentException",
+        "osVersion" : "15.4",
+        "signal" : 11,
+        "terminationReason" : "signal"
+      }
+    ],
+    "language" : "en",
+    "level" : 3,
+    "nonce" : "00000000-0000-4000-8000-000000000001",
+    "osVersion" : "15.4",
+    "platform" : "macOS",
+    "regionGroup" : "other",
+    "schema" : 1,
+    "usage" : {
+      "activeDaysLast28" : 6,
+      "authMethodUsed" : {
+        "agent" : false,
+        "keyboardInteractive" : false,
+        "password" : false,
+        "publicKey" : true
+      },
+      "connectionOutcome" : {
+        "authFailed" : 1,
+        "dnsFailed" : 0,
+        "hostKeyMismatch" : 0,
+        "other" : 0,
+        "refused" : 0,
+        "success" : 6,
+        "timeout" : 0
+      },
+      "counts" : {
+        "editorOpened" : 2,
+        "fileTransfers" : 0,
+        "monitorOpened" : 0,
+        "sftpBrowsed" : 1,
+        "snippetsRun" : 0,
+        "terminalSessionsOpened" : 6,
+        "uuRemoteSessions" : 0,
+        "vncSessions" : 0
+      },
+      "customTheme" : false,
+      "iCloudSyncEnabled" : true,
+      "identities" : 2,
+      "keyTypes" : {
+        "ecdsa" : false,
+        "ed25519" : true,
+        "rsa" : true
+      },
+      "portForwardsStarted" : {
+        "dynamic" : 0,
+        "local" : 2,
+        "remote" : 0
+      },
+      "redactionMode" : "address",
+      "savedHosts" : 6
+    }
+  },
+  {
+    "appVersion" : "5.2.0",
+    "channel" : "appStore",
+    "deviceClass" : "mac-appleSilicon",
+    "diagnostics" : [
+      {
+        "appVersion" : "5.2.0",
+        "callStacks" : [
+          {
+            "frames" : [
+              {
+                "binaryUUID" : "70B89F27-1634-3580-A695-57CDB41D7743",
+                "offset" : 165304,
+                "origin" : "app",
+                "sampleCount" : 1,
+                "subFrames" : [
+                  {
+                    "binaryUUID" : "9156BE86-F2A8-3E54-B5C5-4AB0FA1D0BCB",
+                    "offset" : 4242,
+                    "origin" : "system",
+                    "sampleCount" : 1,
+                    "subFrames" : [
+                      {
+                        "origin" : "other",
+                        "sampleCount" : 1,
+                        "subFrames" : [
+
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "threadAttributed" : true
+          }
+        ],
+        "exceptionCode" : 0,
+        "exceptionType" : 1,
+        "hangDuration" : "under3s",
+        "kind" : "crash",
+        "objcExceptionClass" : "NSException",
+        "objcExceptionName" : "NSInvalidArgumentException",
+        "osVersion" : "15.4",
+        "signal" : 11,
+        "terminationReason" : "signal"
+      }
+    ],
+    "language" : "en",
+    "level" : 1,
+    "nonce" : "00000000-0000-4000-8000-000000000002",
+    "osVersion" : "15.4",
+    "platform" : "macOS",
+    "regionGroup" : "other",
+    "schema" : 1
+  }
+]
