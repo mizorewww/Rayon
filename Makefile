@@ -18,7 +18,7 @@ RESOLVED_PACKAGES := $(patsubst %/Package.resolved,%,$(wildcard Foundation/*/Pac
 help:
 	@echo "build         Build the Mac and iOS apps"
 	@echo "build-macos   Build the Mac app, signed with your Apple Development certificate or ad hoc"
-	@echo "build-ios     Build the iOS app for the simulator, unsigned"
+	@echo "build-ios     Build the iOS app for the simulator, signed ad hoc so the keychain works"
 	@echo "test          Run the Swift package tests: $(notdir $(TEST_PACKAGES))"
 	@echo "test-telemetry-server  Typecheck and test the telemetry Worker in Server/Telemetry (needs bun)"
 	@echo "resolve       Resolve the workspace's and the packages' dependencies"
@@ -33,6 +33,8 @@ build: build-macos build-ios
 build-macos:
 	bash Workflow/Scripts/build-macos.sh $(CONFIGURATION)
 
+# Signed ad hoc, not unsigned: without its entitlements the app has no
+# application-identifier and the keychain refuses to save any secret.
 build-ios:
 	xcodebuild -quiet \
 		-workspace $(WORKSPACE) \
@@ -41,7 +43,7 @@ build-ios:
 		-destination 'generic/platform=iOS Simulator' \
 		-derivedDataPath "$(DERIVED_DATA)" \
 		COMPILER_INDEX_STORE_ENABLE=NO \
-		CODE_SIGNING_ALLOWED=NO \
+		CODE_SIGN_IDENTITY=- \
 		build
 
 test:
