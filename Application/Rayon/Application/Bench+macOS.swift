@@ -16,7 +16,9 @@
             static let benchFiles = Notification.Name("me.mizorewww.rayon.bench.files")
         }
 
-        private final class RunLoopLoad: @unchecked Sendable {
+        /// Filled by an observer on the main run loop.
+        @MainActor
+        private final class RunLoopLoad {
             var busy = 0.0
             var stretch = 0.0
             var woke = CACurrentMediaTime()
@@ -41,8 +43,10 @@
                 let load = RunLoopLoad()
                 let activities = CFRunLoopActivity.afterWaiting.rawValue | CFRunLoopActivity.beforeWaiting.rawValue
                 let observer = CFRunLoopObserverCreateWithHandler(nil, activities, true, CFIndex.max) { _, activity in
-                    let now = CACurrentMediaTime()
-                    if activity == .afterWaiting { load.woke = now } else { load.busy += now - load.woke; load.stretch = max(load.stretch, now - load.woke); load.woke = now }
+                    MainActor.assumeIsolated {
+                        let now = CACurrentMediaTime()
+                        if activity == .afterWaiting { load.woke = now } else { load.busy += now - load.woke; load.stretch = max(load.stretch, now - load.woke); load.woke = now }
+                    }
                 }
                 CFRunLoopAddObserver(CFRunLoopGetMain(), observer, .commonModes)
                 action()
