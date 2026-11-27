@@ -56,11 +56,8 @@
             // than a frame, and showing it at once avoids a flash of the old one.
             guard list.count > 1000 else { return show(sorted: Self.sort(list)) }
             let expected = listing
-            // The published list is only ever read, never mutated in place, so
-            // the sort racing a display read is safe.
-            nonisolated(unsafe) let list = list
             DispatchQueue.global(qos: .userInitiated).async {
-                nonisolated(unsafe) let result = Self.sort(list)
+                let result = Self.sort(list)
                 DispatchQueue.main.async {
                     if listing == expected { show(sorted: result) }
                 }
