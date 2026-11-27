@@ -4748,22 +4748,6 @@
         }
       }
     },
-    "Share config.ghostty" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "共享 config.ghostty"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "分享 config.ghostty"
-          }
-        }
-      }
-    },
     "Shift" : {
       "localizations" : {
         "zh-Hans" : {
@@ -4856,22 +4840,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "顯示全部 256 種顏色"
-          }
-        }
-      }
-    },
-    "Show config.ghostty in Finder" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在访达中显示 config.ghostty"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在訪達中顯示 config.ghostty"
           }
         }
       }
@@ -5256,22 +5224,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "泰文"
-          }
-        }
-      }
-    },
-    "The file the terminal settings are kept in" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "存放终端设置的文件"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "存放終端設定的檔案"
           }
         }
       }

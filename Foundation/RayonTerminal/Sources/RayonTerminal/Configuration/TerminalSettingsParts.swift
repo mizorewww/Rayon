@@ -1,6 +1,3 @@
-#if os(macOS)
-    import AppKit
-#endif
 import SwiftUI
 
 // The terminal's settings as parts an app arranges in its own Settings: the
@@ -109,17 +106,6 @@ public struct TerminalSettingsTools: View {
         Toggle(isOn: $showsPreview.animation()) { Label(.init("Preview", bundle: .module), systemImage: "rectangle.topthird.inset.filled") }
             .disabled(!previewAvailable)
             .help(showsPreview ? String(localized: "Hide the terminal preview", bundle: .module) : String(localized: "Show a terminal preview above the settings", bundle: .module))
-        #if os(macOS)
-            Button { NSWorkspace.shared.activateFileViewerSelecting([settings.fileURL]) } label: {
-                Label(.init("Show config.ghostty in Finder", bundle: .module), systemImage: "doc.text.magnifyingglass")
-            }
-            .disabled(!FileManager.default.fileExists(atPath: settings.fileURL.path))
-            .help(.init("The file the terminal settings are kept in", bundle: .module))
-        #else
-            if FileManager.default.fileExists(atPath: settings.fileURL.path) {
-                ShareLink(item: settings.fileURL) { Label(.init("Share config.ghostty", bundle: .module), systemImage: "square.and.arrow.up") }
-            }
-        #endif
         Button(role: .destructive) { confirmingReset = true } label: {
             Label(.init("Reset Terminal Settings…", bundle: .module), systemImage: "arrow.counterclockwise")
         }
