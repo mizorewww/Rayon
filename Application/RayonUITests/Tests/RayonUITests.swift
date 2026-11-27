@@ -3,7 +3,7 @@ import XCTest
 /// Drives the installed iOS app (bundle `me.mizorewww.rayon`). Each test attaches
 /// screenshots to the result bundle.
 @MainActor
-final class MRayonUITests: XCTestCase {
+final class RayonUITests: XCTestCase {
     private var app: XCUIApplication!
 
     override func setUp() async throws {

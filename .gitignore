@@ -117,7 +117,7 @@ xcuserdata/
 yarn-debug.log*
 yarn-error.log*
 
-# Generated from Application/mRayonUITests/project.yml by xcodegen
-Application/mRayonUITests/mRayonUITests.xcodeproj/
+# Generated from Application/RayonUITests/project.yml by xcodegen
+Application/RayonUITests/RayonUITests.xcodeproj/
 .pi/
 

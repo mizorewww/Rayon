@@ -1,13 +1,13 @@
-# UI tests for the iOS app (mRayon). They drive the installed app by bundle
-# identifier, so install mRayon on the simulator first; see README.md here.
+# UI tests for the iOS app. They drive the installed app by bundle
+# identifier, so install Rayon on the simulator first; see README.md here.
 # Regenerate the project with: xcodegen generate
-name: mRayonUITests
+name: RayonUITests
 options:
   bundleIdPrefix: me.mizorewww.rayon
   deploymentTarget:
     iOS: "17.0"
 targets:
-  mRayonUITests:
+  RayonUITests:
     type: bundle.ui-testing
     platform: iOS
     sources: [Tests]
@@ -17,9 +17,9 @@ targets:
         SWIFT_VERSION: "6.0"
         CODE_SIGNING_ALLOWED: NO
 schemes:
-  mRayonUITests:
+  RayonUITests:
     build:
       targets:
-        mRayonUITests: [test]
+        RayonUITests: [test]
     test:
-      targets: [mRayonUITests]
+      targets: [RayonUITests]
