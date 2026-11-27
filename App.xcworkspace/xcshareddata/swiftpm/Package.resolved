@@ -83,6 +83,15 @@
         }
       },
       {
+        "package" : "DpkgVersion",
+        "repositoryURL" : "https://github.com/Lakr233/DpkgVersion",
+        "state" : {
+          "branch" : null,
+          "revision" : "64f192ac8c74f334e5b610c3da9aa9b456502ced",
+          "version" : "1.0.4"
+        }
+      },
+      {
         "package" : "GhosttyKit",
         "repositoryURL" : "https://github.com/Lakr233/libghostty-spm.git",
         "state" : {

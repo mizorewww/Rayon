@@ -83,6 +83,15 @@
       }
     },
     {
+      "identity" : "dpkgversion",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/DpkgVersion",
+      "state" : {
+        "revision" : "64f192ac8c74f334e5b610c3da9aa9b456502ced",
+        "version" : "1.0.4"
+      }
+    },
+    {
       "identity" : "libghostty-spm",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/libghostty-spm.git",

@@ -1,5 +1,5 @@
 {
-  "originHash" : "33f52cd3f2d5123b80873160ade89244065132271b22c3859eb1d81f13543ac4",
+  "originHash" : "2e875e9c1a2c865d4da226394a6b6b40db3c6825da09fdbf3250c182269f6027",
   "pins" : [
     {
       "identity" : "bettercodable",
@@ -80,6 +80,15 @@
       "state" : {
         "revision" : "41bea2661e04bebcb1c4f15fc0b6197850100fdd",
         "version" : "3.0.1"
+      }
+    },
+    {
+      "identity" : "dpkgversion",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Lakr233/DpkgVersion",
+      "state" : {
+        "revision" : "64f192ac8c74f334e5b610c3da9aa9b456502ced",
+        "version" : "1.0.4"
       }
     },
     {

@@ -17,7 +17,7 @@ final class LicenseNoticesTests: XCTestCase {
         let text = try String(contentsOf: license, encoding: .utf8)
         let mac = LicenseNotices.libraries(in: text, for: .macOS)
         let iOS = LicenseNotices.libraries(in: text, for: .iOS)
-        let both = ["Citadel", "SwiftNIO SSH", "SwiftNIO", "GhosttyKit / GhosttyTerminal / GhosttyTheme", "BlossomColorPicker", "WCDB", "UURemoteKit", "WebRTC", "SwiftProtobuf", "BigInt", "Swift Collections"]
+        let both = ["Citadel", "SwiftNIO SSH", "SwiftNIO", "GhosttyKit / GhosttyTerminal / GhosttyTheme", "BlossomColorPicker", "WCDB", "UURemoteKit", "WebRTC", "SwiftProtobuf", "BigInt", "DpkgVersion", "Swift Collections"]
         for shipped in both + ["CodeEditSourceEditor", "CodeEditTextView", "SwiftTreeSitter", "tree-sitter"] {
             XCTAssertTrue(mac.contains(shipped), "\(shipped) in \(mac)")
         }
