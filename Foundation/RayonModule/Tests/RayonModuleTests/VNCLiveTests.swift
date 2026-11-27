@@ -13,6 +13,7 @@
 
 @testable import RayonModule
 import CoreGraphics
+import CoreImage
 import ImageIO
 import RayonSSH
 import XCTest
@@ -22,7 +23,7 @@ final class VNCLiveTests: XCTestCase {
         private let lock = NSLock()
         private var phases: [RemoteDesktopPhase] = []
         private var frames = 0
-        private var lastImage: CGImage?
+        private var lastPicture: RemoteDesktopPicture?
         let connected = XCTestExpectation(description: "connected")
         let framed = XCTestExpectation(description: "a decoded frame")
         let ended = XCTestExpectation(description: "failed or closed")
@@ -36,11 +37,11 @@ final class VNCLiveTests: XCTestCase {
             }
         }
 
-        func client(_: VNCRFBClient, didUpdateFrame image: CGImage?, size _: CGSize, desktopName _: String?) {
-            guard let image else { return }
+        func client(_: VNCRFBClient, didUpdateFrame picture: RemoteDesktopPicture?, size _: CGSize, desktopName _: String?) {
+            guard let picture else { return }
             let first = lock.withLock { () -> Bool in
                 frames += 1
-                lastImage = image
+                lastPicture = picture
                 return frames == 1
             }
             if first { framed.fulfill() }
@@ -58,7 +59,7 @@ final class VNCLiveTests: XCTestCase {
             }
         }
 
-        var image: CGImage? { lock.withLock { lastImage } }
+        var picture: RemoteDesktopPicture? { lock.withLock { lastPicture } }
         var frameCount: Int { lock.withLock { frames } }
     }
 
@@ -82,8 +83,8 @@ final class VNCLiveTests: XCTestCase {
         client.start()
         await fulfillment(of: [recorder.connected, recorder.framed], timeout: 15)
         XCTAssertNil(recorder.failure)
-        let image = try XCTUnwrap(recorder.image)
-        XCTAssertGreaterThan(image.width, 0)
+        let picture = try XCTUnwrap(recorder.picture)
+        XCTAssertGreaterThan(picture.surface.width, 0)
 
         // Changing content, not only the first frame: ZRLE runs one zlib
         // stream across every rectangle, so later updates are where a
@@ -111,7 +112,9 @@ final class VNCLiveTests: XCTestCase {
         // VNC_LIVE_SNAPSHOT=<path.png> keeps the latest decoded frame to look at.
         if let path = ProcessInfo.processInfo.environment["VNC_LIVE_SNAPSHOT"],
            let destination = CGImageDestinationCreateWithURL(URL(fileURLWithPath: path) as CFURL, "public.png" as CFString, 1, nil) {
-            CGImageDestinationAddImage(destination, try XCTUnwrap(recorder.image), nil)
+            let surface = try XCTUnwrap(recorder.picture).surface
+            let image = try XCTUnwrap(CIContext().createCGImage(CIImage(ioSurface: surface), from: CGRect(x: 0, y: 0, width: surface.width, height: surface.height)))
+            CGImageDestinationAddImage(destination, image, nil)
             CGImageDestinationFinalize(destination)
         }
         client.stop()
@@ -169,8 +172,8 @@ final class VNCLiveTests: XCTestCase {
         // Full refreshes of a noisy desktop are several MB each and must
         // keep flowing through the channel (the old 8 KB socket pair tore
         // the tunnel down on the first one).
-        let image = try XCTUnwrap(recorder.image)
-        XCTAssertGreaterThan(image.width * image.height * 4, 2 * 1024 * 1024, "use a desktop of at least 1024x512")
+        let surface = try XCTUnwrap(recorder.picture).surface
+        XCTAssertGreaterThan(surface.width * surface.height * 4, 2 * 1024 * 1024, "use a desktop of at least 1024x512")
         let before = recorder.frameCount
         for _ in 0 ..< 5 {
             client.requestUpdate(incremental: false)

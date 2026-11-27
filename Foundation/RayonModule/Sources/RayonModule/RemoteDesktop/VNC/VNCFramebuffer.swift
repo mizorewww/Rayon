@@ -2,13 +2,13 @@
 //  VNCFramebuffer.swift
 //  RayonModule
 //
-//  The pixel store the RFB decoders write into, and the CGImage the stage
+//  The pixel store the RFB decoders write into, and the pictures the stage
 //  view shows. Pixels are 32-bit words `0xAARRGGBB`, whose little-endian
-//  bytes are B, G, R, A — the "BGRA" layout CGImage wants with
-//  `.byteOrder32Little` + `.noneSkipFirst`.
+//  bytes are B, G, R, A: a `kCVPixelFormatType_32BGRA` pixel buffer's.
 //
 
 import CoreGraphics
+import CoreVideo
 import Foundation
 
 final class VNCFramebuffer: @unchecked Sendable {
@@ -144,28 +144,52 @@ final class VNCFramebuffer: @unchecked Sendable {
         }
     }
 
-    private static let colorSpace = CGColorSpaceCreateDeviceRGB()
+    /// The pool the pictures come from, for the framebuffer's size.
+    private var pool: CVPixelBufferPool?
 
-    /// A snapshot CGImage of the whole framebuffer.
-    func makeImage() -> CGImage? {
+    /// The whole framebuffer as a picture: one copy onto a pooled IOSurface,
+    /// which then goes to the screen as it is. The copy is what lets the
+    /// decoders draw the next update while this one is shown.
+    func makePicture() -> RemoteDesktopPicture? {
         lock.withLock {
             guard width > 0, height > 0 else { return nil }
-            let data = pixels.withUnsafeBytes { Data($0) }
-            guard let provider = CGDataProvider(data: data as CFData) else { return nil }
-            return CGImage(
-                width: width,
-                height: height,
-                bitsPerComponent: 8,
-                bitsPerPixel: 32,
-                bytesPerRow: width * 4,
-                space: Self.colorSpace,
-                bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.noneSkipFirst.rawValue)
-                    .union(.byteOrder32Little),
-                provider: provider,
-                decode: nil,
-                shouldInterpolate: true,
-                intent: .defaultIntent
-            )
+            if pool.map({ Self.matches($0, width: width, height: height) }) != true {
+                pool = Self.makePool(width: width, height: height)
+            }
+            var made: CVPixelBuffer?
+            guard let pool, CVPixelBufferPoolCreatePixelBuffer(nil, pool, &made) == kCVReturnSuccess,
+                  let buffer = made, let surface = CVPixelBufferGetIOSurface(buffer)?.takeUnretainedValue()
+            else { return nil }
+            CVPixelBufferLockBaseAddress(buffer, [])
+            defer { CVPixelBufferUnlockBaseAddress(buffer, []) }
+            guard let base = CVPixelBufferGetBaseAddress(buffer) else { return nil }
+            let destinationRow = CVPixelBufferGetBytesPerRow(buffer)
+            let sourceRow = width * MemoryLayout<UInt32>.stride
+            pixels.withUnsafeBytes { source in
+                guard let from = source.baseAddress else { return }
+                for row in 0 ..< height {
+                    (base + row * destinationRow).copyMemory(from: from + row * sourceRow, byteCount: sourceRow)
+                }
+            }
+            return RemoteDesktopPicture(surface: surface)
         }
+    }
+
+    private static func makePool(width: Int, height: Int) -> CVPixelBufferPool? {
+        let attributes: [CFString: Any] = [
+            kCVPixelBufferPixelFormatTypeKey: kCVPixelFormatType_32BGRA,
+            kCVPixelBufferWidthKey: width,
+            kCVPixelBufferHeightKey: height,
+            kCVPixelBufferIOSurfacePropertiesKey: [:] as CFDictionary,
+            kCVPixelBufferMetalCompatibilityKey: true,
+        ]
+        var pool: CVPixelBufferPool?
+        CVPixelBufferPoolCreate(nil, nil, attributes as CFDictionary, &pool)
+        return pool
+    }
+
+    private static func matches(_ pool: CVPixelBufferPool, width: Int, height: Int) -> Bool {
+        guard let attributes = CVPixelBufferPoolGetPixelBufferAttributes(pool) as? [CFString: Any] else { return false }
+        return attributes[kCVPixelBufferWidthKey] as? Int == width && attributes[kCVPixelBufferHeightKey] as? Int == height
     }
 }

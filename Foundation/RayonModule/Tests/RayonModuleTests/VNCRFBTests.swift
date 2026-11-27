@@ -10,6 +10,7 @@
 @testable import RayonModule
 import BigInt
 import CoreGraphics
+import CoreVideo
 import CryptoKit
 import XCTest
 import zlib
@@ -272,6 +273,25 @@ final class VNCRFBTests: XCTestCase {
         XCTAssertEqual(framebuffer.pixel(x: 2, y: 1), 0xFF_00_FF_00)
         XCTAssertEqual(framebuffer.pixel(x: 1, y: 2), 0xFF_00_00_FF)
         XCTAssertEqual(framebuffer.pixel(x: 2, y: 2), 0xFF_FF_FF_FF)
+    }
+
+    /// A picture is the framebuffer on an IOSurface, pixel for pixel, and
+    /// the next one is drawn on another surface while it is held.
+    func testPictureIsTheFramebufferOnASurface() throws {
+        let framebuffer = VNCFramebuffer()
+        framebuffer.resize(width: 3, height: 2)
+        framebuffer.put(x: 2, y: 1, pixel: 0xFF_11_22_33)
+        let picture = try XCTUnwrap(framebuffer.makePicture())
+        let surface = picture.surface
+        XCTAssertEqual(surface.width, 3)
+        XCTAssertEqual(surface.height, 2)
+        XCTAssertEqual(surface.pixelFormat, kCVPixelFormatType_32BGRA)
+        surface.lock(options: .readOnly, seed: nil)
+        let pixel = surface.baseAddress.load(fromByteOffset: surface.bytesPerRow + 2 * 4, as: UInt32.self)
+        surface.unlock(options: .readOnly, seed: nil)
+        XCTAssertEqual(pixel, 0xFF_11_22_33)
+        let next = try XCTUnwrap(framebuffer.makePicture())
+        XCTAssertFalse(next.surface === surface)
     }
 
     func testCopyRectDecode() async throws {
@@ -574,7 +594,7 @@ final class VNCRFBTests: XCTestCase {
             phases.append(phase)
         }
 
-        func client(_: VNCRFBClient, didUpdateFrame _: CGImage?, size: CGSize, desktopName: String?) {
+        func client(_: VNCRFBClient, didUpdateFrame _: RemoteDesktopPicture?, size: CGSize, desktopName: String?) {
             self.size = size
             if let desktopName { self.desktopName = desktopName }
         }

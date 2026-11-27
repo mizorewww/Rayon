@@ -16,7 +16,7 @@ import os
 /// task — the driver forwards them into the main-actor session.
 protocol VNCRFBClientDelegate: AnyObject, Sendable {
     func client(_ client: VNCRFBClient, didChangePhase phase: RemoteDesktopPhase, hint: String?)
-    func client(_ client: VNCRFBClient, didUpdateFrame image: CGImage?, size: CGSize, desktopName: String?)
+    func client(_ client: VNCRFBClient, didUpdateFrame picture: RemoteDesktopPicture?, size: CGSize, desktopName: String?)
     func client(_ client: VNCRFBClient, didUpdateCursor cursor: RemoteCursorInfo?)
     func client(_ client: VNCRFBClient, didReceiveClipboard text: String)
 }
@@ -345,8 +345,8 @@ final class VNCRFBClient: Sendable {
                 try await VNCDecoders.decode(header, from: reader, context: context)
             }
         }
-        let image = framebuffer.makeImage()
-        delegate?.client(self, didUpdateFrame: image, size: framebuffer.size, desktopName: sizeChanged ? desktopName : nil)
+        let picture = framebuffer.makePicture()
+        delegate?.client(self, didUpdateFrame: picture, size: framebuffer.size, desktopName: sizeChanged ? desktopName : nil)
         requestUpdate(incremental: true)
     }
 

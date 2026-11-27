@@ -204,7 +204,7 @@ public final class RemoteDesktopCanvasView: UIView {
 
     func applyFrame(_ picture: RemoteDesktopPicture?, framebufferSize: CGSize) {
         let first = frameView.layer.contents == nil
-        if let picture { frameView.layer.contents = picture.layerContents }
+        if let picture { frameView.layer.contents = picture.surface }
         // A frame of the same size draws where the last one was; the first
         // picture brings up the local pointer.
         guard framebufferSize != self.framebufferSize || frameView.frame.isEmpty || (first && picture != nil) else { return }
@@ -800,7 +800,7 @@ public final class RemoteDesktopCanvasNSView: NSView {
     }
 
     func applyFrame(_ picture: RemoteDesktopPicture?, framebufferSize: CGSize) {
-        if let picture { frameView.layer?.contents = picture.layerContents }
+        if let picture { frameView.layer?.contents = picture.surface }
         guard framebufferSize != self.framebufferSize else { return }
         self.framebufferSize = framebufferSize
         needsLayout = true

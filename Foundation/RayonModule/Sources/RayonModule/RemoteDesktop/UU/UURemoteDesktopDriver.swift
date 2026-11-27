@@ -10,7 +10,6 @@
 import CoreGraphics
 import CoreVideo
 import Foundation
-import VideoToolbox
 
 @MainActor
 final class UURemoteDesktopDriver: RemoteDesktopDriver {
@@ -32,15 +31,10 @@ final class UURemoteDesktopDriver: RemoteDesktopDriver {
         let session = self.session
         connection.onFrame = { frame in
             let size = CGSize(width: frame.width, height: frame.height)
-            if CVPixelBufferGetIOSurface(frame.pixelBuffer) != nil {
-                session.reportFrame(.pixelBuffer(frame.pixelBuffer), size: size)
-            } else {
-                // Not on an IOSurface (a software decoder's buffer): a
-                // layer cannot show it as it is.
-                var image: CGImage?
-                VTCreateCGImageFromCVPixelBuffer(frame.pixelBuffer, options: nil, imageOut: &image)
-                session.reportFrame(image.map(RemoteDesktopPicture.image), size: size)
-            }
+            // VideoToolbox decodes onto IOSurfaces; no decoder here makes
+            // a buffer that is not on one.
+            guard let surface = CVPixelBufferGetIOSurface(frame.pixelBuffer)?.takeUnretainedValue() else { return }
+            session.reportFrame(RemoteDesktopPicture(surface: surface), size: size)
         }
         connection.onEvent = { event in Self.report(event, to: session) }
         self.connection = connection

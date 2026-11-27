@@ -12,23 +12,21 @@ import IOSurface
 import XCTest
 
 final class RemoteDesktopMailboxTests: XCTestCase {
-    private func image() -> CGImage {
-        let context = CGContext(data: nil, width: 2, height: 2, bitsPerComponent: 8, bytesPerRow: 8, space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
-        return context.makeImage()!
+    private func picture() -> RemoteDesktopPicture {
+        RemoteDesktopPicture(surface: IOSurface(properties: [.width: 2, .height: 2, .bytesPerElement: 4, .pixelFormat: kCVPixelFormatType_32BGRA])!)
     }
 
     func testFramesWaitingForTheMainActorCollapseToTheLatest() {
         let mailbox = RemoteDesktopMailbox()
-        let first = image()
-        let latest = image()
-        XCTAssertTrue(mailbox.post(frame: .image(first), size: CGSize(width: 2, height: 2), desktopName: "host"))
-        XCTAssertFalse(mailbox.post(frame: .image(latest), size: CGSize(width: 2, height: 2), desktopName: nil))
+        let first = picture()
+        let latest = picture()
+        XCTAssertTrue(mailbox.post(frame: first, size: CGSize(width: 2, height: 2), desktopName: "host"))
+        XCTAssertFalse(mailbox.post(frame: latest, size: CGSize(width: 2, height: 2), desktopName: nil))
         // A size change without a picture keeps the waiting picture.
         XCTAssertFalse(mailbox.post(frame: nil, size: CGSize(width: 4, height: 4), desktopName: nil))
         XCTAssertFalse(mailbox.post(cursor: nil))
         let mail = mailbox.take()
-        guard case let .image(taken) = mail.frame?.picture else { return XCTFail("no picture") }
-        XCTAssertTrue(taken === latest)
+        XCTAssertTrue(mail.frame?.picture === latest)
         XCTAssertEqual(mail.frame?.size, CGSize(width: 4, height: 4))
         XCTAssertEqual(mail.frame?.desktopName, "host")
         XCTAssertNotNil(mail.cursor, "a hidden cursor is news too")
@@ -38,12 +36,15 @@ final class RemoteDesktopMailboxTests: XCTestCase {
         XCTAssertNil(mailbox.take().frame)
     }
 
-    /// A decoded frame goes to the layer as its IOSurface, not converted.
-    func testAPixelBufferIsShownAsItsIOSurface() throws {
-        var buffer: CVPixelBuffer?
-        let attributes = [kCVPixelBufferIOSurfacePropertiesKey: [:] as CFDictionary] as CFDictionary
-        XCTAssertEqual(CVPixelBufferCreate(nil, 4, 4, kCVPixelFormatType_32BGRA, attributes, &buffer), kCVReturnSuccess)
-        let contents = try XCTUnwrap(RemoteDesktopPicture.pixelBuffer(XCTUnwrap(buffer)).layerContents)
-        XCTAssertTrue((contents as AnyObject) === CVPixelBufferGetIOSurface(buffer!)?.takeUnretainedValue())
+    /// A picture holds its surface in use, so a pool does not draw into it
+    /// while it is shown, and lets go when it goes.
+    func testAPictureHoldsItsSurfaceInUse() {
+        let surface = IOSurface(properties: [.width: 4, .height: 4, .bytesPerElement: 4, .pixelFormat: kCVPixelFormatType_32BGRA])!
+        XCTAssertFalse(surface.isInUse)
+        var picture: RemoteDesktopPicture? = RemoteDesktopPicture(surface: surface)
+        XCTAssertTrue(surface.isInUse)
+        withExtendedLifetime(picture) {}
+        picture = nil
+        XCTAssertFalse(surface.isInUse)
     }
 }

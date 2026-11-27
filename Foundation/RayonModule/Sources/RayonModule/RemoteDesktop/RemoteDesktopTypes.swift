@@ -7,26 +7,23 @@
 //
 
 import CoreGraphics
-import CoreVideo
 import Foundation
+import IOSurface
 
-/// A picture of the remote screen, as the canvas's layer shows it.
-///
-/// Unchecked: a decoded pixel buffer is not written again once handed out.
-public enum RemoteDesktopPicture: @unchecked Sendable {
-    /// A picture the driver drew itself (VNC's framebuffer).
-    case image(CGImage)
-    /// A decoded video frame backed by an IOSurface, shown as it is: no
-    /// conversion and no copy.
-    case pixelBuffer(CVPixelBuffer)
+/// A picture of the remote screen: an IOSurface, held in use for as long
+/// as the picture lives, so the pool it came from (a decoder's, or the VNC
+/// framebuffer's) does not draw the next one into it while it is still on
+/// its way to the screen or on it. A pixel buffer cannot cross threads in
+/// Swift; a surface can.
+public final class RemoteDesktopPicture: Sendable {
+    public let surface: IOSurface
 
-    /// What a CALayer's `contents` takes for it.
-    var layerContents: Any? {
-        switch self {
-        case let .image(image): image
-        case let .pixelBuffer(buffer): CVPixelBufferGetIOSurface(buffer)?.takeUnretainedValue()
-        }
+    public init(surface: IOSurface) {
+        self.surface = surface
+        surface.incrementUseCount()
     }
+
+    deinit { surface.decrementUseCount() }
 }
 
 /// A failure a remote desktop session can explain to a person.
