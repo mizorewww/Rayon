@@ -44,12 +44,9 @@ public class FileTransferManager: ObservableObject {
     }
 
     public func end(for contextId: UUID) {
-        onMainThread { [self] in
-            let index = transfers.firstIndex { $0.id == contextId }
-            guard let index = index else { return }
-            let sftp = transfers.remove(at: index)
-            sftp.processShutdown()
-            sftp.destroyedSession = true
-        }
+        guard let index = transfers.firstIndex(where: { $0.id == contextId }) else { return }
+        let sftp = transfers.remove(at: index)
+        sftp.processShutdown()
+        sftp.destroyedSession = true
     }
 }

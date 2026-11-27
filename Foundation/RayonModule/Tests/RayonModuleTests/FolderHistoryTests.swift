@@ -63,6 +63,7 @@ final class FolderHistoryTests: XCTestCase {
         XCTAssertEqual(history.back.last, "/\(FolderHistory.limit)")
     }
 
+    @MainActor
     func testContextWithoutAConnectionKeepsItsHistory() {
         let context = FileTransferContext(
             machine: RDMachine(remoteAddress: "10.0.0.1", remotePort: "22", name: "alpha")

@@ -75,7 +75,6 @@ public final class EditorDocument: ObservableObject, Identifiable {
         Task {
             do {
                 try await waitForConnection()
-                nonisolated(unsafe) let context = context
                 let loaded = try await context.readText(at: path)
                 savedText = loaded
                 text = loaded
@@ -95,7 +94,6 @@ public final class EditorDocument: ObservableObject, Identifiable {
         Task {
             defer { saving = false }
             do {
-                nonisolated(unsafe) let context = context
                 try await context.writeText(snapshot, to: path)
                 savedText = snapshot
                 isEdited = text != snapshot
@@ -112,16 +110,13 @@ public final class EditorDocument: ObservableObject, Identifiable {
     }
 
     private func waitForConnection() async throws {
-        nonisolated(unsafe) let context = context
-        await Self.waitForConnection(of: context)
-    }
-
-    private nonisolated static func waitForConnection(of context: FileTransferContext) async {
-        _ = await context.$connected
+        let changes = context.$connected
             .combineLatest(context.$processConnection)
             .timeout(.seconds(30), scheduler: DispatchQueue.main)
             .values
-            .first(where: { $0 || !$1 || context.destroyedSession })
+        for await (connected, connecting) in changes where connected || !connecting || context.destroyedSession {
+            break
+        }
     }
 }
 

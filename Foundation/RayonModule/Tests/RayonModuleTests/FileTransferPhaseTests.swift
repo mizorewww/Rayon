@@ -6,6 +6,7 @@
 @testable import RayonModule
 import XCTest
 
+@MainActor
 final class FileTransferPhaseTests: XCTestCase {
     private func makeContext() -> FileTransferContext {
         FileTransferContext(machine: RDMachine(remoteAddress: "10.0.0.1", remotePort: "22", name: "alpha"))

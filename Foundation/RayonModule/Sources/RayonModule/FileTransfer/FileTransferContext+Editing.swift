@@ -33,11 +33,11 @@ public enum RemoteTextFileError: LocalizedError, Equatable {
 
 public extension FileTransferContext {
     /// Files larger than this are downloaded rather than opened in the editor.
-    static let editableSizeLimit: Int64 = 4 * 1024 * 1024
+    nonisolated static let editableSizeLimit: Int64 = 4 * 1024 * 1024
 
     /// A folder listing in the order the file lists show it: folders first,
     /// then by name as Finder sorts.
-    static func sortedForDisplay(_ list: [RemoteFile]) -> [RemoteFile] {
+    nonisolated static func sortedForDisplay(_ list: [RemoteFile]) -> [RemoteFile] {
         // The kind is read once per file, not once per comparison.
         var keyed = list.map { (isDirectory: $0.isFolder, file: $0) }
         keyed.sort { lhs, rhs in
@@ -49,7 +49,7 @@ public extension FileTransferContext {
 
     /// Whether the editor opens `file` (a file, or a link to one, within
     /// the size limit).
-    static func isEditable(_ file: RemoteFile) -> Bool {
+    nonisolated static func isEditable(_ file: RemoteFile) -> Bool {
         !file.isFolder && ((file.linkTarget ?? file.fstat).size ?? 0) <= editableSizeLimit
     }
 
@@ -57,11 +57,13 @@ public extension FileTransferContext {
     func readText(at remotePath: String) async throws -> String {
         if !connected && !processConnection {
             processBootstrap()
-            _ = await $connected
+            let changes = $connected
                 .combineLatest($processConnection)
                 .timeout(.seconds(30), scheduler: DispatchQueue.main)
                 .values
-                .first(where: { $0 || !$1 || self.destroyedSession })
+            for await (connected, connecting) in changes where connected || !connecting || destroyedSession {
+                break
+            }
         }
         guard connected else { throw RemoteTextFileError.notConnected }
         let folder = try Self.makeScratchFolder()
