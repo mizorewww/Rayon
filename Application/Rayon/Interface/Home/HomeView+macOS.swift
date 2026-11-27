@@ -224,9 +224,9 @@
             }
             .frame(maxWidth: .infinity)
             .animation(.easeOut(duration: 0.2), value: suggestion)
-            .onAppear {
-                onMainThread(delay: 0.2) { focused = true }
-            }
+            // Focus is taken once the field is in the window, a turn after
+            // it appears.
+            .task { focused = true }
         }
 
         func connect() {
