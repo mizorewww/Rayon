@@ -290,6 +290,25 @@ final class ConfigurationRuntimeTests: XCTestCase {
         XCTAssertEqual(settings.config, settings.applied)
     }
 
+    /// A run of changes to one key (a dragged slider) is one undo step; a
+    /// change to another key, or one after an undo, is a step of its own.
+    @MainActor func testARunOfChangesIsOneUndoStep() throws {
+        let settings = try scratchSettings("font-size = 12\n")
+        for size in 13 ... 16 { settings.set("font-size", "\(size)") }
+        settings.set("background", "#101010")
+        settings.undoManager.undo()
+        XCTAssertFalse(settings.isSet("background"))
+        XCTAssertEqual(settings.value("font-size"), "16")
+        settings.undoManager.undo()
+        XCTAssertEqual(settings.value("font-size"), "12")
+        XCTAssertFalse(settings.undoManager.canUndo)
+        settings.undoManager.redo()
+        XCTAssertEqual(settings.value("font-size"), "16")
+        settings.set("font-size", "17")
+        settings.undoManager.undo()
+        XCTAssertEqual(settings.value("font-size"), "16")
+    }
+
     /// Undo does not reach past settings that came from elsewhere (another
     /// device, a restored backup): it would put back what they replaced.
     @MainActor func testUndoStopsAtAdoptedAndLoadedSettings() throws {

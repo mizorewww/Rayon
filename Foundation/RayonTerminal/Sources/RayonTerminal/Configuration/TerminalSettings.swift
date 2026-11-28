@@ -128,7 +128,7 @@ public final class TerminalSettings {
     func set(_ key: String, _ values: [String]) {
         var next = config
         next[key] = values.isEmpty ? nil : values
-        replace(with: next)
+        replace(with: next, run: "terminal.\(key)")
     }
 
     func set(_ key: String, _ value: String) {
@@ -149,13 +149,24 @@ public final class TerminalSettings {
         replace(with: [:])
     }
 
-    private func replace(with next: [String: [String]]) {
+    /// Shows `next`, with an undo step back to what was there. Changes to
+    /// one key in a `run` (a dragged slider, a held stepper) share the
+    /// run's first step.
+    private func replace(with next: [String: [String]], run: String? = nil) {
         guard next != config else { return }
         let previous = config
-        undoManager.beginUndoGrouping()
-        undoManager.registerUndo(withTarget: self) { $0.replace(with: previous) }
-        undoManager.setActionName(String(localized: "Setting Change", bundle: .module))
-        undoManager.endUndoGrouping()
+        let undoManager = undoManager
+        let register = {
+            undoManager.beginUndoGrouping()
+            undoManager.registerUndo(withTarget: self) { $0.replace(with: previous) }
+            undoManager.setActionName(String(localized: "Setting Change", bundle: .module))
+            undoManager.endUndoGrouping()
+        }
+        if let run {
+            SettingUndoRun.shared.record(run, on: undoManager, register: register)
+        } else {
+            register()
+        }
         config = next
         scheduleApply()
     }
@@ -270,6 +281,7 @@ public final class TerminalSettings {
             throw error
         }
         undoManager.removeAllActions(withTarget: self)
+        SettingUndoRun.shared.end()
     }
 
     /// What the last "Import from Ghostty…", or the move of an earlier

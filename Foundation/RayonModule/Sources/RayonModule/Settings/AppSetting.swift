@@ -12,6 +12,7 @@
 //
 
 import Combine
+import RayonTerminal
 import SwiftUI
 
 @MainActor @propertyWrapper
@@ -85,14 +86,18 @@ final class SettingObserver<Value: Codable & Equatable & Sendable>: ObservableOb
     }
 
     /// Sets it, and on `undoManager` how to set it back; undoing that
-    /// registers the redo.
+    /// registers the redo. A run of changes (a held stepper, a dragged
+    /// slider) is one step, back to the value before it.
     func set(_ newValue: Value, undoManager: UndoManager?) {
         let old = value
         guard newValue != old else { return }
         set(newValue)
-        // Weak: the manager holds this closure.
-        undoManager?.registerUndo(withTarget: self) { [weak undoManager] observer in
-            MainActor.assumeIsolated { observer.set(old, undoManager: undoManager) }
+        guard let undoManager else { return }
+        SettingUndoRun.shared.record(key.key, on: undoManager) {
+            // Weak: the manager holds this closure.
+            undoManager.registerUndo(withTarget: self) { [weak undoManager] observer in
+                MainActor.assumeIsolated { observer.set(old, undoManager: undoManager) }
+            }
         }
     }
 }
