@@ -72,6 +72,9 @@
                     }
                     .rxGroupedList()
                     .searchable(text: $searchText, prompt: "Search identities")
+                    .overlay {
+                        if groups.isEmpty { ContentUnavailableView.search(text: searchText) }
+                    }
                 }
             }
             .navigationTitle("Identities")

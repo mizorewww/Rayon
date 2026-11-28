@@ -90,7 +90,7 @@
                     }
                     .rxListRow()
                 } else if servers.isEmpty {
-                    EmptyStateView("No matches", systemImage: "magnifyingglass")
+                    ContentUnavailableView.search(text: searchText)
                         .rxListRow()
                 } else {
                     ForEach(servers) { machine in

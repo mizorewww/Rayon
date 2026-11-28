@@ -121,8 +121,10 @@ struct ServerPicker: View {
                 }
             }
             .overlay {
-                if machines.isEmpty {
-                    ContentUnavailableView(store.machines.isEmpty ? "No servers yet" : "No matches", systemImage: "server.rack")
+                if store.machines.isEmpty {
+                    ContentUnavailableView("No servers yet", systemImage: "server.rack")
+                } else if machines.isEmpty {
+                    ContentUnavailableView.search(text: searchText)
                 }
             }
             .frame(minHeight: 300)
@@ -147,8 +149,10 @@ struct ServerPicker: View {
             .environment(\.editMode, .constant(.active))
             .searchable(text: $searchText, prompt: "Search servers")
             .overlay {
-                if machines.isEmpty {
-                    ContentUnavailableView(store.machines.isEmpty ? "No servers yet" : "No matches", systemImage: "server.rack")
+                if store.machines.isEmpty {
+                    ContentUnavailableView("No servers yet", systemImage: "server.rack")
+                } else if machines.isEmpty {
+                    ContentUnavailableView.search(text: searchText)
                 }
             }
         }

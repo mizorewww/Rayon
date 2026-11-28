@@ -147,12 +147,10 @@
 
         var fileTable: some View {
             VStack(spacing: 0) {
-                if browser.files.isEmpty {
-                    EmptyStateView(
-                        browser.filter.isEmpty ? "Empty folder" : "No matches",
-                        systemImage: "folder",
-                        message: ""
-                    )
+                if browser.files.isEmpty, !browser.filter.isEmpty {
+                    ContentUnavailableView.search(text: browser.filter)
+                } else if browser.files.isEmpty {
+                    EmptyStateView("Empty folder", systemImage: "folder", message: "")
                     Spacer(minLength: 0)
                 } else {
                     FileTable(browser: browser)

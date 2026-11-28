@@ -68,7 +68,8 @@
                     }
                     .rxCard()
                 } else if filtered.isEmpty {
-                    EmptyStateView("No matches", systemImage: "magnifyingglass")
+                    ContentUnavailableView.search(text: searchText)
+                        .frame(maxWidth: .infinity)
                         .rxCard()
                 } else {
                     table

@@ -69,7 +69,8 @@
                 }
                 .rxCard()
             } else if servers.isEmpty {
-                EmptyStateView("No matches", systemImage: "magnifyingglass")
+                ContentUnavailableView.search(text: searchText)
+                    .frame(maxWidth: .infinity)
                     .rxCard()
             } else {
                 VStack(alignment: .leading, spacing: 0) {

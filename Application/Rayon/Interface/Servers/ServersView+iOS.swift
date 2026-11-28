@@ -59,6 +59,12 @@
                     }
                     .rxGroupedList()
                     .searchable(text: $searchKey, prompt: "Search servers")
+                    .overlay {
+                        // A search lists only the folders with a match.
+                        if !searchKey.isEmpty, store.serverGroups(matching: searchKey).isEmpty {
+                            ContentUnavailableView.search(text: searchKey)
+                        }
+                    }
                 }
             }
             .navigationTitle("Servers")
