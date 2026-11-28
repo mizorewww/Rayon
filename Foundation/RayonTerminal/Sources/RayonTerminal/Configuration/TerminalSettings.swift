@@ -15,16 +15,7 @@ public final class TerminalSettings {
     public let fileURL: URL
 
     /// What Settings shows, including a change not applied yet.
-    private(set) var config: [String: [String]] {
-        didSet {
-            if Set(config.keys) != Set(oldValue.keys) { countChanges() }
-        }
-    }
-
-    /// How many of each category's settings are set, by category: what the
-    /// sidebar's badges read, so a change redraws them only when a count
-    /// changes rather than on every slider step.
-    private(set) var changedCounts: [String: Int] = [:]
+    private(set) var config: [String: [String]]
     /// What the terminals use and is saved.
     public private(set) var applied: [String: [String]]
     /// When the applied settings last changed, here or from elsewhere; nil
@@ -97,7 +88,6 @@ public final class TerminalSettings {
         config = initial
         applied = initial
         lastImport = report
-        countChanges()
     }
 
     /// Reads the installed fonts and the themes off the main actor, so the
@@ -107,14 +97,6 @@ public final class TerminalSettings {
             _ = FontLibrary.families
             _ = TerminalThemes.all
         }
-    }
-
-    private func countChanges() {
-        var counts: [String: Int] = [:]
-        for category in SettingsLayout.categories {
-            counts[category.id] = category.keys.count(where: { config[$0] != nil })
-        }
-        if counts != changedCounts { changedCounts = counts }
     }
 
     private struct Stored: Codable {

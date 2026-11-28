@@ -60,7 +60,7 @@ struct SettingsView: View {
                     ForEach(SettingsPage.sections) { section in
                         Section {
                             ForEach(section.pages, id: \.self) { page in
-                                SettingsPageLabel(page: page).tag(page.id)
+                                Label(page.title, systemImage: page.icon).tag(page.id)
                             }
                         } header: {
                             if let title = section.title { Text(title) }
@@ -112,7 +112,7 @@ struct SettingsView: View {
                             Section {
                                 ForEach(section.pages, id: \.self) { page in
                                     NavigationLink(value: page) {
-                                        SettingsPageLabel(page: page)
+                                        Label(page.title, systemImage: page.icon)
                                     }
                                 }
                             } header: {
@@ -144,19 +144,6 @@ struct SettingsView: View {
                 .navigationBarTitleDisplayMode(page.previews ? .inline : .automatic)
         }
     #endif
-}
-
-private struct SettingsPageLabel: View {
-    let page: SettingsPage
-
-    var body: some View {
-        if case let .terminal(category) = page {
-            Label(page.title, systemImage: page.icon)
-                .badge(category.changedCount)
-        } else {
-            Label(page.title, systemImage: page.icon)
-        }
-    }
 }
 
 /// A page: Rayon's groups, then on a terminal page its settings. `open`

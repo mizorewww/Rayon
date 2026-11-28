@@ -23,11 +23,6 @@ public struct TerminalSettingsCategory: Identifiable, Hashable, Sendable {
         layout?.previews ?? false
     }
 
-    /// How many of its settings are set in config.ghostty.
-    @MainActor public var changedCount: Int {
-        TerminalSettings.shared.changedCounts[id] ?? 0
-    }
-
     /// The groups that open as pages of their own from its page.
     public var subpages: [TerminalSettingsSubpage] {
         (layout?.groups ?? []).filter(\.isSubpage).map { TerminalSettingsSubpage(category: self, group: $0.id, title: $0.title) }
