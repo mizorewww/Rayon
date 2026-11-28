@@ -1,3 +1,4 @@
+import Combine
 import RayonDesign
 import SwiftUI
 
@@ -191,15 +192,34 @@ private struct GhosttyImportAlert: ViewModifier {
             .shared
         }
 
+        /// Bumped when the undo stack changes, which redraws what is enabled.
+        @State private var stackChanges = 0
+
         public init() {}
 
         public var body: some View {
-            // Read so a change, an undo or a redo redraws what is enabled.
+            // Read so a terminal setting's change redraws what is enabled.
             let _ = settings.config
+            let _ = stackChanges
             Button { settings.undoManager.undo() } label: { Label(String(localized: "Undo", bundle: .module), systemImage: "arrow.uturn.backward") }
                 .disabled(!settings.undoManager.canUndo)
+                // Rayon's own settings, and undo and redo, change the stack
+                // without touching the terminal's settings.
+                .onReceive(Self.stackChanged) { note in
+                    if (note.object as AnyObject?) === settings.undoManager { stackChanges &+= 1 }
+                }
             Button { settings.undoManager.redo() } label: { Label(String(localized: "Redo", bundle: .module), systemImage: "arrow.uturn.forward") }
                 .disabled(!settings.undoManager.canRedo)
+        }
+
+        private static var stackChanged: AnyPublisher<Notification, Never> {
+            let center = NotificationCenter.default
+            return Publishers.Merge3(
+                center.publisher(for: .NSUndoManagerDidCloseUndoGroup),
+                center.publisher(for: .NSUndoManagerDidUndoChange),
+                center.publisher(for: .NSUndoManagerDidRedoChange)
+            )
+            .eraseToAnyPublisher()
         }
     }
 #endif
