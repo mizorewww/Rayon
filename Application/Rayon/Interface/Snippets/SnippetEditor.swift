@@ -23,12 +23,15 @@ struct SnippetEditor: View {
     @State private var symbol = "terminal"
     @State private var showsAllSymbols = false
 
-    /// SF Symbols offered in the icon grid.
-    private static let symbols = [
-        "terminal", "chevron.left.forwardslash.chevron.right", "arrow.clockwise", "power",
-        "trash", "externaldrive", "cpu", "memorychip", "network", "globe", "lock", "key",
-        "shippingbox", "hammer", "wrench.and.screwdriver", "doc.text", "folder", "clock",
-        "bolt", "flame", "ladybug", "chart.bar", "server.rack", "magnifyingglass",
+    /// SF Symbols offered in the icon grid, with what VoiceOver calls them.
+    private static let symbols: KeyValuePairs<String, LocalizedStringResource> = [
+        "terminal": "Terminal", "chevron.left.forwardslash.chevron.right": "Code",
+        "arrow.clockwise": "Restart", "power": "Power", "trash": "Trash", "externaldrive": "Disk",
+        "cpu": "Processor", "memorychip": "Memory", "network": "Network", "globe": "Globe",
+        "lock": "Lock", "key": "Key", "shippingbox": "Package", "hammer": "Hammer",
+        "wrench.and.screwdriver": "Tools", "doc.text": "Document", "folder": "Folder", "clock": "Clock",
+        "bolt": "Bolt", "flame": "Flame", "ladybug": "Bug", "chart.bar": "Chart",
+        "server.rack": "Server", "magnifyingglass": "Search",
     ]
 
     init(snippet: RDSnippet.ID?) {
@@ -46,7 +49,14 @@ struct SnippetEditor: View {
 
     /// The grid always shows the current symbol.
     private var symbolChoices: [String] {
-        Self.symbols.contains(symbol) ? Self.symbols : [symbol] + Self.symbols.dropLast()
+        let offered = Self.symbols.map(\.key)
+        return offered.contains(symbol) ? offered : [symbol] + offered.dropLast()
+    }
+
+    /// A symbol from More Symbols has no name of ours: its own, in words.
+    private func symbolName(_ symbol: String) -> String {
+        Self.symbols.first { $0.key == symbol }.map { String(localized: $0.value) }
+            ?? symbol.replacingOccurrences(of: ".", with: " ")
     }
 
     var body: some View {
@@ -72,8 +82,9 @@ struct SnippetEditor: View {
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        .help(item)
-                        .accessibilityLabel(item)
+                        .help(symbolName(item))
+                        .accessibilityLabel(symbolName(item))
+                        .accessibilityAddTraits(symbol == item ? .isSelected : [])
                     }
                 }
                 // Picking a symbol closes it; going back leaves the symbol as it was.

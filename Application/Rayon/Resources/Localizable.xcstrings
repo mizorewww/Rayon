@@ -1353,6 +1353,22 @@
         }
       }
     },
+    "Bolt" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "闪电"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "閃電"
+          }
+        }
+      }
+    },
     "Browse, upload and download files over SFTP" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1365,6 +1381,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "通過 SFTP 瀏覽、上傳和下載檔案"
+          }
+        }
+      }
+    },
+    "Bug" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "虫子"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "蟲子"
           }
         }
       }
@@ -1477,6 +1509,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "無法開啟監控"
+          }
+        }
+      }
+    },
+    "Chart" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "图表"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "圖表"
           }
         }
       }
@@ -1751,6 +1799,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "客戶端金鑰"
+          }
+        }
+      }
+    },
+    "Clock" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "时钟"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "時鐘"
           }
         }
       }
@@ -2087,6 +2151,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Cloudflare Access 服務令牌"
+          }
+        }
+      }
+    },
+    "Code" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "代码"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "程式碼"
           }
         }
       }
@@ -3652,6 +3732,38 @@
         }
       }
     },
+    "Disk" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "磁盘"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "磁碟"
+          }
+        }
+      }
+    },
+    "Document" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文档"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文件"
+          }
+        }
+      }
+    },
     "Don't Share" : {
       "localizations" : {
         "zh-Hans" : {
@@ -4596,6 +4708,22 @@
         }
       }
     },
+    "Flame" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "火焰"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "火焰"
+          }
+        }
+      }
+    },
     "Folder" : {
       "localizations" : {
         "zh-Hans" : {
@@ -4900,6 +5028,22 @@
         }
       }
     },
+    "Globe" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "地球"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "地球"
+          }
+        }
+      }
+    },
     "Go" : {
       "localizations" : {
         "zh-Hans" : {
@@ -4976,6 +5120,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "分組"
+          }
+        }
+      }
+    },
+    "Hammer" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "锤子"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "鎚子"
           }
         }
       }
@@ -5748,6 +5908,22 @@
         }
       }
     },
+    "Key" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "钥匙"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "鑰匙"
+          }
+        }
+      }
+    },
     "Key pair" : {
       "localizations" : {
         "zh-Hans" : {
@@ -6128,6 +6304,22 @@
         }
       }
     },
+    "Lock" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "锁"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "鎖"
+          }
+        }
+      }
+    },
     "Logs" : {
       "localizations" : {
         "zh-Hans" : {
@@ -6492,6 +6684,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "網易 UU 遠端"
+          }
+        }
+      }
+    },
+    "Network" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "网络"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "網路"
           }
         }
       }
@@ -7737,6 +7945,22 @@
         }
       }
     },
+    "Package" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "包裹"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "包裹"
+          }
+        }
+      }
+    },
     "Pane %lld · %@" : {
       "localizations" : {
         "en" : {
@@ -7951,6 +8175,22 @@
         }
       }
     },
+    "Power" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "电源"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "電源"
+          }
+        }
+      }
+    },
     "Preview Layout" : {
       "localizations" : {
         "zh-Hans" : {
@@ -8043,6 +8283,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "私鑰"
+          }
+        }
+      }
+    },
+    "Processor" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "处理器"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "處理器"
           }
         }
       }
@@ -8881,6 +9137,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "重置活動歷史記錄"
+          }
+        }
+      }
+    },
+    "Restart" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重启"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新啟動"
           }
         }
       }
@@ -11383,6 +11655,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "傳輸"
+          }
+        }
+      }
+    },
+    "Trash" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "废纸篓"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "垃圾桶"
           }
         }
       }
