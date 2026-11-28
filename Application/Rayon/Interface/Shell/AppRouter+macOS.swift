@@ -394,7 +394,12 @@
             sheets.removeAll { sheet in
                 sheet.window.map { NSApp.window(withWindowNumber: $0) == nil } ?? false
             }
-            if let shown = sheets.first(where: { $0.window == nil || $0.window == window }) {
+            // One asked for before any window was on screen, and not yet
+            // claimed by it, goes to the window in front now.
+            if window != nil, let index = sheets.firstIndex(where: { $0.window == nil }) {
+                sheets[index].window = window
+            }
+            if let shown = sheets.first(where: { $0.window == window }) {
                 if let number = shown.window { NSApp.window(withWindowNumber: number)?.makeKeyAndOrderFront(nil) }
                 NSSound.beep()
                 return

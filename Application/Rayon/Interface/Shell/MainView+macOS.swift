@@ -146,9 +146,13 @@
                 }
                 // A sheet asked for with no window open goes to the first
                 // window shown, or the first on screen once it is asked for.
+                // The window can join the view before it is on screen and
+                // has a number, so its first showing claims as well.
                 .onChange(of: anchor.window, initial: true) { router.claimSheet(for: anchor.window) }
                 .onChange(of: router.sheets.contains { $0.window == nil }) { router.claimSheet(for: anchor.window) }
-                .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { note in
+                .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)
+                    .merge(with: NotificationCenter.default.publisher(for: NSWindow.didChangeOcclusionStateNotification)))
+                { note in
                     if note.object as? NSWindow === anchor.window { router.claimSheet(for: anchor.window) }
                 }
         }
