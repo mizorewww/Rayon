@@ -14,8 +14,11 @@ struct SSHSettings: View {
 
     var body: some View {
         LabeledContent {
-            Stepper(value: $timeout, in: 2 ... 30) {
+            // The value before the arrows, as the system's own steppers have it.
+            HStack {
                 Text("\(timeout) s").monospacedDigit()
+                Stepper("Connection timeout", value: $timeout, in: 2 ... 30)
+                    .labelsHidden()
             }
         } label: {
             Text("Connection timeout")

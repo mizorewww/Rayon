@@ -65,8 +65,11 @@ struct RecentSettings: View {
             Text("Listed under Quick Connect on Home.")
         }
         LabeledContent("Number to keep") {
-            Stepper(value: $recentLimit, in: 1 ... 50) {
+            // The value before the arrows, as the system's own steppers have it.
+            HStack {
                 Text(recentLimit, format: .number).monospacedDigit()
+                Stepper("Number to keep", value: $recentLimit, in: 1 ... 50)
+                    .labelsHidden()
             }
         }
         .disabled(!remembersRecent)
