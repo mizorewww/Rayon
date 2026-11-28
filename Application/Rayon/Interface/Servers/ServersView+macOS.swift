@@ -123,9 +123,17 @@
                 .pickerStyle(.inline)
                 .labelsHidden()
             } label: {
-                Label("Privacy", systemImage: redaction == .none ? "eye" : "eye.slash")
+                Label {
+                    Text("Privacy")
+                } icon: {
+                    // Else the symbol's own name ("Show", "Hide") is the menu's title.
+                    Image(systemName: redaction == .none ? "eye" : "eye.slash")
+                        .accessibilityLabel("Privacy")
+                }
             }
             .help(redaction.tooltip)
+            .accessibilityLabel("Privacy")
+            .accessibilityValue(redaction.tooltip)
         }
     }
 
