@@ -18378,19 +18378,19 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ を使用するには Rayon の再起動が必要です。"
+            "value" : "「%@」を使用するには Rayon の再起動が必要です。"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rayon 需要重新启动才能使用%@。"
+            "value" : "Rayon 需要重新启动才能使用“%@”。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rayon 需要重新啟動才能使用%@。"
+            "value" : "Rayon 需要重新啟動才能使用“%@”。"
           }
         }
       }
