@@ -395,8 +395,10 @@
                 sheet.window.map { NSApp.window(withWindowNumber: $0) == nil } ?? false
             }
             // One asked for before any window was on screen, and not yet
-            // claimed by it, goes to the window in front now.
-            if window != nil, let index = sheets.firstIndex(where: { $0.window == nil }) {
+            // claimed by it, goes to the window in front now, unless that
+            // window already shows one.
+            if window != nil, !sheets.contains(where: { $0.window == window }),
+               let index = sheets.firstIndex(where: { $0.window == nil }) {
                 sheets[index].window = window
             }
             if let shown = sheets.first(where: { $0.window == window }) {
@@ -414,10 +416,12 @@
         }
 
         /// Gives a sheet asked for with no window open to `window`, the
-        /// first on screen to ask, so no other window shows it as well.
+        /// first on screen to ask that shows none yet, so no other window
+        /// shows it as well and none replaces its own.
         func claimSheet(for window: NSWindow?) {
             // A window has its number once it is on screen.
             guard let window, window.isVisible, window.windowNumber > 0,
+                  !sheets.contains(where: { $0.window == window.windowNumber }),
                   let index = sheets.firstIndex(where: { $0.window == nil }) else { return }
             sheets[index].window = window.windowNumber
         }
