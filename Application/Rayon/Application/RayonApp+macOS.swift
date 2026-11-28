@@ -106,14 +106,19 @@
             }
         }
 
-        /// Set by a restart and cleared if the quit is declined: the next
-        /// instance opens once this one has exited.
+        /// Whether the quit going ahead, or being asked about, opens Rayon
+        /// again once this instance has exited. Each quit request that is
+        /// not refused outright sets it, and declining clears it, so a
+        /// restart never carries over to a later ⌘Q.
         private var relaunches = false
+        /// True only while `restart()` asks to quit.
+        private var restarting = false
 
         /// Quits, asking first as ⌘Q does, and opens Rayon again.
         func restart() {
-            relaunches = true
+            restarting = true
             NSApp.terminate(nil)
+            restarting = false
         }
 
         private func installWindowPolicyObservers() {
@@ -208,10 +213,13 @@
                 terminating = true
                 return .terminateNow
             }
+            // Refused while the question is up: it stays the one asked,
+            // restart or not, and its answer decides.
             if quitAsked, MainWindow.isShowingSheetOrModal {
                 return .terminateCancel
             }
             quitAsked = false
+            relaunches = restarting
 
             let terminals = !TerminalManager.shared.sessionContexts.isEmpty
             let kept = TerminalManager.shared.sessionContexts.filter(\.machine.isUURemoteDevice).count
