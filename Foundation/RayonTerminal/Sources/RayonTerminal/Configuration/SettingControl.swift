@@ -443,7 +443,8 @@ private struct LengthEditor: View {
     }
 }
 
-/// A byte count, edited in megabytes.
+/// A byte count, edited in megabytes; a small one (an imported 5000
+/// bytes) keeps its digits rather than rounding to 0.
 private struct BytesEditor: View {
     let value: String
     let set: (String) -> Void
@@ -458,7 +459,7 @@ private struct BytesEditor: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            TextField(String(localized: "MB", bundle: .module), value: Binding(get: { megabytes }, set: { set(megabytes: $0) }), format: .number.precision(.fractionLength(0 ... 1)))
+            TextField(String(localized: "MB", bundle: .module), value: Binding(get: { megabytes }, set: { set(megabytes: $0) }), format: .number.precision(.significantDigits(1 ... 6)))
                 .labelsHidden()
                 .multilineTextAlignment(.leading)
                 .frame(width: 80)
