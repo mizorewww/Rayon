@@ -4,7 +4,9 @@ import Foundation
 /// slider) into one undo step: the run's first change registers how to set
 /// back what was there before it, and the ones close after it on the same
 /// undo stack register nothing. A pause, an undo or redo, or anything else
-/// going on that stack ends the run.
+/// going on that stack ends the run. A run that comes back to where it
+/// started (a toggle switched on and off again) takes its step off the
+/// stack, so Edit › Undo never offers one that changes nothing.
 @MainActor
 public final class SettingUndoRun {
     public static let shared = SettingUndoRun()
@@ -16,6 +18,7 @@ public final class SettingUndoRun {
     private weak var manager: UndoManager?
     private var key: String?
     private var last: ContinuousClock.Instant?
+    private var start: (any Equatable)?
     private var registering = false
     private var observers: [NSObjectProtocol] = []
 
@@ -35,17 +38,26 @@ public final class SettingUndoRun {
         }
     }
 
-    /// Calls `register` to put the change to `key` on `manager`, unless it
-    /// continues a run whose first change already did.
-    public func record(_ key: String, on manager: UndoManager, register: () -> Void) {
+    /// Calls `register` to put the change to `key`, from `old` to `new`, on
+    /// `manager`, unless it continues a run whose first change already did.
+    /// The caller has already made the change, so undoing a step that
+    /// returns to `new` does nothing and registers no redo.
+    public func record<Value: Equatable>(_ key: String, from old: Value, to new: Value, on manager: UndoManager, register: () -> Void) {
         let now = ContinuousClock.now
         let continues = !manager.isUndoing && !manager.isRedoing && manager.canUndo
             && manager === self.manager && key == self.key
             && last.map { now - $0 < Self.pause } ?? false
+        if continues, (start as? Value) == new, manager.groupingLevel == 0 {
+            // The run's step would put back what is there now. Undoing it
+            // removes it; the undo notification ends the run.
+            manager.undo()
+            return
+        }
         if !continues {
             registering = true
             register()
             registering = false
+            start = old
         }
         if manager.isUndoing || manager.isRedoing {
             end()
@@ -62,5 +74,6 @@ public final class SettingUndoRun {
         manager = nil
         key = nil
         last = nil
+        start = nil
     }
 }

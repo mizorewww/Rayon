@@ -309,6 +309,24 @@ final class ConfigurationRuntimeTests: XCTestCase {
         XCTAssertEqual(settings.value("font-size"), "16")
     }
 
+    /// A run that comes back to where it started (a toggle switched on and
+    /// off again) leaves no undo step, and the next change starts its own.
+    @MainActor func testARunBackToItsStartLeavesNoUndoStep() throws {
+        let settings = try scratchSettings("font-thicken = false\n")
+        settings.set("background", "#101010")
+        settings.set("font-thicken", "true")
+        settings.set("font-thicken", "false")
+        XCTAssertEqual(settings.value("font-thicken"), "false")
+        XCTAssertFalse(settings.undoManager.canRedo)
+        settings.set("font-thicken", "true")
+        settings.undoManager.undo()
+        XCTAssertEqual(settings.value("font-thicken"), "false")
+        XCTAssertEqual(settings.value("background"), "#101010")
+        settings.undoManager.undo()
+        XCTAssertFalse(settings.isSet("background"))
+        XCTAssertFalse(settings.undoManager.canUndo)
+    }
+
     /// Undo does not reach past settings that came from elsewhere (another
     /// device, a restored backup): it would put back what they replaced.
     @MainActor func testUndoStopsAtAdoptedAndLoadedSettings() throws {

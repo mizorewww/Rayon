@@ -102,7 +102,7 @@ final class SettingObserver<Value: Codable & Equatable & Sendable>: ObservableOb
         guard newValue != old else { return }
         set(newValue)
         guard let undoManager else { return }
-        SettingUndoRun.shared.record(key.key, on: undoManager) {
+        SettingUndoRun.shared.record(key.key, from: old, to: newValue, on: undoManager) {
             // Weak: the manager holds this closure.
             undoManager.registerUndo(withTarget: self) { [weak undoManager] observer in
                 MainActor.assumeIsolated { observer.set(old, undoManager: undoManager, name: name) }

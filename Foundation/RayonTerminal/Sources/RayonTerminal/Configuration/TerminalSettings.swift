@@ -163,12 +163,12 @@ public final class TerminalSettings {
             undoManager.setActionName(name ?? String(localized: "Setting Change", bundle: .module))
             undoManager.endUndoGrouping()
         }
+        config = next
         if let run {
-            SettingUndoRun.shared.record(run, on: undoManager, register: register)
+            SettingUndoRun.shared.record(run, from: previous, to: next, on: undoManager, register: register)
         } else {
             register()
         }
-        config = next
         scheduleApply()
     }
 
