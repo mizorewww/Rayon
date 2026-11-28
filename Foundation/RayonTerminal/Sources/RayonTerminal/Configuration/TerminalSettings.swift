@@ -310,7 +310,7 @@ public final class TerminalSettings {
                 return
             }
             let parsed = GhosttyConfigImport.parse(texts.joined(separator: "\n"))
-            replace(with: config.merging(parsed.values) { $1 })
+            replace(with: config.merging(parsed.values) { $1 }, name: String(localized: "Import from Ghostty", bundle: .module))
             lastImport = GhosttyImport(imported: parsed.values.count, skipped: parsed.skipped)
         }
     #endif
