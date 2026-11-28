@@ -3,6 +3,24 @@
   "strings" : {
     "\"%@\" is not a private key Rayon can read." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\" no es una clave privada que Rayon pueda leer."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "« %@ » n’est pas une clé privée lisible par Rayon."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%@」は Rayon が読み取れる秘密鍵ではありません。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -14,29 +32,29 @@
             "state" : "translated",
             "value" : "“%@”不是 Rayon 能讀取的私鑰。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "「%@」は Rayon が読み取れる秘密鍵ではありません。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "« %@ » n’est pas une clé privée lisible par Rayon."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "\"%@\" no es una clave privada que Rayon pueda leer."
-          }
         }
       }
     },
     "\"%@\" is not an SSH agent socket." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"%@\" no es un socket de agente SSH."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "« %@ » n’est pas un socket d’agent SSH."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%@」は SSH エージェントのソケットではありません。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -48,29 +66,29 @@
             "state" : "translated",
             "value" : "“%@”不是 SSH 代理套接字。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "「%@」は SSH エージェントのソケットではありません。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "« %@ » n’est pas un socket d’agent SSH."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "\"%@\" no es un socket de agente SSH."
-          }
         }
       }
     },
     "%@ did not answer the WebSocket upgrade in time." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ no ha respondido a tiempo a la actualización a WebSocket."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ n’a pas répondu à temps à la mise à niveau WebSocket."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ が WebSocket のアップグレードに時間内に応答しませんでした。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -81,24 +99,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%@ 未及時回應 WebSocket 升級。"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ が WebSocket のアップグレードに時間内に応答しませんでした。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ n’a pas répondu à temps à la mise à niveau WebSocket."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ no ha respondido a tiempo a la actualización a WebSocket."
           }
         }
       }
@@ -123,25 +123,19 @@
             }
           }
         },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ 的层级超过 %lld 层文件夹。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ 的層級超過 %lld 層資料夾。"
-          }
-        },
-        "ja" : {
+        "es" : {
           "variations" : {
             "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%@ tiene más de %lld carpeta de profundidad."
+                }
+              },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%@ のフォルダ階層が %lld 段を超えています。"
+                  "value" : "%@ tiene más de %lld carpetas de profundidad."
                 }
               }
             }
@@ -165,28 +159,52 @@
             }
           }
         },
-        "es" : {
+        "ja" : {
           "variations" : {
             "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%@ tiene más de %lld carpeta de profundidad."
-                }
-              },
               "other" : {
                 "stringUnit" : {
                   "state" : "translated",
-                  "value" : "%@ tiene más de %lld carpetas de profundidad."
+                  "value" : "%@ のフォルダ階層が %lld 段を超えています。"
                 }
               }
             }
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 的层级超过 %lld 层文件夹。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 的層級超過 %lld 層資料夾。"
           }
         }
       }
     },
     "%@ keys are not supported. Use an Ed25519, ECDSA or RSA key." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las claves %@ no son compatibles. Usa una clave Ed25519, ECDSA o RSA."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les clés %@ ne sont pas prises en charge. Utilisez une clé Ed25519, ECDSA ou RSA."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 鍵には対応していません。Ed25519、ECDSA、または RSA 鍵を使用してください。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -198,24 +216,6 @@
             "state" : "translated",
             "value" : "不支援 %@ 金鑰。請使用 Ed25519、ECDSA 或 RSA 金鑰。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ 鍵には対応していません。Ed25519、ECDSA、または RSA 鍵を使用してください。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Les clés %@ ne sont pas prises en charge. Utilisez une clé Ed25519, ECDSA ou RSA."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Las claves %@ no son compatibles. Usa una clave Ed25519, ECDSA o RSA."
-          }
         }
       }
     },
@@ -225,6 +225,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Could not listen on port %1$lld (%2$@)."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido escuchar en el puerto %1$lld (%2$@)."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d’écouter sur le port %1$lld (%2$@)."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ポート %1$lld で待ち受けできませんでした（%2$@）。"
           }
         },
         "zh-Hans" : {
@@ -238,29 +256,29 @@
             "state" : "translated",
             "value" : "無法監聽埠 %lld（%@）。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ポート %1$lld で待ち受けできませんでした（%2$@）。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossible d’écouter sur le port %1$lld (%2$@)."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No se ha podido escuchar en el puerto %1$lld (%2$@)."
-          }
         }
       }
     },
     "Could not open a socket for the SSH agent." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido abrir un socket para el agente SSH."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d’ouvrir un socket pour l’agent SSH."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH エージェント用のソケットを開けませんでした。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -272,24 +290,6 @@
             "state" : "translated",
             "value" : "無法為 SSH 代理開啟套接字。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SSH エージェント用のソケットを開けませんでした。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossible d’ouvrir un socket pour l’agent SSH."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No se ha podido abrir un socket para el agente SSH."
-          }
         }
       }
     },
@@ -299,6 +299,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Could not reach the SSH agent at %1$@ (%2$@)."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido acceder al agente SSH en %1$@ (%2$@)."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de joindre l’agent SSH à %1$@ (%2$@)."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ の SSH エージェントに接続できませんでした（%2$@）。"
           }
         },
         "zh-Hans" : {
@@ -312,29 +330,29 @@
             "state" : "translated",
             "value" : "無法訪問位於 %@ 的 SSH 代理（%@）。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ の SSH エージェントに接続できませんでした（%2$@）。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossible de joindre l’agent SSH à %1$@ (%2$@)."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No se ha podido acceder al agente SSH en %1$@ (%2$@)."
-          }
         }
       }
     },
     "DSA keys are not supported. Use an Ed25519, ECDSA or RSA key." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las claves DSA no son compatibles. Usa una clave Ed25519, ECDSA o RSA."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les clés DSA ne sont pas prises en charge. Utilisez une clé Ed25519, ECDSA ou RSA."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DSA 鍵には対応していません。Ed25519、ECDSA、または RSA 鍵を使用してください。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -346,29 +364,29 @@
             "state" : "translated",
             "value" : "不支援 DSA 金鑰。請使用 Ed25519、ECDSA 或 RSA 金鑰。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "DSA 鍵には対応していません。Ed25519、ECDSA、または RSA 鍵を使用してください。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Les clés DSA ne sont pas prises en charge. Utilisez une clé Ed25519, ECDSA ou RSA."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Las claves DSA no son compatibles. Usa una clave Ed25519, ECDSA o RSA."
-          }
         }
       }
     },
     "Encrypted PKCS#8 keys are not supported. Convert the key with `ssh-keygen -p -f <key>`, which writes OpenSSH format." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las claves PKCS#8 cifradas no son compatibles. Convierte la clave con `ssh-keygen -p -f <key>`, que la escribe en formato OpenSSH."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les clés PKCS#8 chiffrées ne sont pas prises en charge. Convertissez la clé avec `ssh-keygen -p -f <key>`, qui écrit au format OpenSSH."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暗号化された PKCS#8 鍵には対応していません。`ssh-keygen -p -f <key>` で鍵を OpenSSH 形式に変換してください。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -380,29 +398,29 @@
             "state" : "translated",
             "value" : "不支援加密的 PKCS#8 金鑰。請使用 `ssh-keygen -p -f <key>` 將金鑰轉換為 OpenSSH 格式。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "暗号化された PKCS#8 鍵には対応していません。`ssh-keygen -p -f <key>` で鍵を OpenSSH 形式に変換してください。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Les clés PKCS#8 chiffrées ne sont pas prises en charge. Convertissez la clé avec `ssh-keygen -p -f <key>`, qui écrit au format OpenSSH."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Las claves PKCS#8 cifradas no son compatibles. Convierte la clave con `ssh-keygen -p -f <key>`, que la escribe en formato OpenSSH."
-          }
         }
       }
     },
     "Keys encrypted with %@ are not supported. Re-encrypt it with `ssh-keygen -p -Z aes256-ctr -f <key>`." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las claves cifradas con %@ no son compatibles. Vuelve a cifrarla con `ssh-keygen -p -Z aes256-ctr -f <key>`."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les clés chiffrées avec %@ ne sont pas prises en charge. Rechiffrez-la avec `ssh-keygen -p -Z aes256-ctr -f <key>`."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ で暗号化された鍵には対応していません。`ssh-keygen -p -Z aes256-ctr -f <key>` で再暗号化してください。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -414,29 +432,29 @@
             "state" : "translated",
             "value" : "不支援使用 %@ 加密的金鑰。請使用 `ssh-keygen -p -Z aes256-ctr -f <key>` 重新加密。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ で暗号化された鍵には対応していません。`ssh-keygen -p -Z aes256-ctr -f <key>` で再暗号化してください。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Les clés chiffrées avec %@ ne sont pas prises en charge. Rechiffrez-la avec `ssh-keygen -p -Z aes256-ctr -f <key>`."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Las claves cifradas con %@ no son compatibles. Vuelve a cifrarla con `ssh-keygen -p -Z aes256-ctr -f <key>`."
-          }
         }
       }
     },
     "Malformed RSA public key." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clave pública RSA con formato incorrecto."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clé publique RSA mal formée."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RSA 公開鍵の形式が不正です。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -448,29 +466,29 @@
             "state" : "translated",
             "value" : "RSA 公鑰格式錯誤。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "RSA 公開鍵の形式が不正です。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Clé publique RSA mal formée."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Clave pública RSA con formato incorrecto."
-          }
         }
       }
     },
     "Malformed RSA signature." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Firma RSA con formato incorrecto."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Signature RSA mal formée."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "RSA 署名の形式が不正です。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -482,29 +500,29 @@
             "state" : "translated",
             "value" : "RSA 簽名格式錯誤。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "RSA 署名の形式が不正です。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Signature RSA mal formée."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Firma RSA con formato incorrecto."
-          }
         }
       }
     },
     "No event loop for the WebSocket to %@." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay bucle de eventos para el WebSocket a %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune boucle d’événements pour le WebSocket vers %@."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ への WebSocket のイベントループがありません。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -516,29 +534,29 @@
             "state" : "translated",
             "value" : "沒有可用於連線 %@ 的 WebSocket 的事件迴圈。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ への WebSocket のイベントループがありません。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucune boucle d’événements pour le WebSocket vers %@."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No hay bucle de eventos para el WebSocket a %@."
-          }
         }
       }
     },
     "Not a SOCKS5 CONNECT request." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No es una solicitud SOCKS5 CONNECT."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce n’est pas une requête SOCKS5 CONNECT."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SOCKS5 CONNECT 要求ではありません。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -550,29 +568,29 @@
             "state" : "translated",
             "value" : "不是 SOCKS5 CONNECT 請求。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SOCKS5 CONNECT 要求ではありません。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ce n’est pas une requête SOCKS5 CONNECT."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No es una solicitud SOCKS5 CONNECT."
-          }
         }
       }
     },
     "PEM keys encrypted with %@ are not supported." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las claves PEM cifradas con %@ no son compatibles."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les clés PEM chiffrées avec %@ ne sont pas prises en charge."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ で暗号化された PEM 鍵には対応していません。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -584,29 +602,29 @@
             "state" : "translated",
             "value" : "不支援使用 %@ 加密的 PEM 金鑰。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ で暗号化された PEM 鍵には対応していません。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Les clés PEM chiffrées avec %@ ne sont pas prises en charge."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Las claves PEM cifradas con %@ no son compatibles."
-          }
         }
       }
     },
     "Port %lld is already in use on this device." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El puerto %lld ya está en uso en este dispositivo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le port %lld est déjà utilisé sur cet appareil."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ポート %lld はこのデバイスですでに使用中です。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -618,29 +636,29 @@
             "state" : "translated",
             "value" : "此裝置上的埠 %lld 已被佔用。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ポート %lld はこのデバイスですでに使用中です。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le port %lld est déjà utilisé sur cet appareil."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El puerto %lld ya está en uso en este dispositivo."
-          }
         }
       }
     },
     "PuTTY keys (.ppk) are not supported. Export the key in OpenSSH format from PuTTYgen." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las claves de PuTTY (.ppk) no son compatibles. Exporta la clave en formato OpenSSH desde PuTTYgen."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les clés PuTTY (.ppk) ne sont pas prises en charge. Exportez la clé au format OpenSSH depuis PuTTYgen."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PuTTY 鍵（.ppk）には対応していません。PuTTYgen で鍵を OpenSSH 形式で書き出してください。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -652,29 +670,29 @@
             "state" : "translated",
             "value" : "不支援 PuTTY 金鑰（.ppk）。請在 PuTTYgen 中將金鑰匯出為 OpenSSH 格式。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "PuTTY 鍵（.ppk）には対応していません。PuTTYgen で鍵を OpenSSH 形式で書き出してください。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Les clés PuTTY (.ppk) ne sont pas prises en charge. Exportez la clé au format OpenSSH depuis PuTTYgen."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Las claves de PuTTY (.ppk) no son compatibles. Exporta la clave en formato OpenSSH desde PuTTYgen."
-          }
         }
       }
     },
     "TLS failed: %@" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Error de TLS: %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Échec TLS : %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TLS に失敗しました: %@"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -686,29 +704,29 @@
             "state" : "translated",
             "value" : "TLS 失敗：%@"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "TLS に失敗しました: %@"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Échec TLS : %@"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Error de TLS: %@"
-          }
         }
       }
     },
     "The PEM key could not be read. Rayon reads RSA and ECDSA keys in PEM." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido leer la clave PEM. Rayon lee claves RSA y ECDSA en PEM."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La clé PEM n’a pas pu être lue. Rayon lit les clés RSA et ECDSA au format PEM."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PEM 鍵を読み取れませんでした。Rayon は PEM 形式の RSA および ECDSA 鍵を読み取れます。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -720,29 +738,29 @@
             "state" : "translated",
             "value" : "無法讀取 PEM 金鑰。Rayon 可讀取 PEM 格式的 RSA 和 ECDSA 金鑰。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "PEM 鍵を読み取れませんでした。Rayon は PEM 形式の RSA および ECDSA 鍵を読み取れます。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La clé PEM n’a pas pu être lue. Rayon lit les clés RSA et ECDSA au format PEM."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No se ha podido leer la clave PEM. Rayon lee claves RSA y ECDSA en PEM."
-          }
         }
       }
     },
     "The SSH agent did not list its keys." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El agente SSH no ha listado sus claves."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’agent SSH n’a pas listé ses clés."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH エージェントが鍵の一覧を返しませんでした。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -754,29 +772,29 @@
             "state" : "translated",
             "value" : "SSH 代理未列出其金鑰。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SSH エージェントが鍵の一覧を返しませんでした。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L’agent SSH n’a pas listé ses clés."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El agente SSH no ha listado sus claves."
-          }
         }
       }
     },
     "The SSH agent did not sign with the key." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El agente SSH no ha firmado con la clave."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’agent SSH n’a pas signé avec la clé."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH エージェントがその鍵で署名しませんでした。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -788,29 +806,29 @@
             "state" : "translated",
             "value" : "SSH 代理未使用該金鑰簽名。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SSH エージェントがその鍵で署名しませんでした。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L’agent SSH n’a pas signé avec la clé."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El agente SSH no ha firmado con la clave."
-          }
         }
       }
     },
     "The SSH agent holds no keys." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El agente SSH no contiene claves."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’agent SSH ne contient aucune clé."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH エージェントに鍵がありません。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -822,29 +840,29 @@
             "state" : "translated",
             "value" : "SSH 代理中沒有金鑰。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SSH エージェントに鍵がありません。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L’agent SSH ne contient aucune clé."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El agente SSH no contiene claves."
-          }
         }
       }
     },
     "The SSH agent refused the request." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El agente SSH ha rechazado la solicitud."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’agent SSH a refusé la requête."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH エージェントが要求を拒否しました。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -856,29 +874,29 @@
             "state" : "translated",
             "value" : "SSH 代理拒絕了請求。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SSH エージェントが要求を拒否しました。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L’agent SSH a refusé la requête."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El agente SSH ha rechazado la solicitud."
-          }
         }
       }
     },
     "The SSH agent sent a malformed reply." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El agente SSH ha enviado una respuesta con formato incorrecto."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’agent SSH a envoyé une réponse mal formée."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH エージェントから不正な形式の応答が送られました。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -890,29 +908,29 @@
             "state" : "translated",
             "value" : "SSH 代理傳送了格式錯誤的回覆。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SSH エージェントから不正な形式の応答が送られました。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L’agent SSH a envoyé une réponse mal formée."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El agente SSH ha enviado una respuesta con formato incorrecto."
-          }
         }
       }
     },
     "The SSH agent signed with another algorithm than %@." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El agente SSH ha firmado con un algoritmo distinto de %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’agent SSH a signé avec un autre algorithme que %@."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH エージェントが %@ 以外のアルゴリズムで署名しました。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -924,29 +942,29 @@
             "state" : "translated",
             "value" : "SSH 代理使用了 %@ 以外的演算法簽名。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SSH エージェントが %@ 以外のアルゴリズムで署名しました。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L’agent SSH a signé avec un autre algorithme que %@."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El agente SSH ha firmado con un algoritmo distinto de %@."
-          }
         }
       }
     },
     "The SSH agent stopped answering." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El agente SSH ha dejado de responder."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’agent SSH a cessé de répondre."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH エージェントが応答しなくなりました。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -958,29 +976,29 @@
             "state" : "translated",
             "value" : "SSH 代理已停止回應。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SSH エージェントが応答しなくなりました。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L’agent SSH a cessé de répondre."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El agente SSH ha dejado de responder."
-          }
         }
       }
     },
     "The SSH agent's list of keys is malformed." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La lista de claves del agente SSH tiene un formato incorrecto."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La liste de clés de l’agent SSH est mal formée."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH エージェントの鍵一覧の形式が不正です。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -992,29 +1010,29 @@
             "state" : "translated",
             "value" : "SSH 代理的金鑰列表格式錯誤。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SSH エージェントの鍵一覧の形式が不正です。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La liste de clés de l’agent SSH est mal formée."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La lista de claves del agente SSH tiene un formato incorrecto."
-          }
         }
       }
     },
     "The command ended without an exit status." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El comando ha finalizado sin estado de salida."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La commande s’est terminée sans code de sortie."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コマンドは終了ステータスなしで終了しました。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1026,29 +1044,29 @@
             "state" : "translated",
             "value" : "命令已結束，但沒有退出狀態。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "コマンドは終了ステータスなしで終了しました。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La commande s’est terminée sans code de sortie."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El comando ha finalizado sin estado de salida."
-          }
         }
       }
     },
     "The command timed out." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se ha agotado el tiempo de espera del comando."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La commande a expiré."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コマンドがタイムアウトしました。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1060,29 +1078,29 @@
             "state" : "translated",
             "value" : "命令超時。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "コマンドがタイムアウトしました。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La commande a expiré."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se ha agotado el tiempo de espera del comando."
-          }
         }
       }
     },
     "The command was killed by SIG%@." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El comando ha sido terminado por SIG%@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La commande a été tuée par SIG%@."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コマンドは SIG%@ で強制終了されました。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1094,29 +1112,29 @@
             "state" : "translated",
             "value" : "命令被 SIG%@ 終止。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "コマンドは SIG%@ で強制終了されました。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La commande a été tuée par SIG%@."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El comando ha sido terminado por SIG%@."
-          }
         }
       }
     },
     "The connection closed." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La conexión se ha cerrado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La connexion s’est fermée."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "接続が閉じられました。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1128,24 +1146,6 @@
             "state" : "translated",
             "value" : "連線已關閉。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "接続が閉じられました。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La connexion s’est fermée."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La conexión se ha cerrado."
-          }
         }
       }
     },
@@ -1155,6 +1155,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The connection to %1$@ closed (%2$@)."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La conexión con %1$@ se ha cerrado (%2$@)."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La connexion à %1$@ s’est fermée (%2$@)."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ との接続が閉じられました（%2$@）。"
           }
         },
         "zh-Hans" : {
@@ -1168,24 +1186,6 @@
             "state" : "translated",
             "value" : "與 %@ 的連線已關閉（%@）。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ との接続が閉じられました（%2$@）。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La connexion à %1$@ s’est fermée (%2$@)."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La conexión con %1$@ se ha cerrado (%2$@)."
-          }
         }
       }
     },
@@ -1195,6 +1195,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The connection to %1$@ failed (%2$@)."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La conexión con %1$@ ha fallado (%2$@)."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La connexion à %1$@ a échoué (%2$@)."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ への接続に失敗しました（%2$@）。"
           }
         },
         "zh-Hans" : {
@@ -1208,29 +1226,29 @@
             "state" : "translated",
             "value" : "與 %@ 的連線失敗（%@）。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ への接続に失敗しました（%2$@）。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La connexion à %1$@ a échoué (%2$@)."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La conexión con %1$@ ha fallado (%2$@)."
-          }
         }
       }
     },
     "The key is encrypted with an unknown key derivation (%@)." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La clave está cifrada con una derivación de clave desconocida (%@)."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La clé est chiffrée avec une dérivation de clé inconnue (%@)."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "鍵が不明な鍵導出方式で暗号化されています（%@）。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1242,24 +1260,6 @@
             "state" : "translated",
             "value" : "金鑰使用了未知的金鑰派生方式加密（%@）。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "鍵が不明な鍵導出方式で暗号化されています（%@）。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La clé est chiffrée avec une dérivation de clé inconnue (%@)."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La clave está cifrada con una derivación de clave desconocida (%@)."
-          }
         }
       }
     },
@@ -1269,6 +1269,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The key's passphrase is derived with %1$u bcrypt rounds; at most %2$u are supported."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La frase de contraseña de la clave se deriva con %1$u rondas de bcrypt; se admiten como máximo %2$u."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La phrase secrète de la clé est dérivée avec %1$u tours bcrypt ; %2$u au maximum sont pris en charge."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "鍵のパスフレーズは bcrypt %1$u ラウンドで導出されています。対応しているのは最大 %2$u ラウンドです。"
           }
         },
         "zh-Hans" : {
@@ -1282,29 +1300,29 @@
             "state" : "translated",
             "value" : "金鑰的密碼短語經過 %u 輪 bcrypt 派生；最多支援 %u 輪。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "鍵のパスフレーズは bcrypt %1$u ラウンドで導出されています。対応しているのは最大 %2$u ラウンドです。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La phrase secrète de la clé est dérivée avec %1$u tours bcrypt ; %2$u au maximum sont pris en charge."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La frase de contraseña de la clave se deriva con %1$u rondas de bcrypt; se admiten como máximo %2$u."
-          }
         }
       }
     },
     "The private key could not be decrypted." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido descifrar la clave privada."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de déchiffrer la clé privée."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "秘密鍵を復号できませんでした。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1316,29 +1334,29 @@
             "state" : "translated",
             "value" : "無法解密私鑰。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "秘密鍵を復号できませんでした。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossible de déchiffrer la clé privée."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No se ha podido descifrar la clave privada."
-          }
         }
       }
     },
     "The private key could not be decrypted. Check the identity's password, which is the key's passphrase." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido descifrar la clave privada. Comprueba la contraseña de la identidad, que es la frase de contraseña de la clave."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de déchiffrer la clé privée. Vérifiez le mot de passe de l’identité, qui est la phrase secrète de la clé."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "秘密鍵を復号できませんでした。認証情報のパスワード（鍵のパスフレーズ）を確認してください。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1350,29 +1368,29 @@
             "state" : "translated",
             "value" : "無法解密私鑰。請檢查身份的密碼，即金鑰的密碼短語。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "秘密鍵を復号できませんでした。認証情報のパスワード（鍵のパスフレーズ）を確認してください。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossible de déchiffrer la clé privée. Vérifiez le mot de passe de l’identité, qui est la phrase secrète de la clé."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No se ha podido descifrar la clave privada. Comprueba la contraseña de la identidad, que es la frase de contraseña de la clave."
-          }
         }
       }
     },
     "The private key is damaged or incomplete." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La clave privada está dañada o incompleta."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La clé privée est endommagée ou incomplète."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "秘密鍵が破損しているか不完全です。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1384,29 +1402,29 @@
             "state" : "translated",
             "value" : "私鑰已損壞或不完整。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "秘密鍵が破損しているか不完全です。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La clé privée est endommagée ou incomplète."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La clave privada está dañada o incompleta."
-          }
         }
       }
     },
     "The private key is protected by a passphrase. Enter it as the identity's password." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La clave privada está protegida con una frase de contraseña. Introdúcela como contraseña de la identidad."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La clé privée est protégée par une phrase secrète. Saisissez-la comme mot de passe de l’identité."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "秘密鍵はパスフレーズで保護されています。認証情報のパスワードとして入力してください。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1418,29 +1436,29 @@
             "state" : "translated",
             "value" : "私鑰受密碼短語保護。請將其輸入為身份的密碼。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "秘密鍵はパスフレーズで保護されています。認証情報のパスワードとして入力してください。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La clé privée est protégée par une phrase secrète. Saisissez-la comme mot de passe de l’identité."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La clave privada está protegida con una frase de contraseña. Introdúcela como contraseña de la identidad."
-          }
         }
       }
     },
     "The server did not accept any of the credentials." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El servidor no ha aceptado ninguna de las credenciales."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le serveur n’a accepté aucun des identifiants."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバはどの資格情報も受け付けませんでした。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1452,29 +1470,29 @@
             "state" : "translated",
             "value" : "伺服器未接受任何憑證。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "サーバはどの資格情報も受け付けませんでした。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le serveur n’a accepté aucun des identifiants."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El servidor no ha aceptado ninguna de las credenciales."
-          }
         }
       }
     },
     "The server did not open a channel in time." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El servidor no ha abierto un canal a tiempo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le serveur n’a pas ouvert de canal à temps."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバが時間内にチャネルを開きませんでした。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1486,29 +1504,29 @@
             "state" : "translated",
             "value" : "伺服器未及時開啟通道。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "サーバが時間内にチャネルを開きませんでした。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le serveur n’a pas ouvert de canal à temps."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El servidor no ha abierto un canal a tiempo."
-          }
         }
       }
     },
     "The server did not start SFTP (%@)." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El servidor no ha iniciado SFTP (%@)."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le serveur n’a pas démarré SFTP (%@)."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバが SFTP を開始しませんでした（%@）。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1520,29 +1538,29 @@
             "state" : "translated",
             "value" : "伺服器未啟動 SFTP（%@）。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "サーバが SFTP を開始しませんでした（%@）。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le serveur n’a pas démarré SFTP (%@)."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El servidor no ha iniciado SFTP (%@)."
-          }
         }
       }
     },
     "The server refused a pseudo-terminal or a shell." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El servidor ha rechazado un pseudoterminal o una shell."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le serveur a refusé un pseudo-terminal ou un shell."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバが疑似ターミナルまたはシェルを拒否しました。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1554,29 +1572,29 @@
             "state" : "translated",
             "value" : "伺服器拒絕了偽終端或 Shell。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "サーバが疑似ターミナルまたはシェルを拒否しました。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le serveur a refusé un pseudo-terminal ou un shell."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El servidor ha rechazado un pseudoterminal o una shell."
-          }
         }
       }
     },
     "The server refused to open a channel (%@)." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El servidor se ha negado a abrir un canal (%@)."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le serveur a refusé d’ouvrir un canal (%@)."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバがチャネルを開くことを拒否しました（%@）。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1588,29 +1606,29 @@
             "state" : "translated",
             "value" : "伺服器拒絕開啟通道（%@）。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "サーバがチャネルを開くことを拒否しました（%@）。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le serveur a refusé d’ouvrir un canal (%@)."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El servidor se ha negado a abrir un canal (%@)."
-          }
         }
       }
     },
     "The server refused to run the command." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El servidor se ha negado a ejecutar el comando."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le serveur a refusé d’exécuter la commande."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバがコマンドの実行を拒否しました。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1622,29 +1640,29 @@
             "state" : "translated",
             "value" : "伺服器拒絕執行此命令。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "サーバがコマンドの実行を拒否しました。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le serveur a refusé d’exécuter la commande."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El servidor se ha negado a ejecutar el comando."
-          }
         }
       }
     },
     "The server would not start a shell (%@)." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El servidor no ha querido iniciar una shell (%@)."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le serveur refuse de démarrer un shell (%@)."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバがシェルを開始しませんでした（%@）。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1656,24 +1674,6 @@
             "state" : "translated",
             "value" : "伺服器拒絕啟動 Shell（%@）。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "サーバがシェルを開始しませんでした（%@）。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le serveur refuse de démarrer un shell (%@)."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El servidor no ha querido iniciar una shell (%@)."
-          }
         }
       }
     },
@@ -1683,6 +1683,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The server's host key has changed. Saved: %1$@ %2$@. Offered: %3$@ %4$@. If the server was reinstalled or its keys were replaced, forget its host key and connect again. If not, something may be intercepting the connection."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La clave de host del servidor ha cambiado. Guardada: %1$@ %2$@. Presentada: %3$@ %4$@. Si el servidor se ha reinstalado o se han reemplazado sus claves, olvida su clave de host y vuelve a conectarte. Si no, algo podría estar interceptando la conexión."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La clé d’hôte du serveur a changé. Enregistrée : %1$@ %2$@. Présentée : %3$@ %4$@. Si le serveur a été réinstallé ou ses clés remplacées, oubliez sa clé d’hôte et reconnectez-vous. Sinon, quelque chose intercepte peut-être la connexion."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバのホスト鍵が変更されました。保存済み: %1$@ %2$@。提示: %3$@ %4$@。サーバが再インストールされたか鍵が交換された場合は、ホスト鍵を消去して再接続してください。そうでない場合、接続が傍受されている可能性があります。"
           }
         },
         "zh-Hans" : {
@@ -1696,24 +1714,6 @@
             "state" : "translated",
             "value" : "伺服器的主機金鑰已更改。已儲存：%@ %@。出示：%@ %@。如果伺服器已重灌或其金鑰已更換，請忘記其主機金鑰後重新連線。否則，可能有東西正在攔截連線。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "サーバのホスト鍵が変更されました。保存済み: %1$@ %2$@。提示: %3$@ %4$@。サーバが再インストールされたか鍵が交換された場合は、ホスト鍵を消去して再接続してください。そうでない場合、接続が傍受されている可能性があります。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La clé d’hôte du serveur a changé. Enregistrée : %1$@ %2$@. Présentée : %3$@ %4$@. Si le serveur a été réinstallé ou ses clés remplacées, oubliez sa clé d’hôte et reconnectez-vous. Sinon, quelque chose intercepte peut-être la connexion."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La clave de host del servidor ha cambiado. Guardada: %1$@ %2$@. Presentada: %3$@ %4$@. Si el servidor se ha reinstalado o se han reemplazado sus claves, olvida su clave de host y vuelve a conectarte. Si no, algo podría estar interceptando la conexión."
-          }
         }
       }
     },
@@ -1723,6 +1723,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The server's host key is not known yet (%1$@ %2$@)."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aún no se conoce la clave de host del servidor (%1$@ %2$@)."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La clé d’hôte du serveur n’est pas encore connue (%1$@ %2$@)."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバのホスト鍵はまだ不明です（%1$@ %2$@）。"
           }
         },
         "zh-Hans" : {
@@ -1736,24 +1754,6 @@
             "state" : "translated",
             "value" : "尚不知道伺服器的主機金鑰（%@ %@）。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "サーバのホスト鍵はまだ不明です（%1$@ %2$@）。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La clé d’hôte du serveur n’est pas encore connue (%1$@ %2$@)."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aún no se conoce la clave de host del servidor (%1$@ %2$@)."
-          }
         }
       }
     },
@@ -1763,6 +1763,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "The tunnel to %1$@:%2$lld could not be used (%3$@)."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se ha podido usar el túnel a %1$@:%2$lld (%3$@)."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le tunnel vers %1$@:%2$lld est inutilisable (%3$@)."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@:%2$lld へのトンネルを使用できませんでした（%3$@）。"
           }
         },
         "zh-Hans" : {
@@ -1776,29 +1794,29 @@
             "state" : "translated",
             "value" : "無法使用到 %@:%lld 的隧道（%@）。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@:%2$lld へのトンネルを使用できませんでした（%3$@）。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le tunnel vers %1$@:%2$lld est inutilisable (%3$@)."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No se ha podido usar el túnel a %1$@:%2$lld (%3$@)."
-          }
         }
       }
     },
     "This does not look like a private key." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Esto no parece una clave privada."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cela ne ressemble pas à une clé privée."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "秘密鍵ではないようです。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1810,29 +1828,29 @@
             "state" : "translated",
             "value" : "這看起來不是私鑰。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "秘密鍵ではないようです。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cela ne ressemble pas à une clé privée."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Esto no parece una clave privada."
-          }
         }
       }
     },
     "Timed out signing in to %@." : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se ha agotado el tiempo al iniciar sesión en %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Délai dépassé lors de la connexion à %@."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ へのサインインがタイムアウトしました。"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1844,24 +1862,6 @@
             "state" : "translated",
             "value" : "登入 %@ 超時。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%@ へのサインインがタイムアウトしました。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Délai dépassé lors de la connexion à %@."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Se ha agotado el tiempo al iniciar sesión en %@."
-          }
         }
       }
     },
@@ -1871,6 +1871,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unable to connect to %1$@:%2$lld (%3$@)."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede conectar a %1$@:%2$lld (%3$@)."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de se connecter à %1$@:%2$lld (%3$@)."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@:%2$lld に接続できません（%3$@）。"
           }
         },
         "zh-Hans" : {
@@ -1884,24 +1902,6 @@
             "state" : "translated",
             "value" : "無法連線到 %@:%lld（%@）。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@:%2$lld に接続できません（%3$@）。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossible de se connecter à %1$@:%2$lld (%3$@)."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No se puede conectar a %1$@:%2$lld (%3$@)."
-          }
         }
       }
     },
@@ -1911,6 +1911,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Unable to reach %1$@ (%2$@)."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se puede acceder a %1$@ (%2$@)."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de joindre %1$@ (%2$@)."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ に到達できません（%2$@）。"
           }
         },
         "zh-Hans" : {
@@ -1924,29 +1942,29 @@
             "state" : "translated",
             "value" : "無法訪問 %@（%@）。"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$@ に到達できません（%2$@）。"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Impossible de joindre %1$@ (%2$@)."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No se puede acceder a %1$@ (%2$@)."
-          }
         }
       }
     },
     "connection refused; nothing is listening on that port" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "conexión rechazada; no hay nada escuchando en ese puerto"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "connexion refusée ; rien n’écoute sur ce port"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "接続が拒否されました。そのポートで待ち受けているものがありません"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1958,29 +1976,29 @@
             "state" : "translated",
             "value" : "連線被拒絕；該埠上沒有程式在監聽"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "接続が拒否されました。そのポートで待ち受けているものがありません"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "connexion refusée ; rien n’écoute sur ce port"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "conexión rechazada; no hay nada escuchando en ese puerto"
-          }
         }
       }
     },
     "the SSH session broke off (%@)" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "la sesión SSH se ha interrumpido (%@)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "la session SSH s’est interrompue (%@)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SSH セッションが切断されました（%@）"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -1992,29 +2010,29 @@
             "state" : "translated",
             "value" : "SSH 會話中斷（%@）"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "SSH セッションが切断されました（%@）"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "la session SSH s’est interrompue (%@)"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "la sesión SSH se ha interrumpido (%@)"
-          }
         }
       }
     },
     "the connection closed" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "la conexión se ha cerrado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "la connexion s’est fermée"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "接続が閉じられました"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2026,29 +2044,29 @@
             "state" : "translated",
             "value" : "連線已關閉"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "接続が閉じられました"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "la connexion s’est fermée"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "la conexión se ha cerrado"
-          }
         }
       }
     },
     "the connection was aborted" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "la conexión se ha anulado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "la connexion a été interrompue"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "接続が中断されました"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2060,29 +2078,29 @@
             "state" : "translated",
             "value" : "連線被中止"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "接続が中断されました"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "la connexion a été interrompue"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "la conexión se ha anulado"
-          }
         }
       }
     },
     "the host cannot be reached" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no se puede acceder al host"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "l’hôte est injoignable"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ホストに到達できません"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2094,29 +2112,29 @@
             "state" : "translated",
             "value" : "無法訪問主機"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ホストに到達できません"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "l’hôte est injoignable"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "no se puede acceder al host"
-          }
         }
       }
     },
     "the host name could not be found" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "no se ha encontrado el nombre de host"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "le nom d’hôte est introuvable"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ホスト名が見つかりませんでした"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2128,29 +2146,29 @@
             "state" : "translated",
             "value" : "找不到主機名稱"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ホスト名が見つかりませんでした"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "le nom d’hôte est introuvable"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "no se ha encontrado el nombre de host"
-          }
         }
       }
     },
     "the network cannot reach the host" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "la red no puede llegar al host"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "le réseau ne peut pas joindre l’hôte"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ネットワークからホストに到達できません"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2162,29 +2180,29 @@
             "state" : "translated",
             "value" : "網路無法到達主機"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ネットワークからホストに到達できません"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "le réseau ne peut pas joindre l’hôte"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "la red no puede llegar al host"
-          }
         }
       }
     },
     "the network is down" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "la red no está disponible"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "le réseau est hors service"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ネットワークがダウンしています"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2196,29 +2214,29 @@
             "state" : "translated",
             "value" : "網路已斷開"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ネットワークがダウンしています"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "le réseau est hors service"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "la red no está disponible"
-          }
         }
       }
     },
     "the port is already in use" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "el puerto ya está en uso"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "le port est déjà utilisé"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ポートはすでに使用中です"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2230,29 +2248,29 @@
             "state" : "translated",
             "value" : "埠已被佔用"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ポートはすでに使用中です"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "le port est déjà utilisé"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "el puerto ya está en uso"
-          }
         }
       }
     },
     "the server did not answer in time" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "el servidor no ha respondido a tiempo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "le serveur n’a pas répondu à temps"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバが時間内に応答しませんでした"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2264,29 +2282,29 @@
             "state" : "translated",
             "value" : "伺服器未及時回應"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "サーバが時間内に応答しませんでした"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "le serveur n’a pas répondu à temps"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "el servidor no ha respondido a tiempo"
-          }
         }
       }
     },
     "the server reset the connection" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "el servidor ha restablecido la conexión"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "le serveur a réinitialisé la connexion"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバが接続をリセットしました"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2298,29 +2316,29 @@
             "state" : "translated",
             "value" : "伺服器重置了連線"
           }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "サーバが接続をリセットしました"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "le serveur a réinitialisé la connexion"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "el servidor ha restablecido la conexión"
-          }
         }
       }
     },
     "the system did not allow the connection" : {
       "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "el sistema no ha permitido la conexión"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "le système n’a pas autorisé la connexion"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "システムが接続を許可しませんでした"
+          }
+        },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
@@ -2331,24 +2349,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "系統不允許此連線"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "システムが接続を許可しませんでした"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "le système n’a pas autorisé la connexion"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "el sistema no ha permitido la conexión"
           }
         }
       }
