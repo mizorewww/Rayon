@@ -2,7 +2,7 @@
 
 The ingest for Rayon's anonymous telemetry, as specified in [`docs/telemetry.md`](../../docs/telemetry.md): a Cloudflare Worker with a D1 database.
 
-- `POST /v1/reports` takes `{"reports": [...]}`, one to ten reports the app built (`Foundation/Telemetry`). Each report is checked against the client's schema snapshot (`Foundation/Telemetry/Tests/TelemetryTests/Fixtures/report-enums.json`). Unknown keys, unknown values and free strings are rejected with 422.
+- `POST /v1/reports` takes `{"reports": [...]}`, one to ten reports the app built (`Foundation/Telemetry`). Each report is checked against the client's schema snapshot (`Foundation/Telemetry/Tests/TelemetryTests/Fixtures/report-enums.json`). Unknown keys, free strings and values of the wrong type are rejected with 422. An enum value the Worker does not know yet (a case added in a newer app) is counted as `other`, so a client never loses a report over it; the value itself is not stored.
 - Accepted reports are folded into `aggregates` (day × app version × OS version × metric × bucket → count) and dropped. Zero counts and `false` flags are not written; they follow from the `reports` totals. Crash and hang items go to `crashes`, which keeps them 90 days for symbolication.
 - A report's `nonce` is kept three days so that a retried report is counted once. It is the only per-report value stored, and it is random.
 - The Worker never reads `CF-Connecting-IP`, `X-Forwarded-For` or `User-Agent`. Workers Logs, traces, Logpush and `workers.dev` are off in `cloudflare.config.ts` (deploy) and `wrangler.toml` (local).
@@ -90,4 +90,4 @@ The `reports` metric with bucket `usage` counts daily reports, which approximate
 
 ## Changing the schema
 
-The Swift report is the source of truth. Change it, record the snapshot (`TELEMETRY_RECORD_SNAPSHOT=1 swift test --package-path Foundation/Telemetry`), run this Worker's tests and redeploy before the app ships. Update `docs/telemetry.md`, the privacy policy, the privacy manifest and the App Store label in the same change. A new field or case is rejected by a Worker that has not been redeployed, and the app drops the reports it rejects.
+The Swift report is the source of truth. Change it, record the snapshot (`TELEMETRY_RECORD_SNAPSHOT=1 swift test --package-path Foundation/Telemetry`), run this Worker's tests and redeploy before the app ships. Update `docs/telemetry.md`, the privacy policy, the privacy manifest and the App Store label in the same change. A new field is rejected by a Worker that has not been redeployed, and the app drops the reports it rejects; a new enum case is counted as `other` until the Worker is redeployed.

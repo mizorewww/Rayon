@@ -88,7 +88,7 @@ describe("ingest", () => {
   it.each<[string, (r: Sample) => void]>([
     ["an unknown key", (r) => (r.hostname = "db.example.com")],
     ["an unknown nested key", (r) => ((r.usage as Record<string, unknown>).lastHost = "10.0.0.1")],
-    ["an unknown enum value", (r) => (r.platform = "linux")],
+    ["an enum value that is not a string", (r) => ((r as Record<string, unknown>).language = 7)],
     ["a string where a bucket goes", (r) => ((r.usage as { savedHosts: unknown }).savedHosts = "12")],
     ["a count that is not a bucket", (r) => ((r.usage as { savedHosts: unknown }).savedHosts = 12)],
     ["a missing feature", (r) => delete (r.usage as { counts: Record<string, unknown> }).counts.editorOpened],
@@ -103,6 +103,25 @@ describe("ingest", () => {
     change(bad);
     expect((await post({ reports: [bad] })).status).toBe(422);
     expect(await dump()).toBe("[[],[],[]]");
+  });
+
+  it("counts an enum value it does not know as other, without storing it", async () => {
+    const r = clone(samples[0]) as Sample;
+    r.language = "tlh";
+    r.deviceClass = "vision-pro";
+    r.usage!.redactionMode = "db.example.com";
+    expect((await post({ reports: [r] })).status).toBe(200);
+    const buckets = await env.DB.prepare("SELECT metric, bucket FROM aggregates WHERE metric IN ('language', 'deviceClass', 'usage.redactionMode')").all();
+    expect(buckets.results).toEqual(expect.arrayContaining(["language", "deviceClass", "usage.redactionMode"].map((metric) => ({ metric, bucket: "other" }))));
+    const stored = await dump();
+    for (const leaked of ["tlh", "vision-pro", "db.example.com"]) expect(stored).not.toContain(leaked);
+  });
+
+  it.each(["ja", "fr", "es"])("takes the language %s", async (language) => {
+    const r = clone(samples[1]) as Sample;
+    r.language = language;
+    expect((await post({ reports: [r] })).status).toBe(200);
+    expect(await env.DB.prepare("SELECT bucket FROM aggregates WHERE metric = 'language'").first()).toEqual({ bucket: language });
   });
 
   it("refuses what is not a batch of one to ten reports", async () => {

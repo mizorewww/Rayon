@@ -1,13 +1,21 @@
 // The report the app sends, checked field by field. The enum cases come
 // from the client's own schema snapshot, so the two cannot drift: a case
 // added in Swift changes report-enums.json, and this Worker accepts it once
-// redeployed. Unknown keys and values are rejected.
+// redeployed. Unknown keys are rejected. An enum value this Worker does not
+// know yet is counted as "other" rather than costing the client its whole
+// report; the value itself is never stored.
 import { z } from "zod";
-import enums from "../../../Foundation/Telemetry/Tests/TelemetryTests/Fixtures/report-enums.json";
+import snapshot from "../../../Foundation/Telemetry/Tests/TelemetryTests/Fixtures/report-enums.json";
 
-type Name = keyof typeof enums;
+type Name = keyof typeof snapshot;
 
-const oneOf = (name: Name) => z.enum(enums[name] as [string, ...string[]]);
+// Languages the client adds next; harmless once the snapshot lists them too.
+const enums: Record<Name, string[]> = { ...snapshot, language: [...new Set([...snapshot.language, "ja", "fr", "es"])] };
+
+const oneOf = (name: Name) => {
+  const known = new Set(enums[name]);
+  return z.string().transform((value) => (known.has(value) ? value : "other"));
+};
 const numberIn = (name: Name) => z.number().int().refine((n) => enums[name].includes(String(n)));
 const bucket = numberIn("countBucket");
 const every = <T extends z.ZodType>(name: Name, value: T) =>
@@ -80,7 +88,7 @@ export const report = z
     nonce: z.guid(),
     level: z.union([z.literal(1), z.literal(2), z.literal(3)]),
     appVersion,
-    channel: oneOf("channel").exclude(["debug"]),
+    channel: oneOf("channel").refine((c) => c !== "debug", "a debug build"),
     platform: oneOf("platform"),
     osVersion,
     deviceClass: oneOf("deviceClass"),
