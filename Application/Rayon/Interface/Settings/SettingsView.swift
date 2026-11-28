@@ -130,7 +130,20 @@ struct SettingsView: View {
 
         private func rows(_ section: SettingsSection) -> some View {
             ForEach(section.pages, id: \.self) { page in
-                Label(page.title, systemImage: page.icon).tag(page.id)
+                Label(page.title, systemImage: page.icon)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    // A click on the row already selected changes no
+                    // selection, so clicks are taken here (a tap gesture on
+                    // the row also keeps the list from selecting it): as in
+                    // System Settings, the selected row brings back its page
+                    // from a subpage or from what is pushed over it.
+                    .simultaneousGesture(TapGesture().onEnded {
+                        search = ""
+                        navigation.go(page.id)
+                        pushed = NavigationPath()
+                    })
+                    .tag(page.id)
             }
         }
     #else
