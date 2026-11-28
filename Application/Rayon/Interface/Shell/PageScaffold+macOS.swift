@@ -183,7 +183,7 @@
     /// owns one fixed set of toolbar items and swaps their content as pages
     /// change: with the items declared on each page, every switch had AppKit
     /// remove all of them and add new ones, and lay the toolbar out again.
-    struct PageToolbarContent: Equatable {
+    struct PageToolbarContent {
         let leading: [AnyView]
         let trailing: [AnyView]
         let primary: ToolbarAction?
@@ -193,9 +193,6 @@
         /// controls on a side (the terminal's leading six). A fixed count
         /// keeps the items in place as pages change.
         static let slots = 6
-
-        // Views have no equality; each update of the page hands new ones.
-        static func == (_: Self, _: Self) -> Bool { false }
     }
 
     struct PageToolbarKey: PreferenceKey {
@@ -267,12 +264,17 @@
 
     extension View {
         /// Shows the toolbar items of the page in front in this view's toolbar.
+        /// They are read where they are drawn, in the same update as the
+        /// page: views have no equality, so held in state each of the page's
+        /// updates would also update the window's whole view, and could do
+        /// so more than once a frame.
         @ViewBuilder
-        func pageToolbarItems(_ content: Binding<PageToolbarContent?>) -> some View {
+        func pageToolbarItems() -> some View {
             if #available(macOS 26.0, *) {
                 environment(\.hoistsPageToolbar, true)
-                    .onPreferenceChange(PageToolbarKey.self) { content.wrappedValue = $0 }
-                    .toolbar { PageToolbarItems(content: content.wrappedValue) }
+                    .backgroundPreferenceValue(PageToolbarKey.self) { content in
+                        Color.clear.toolbar { PageToolbarItems(content: content) }
+                    }
             } else {
                 self
             }
