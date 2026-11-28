@@ -28,7 +28,7 @@ import sys
 import tempfile
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-LANGUAGES = ["en", "zh-Hans", "zh-Hant"]
+LANGUAGES = ["en", "zh-Hans", "zh-Hant", "ja", "fr", "es"]
 SOURCE_LANGUAGE = "en"
 # printf-style specifiers as Foundation formats them; %% is a literal percent.
 SPECIFIER = re.compile(r"%(?:(\d+)\$)?[-+ #0']*\d*(?:\.\d+)?(hh|h|ll|l|q|z|t|j|L)?([@dDiuUxXoOfFeEgGcCsSpaA%])")

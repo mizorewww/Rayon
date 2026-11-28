@@ -21,6 +21,24 @@
             "state" : "translated",
             "value" : "在執行敏感操作前，Rayon 使用 Face ID 確認你是此裝置的擁有者。"
           }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重要な操作を実行する前に、Face ID を使ってデバイスの所有者であることを確認します。"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rayon utilise Face ID pour vérifier que vous êtes le propriétaire de l’appareil avant toute opération sensible."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usamos Face ID para comprobar que eres el propietario de tus dispositivos antes de realizar una operación delicada."
+          }
         }
       }
     },
@@ -43,6 +61,24 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rayon 會連線區域網路中的伺服器和開啟螢幕共享的 Mac，並在附近尋找它們。"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rayon はローカルネットワーク上のサーバや画面共有が有効な Mac に接続し、近くにあるものを探します。"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rayon se connecte aux serveurs et aux Mac avec partage d’écran de votre réseau local, et les recherche à proximité."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rayon se conecta a servidores y a Mac con pantalla compartida de tu red local, y los busca cerca."
           }
         }
       }
