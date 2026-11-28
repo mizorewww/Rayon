@@ -105,6 +105,64 @@ describe("dashboard", () => {
     expect(JSON.stringify(data)).not.toContain("callStacks");
   });
 
+  it("reveals nothing under ten by differencing two ranges", async () => {
+    // Five days of twenty reports, plus a rare build with a rare language
+    // (two reports a day, three on the last) and a crash in two reports a day.
+    // Over 11-01..05 each sums to ten or more, over 11-01..04 it does not, so
+    // a range-wide threshold would reveal the last day's small cells.
+    const statements: D1PreparedStatement[] = [];
+    const cell = (day: string, app: string, metric: string, bucket: string, count: number) =>
+      statements.push(
+        env.DB.prepare("INSERT INTO aggregates VALUES (?, ?, 'macOS 15.4', ?, ?, ?)").bind(day, app, metric, bucket, count),
+      );
+    const crash = (day: string, report: string) =>
+      statements.push(
+        env.DB.prepare("INSERT INTO crashes (day, app_version, os_version, kind, signature, item, report) VALUES (?, '5.2.0', 'macOS 15.4', 'crash', 'crash SIG 11', '{}', ?)").bind(day, report),
+      );
+    const days = ["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-04", "2026-11-05"];
+    for (const [i, day] of days.entries()) {
+      const last = i === days.length - 1;
+      cell(day, "5.2.0", "reports", "diagnostics", 20);
+      cell(day, "5.2.0", "language", "en", 20);
+      cell(day, "4.9.0", "reports", "diagnostics", last ? 3 : 2);
+      cell(day, "4.9.0", "language", "fr", last ? 3 : 2);
+      for (let r = 0; r < 2; r++) crash(day, `${day} ${r}`);
+    }
+    await env.DB.batch(statements);
+
+    const jwt = await token();
+    const read = async (to: string) =>
+      (await (await get(`/dashboard/api/summary?from=2026-11-01&to=${to}`, jwt)).json()) as Record<string, { count: number }[]>;
+    const [wide, narrow] = [await read("2026-11-05"), await read("2026-11-04")];
+    const cells = (rows: { count: number }[]) =>
+      new Map(rows.map(({ count, ...key }) => [JSON.stringify(key), count]));
+    for (const key of ["daily", "metrics", "appVersions", "osVersions", "platforms", "crashes"]) {
+      const [a, b] = [cells(wide[key]), cells(narrow[key])];
+      for (const name of new Set([...a.keys(), ...b.keys()])) {
+        const difference = (a.get(name) ?? 0) - (b.get(name) ?? 0);
+        expect(difference === 0 || difference >= 10, `${key} ${name}: ${difference}`).toBe(true);
+      }
+    }
+    expect(wide.metrics).not.toContainEqual(expect.objectContaining({ metric: "language", bucket: "fr" }));
+    expect(wide.appVersions).toEqual([{ name: "5.2.0", count: 100 }]);
+    expect(wide.crashes).toEqual([]);
+  });
+
+  it("counts crash cells by report, not by item", async () => {
+    // Nine reports from a crash-looping build, twenty items each.
+    const looping = Array.from({ length: 9 }, (_, i) => {
+      const r = withNonce(samples[1], i);
+      r.diagnostics = Array.from({ length: 20 }, () => structuredClone(samples[1].diagnostics[0]));
+      return r;
+    });
+    expect((await post(looping)).status).toBe(200);
+    const jwt = await token();
+    const read = async () => ((await (await get("/dashboard/api/summary", jwt)).json()) as { crashes: unknown[] }).crashes;
+    expect(await read()).toEqual([]);
+    await post([withNonce(samples[1], 9)]);
+    expect(await read()).toEqual([expect.objectContaining({ count: 10 })]);
+  });
+
   it("checks the range", async () => {
     const jwt = await token();
     expect((await get("/dashboard/api/summary?from=2026-12-01&to=2026-11-01", jwt)).status).toBe(400);

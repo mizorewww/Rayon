@@ -1,8 +1,8 @@
 // The dashboard: one page and one summary query. Cloudflare Access stands in
 // front of /dashboard* and signs in the members of the Access group; this
 // Worker checks Access's token again, so a gap in the Access application
-// never opens the data. The summary holds only sums over the range with
-// every cell under the minimum left out, as the aggregates export does; no
+// never opens the data. The summary holds only range sums of per-day cells
+// that reach the minimum, as the aggregates export thresholds each day; no
 // report or crash item leaves the database.
 import { createRemoteJWKSet, jwtVerify } from "jose";
 import page from "./dashboard.html";
@@ -41,23 +41,35 @@ async function summary(url: URL, env: DashboardEnv, minimumCount: number, email:
   const to = url.searchParams.get("to") ?? utcDay(new Date());
   if (!isDay(from) || !isDay(to) || from > to) return Response.json({ error: "from and to are YYYY-MM-DD, from first" }, { status: 400 });
 
-  const reports = "metric = 'reports' AND day BETWEEN ?1 AND ?2";
+  // Every cell is thresholded per day before it enters a range total, so no
+  // range differs from another by a day's cell under the minimum: subtracting
+  // two overlapping ranges gives back only sums of cells the per-day view
+  // shows anyway. Versions under the minimum on a day fold into "other" that
+  // day, for the same reason.
   const inRange = "day BETWEEN ?1 AND ?2";
-  // Versions with fewer reports (or items) than the minimum in the range count as "other".
-  const folded = (column: string, table: string, total: string, where: string) =>
-    `CASE WHEN ${column} IN (SELECT ${column} FROM ${table} WHERE ${where} GROUP BY ${column} HAVING ${total} >= ?3) THEN ${column} ELSE 'other' END`;
+  const reports = `metric = 'reports' AND ${inRange}`;
   const share = (name: string) =>
-    `SELECT ${name} AS name, SUM(count) AS count FROM aggregates WHERE ${reports} GROUP BY 1 HAVING SUM(count) >= ?3 ORDER BY count DESC`;
+    `WITH cells AS (SELECT day, ${name} AS name, SUM(count) AS count FROM aggregates WHERE ${reports} GROUP BY 1, 2),
+          kept AS (SELECT day, CASE WHEN count >= ?3 THEN name ELSE 'other' END AS name, SUM(count) AS count
+                   FROM cells GROUP BY 1, 2 HAVING SUM(count) >= ?3)
+     SELECT name, SUM(count) AS count FROM kept GROUP BY name ORDER BY count DESC`;
   const queries = {
     daily: `SELECT day, bucket, SUM(count) AS count FROM aggregates WHERE ${reports}
             GROUP BY day, bucket HAVING SUM(count) >= ?3 ORDER BY day`,
-    metrics: `SELECT metric, bucket, SUM(count) AS count FROM aggregates WHERE ${inRange}
-              GROUP BY metric, bucket HAVING SUM(count) >= ?3 ORDER BY metric, bucket`,
-    appVersions: share(folded("app_version", "aggregates", "SUM(count)", reports)),
-    osVersions: share(folded("os_version", "aggregates", "SUM(count)", reports)),
+    metrics: `WITH kept AS (SELECT day, metric, bucket, SUM(count) AS count FROM aggregates WHERE ${inRange}
+                            GROUP BY 1, 2, 3 HAVING SUM(count) >= ?3)
+              SELECT metric, bucket, SUM(count) AS count FROM kept GROUP BY 1, 2 ORDER BY metric, bucket`,
+    appVersions: share("app_version"),
+    osVersions: share("os_version"),
     platforms: share("substr(os_version, 1, instr(os_version, ' ') - 1)"),
-    crashes: `SELECT kind, signature, ${folded("app_version", "crashes", "COUNT(*)", inRange)} AS appVersion, COUNT(*) AS count
-              FROM crashes WHERE ${inRange} GROUP BY 1, 2, 3 HAVING COUNT(*) >= ?3 ORDER BY count DESC LIMIT 200`,
+    // A crash cell counts distinct reports, not items: one device crash-looping
+    // within a report fills no cell on its own.
+    crashes: `WITH versions AS (SELECT day, app_version FROM crashes WHERE ${inRange} GROUP BY 1, 2 HAVING COUNT(DISTINCT report) >= ?3),
+                   kept AS (SELECT c.day, c.kind, c.signature, CASE WHEN v.day IS NULL THEN 'other' ELSE c.app_version END AS appVersion,
+                                   COUNT(DISTINCT c.report) AS count
+                            FROM crashes c LEFT JOIN versions v ON v.day = c.day AND v.app_version = c.app_version
+                            WHERE c.${inRange} GROUP BY 1, 2, 3, 4 HAVING COUNT(DISTINCT c.report) >= ?3)
+              SELECT kind, signature, appVersion, SUM(count) AS count FROM kept GROUP BY 1, 2, 3 ORDER BY count DESC LIMIT 200`,
   };
   const names = Object.keys(queries) as (keyof typeof queries)[];
   const results = await env.DB.batch(names.map((name) => env.DB.prepare(queries[name]).bind(from, to, minimumCount)));
