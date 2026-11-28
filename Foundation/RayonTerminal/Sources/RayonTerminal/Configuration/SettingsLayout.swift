@@ -224,8 +224,24 @@ enum SettingsLayout {
         wording[setting.key]?.summary ?? setting.summary
     }
 
-    /// Human names for option values the catalog leaves raw.
+    /// The names the catalog gives a setting's choices, presets, flags and
+    /// field labels, by value (a field label by its English text), in the
+    /// user's language.
     static let optionNames: [String: [String: String]] = [
+        "font-synthetic-style": ["bold": String(localized: "Bold", bundle: .module),
+        "italic": String(localized: "Italic", bundle: .module),
+        "bold-italic": String(localized: "Bold italic", bundle: .module)],
+        "grapheme-width-method": ["unicode": String(localized: "Unicode", bundle: .module),
+        "legacy": String(localized: "Legacy", bundle: .module)],
+        "bold-color": ["bright": String(localized: "Bright colors", bundle: .module)],
+        "selection-foreground": cellColorNames,
+        "selection-background": cellColorNames,
+        "cursor-color": cellColorNames,
+        "cursor-text": cellColorNames,
+        "window-padding-x": ["Left": String(localized: "Left", bundle: .module),
+        "Right": String(localized: "Right", bundle: .module)],
+        "window-padding-y": ["Top": String(localized: "Top", bundle: .module),
+        "Bottom": String(localized: "Bottom", bundle: .module)],
         "cursor-style": ["block": String(localized: "Block", bundle: .module),
         "bar": String(localized: "Bar", bundle: .module),
         "underline": String(localized: "Underline", bundle: .module),
@@ -260,7 +276,17 @@ enum SettingsLayout {
         "osc-color-report-format": ["none": String(localized: "Don't answer", bundle: .module)],
     ]
 
+    private static let cellColorNames = [
+        "cell-foreground": String(localized: "Cell text", bundle: .module),
+        "cell-background": String(localized: "Cell background", bundle: .module),
+    ]
+
     static func optionName(_ key: String, value: String, fallback: String) -> String {
         optionNames[key]?[value] ?? fallback
+    }
+
+    /// The catalog's options with their names in the user's language.
+    static func localized(_ key: String, _ options: [Setting.Option]) -> [Setting.Option] {
+        options.map { Setting.Option(value: $0.value, name: optionName(key, value: $0.value, fallback: $0.name)) }
     }
 }

@@ -87,9 +87,8 @@ struct Setting: Decodable, Identifiable, Sendable {
     struct Feature: Decodable, Identifiable, Hashable, Sendable {
         let id: String
         let label: String
-        let description: String?
         let defaultValue: Bool
-        enum CodingKeys: String, CodingKey { case id, label, description; case defaultValue = "default" }
+        enum CodingKeys: String, CodingKey { case id, label; case defaultValue = "default" }
     }
 
     /// The documentation without markup, for help text and search.

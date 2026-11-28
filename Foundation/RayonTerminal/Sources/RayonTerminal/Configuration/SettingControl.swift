@@ -28,7 +28,8 @@ enum SettingControlKind {
 
     init(_ setting: Setting) {
         let widget = setting.widget
-        switch setting.key {
+        let key = setting.key
+        switch key {
         case "font-family": self = .fontFamily(placeholder: String(localized: "Built-in (JetBrains Mono)", bundle: .module)); return
         case "font-family-bold", "font-family-italic", "font-family-bold-italic": self = .fontFamily(placeholder: String(localized: "Same as the main font", bundle: .module)); return
         case "font-style", "font-style-bold", "font-style-italic", "font-style-bold-italic": self = .fontStyle; return
@@ -43,12 +44,15 @@ enum SettingControlKind {
         case "switch": self = .toggle
         case "range": self = .slider((widget?.min ?? 0) ... (widget?.max ?? 1), step: widget?.step ?? 0.01)
         case "number": self = .number(min: widget?.min, max: widget?.max, step: widget?.step ?? 1, presets: [])
-        case "custom-number": self = .number(min: widget?.min, max: widget?.max, step: widget?.step ?? 1, presets: widget?.presets ?? [])
-        case "dropdown", "pill": self = .choice(widget?.options ?? [])
+        case "custom-number": self = .number(min: widget?.min, max: widget?.max, step: widget?.step ?? 1, presets: SettingsLayout.localized(key, widget?.presets ?? []))
+        case "dropdown", "pill": self = .choice(SettingsLayout.localized(key, widget?.options ?? []))
         case "color": self = .color(presets: [])
-        case "custom-color": self = .color(presets: widget?.presets ?? [])
-        case "feature-list": self = .flags(widget?.features ?? [])
-        case "dual-number": self = .pair(labels: widget?.labels ?? [String(localized: "First", bundle: .module), String(localized: "Second", bundle: .module)])
+        case "custom-color": self = .color(presets: SettingsLayout.localized(key, widget?.presets ?? []))
+        case "feature-list": self = .flags((widget?.features ?? []).map {
+                Setting.Feature(id: $0.id, label: SettingsLayout.optionName(key, value: $0.id, fallback: $0.label), defaultValue: $0.defaultValue)
+            })
+        case "dual-number": self = .pair(labels: widget?.labels.map { $0.map { SettingsLayout.optionName(key, value: $0, fallback: $0) } }
+                ?? [String(localized: "First", bundle: .module), String(localized: "Second", bundle: .module)])
         case "scroll-multiplier": self = .scrollSpeed
         case "duration": self = .duration(allowEmpty: widget?.allowEmpty == true)
         case "number-units": self = .length
@@ -191,7 +195,7 @@ struct SettingControl: View {
                     .fixedSize()
                 }
                 CommitField(setting.widget?.placeholder ?? String(localized: "Default", bundle: .module), text: value, width: 90) { set($0) }
-                Stepper(setting.name, onIncrement: { nudge(+1) }, onDecrement: { nudge(-1) })
+                Stepper(SettingsLayout.title(setting), onIncrement: { nudge(+1) }, onDecrement: { nudge(-1) })
                     .labelsHidden()
             }
             .help(rangeHelp(min, max))
@@ -202,14 +206,14 @@ struct SettingControl: View {
                 effective: settings.effectiveColor(key, dark: scheme == .dark),
                 value: settings.isSet(key) ? value : nil,
                 presets: presets,
-                title: setting.name
+                title: SettingsLayout.title(setting)
             ) { set($0) }
         case let .text(placeholder):
             CommitField(placeholder, text: value, width: 200) { set($0) }
         case let .list(placeholder):
             ListEditor(key: key, placeholder: placeholder)
         case let .flags(features):
-            FlagsEditor(key: key, value: value, features: features) { set($0) }
+            FlagsEditor(value: value, features: features) { set($0) }
         case let .pair(labels):
             PairEditor(value: value, labels: labels, scroll: false, fallback: []) { set($0) }
         case .scrollSpeed:
@@ -249,22 +253,21 @@ struct SettingControl: View {
         case let (min?, max?): String(localized: "From \(min.configText) to \(max.configText)", bundle: .module)
         case let (min?, nil): String(localized: "At least \(min.configText)", bundle: .module)
         case let (nil, max?): String(localized: "At most \(max.configText)", bundle: .module)
-        default: setting.name
+        default: SettingsLayout.title(setting)
         }
     }
 
     @ViewBuilder private func choice(_ options: [Setting.Option]) -> some View {
-        let names = options.map { SettingsLayout.optionName(key, value: $0.value, fallback: $0.name) }
-        let picker = Picker(setting.name, selection: Binding(get: { value }, set: { set($0) })) {
-            ForEach(Array(zip(options, names)), id: \.0.value) { option, name in
-                Text(name).tag(option.value)
+        let picker = Picker(SettingsLayout.title(setting), selection: Binding(get: { value }, set: { set($0) })) {
+            ForEach(options) { option in
+                Text(option.name).tag(option.value)
             }
             if !options.contains(where: { $0.value == value }) {
                 Text(value.isEmpty ? String(localized: "Default", bundle: .module) : value).tag(value)
             }
         }
         .labelsHidden()
-        if options.count <= 3, names.allSatisfy({ $0.count <= 10 }), options.contains(where: { $0.value == value }) {
+        if options.count <= 3, options.allSatisfy({ $0.name.count <= 10 }), options.contains(where: { $0.value == value }) {
             picker.pickerStyle(.segmented).fixedSize()
         } else {
             picker.pickerStyle(.menu).fixedSize()
@@ -339,7 +342,6 @@ struct AddValueField: View {
 
 /// A set of switches written as `a,no-b`: only those that differ from their default.
 private struct FlagsEditor: View {
-    let key: String
     let value: String
     let features: [Setting.Feature]
     let set: (String) -> Void
@@ -357,14 +359,14 @@ private struct FlagsEditor: View {
     var body: some View {
         HStack {
             ForEach(features) { feature in
-                Toggle(SettingsLayout.optionName(key, value: feature.id, fallback: feature.label), isOn: Binding(get: { isOn(feature) }, set: { on in
+                Toggle(feature.label, isOn: Binding(get: { isOn(feature) }, set: { on in
                     var state = Dictionary(uniqueKeysWithValues: features.map { ($0.id, isOn($0)) })
                     state[feature.id] = on
                     set(features.filter { state[$0.id] != $0.defaultValue }
                         .map { state[$0.id] == true ? $0.id : "no-" + $0.id }.joined(separator: ","))
                 }))
                 .toggleStyle(.button)
-                .help(feature.description ?? feature.label)
+                .help(feature.label)
             }
         }
     }
