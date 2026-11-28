@@ -164,6 +164,11 @@ struct SettingsView: View {
             .navigationDestination(item: $shown) { destination($0) }
             .searchable(text: $search, prompt: "Search settings")
             .navigationTitle("Settings")
+            .toolbar { undoButtons }
+        }
+
+        private var undoButtons: some ToolbarContent {
+            ToolbarItemGroup(placement: .primaryAction) { TerminalSettingsUndoButtons() }
         }
 
         private func destination(_ page: SettingsPage) -> some View {
@@ -172,6 +177,7 @@ struct SettingsView: View {
                 .navigationTitle(page.title)
                 // A large title has no scroll view to collapse into above the preview.
                 .navigationBarTitleDisplayMode(page.previews ? .inline : .automatic)
+                .toolbar { undoButtons }
         }
     #endif
 }

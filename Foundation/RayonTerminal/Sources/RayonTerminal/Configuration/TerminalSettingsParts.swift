@@ -182,3 +182,24 @@ private struct GhosttyImportAlert: ViewModifier {
         }
     }
 }
+
+#if os(iOS)
+    /// Undo and Redo for terminal settings in the navigation bar: without a
+    /// keyboard, a slider or theme change has no ⌘Z or Edit menu to undo it.
+    public struct TerminalSettingsUndoButtons: View {
+        private var settings: TerminalSettings {
+            .shared
+        }
+
+        public init() {}
+
+        public var body: some View {
+            // Read so a change, an undo or a redo redraws what is enabled.
+            let _ = settings.config
+            Button { settings.undoManager.undo() } label: { Label(String(localized: "Undo", bundle: .module), systemImage: "arrow.uturn.backward") }
+                .disabled(!settings.undoManager.canUndo)
+            Button { settings.undoManager.redo() } label: { Label(String(localized: "Redo", bundle: .module), systemImage: "arrow.uturn.forward") }
+                .disabled(!settings.undoManager.canRedo)
+        }
+    }
+#endif
