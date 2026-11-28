@@ -17,6 +17,7 @@
         let terminalInFront: Bool
         @ObservedObject private var router = AppRouter.shared
         @ObservedObject private var desktops = RemoteDesktopManager.shared
+        @Environment(\.openWindow) private var openWindow
 
         var body: some Commands {
             if UpdateManager.shared.canCheckForUpdates {
@@ -25,7 +26,11 @@
                 }
             }
             CommandGroup(replacing: .appSettings) {
-                Button("Settings…") { AppRouter.shared.openSettings() }
+                Button("Settings…") {
+                    // Before any main window has handed the router its own.
+                    AppRouter.shared.openWindow = openWindow
+                    AppRouter.shared.openSettings()
+                }
                     .keyboardShortcut(",", modifiers: .command)
             }
             CommandGroup(after: .newItem) {

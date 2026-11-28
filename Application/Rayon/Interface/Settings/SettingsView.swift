@@ -16,6 +16,7 @@ import SwiftUI
 struct SettingsView: View {
     #if os(macOS)
         @ObservedObject private var navigation = AppRouter.shared.settingsNavigation
+        @Environment(\.openWindow) private var openWindow
         /// What is pushed over the page: Libraries, then a library.
         @State private var pushed = NavigationPath()
     #endif
@@ -33,6 +34,10 @@ struct SettingsView: View {
                 // Changes go on the window's undo stack, where ⌘Z, Edit ›
                 // Undo and shaking the device find them.
                 TerminalSettings.shared.useUndoManager(undoManager)
+                #if os(macOS)
+                    // Settings can open before any main window, which hands it on too.
+                    AppRouter.shared.openWindow = openWindow
+                #endif
                 #if DEBUG
                     if let text = ProcessInfo.processInfo.environment["RAYON_PREVIEW_SEARCH"] {
                         search = text

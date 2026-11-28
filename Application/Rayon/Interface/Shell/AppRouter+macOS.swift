@@ -67,8 +67,8 @@
         }
 
         private static let settingsSelectionKey = "SettingsSelection"
-        /// Opens a scene: SwiftUI hands it only to views, so the main
-        /// window's root view passes it on when it appears.
+        /// Opens a scene: SwiftUI hands it only to views and commands, so
+        /// the main window, Settings and Settings… pass it on.
         var openWindow: OpenWindowAction?
 
         private var cancellables = Set<AnyCancellable>()
