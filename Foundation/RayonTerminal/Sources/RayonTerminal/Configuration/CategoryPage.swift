@@ -124,27 +124,39 @@ private struct RestoreDefaults: View {
 
     var body: some View {
         Section {} footer: {
-            HStack {
-                Spacer()
-                if resetsAll {
-                    #if os(macOS)
-                        Button(.init("Import from Ghostty…", bundle: .module)) { settings.importFromGhostty() }
-                            .help(.init("Take the settings Rayon's terminal uses from Ghostty's configuration", bundle: .module))
-                    #endif
-                    Button(.init("Reset All Terminal Settings…", bundle: .module)) { confirmingAll = true }
-                        .confirmationDialog(Text("Reset every terminal setting to its default?", bundle: .module), isPresented: $confirmingAll) {
-                            Button(.init("Reset", bundle: .module), role: .destructive) { settings.resetAll() }
-                        } message: {
-                            Text("Only the terminal's settings are reset; Rayon's own are kept.", bundle: .module)
-                        }
+            // In a row while they fit, else stacked: longer languages
+            // would truncate them.
+            ViewThatFits(in: .horizontal) {
+                HStack {
+                    Spacer()
+                    buttons
                 }
-                Button(.init("Restore Defaults…", bundle: .module)) { confirmingPage = true }
-                    .disabled(!keys.contains(where: settings.isSet))
-                    .confirmationDialog(Text("Restore the default settings on this page?", bundle: .module), isPresented: $confirmingPage) {
-                        Button(.init("Restore Defaults", bundle: .module), role: .destructive) { settings.reset(keys) }
-                    }
+                VStack(alignment: .trailing) {
+                    buttons
+                }
+                .frame(maxWidth: .infinity, alignment: .trailing)
+            }
+            .confirmationDialog(Text("Reset every terminal setting to its default?", bundle: .module), isPresented: $confirmingAll) {
+                Button(.init("Reset", bundle: .module), role: .destructive) { settings.resetAll() }
+            } message: {
+                Text("Only the terminal's settings are reset; Rayon's own are kept.", bundle: .module)
+            }
+            .confirmationDialog(Text("Restore the default settings on this page?", bundle: .module), isPresented: $confirmingPage) {
+                Button(.init("Restore Defaults", bundle: .module), role: .destructive) { settings.reset(keys) }
             }
         }
+    }
+
+    @ViewBuilder private var buttons: some View {
+        if resetsAll {
+            #if os(macOS)
+                Button(.init("Import from Ghostty…", bundle: .module)) { settings.importFromGhostty() }
+                    .help(.init("Take the settings Rayon's terminal uses from Ghostty's configuration", bundle: .module))
+            #endif
+            Button(.init("Reset All Terminal Settings…", bundle: .module)) { confirmingAll = true }
+        }
+        Button(.init("Restore Defaults…", bundle: .module)) { confirmingPage = true }
+            .disabled(!keys.contains(where: settings.isSet))
     }
 }
 
