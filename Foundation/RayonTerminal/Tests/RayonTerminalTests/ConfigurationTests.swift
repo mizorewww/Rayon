@@ -28,6 +28,51 @@ final class ConfigurationTests: XCTestCase {
         })
     }
 
+    /// Every setting Settings shows has Rayon's title and summary, and every
+    /// choice, preset, flag and field label its control shows has Rayon's
+    /// name, so none falls back to the catalog's English. Rayon's wording is
+    /// all `String(localized:)`, which `make check-localization` holds to a
+    /// translation in every language.
+    func testEverySettingShownIsWordedByRayon() {
+        // Technical names that read the same in every language.
+        let verbatim: [String: Set<String>] = [
+            "window-colorspace": ["srgb", "display-p3"],
+            "osc-color-report-format": ["8-bit", "16-bit"],
+        ]
+        let keys = SettingsLayout.categories.flatMap(\.keys)
+        for key in keys {
+            guard let setting = SettingCatalog.shared.setting(key) else { XCTFail("\(key) is not in the catalog"); continue }
+            let wording = SettingsLayout.wording[key]
+            XCTAssertNotNil(wording, "\(key) has no localized title and summary")
+            XCTAssertFalse(wording?.title.isEmpty ?? true, key)
+            XCTAssertFalse(wording?.summary.isEmpty ?? true, key)
+            let widget = setting.widget
+            let named = (widget?.options ?? []).map(\.value) + (widget?.presets ?? []).map(\.value)
+                + (widget?.features ?? []).map(\.id) + (widget?.labels ?? [])
+            for value in named where verbatim[key]?.contains(value) != true {
+                XCTAssertNotNil(SettingsLayout.optionNames[key]?[value], "\(key): \"\(value)\" has no localized name")
+            }
+            switch SettingControlKind(setting) {
+            case .text, .list:
+                XCTAssertNil(widget?.placeholder, "\(key) shows the catalog's English placeholder")
+            case let .choice(options), let .color(options), let .number(_, _, _, options):
+                for option in options where verbatim[key]?.contains(option.value) != true {
+                    XCTAssertEqual(option.name, SettingsLayout.optionNames[key]?[option.value], "\(key) shows the catalog's name")
+                }
+            case let .flags(features):
+                for feature in features {
+                    XCTAssertEqual(feature.label, SettingsLayout.optionNames[key]?[feature.id], "\(key) shows the catalog's name")
+                }
+            case let .pair(labels):
+                XCTAssertEqual(labels, widget?.labels?.compactMap { SettingsLayout.optionNames[key]?[$0] }, "\(key) shows the catalog's labels")
+            default:
+                break
+            }
+        }
+        XCTAssertEqual(Set(SettingsLayout.wording.keys).subtracting(keys), [], "wording for a setting Settings no longer shows")
+        XCTAssertEqual(Set(SettingsLayout.optionNames.keys).subtracting(keys), [], "names for a setting Settings no longer shows")
+    }
+
     /// No theme offered before is lost: GhosttyTheme's and the supplement's together.
     func testThemes() throws {
         let names = TerminalThemes.all.map(\.name)
