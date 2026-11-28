@@ -60,6 +60,9 @@ public struct CapsLabel: View {
             .tracking(rxCapsTracking)
             .foregroundStyle(color)
             .lineLimit(1)
+            // Narrow columns, like the menu-bar popover's, shrink a label
+            // rather than cut it to "SYST…".
+            .minimumScaleFactor(0.7)
     }
 }
 
