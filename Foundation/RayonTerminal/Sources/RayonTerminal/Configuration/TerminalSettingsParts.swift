@@ -1,8 +1,8 @@
+import RayonDesign
 import SwiftUI
 
 // The terminal's settings as parts an app arranges in its own Settings: the
-// categories to list, a category's page, search, the tools and what goes
-// around them.
+// categories to list, a category's page, search and what goes around them.
 
 /// A category of terminal settings (Text, Colors, …).
 public struct TerminalSettingsCategory: Identifiable, Hashable, Sendable {
@@ -23,33 +23,77 @@ public struct TerminalSettingsCategory: Identifiable, Hashable, Sendable {
         layout?.previews ?? false
     }
 
-    /// How many of its settings are set.
+    /// How many of its settings are set in config.ghostty.
     @MainActor public var changedCount: Int {
         TerminalSettings.shared.changedCounts[id] ?? 0
     }
+
+    /// The groups that open as pages of their own from its page.
+    public var subpages: [TerminalSettingsSubpage] {
+        (layout?.groups ?? []).filter(\.isSubpage).map { TerminalSettingsSubpage(category: self, group: $0.id, title: $0.title) }
+    }
 }
 
-/// One category's settings as a form; `header` comes first, for the app's
-/// own rows. `terminalPreview(isShown:)` around it adds the preview.
+/// A group of a category's settings shown as a page of its own.
+public struct TerminalSettingsSubpage: Identifiable, Hashable, Sendable {
+    public let category: TerminalSettingsCategory
+    let group: String
+    public let title: String
+
+    /// `category/group`, what the app's navigation names it by.
+    public var id: String {
+        "\(category.id)/\(group)"
+    }
+
+    public init?(id: String) {
+        let parts = id.split(separator: "/", maxSplits: 1).map(String.init)
+        guard parts.count == 2,
+              let category = TerminalSettingsCategory.all.first(where: { $0.id == parts[0] }),
+              let subpage = category.subpages.first(where: { $0.group == parts[1] })
+        else { return nil }
+        self = subpage
+    }
+
+    init(category: TerminalSettingsCategory, group: String, title: String) {
+        self.category = category
+        self.group = group
+        self.title = title
+    }
+}
+
+/// One category's settings, or one of its subpages, as a form; `header`
+/// comes first, for the app's own rows. On the Mac `open` shows a subpage
+/// from its row; on the iPhone and iPad the row is a `NavigationLink` to the
+/// subpage as its value. `terminalPreview(isShown:)` around it adds the
+/// preview.
 public struct TerminalSettingsPage<Header: View>: View {
     private let category: TerminalSettingsCategory
+    private let subpage: TerminalSettingsSubpage?
+    private let open: (TerminalSettingsSubpage) -> Void
     private let header: Header
 
-    public init(_ category: TerminalSettingsCategory, @ViewBuilder header: () -> Header) {
+    public init(
+        _ category: TerminalSettingsCategory,
+        subpage: TerminalSettingsSubpage? = nil,
+        open: @escaping (TerminalSettingsSubpage) -> Void = { _ in },
+        @ViewBuilder header: () -> Header
+    ) {
         self.category = category
+        self.subpage = subpage
+        self.open = open
         self.header = header()
     }
 
     public var body: some View {
         if let layout = category.layout {
-            CategoryPage(category: layout, header: AnyView(header))
+            CategoryPage(category: layout, subpage: subpage?.group, header: AnyView(header), open: open)
         }
     }
 }
 
 public extension TerminalSettingsPage where Header == EmptyView {
-    init(_ category: TerminalSettingsCategory) {
-        self.init(category) { EmptyView() }
+    init(_ category: TerminalSettingsCategory, subpage: TerminalSettingsSubpage? = nil, open: @escaping (TerminalSettingsSubpage) -> Void = { _ in }) {
+        self.init(category, subpage: subpage, open: open) { EmptyView() }
     }
 }
 
@@ -83,70 +127,35 @@ public struct TerminalSettingsSearchSections: View {
     }
 }
 
-/// Undo, Redo, the preview, Import from Ghostty and Reset.
-public struct TerminalSettingsTools: View {
-    @Binding private var showsPreview: Bool
-    @Binding private var confirmingReset: Bool
-    private let previewAvailable: Bool
-    private let resetAvailable: Bool
-    private var settings: TerminalSettings {
-        .shared
-    }
-
-    public init(showsPreview: Binding<Bool>, confirmingReset: Binding<Bool>, previewAvailable: Bool, resetAvailable: Bool) {
-        _showsPreview = showsPreview
-        _confirmingReset = confirmingReset
-        self.previewAvailable = previewAvailable
-        self.resetAvailable = resetAvailable
-    }
-
-    public var body: some View {
-        let _ = settings.revision
-        Button { settings.undo() } label: { Label(.init("Undo", bundle: .module), systemImage: "arrow.uturn.backward") }
-            .disabled(!settings.undoManager.canUndo)
-            .help(.init("Undo the last terminal setting change", bundle: .module))
-        Button { settings.redo() } label: { Label(.init("Redo", bundle: .module), systemImage: "arrow.uturn.forward") }
-            .disabled(!settings.undoManager.canRedo)
-            .help(.init("Redo", bundle: .module))
-        Toggle(isOn: $showsPreview.animation()) { Label(.init("Preview", bundle: .module), systemImage: "rectangle.topthird.inset.filled") }
-            .disabled(!previewAvailable)
-            .help(showsPreview ? String(localized: "Hide the terminal preview", bundle: .module) : String(localized: "Show a terminal preview above the settings", bundle: .module))
-        #if os(macOS)
-            Button { settings.importFromGhostty() } label: {
-                Label(.init("Import from Ghostty…", bundle: .module), systemImage: "square.and.arrow.down")
-            }
-            .help(.init("Take the settings Rayon's terminal uses from Ghostty's configuration", bundle: .module))
-        #endif
-        Button(role: .destructive) { confirmingReset = true } label: {
-            Label(.init("Reset Terminal Settings…", bundle: .module), systemImage: "arrow.counterclockwise")
-        }
-        .disabled(!resetAvailable)
-        .help(.init("Reset every terminal setting to its default", bundle: .module))
-    }
-}
-
 public extension View {
     /// What goes around terminal settings: why the last change was not
-    /// applied, what Import from Ghostty did, and the confirmation
-    /// `TerminalSettingsTools`' Reset asks for.
-    /// The issue floats over the bottom edge: a safe-area inset there would
-    /// make the form measure every row, not just the visible ones, on each
-    /// change and page switch.
-    func terminalSettingsChrome(confirmingReset: Binding<Bool>) -> some View {
+    /// applied, and what Import from Ghostty did. The issue floats over the
+    /// bottom edge: a safe-area inset there would make the form measure
+    /// every row, not just the visible ones, on each change and page switch.
+    func terminalSettingsChrome() -> some View {
         overlay(alignment: .bottom) { IssueBar() }
         #if os(macOS)
             .modifier(GhosttyImportAlert())
         #endif
-            .confirmationDialog(Text("Reset every terminal setting to its default?", bundle: .module), isPresented: confirmingReset) {
-                Button(.init("Reset", bundle: .module), role: .destructive) { TerminalSettings.shared.resetAll() }
-            } message: {
-                Text("Only the terminal's settings are reset; Rayon's own are kept.", bundle: .module)
-            }
+    }
+
+    /// A Settings form: grouped, its sections drawn straight on the window's
+    /// material (on the iPhone and iPad, the app's backdrop) rather than on
+    /// an opaque sheet of their own.
+    func settingsForm() -> some View {
+        #if os(macOS)
+            formStyle(.grouped)
+                .scrollContentBackground(.hidden)
+        #else
+            formStyle(.grouped)
+                .scrollContentBackground(.hidden)
+                .background(RXBackdrop().ignoresSafeArea())
+        #endif
     }
 }
 
 #if os(macOS)
-    /// What `TerminalSettingsTools`' Import from Ghostty found.
+    /// What Advanced's Import from Ghostty found.
     private struct GhosttyImportAlert: ViewModifier {
         private var settings: TerminalSettings {
             .shared

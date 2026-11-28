@@ -53,6 +53,7 @@
 		55ACC9139C3F0FF4E6F46C28 /* LogView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 521179FEE31987BB065C6D42 /* LogView+iOS.swift */; };
 		57D4484469353BC6F0FADC21 /* Bench+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93881526957F9DFDC399ED6F /* Bench+macOS.swift */; };
 		58FB423B8D35371FB4369399 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF976BD9CB2E2407F0E7AACC /* SettingsView.swift */; };
+		1398A6BD502A1219FE380292 /* SettingsWindow+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = 275E4585E05149AE9946572B /* SettingsWindow+macOS.swift */; };
 		59633B558C86B6AEB646041A /* ServersView+iOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = E03C916E94043159FA948E16 /* ServersView+iOS.swift */; };
 		59BBD0FE7244DAE7FBF1ED37 /* FolderActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA914B94B55F43DF6752AFB3 /* FolderActions.swift */; };
 		5E9BF46F267A3773FCC04017 /* InfoPlist.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 2C7CD87B933BC6EB14E4AFC2 /* InfoPlist.xcstrings */; };
@@ -227,6 +228,7 @@
 		BBBC074DA533C8EC63BD3D01 /* LicenseSheet+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LicenseSheet+macOS.swift"; sourceTree = "<group>"; };
 		BDA227414A14A2A06F8B49E6 /* GeneralSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettings.swift; sourceTree = "<group>"; };
 		BF976BD9CB2E2407F0E7AACC /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		275E4585E05149AE9946572B /* SettingsWindow+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SettingsWindow+macOS.swift"; sourceTree = "<group>"; };
 		C06FA8CD33BCACA3FE0634A5 /* RayonApp+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RayonApp+iOS.swift"; sourceTree = "<group>"; };
 		C271F9345D5AE7980B3BE9F8 /* MonitorView+iOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "MonitorView+iOS.swift"; sourceTree = "<group>"; };
 		C3BBF7F3E3D41F326EAA0620 /* RemoteFile+Display.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RemoteFile+Display.swift"; sourceTree = "<group>"; };
@@ -289,6 +291,7 @@
 				521179FEE31987BB065C6D42 /* LogView+iOS.swift */,
 				A7759F9D471435550D123D0F /* SettingsGroup.swift */,
 				BF976BD9CB2E2407F0E7AACC /* SettingsView.swift */,
+				275E4585E05149AE9946572B /* SettingsWindow+macOS.swift */,
 				0F8B14D36D71D3CD49CDE61B /* TerminalClipboardSettings.swift */,
 			);
 			path = Settings;
@@ -811,6 +814,7 @@
 				28A01389C2F9BBBAFE054357 /* SettingsEffects.swift in Sources */,
 				E46BBE53C8F1CD032B053407 /* SettingsGroup.swift in Sources */,
 				58FB423B8D35371FB4369399 /* SettingsView.swift in Sources */,
+				1398A6BD502A1219FE380292 /* SettingsWindow+macOS.swift in Sources */,
 				9CB17ACF582117F3C32A915B /* SidebarView+macOS.swift in Sources */,
 				C5C765EA8001F57DA02F3905 /* SnippetActions.swift in Sources */,
 				AC67A09EEC9593CDE07340AA /* SnippetEditor.swift in Sources */,

@@ -6736,22 +6736,6 @@
         }
       }
     },
-    "Next category" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "下一个类别"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "下一個類別"
-          }
-        }
-      }
-    },
     "No" : {
       "localizations" : {
         "zh-Hans" : {
@@ -8011,22 +7995,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "上一個標籤頁"
-          }
-        }
-      }
-    },
-    "Previous category" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "上一个类别"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "上一個類別"
           }
         }
       }
@@ -9605,22 +9573,6 @@
         }
       }
     },
-    "Settings (⌘,)" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "设置（⌘,）"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "設定（⌘,）"
-          }
-        }
-      }
-    },
     "Settings imported" : {
       "localizations" : {
         "zh-Hans" : {
@@ -9909,6 +9861,38 @@
         }
       }
     },
+    "Show the next page" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示下一页"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顯示下一頁"
+          }
+        }
+      }
+    },
+    "Show the previous page" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示上一页"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顯示上一頁"
+          }
+        }
+      }
+    },
     "Sign In…" : {
       "localizations" : {
         "zh-Hans" : {
@@ -10145,22 +10129,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "排序方式"
-          }
-        }
-      }
-    },
-    "Source Code" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "源代码"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "原始碼"
           }
         }
       }

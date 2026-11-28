@@ -21,9 +21,12 @@
 
     /// The main window: the sidebar and the page it routes to.
     struct RootView: View {
+        @Environment(\.openWindow) private var openWindow
+
         var body: some View {
             MainView()
                 .onAppear {
+                    AppRouter.shared.openWindow = openWindow
                     if let problem = RayonStore.shared.launchProblem { Indicator.error(problem) }
                     if let notice = RayonStore.shared.takeMigrationNotice() {
                         Indicator.alert("Imported from the Previous Version", message: "\(notice)")
@@ -35,9 +38,11 @@
     enum MainWindow {
         static let minimumSize = CGSize(width: 940, height: 600)
 
+        /// The main windows: not Settings, popovers or the status bar's.
         @MainActor static var ordinaryWindows: [NSWindow] {
             NSApp.windows.filter { window in
                 window.canBecomeMain && !window.className.contains("NSPopover") && !window.className.contains("NSStatusBar")
+                    && !SettingsWindow.contains(window)
             }
         }
 
@@ -103,7 +108,8 @@
 
         func updateActivationPolicy() {
             guard !terminating else { return }
-            let hasVisibleWindow = MainWindow.ordinaryWindows.contains { $0.isVisible || $0.isMiniaturized }
+            let hasVisibleWindow = (MainWindow.ordinaryWindows + NSApp.windows.filter(SettingsWindow.contains))
+                .contains { $0.isVisible || $0.isMiniaturized }
             let accessory = !hasVisibleWindow && MenubarTool.shared.hasCat
             let policy: NSApplication.ActivationPolicy = accessory ? .accessory : .regular
             if NSApp.activationPolicy() != policy {

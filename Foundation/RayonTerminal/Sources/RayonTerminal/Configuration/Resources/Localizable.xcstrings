@@ -500,22 +500,6 @@
         }
       }
     },
-    "About %@" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "关于 %@"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "關於 %@"
-          }
-        }
-      }
-    },
     "Action" : {
       "localizations" : {
         "zh-Hans" : {
@@ -772,22 +756,6 @@
         }
       }
     },
-    "Appearance" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "外观"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "外觀"
-          }
-        }
-      }
-    },
     "Apply opacity to colored cells" : {
       "localizations" : {
         "zh-Hans" : {
@@ -896,22 +864,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "自動"
-          }
-        }
-      }
-    },
-    "Back" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "后退"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "後退"
           }
         }
       }
@@ -1316,6 +1268,22 @@
         }
       }
     },
+    "Changed from the default" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已更改，不同于默认值"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已更改，不同於預設值"
+          }
+        }
+      }
+    },
     "Character Ranges" : {
       "localizations" : {
         "zh-Hans" : {
@@ -1408,22 +1376,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "中日韓文字"
-          }
-        }
-      }
-    },
-    "Choose a category" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "选取类别"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "選取類別"
           }
         }
       }
@@ -2452,22 +2404,6 @@
         }
       }
     },
-    "Forward" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "前进"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "前進"
-          }
-        }
-      }
-    },
     "From %@ to %@" : {
       "localizations" : {
         "en" : {
@@ -2522,6 +2458,22 @@
         }
       }
     },
+    "Ghostty Documentation" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ghostty 文档"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ghostty 文件"
+          }
+        }
+      }
+    },
     "Ghostty Syntax" : {
       "localizations" : {
         "zh-Hans" : {
@@ -2554,22 +2506,6 @@
         }
       }
     },
-    "Ghostty documentation" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ghostty 文档"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ghostty 文件"
-          }
-        }
-      }
-    },
     "Ghostty keeps its configuration in ~/.config/ghostty or ~/Library/Application Support/com.mitchellh.ghostty." : {
       "localizations" : {
         "zh-Hans" : {
@@ -2582,22 +2518,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ghostty 的設定位於 ~/.config/ghostty 或 ~/Library/Application Support/com.mitchellh.ghostty。"
-          }
-        }
-      }
-    },
-    "Ghostty setting: %@" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ghostty 设置：%@"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ghostty 設定：%@"
           }
         }
       }
@@ -2726,22 +2646,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "十六進位制碼位或範圍，以逗號分隔：U+E000-U+F8FF,U+1F600"
-          }
-        }
-      }
-    },
-    "Hide the terminal preview" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "隐藏终端预览"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "隱藏終端預覽"
           }
         }
       }
@@ -3706,22 +3610,6 @@
         }
       }
     },
-    "More" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "更多"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "更多"
-          }
-        }
-      }
-    },
     "Mouse" : {
       "localizations" : {
         "zh-Hans" : {
@@ -3930,22 +3818,6 @@
         }
       }
     },
-    "Next category" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "下一个类别"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "下一個類別"
-          }
-        }
-      }
-    },
     "No Ghostty configuration found" : {
       "localizations" : {
         "zh-Hans" : {
@@ -3994,18 +3866,18 @@
         }
       }
     },
-    "No theme: the colors below apply." : {
+    "No theme matches." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "无主题：使用下方的颜色。"
+            "value" : "没有匹配的主题。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "無主題：使用下方的顏色。"
+            "value" : "沒有符合的主題。"
           }
         }
       }
@@ -4490,22 +4362,6 @@
         }
       }
     },
-    "Platforms: %@" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "平台：%@"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "平臺：%@"
-          }
-        }
-      }
-    },
     "Points" : {
       "localizations" : {
         "zh-Hans" : {
@@ -4602,22 +4458,6 @@
         }
       }
     },
-    "Previous category" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "上一个类别"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "上一個類別"
-          }
-        }
-      }
-    },
     "Punctuation" : {
       "localizations" : {
         "zh-Hans" : {
@@ -4630,22 +4470,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "標點符號"
-          }
-        }
-      }
-    },
-    "Redo" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重做"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重做"
           }
         }
       }
@@ -4778,18 +4602,18 @@
         }
       }
     },
-    "Reset %@ to its default" : {
+    "Reset All Terminal Settings…" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "将 %@ 重置为默认值"
+            "value" : "重置所有终端设置…"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "將 %@ 重置為預設值"
+            "value" : "重置所有終端設定…"
           }
         }
       }
@@ -4826,22 +4650,6 @@
         }
       }
     },
-    "Reset Terminal Settings…" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重置终端设置…"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "重置終端設定…"
-          }
-        }
-      }
-    },
     "Reset Text Size" : {
       "localizations" : {
         "zh-Hans" : {
@@ -4854,22 +4662,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "重置文字大小"
-          }
-        }
-      }
-    },
-    "Reset every terminal setting to its default" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "将所有终端设置重置为默认值"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "將所有終端設定重置為預設值"
           }
         }
       }
@@ -4922,6 +4714,22 @@
         }
       }
     },
+    "Restore Defaults" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "恢复默认"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "恢復預設"
+          }
+        }
+      }
+    },
     "Restore Defaults…" : {
       "localizations" : {
         "zh-Hans" : {
@@ -4934,6 +4742,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "恢復預設…"
+          }
+        }
+      }
+    },
+    "Restore the default settings on this page?" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将此页的设置恢复为默认值？"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "將此頁的設定恢復為預設值？"
           }
         }
       }
@@ -5276,18 +5100,18 @@
         }
       }
     },
-    "Search settings" : {
+    "Search themes" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "搜索设置"
+            "value" : "搜索主题"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "搜尋設定"
+            "value" : "搜尋主題"
           }
         }
       }
@@ -5484,18 +5308,18 @@
         }
       }
     },
-    "Settings" : {
+    "Setting Change" : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "设置"
+            "value" : "设置更改"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "設定"
+            "value" : "設定變更"
           }
         }
       }
@@ -5612,22 +5436,6 @@
         }
       }
     },
-    "Show a terminal preview above the settings" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在设置上方显示终端预览"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "在設定上方顯示終端預覽"
-          }
-        }
-      }
-    },
     "Show all 256 colors" : {
       "localizations" : {
         "zh-Hans" : {
@@ -5656,22 +5464,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "顯示選單"
-          }
-        }
-      }
-    },
-    "Since Ghostty %@" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "自 Ghostty %@ 起"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "自 Ghostty %@ 起"
           }
         }
       }
@@ -6348,38 +6140,6 @@
         }
       }
     },
-    "Undo" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "撤销"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "撤銷"
-          }
-        }
-      }
-    },
-    "Undo the last terminal setting change" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "撤销上一次终端设置更改"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "撤銷上一次終端設定更改"
-          }
-        }
-      }
-    },
     "Unit" : {
       "localizations" : {
         "zh-Hans" : {
@@ -6504,22 +6264,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "與 %@ 使用相同的按鍵；此項設定在後，因此以此項為準。"
-          }
-        }
-      }
-    },
-    "Using %@" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "正在使用 %@"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "正在使用 %@"
           }
         }
       }

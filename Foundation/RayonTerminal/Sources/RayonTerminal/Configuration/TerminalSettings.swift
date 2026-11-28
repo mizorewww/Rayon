@@ -54,9 +54,6 @@ public final class TerminalSettings {
         windowUndoManager = manager
     }
 
-    /// Bumped with each change, so a view showing Undo's state redraws.
-    private(set) var revision = 0
-
     /// Told the new size when an applied change sets another font size.
     @ObservationIgnored public var onFontSizeChange: ((Double) -> Void)?
     @ObservationIgnored private var pendingApply: Task<Void, Never>?
@@ -170,7 +167,6 @@ public final class TerminalSettings {
         undoManager.setActionName(String(localized: "Setting Change", bundle: .module))
         undoManager.endUndoGrouping()
         config = next
-        revision += 1
         scheduleApply()
     }
 
@@ -287,7 +283,6 @@ public final class TerminalSettings {
             throw error
         }
         undoManager.removeAllActions(withTarget: self)
-        revision += 1
     }
 
     #if os(macOS)

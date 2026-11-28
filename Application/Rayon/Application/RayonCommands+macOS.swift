@@ -40,7 +40,14 @@
             }
             if router.route.isSession {
                 CommandGroup(replacing: .saveItem) {
-                    Button("Close Tab") { AppRouter.shared.closeTabInFront() }
+                    Button("Close Tab") {
+                        // ⌘W in Settings closes Settings, not the main window's tab.
+                        if let window = NSApp.keyWindow, !MainWindow.ordinaryWindows.contains(window) {
+                            window.performClose(nil)
+                        } else {
+                            AppRouter.shared.closeTabInFront()
+                        }
+                    }
                         .keyboardShortcut("w", modifiers: .command)
                 }
             }

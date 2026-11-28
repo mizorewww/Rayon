@@ -11,12 +11,17 @@ enum SettingsLayout {
         let title: String
         let keys: [String]
         var footer: String?
+        /// Opens as a page of its own from a row on its category's page. A
+        /// grouped form lays out every row it holds, not just the visible
+        /// ones, so a long category keeps its page short this way.
+        var isSubpage = false
 
-        init(_ id: String, _ title: String, keys: [String], footer: String? = nil) {
+        init(_ id: String, _ title: String, keys: [String], footer: String? = nil, isSubpage: Bool = false) {
             self.id = id
             self.title = title
             self.keys = keys
             self.footer = footer
+            self.isSubpage = isSubpage
         }
     }
 
@@ -43,26 +48,26 @@ enum SettingsLayout {
             Group("styles", String(localized: "Bold and Italic", bundle: .module), keys: [
                 "font-family-bold", "font-style-bold", "font-family-italic", "font-style-italic",
                 "font-family-bold-italic", "font-style-bold-italic", "font-synthetic-style",
-            ]),
+            ], isSubpage: true),
             Group("features", String(localized: "Features and Variations", bundle: .module), keys: [
                 "font-feature", "font-shaping-break", "font-variation", "font-variation-bold", "font-variation-italic", "font-variation-bold-italic",
-            ]),
-            Group("glyphs", String(localized: "Glyphs", bundle: .module), keys: ["font-codepoint-map", "grapheme-width-method"]),
+            ], isSubpage: true),
+            Group("glyphs", String(localized: "Glyphs", bundle: .module), keys: ["font-codepoint-map", "grapheme-width-method"], isSubpage: true),
             Group("metrics", String(localized: "Cell Metrics", bundle: .module), keys: [
                 "adjust-cell-width", "adjust-cell-height", "adjust-font-baseline",
                 "adjust-underline-position", "adjust-underline-thickness",
                 "adjust-strikethrough-position", "adjust-strikethrough-thickness",
                 "adjust-overline-position", "adjust-overline-thickness", "adjust-box-thickness", "adjust-icon-height",
-            ]),
+            ], isSubpage: true),
         ]),
         Category(id: "colors", title: String(localized: "Colors", bundle: .module), icon: "paintpalette", groups: [
             Group("theme", String(localized: "Theme", bundle: .module), keys: ["theme"]),
             Group("base", String(localized: "Text and Background", bundle: .module), keys: ["foreground", "background", "bold-color", "faint-opacity", "minimum-contrast"]),
             Group("selection", String(localized: "Selection", bundle: .module), keys: ["selection-foreground", "selection-background"]),
-            Group("palette", String(localized: "Palette", bundle: .module), keys: ["palette", "palette-generate", "palette-harmonious"]),
+            Group("palette", String(localized: "Palette", bundle: .module), keys: ["palette", "palette-generate", "palette-harmonious"], isSubpage: true),
             Group("find", String(localized: "Find", bundle: .module), keys: [
                 "search-foreground", "search-background", "search-selected-foreground", "search-selected-background",
-            ]),
+            ], isSubpage: true),
         ]),
         Category(id: "cursor", title: String(localized: "Cursor", bundle: .module), icon: "character.cursor.ibeam", groups: [
             Group("shape", String(localized: "Shape", bundle: .module), keys: ["cursor-style", "cursor-style-blink", "adjust-cursor-thickness", "adjust-cursor-height"]),
@@ -82,7 +87,7 @@ enum SettingsLayout {
             Group("mouse", String(localized: "Mouse", bundle: .module), keys: [
                 "mouse-scroll-multiplier", "scroll-to-bottom", "mouse-hide-while-typing", "mouse-reporting", "mouse-shift-capture",
                 "cursor-click-to-move", "link-url", "right-click-action", "middle-click-action", "click-repeat-interval", "selection-word-chars",
-            ]),
+            ], isSubpage: true),
         ]),
         Category(id: "keyboard", title: String(localized: "Keyboard", bundle: .module), icon: "keyboard", groups: keyboardGroups),
         Category(id: "advanced", title: String(localized: "Advanced", bundle: .module), icon: "slider.horizontal.3", groups: [
@@ -90,7 +95,7 @@ enum SettingsLayout {
             Group("rendering", String(localized: "Rendering", bundle: .module), keys: ["alpha-blending", "window-colorspace"]),
             Group("compatibility", String(localized: "Compatibility", bundle: .module), keys: [
                 "title", "title-report", "osc-color-report-format", "enquiry-response", "vt-kam-allowed",
-            ]),
+            ], isSubpage: true),
         ]),
     ]
 

@@ -69,17 +69,28 @@ enum SettingControlKind {
     }
 }
 
-/// One setting in a Form: its title and summary, its control, and Reset and
-/// the documentation beside it.
+/// One setting in a Form: its title and summary, marked while it is
+/// changed, and its control. Reset and Ghostty's documentation are in its
+/// context menu, so every row holds one control and nothing that comes and
+/// goes beside it.
 struct SettingRow: View {
     let setting: Setting
     var query = ""
     private var settings: TerminalSettings { .shared }
-    @State private var showsHelp = false
+    @Environment(\.openURL) private var openURL
 
     private var kind: SettingControlKind { SettingControlKind(setting) }
 
     var body: some View {
+        row
+            .contextMenu {
+                Button(.init("Reset to Default", bundle: .module)) { settings.reset(setting.key) }
+                    .disabled(!settings.isSet(setting.key))
+                Button(.init("Ghostty Documentation", bundle: .module)) { openURL(Setting.documentationURL(setting.key)) }
+            }
+    }
+
+    @ViewBuilder private var row: some View {
         if case .shortcuts = kind {
             // The list itself is the Keyboard page; a search result points there.
             LabeledContent {
@@ -91,27 +102,16 @@ struct SettingRow: View {
             }
         } else if kind.isWide {
             VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .firstTextBaseline) {
-                    label
-                    Spacer()
-                    accessories
-                }
+                label
                 SettingControl(setting: setting, kind: kind)
             }
         } else if case .toggle = kind {
             Toggle(isOn: Binding(get: { settings.value(setting.key) == "true" }, set: { settings.set(setting.key, String($0)) })) {
-                HStack(alignment: .firstTextBaseline) {
-                    label
-                    Spacer()
-                    accessories
-                }
+                label
             }
         } else {
             LabeledContent {
-                HStack(spacing: 6) {
-                    SettingControl(setting: setting, kind: kind)
-                    accessories
-                }
+                SettingControl(setting: setting, kind: kind)
             } label: {
                 label
             }
@@ -133,6 +133,9 @@ struct SettingRow: View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 6) {
                 Text(title)
+                if settings.isSet(setting.key) {
+                    ModifiedMark()
+                }
                 if setting.deprecated != nil {
                     Text("Deprecated", bundle: .module).font(.caption).foregroundStyle(.orange)
                 }
@@ -142,54 +145,17 @@ struct SettingRow: View {
                 Text(summary).font(.caption).foregroundStyle(.secondary).lineLimit(3)
             }
         }
-        .help(.init("Ghostty setting: \(setting.key)", bundle: .module))
-    }
-
-    @ViewBuilder private var accessories: some View {
-        if settings.isSet(setting.key) {
-            Button { settings.reset(setting.key) } label: {
-                Label(.init("Reset to Default", bundle: .module), systemImage: "arrow.counterclockwise")
-            }
-            .labelStyle(.iconOnly)
-            .buttonStyle(.borderless)
-            .help(.init("Reset \(SettingsLayout.title(setting)) to its default", bundle: .module))
-        }
-        Button { showsHelp = true } label: {
-            Label(.init("About \(setting.name)", bundle: .module), systemImage: "info.circle")
-        }
-        .labelStyle(.iconOnly)
-        .buttonStyle(.borderless)
-        .help(.init("About \(setting.name)", bundle: .module))
-        .popover(isPresented: $showsHelp) { SettingHelp(setting: setting) }
     }
 }
 
-/// A setting's documentation, as Ghostty writes it.
-private struct SettingHelp: View {
-    let setting: Setting
-
+/// The dot after a setting that differs from its default.
+struct ModifiedMark: View {
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 10) {
-                Text(setting.name).font(.headline)
-                Text(setting.key).font(.caption.monospaced()).foregroundStyle(.secondary).textSelection(.enabled)
-                Text(LocalizedStringKey(setting.description))
-                if let note = setting.note {
-                    Text(note.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression))
-                        .font(.callout).foregroundStyle(.secondary)
-                }
-                if let platform = setting.platform {
-                    Text("Platforms: \(platform.joined(separator: ", "))", bundle: .module).font(.caption).foregroundStyle(.secondary)
-                }
-                if let since = setting.since {
-                    Text("Since Ghostty \(since)", bundle: .module).font(.caption).foregroundStyle(.secondary)
-                }
-                Link(destination: Setting.documentationURL(setting.key)) { Text("Ghostty documentation", bundle: .module) }
-            }
-            .padding()
-            .frame(maxWidth: 420, alignment: .leading)
-        }
-        .frame(minWidth: 300, idealWidth: 420, maxHeight: 480)
+        Circle()
+            .fill(.tint)
+            .frame(width: 6, height: 6)
+            .help(.init("Changed from the default", bundle: .module))
+            .accessibilityLabel(Text("Changed from the default", bundle: .module))
     }
 }
 

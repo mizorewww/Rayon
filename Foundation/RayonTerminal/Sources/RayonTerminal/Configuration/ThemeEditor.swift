@@ -49,26 +49,79 @@ extension TerminalSettings {
     }
 }
 
-/// `theme`: one theme, or one each for light and dark appearance.
+/// `theme`: one theme, or one each for light and dark appearance. Each is a
+/// button showing the theme that opens the gallery, so the page does not
+/// hold a scrolling grid of hundreds of themes inside its own scrolling.
 struct ThemeEditor: View {
     private var settings: TerminalSettings { .shared }
-    @State private var search = ""
-    @State private var editingDark = false
 
     private var value: String { settings.value("theme") }
     private var sides: (light: String, dark: String)? { TerminalThemes.names(value) }
-    private var selected: String {
-        guard let sides else { return value }
-        return editingDark ? sides.dark : sides.light
-    }
 
-    private func select(_ name: String) {
-        if let sides {
-            settings.set("theme", "light:\(editingDark ? sides.light : name),dark:\(editingDark ? name : sides.dark)")
-        } else {
-            settings.set("theme", name)
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle(.init("Separate themes for light and dark appearance", bundle: .module), isOn: Binding(
+                get: { sides != nil },
+                set: { separate in
+                    if separate {
+                        settings.set("theme", "light:\(value),dark:\(value)")
+                    } else {
+                        settings.set("theme", sides?.light ?? value)
+                    }
+                }
+            ))
+            if let sides {
+                ThemeChoice(title: String(localized: "Light", bundle: .module), name: sides.light) {
+                    settings.set("theme", "light:\($0),dark:\(sides.dark)")
+                }
+                ThemeChoice(title: String(localized: "Dark", bundle: .module), name: sides.dark) {
+                    settings.set("theme", "light:\(sides.light),dark:\($0)")
+                }
+            } else {
+                ThemeChoice(title: nil, name: value) { settings.set("theme", $0) }
+            }
         }
     }
+}
+
+/// One theme: the button that shows it and opens the gallery.
+private struct ThemeChoice: View {
+    let title: String?
+    let name: String
+    let select: (String) -> Void
+    @State private var showsGallery = false
+
+    var body: some View {
+        HStack {
+            if let title {
+                Text(title)
+            }
+            Spacer()
+            Button { showsGallery = true } label: {
+                HStack(spacing: 8) {
+                    if let theme = TerminalThemes.theme(named: name) {
+                        ThemeStrip(theme: theme)
+                            .frame(width: 64, height: 10)
+                    }
+                    Text(name.isEmpty ? String(localized: "No Theme", bundle: .module) : name)
+                }
+            }
+            .popover(isPresented: $showsGallery) {
+                ThemeGallery(selected: name, select: select)
+            }
+        }
+        if !name.isEmpty, TerminalThemes.theme(named: name) == nil {
+            Text("“\(name)” is not a theme Rayon has, so it is not applied.", bundle: .module).foregroundStyle(.red).font(.caption)
+        }
+    }
+}
+
+/// Every theme, searchable; picking one applies it at once, so the preview
+/// behind shows it while the gallery stays open.
+private struct ThemeGallery: View {
+    let selected: String
+    let select: (String) -> Void
+    @State private var search = ""
 
     private var themes: [GhosttyThemeDefinition] {
         search.isEmpty ? TerminalThemes.all : TerminalThemes.all.filter { $0.name.localizedCaseInsensitiveContains(search) }
@@ -76,32 +129,14 @@ struct ThemeEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Toggle(.init("Separate themes for light and dark appearance", bundle: .module), isOn: Binding(
-                get: { sides != nil },
-                set: { settings.set("theme", $0 ? "light:\(value),dark:\(value)" : selected) }
-            ))
-            if sides != nil {
-                Picker(.init("Appearance", bundle: .module), selection: $editingDark) {
-                    Text("Light", bundle: .module).tag(false)
-                    Text("Dark", bundle: .module).tag(true)
-                }
-                .pickerStyle(.segmented)
-                .fixedSize()
-            }
             HStack {
-                Text(selected.isEmpty ? String(localized: "No theme: the colors below apply.", bundle: .module) : String(localized: "Using \(selected)", bundle: .module))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                Spacer()
-                if !selected.isEmpty {
-                    Button(.init("No Theme", bundle: .module)) { select("") }
-                }
+                TextField(String(localized: "Search themes", bundle: .module), text: $search,
+                          prompt: Text("Search \(TerminalThemes.all.count) themes", bundle: .module))
+                    .labelsHidden()
+                    .textFieldStyle(.roundedBorder)
+                Button(.init("No Theme", bundle: .module)) { select("") }
+                    .disabled(selected.isEmpty)
             }
-            if !selected.isEmpty, TerminalThemes.theme(named: selected) == nil {
-                Text("“\(selected)” is not a theme Rayon has, so it is not applied.", bundle: .module).foregroundStyle(.red).font(.caption)
-            }
-            TextField(String(localized: "Search \(TerminalThemes.all.count) themes", bundle: .module), text: $search)
-                .textFieldStyle(.roundedBorder)
             ScrollView {
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 140), spacing: 8)], spacing: 8) {
                     ForEach(themes) { theme in
@@ -110,8 +145,26 @@ struct ThemeEditor: View {
                 }
                 .padding(2)
             }
-            .frame(height: 260)
+            if themes.isEmpty {
+                Text("No theme matches.", bundle: .module).foregroundStyle(.secondary)
+            }
         }
+        .padding()
+        .frame(minWidth: 320, idealWidth: 500, minHeight: 360, idealHeight: 460)
+    }
+}
+
+/// A theme's first eight palette colors in a row.
+private struct ThemeStrip: View {
+    let theme: GhosttyThemeDefinition
+
+    var body: some View {
+        HStack(spacing: 1) {
+            ForEach(0 ..< 8, id: \.self) { index in
+                Rectangle().fill(Color(configHex: theme.paletteColor(index) ?? "#000000"))
+            }
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 2))
     }
 }
 
@@ -124,12 +177,8 @@ private struct ThemeSwatch: View {
         Button(action: choose) {
             VStack(alignment: .leading, spacing: 6) {
                 Text(theme.name).font(.caption.weight(.medium)).lineLimit(1)
-                HStack(spacing: 2) {
-                    ForEach(0 ..< 8, id: \.self) { index in
-                        Rectangle().fill(Color(configHex: theme.paletteColor(index) ?? "#000000")).frame(height: 8)
-                    }
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 2))
+                ThemeStrip(theme: theme)
+                    .frame(height: 8)
             }
             .foregroundStyle(Color(configHex: theme.color("foreground") ?? "#ffffff"))
             .padding(8)

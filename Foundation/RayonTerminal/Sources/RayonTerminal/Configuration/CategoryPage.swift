@@ -1,24 +1,32 @@
 import SwiftUI
 
-// MARK: - Pages
-
-/// One category as a form: its groups as sections.
+/// A category's page, or one of its subpages, as a form: its groups as
+/// sections, rows that open its subpages, and Restore Defaults.
 struct CategoryPage: View {
     let category: SettingsLayout.Category
+    /// The group shown as a page of its own; nil for the category's page.
+    var subpage: String?
     var header: AnyView?
+    var open: (TerminalSettingsSubpage) -> Void = { _ in }
     #if os(macOS)
         @State private var formHeight: CGFloat?
     #endif
 
+    /// What this page shows itself: the category's groups but its subpages,
+    /// or the subpage's group.
+    private var groups: [SettingsLayout.Group] {
+        if let subpage { category.groups.filter { $0.id == subpage } } else { category.groups.filter { !$0.isSubpage } }
+    }
+
     var body: some View {
         #if os(macOS)
-            if category.keys.contains("keybind") {
+            if subpage == nil, category.keys.contains("keybind") {
                 shortcutsPage
             } else {
-                form(category.groups)
+                form(groups)
             }
         #else
-            form(category.groups)
+            form(groups)
         #endif
     }
 
@@ -28,8 +36,14 @@ struct CategoryPage: View {
             ForEach(groups) { group in
                 GroupSection(group: group, keys: group.keys)
             }
+            if subpage == nil {
+                SubpageLinks(category: category, open: open)
+            }
+            if !groups.contains(where: { $0.keys == ["keybind"] }) {
+                RestoreDefaults(keys: groups.flatMap(\.keys), resetsAll: subpage == nil && category.id == "advanced")
+            }
         }
-        .formStyle(.grouped)
+        .settingsForm()
     }
 
     #if os(macOS)
@@ -37,7 +51,7 @@ struct CategoryPage: View {
         /// form as tall as its rows, the shortcuts in a table below it.
         private var shortcutsPage: some View {
             VStack(spacing: 0) {
-                form(category.groups.filter { $0.keys != ["keybind"] })
+                form(groups.filter { $0.keys != ["keybind"] })
                     .scrollDisabled(true)
                     .onScrollGeometryChange(for: CGFloat.self) { $0.contentSize.height } action: { formHeight = $1 }
                     .frame(height: formHeight)
@@ -45,6 +59,93 @@ struct CategoryPage: View {
             }
         }
     #endif
+}
+
+/// The rows that open a category's subpages, each marked while any of its
+/// settings is changed.
+private struct SubpageLinks: View {
+    let category: SettingsLayout.Category
+    let open: (TerminalSettingsSubpage) -> Void
+    private var settings: TerminalSettings {
+        .shared
+    }
+
+    var body: some View {
+        let subpages = TerminalSettingsCategory.all.first { $0.id == category.id }?.subpages ?? []
+        if !subpages.isEmpty {
+            Section {
+                ForEach(subpages) { subpage in
+                    let group = category.groups.first { $0.id == subpage.group }
+                    let modified = group?.keys.contains(where: settings.isSet) ?? false
+                    #if os(macOS)
+                        Button { open(subpage) } label: {
+                            HStack {
+                                SubpageTitle(title: subpage.title, modified: modified)
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    #else
+                        NavigationLink(value: subpage) {
+                            SubpageTitle(title: subpage.title, modified: modified)
+                        }
+                    #endif
+                }
+            }
+        }
+    }
+}
+
+private struct SubpageTitle: View {
+    let title: String
+    let modified: Bool
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(title)
+            if modified { ModifiedMark() }
+        }
+    }
+}
+
+/// Puts the page's settings back to their defaults, after asking. On
+/// Advanced, also every terminal setting, and on the Mac Import from Ghostty.
+private struct RestoreDefaults: View {
+    let keys: [String]
+    let resetsAll: Bool
+    @State private var confirmingPage = false
+    @State private var confirmingAll = false
+    private var settings: TerminalSettings {
+        .shared
+    }
+
+    var body: some View {
+        Section {} footer: {
+            HStack {
+                Spacer()
+                if resetsAll {
+                    #if os(macOS)
+                        Button(.init("Import from Ghostty…", bundle: .module)) { settings.importFromGhostty() }
+                            .help(.init("Take the settings Rayon's terminal uses from Ghostty's configuration", bundle: .module))
+                    #endif
+                    Button(.init("Reset All Terminal Settings…", bundle: .module)) { confirmingAll = true }
+                        .confirmationDialog(Text("Reset every terminal setting to its default?", bundle: .module), isPresented: $confirmingAll) {
+                            Button(.init("Reset", bundle: .module), role: .destructive) { settings.resetAll() }
+                        } message: {
+                            Text("Only the terminal's settings are reset; Rayon's own are kept.", bundle: .module)
+                        }
+                }
+                Button(.init("Restore Defaults…", bundle: .module)) { confirmingPage = true }
+                    .disabled(!keys.contains(where: settings.isSet))
+                    .confirmationDialog(Text("Restore the default settings on this page?", bundle: .module), isPresented: $confirmingPage) {
+                        Button(.init("Restore Defaults", bundle: .module), role: .destructive) { settings.reset(keys) }
+                    }
+            }
+        }
+    }
 }
 
 /// A group of Ghostty settings.
@@ -129,7 +230,7 @@ struct SearchResults: View {
             ContentUnavailableView.search(text: query)
         } else {
             Form { sections(results) }
-                .formStyle(.grouped)
+                .settingsForm()
         }
     }
 

@@ -76,8 +76,6 @@
                 PortForwardView()
             case .desktops:
                 RemoteDesktopsView()
-            case .settings:
-                SettingsView()
             case .terminal, .monitor, .transfer, .editor, .desktop:
                 EmptyView()
             }

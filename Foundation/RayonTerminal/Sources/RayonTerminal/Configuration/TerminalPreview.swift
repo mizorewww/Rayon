@@ -1,3 +1,4 @@
+import RayonDesign
 import SwiftUI
 
 /// A real terminal, connected to nothing, showing a fixed sample: the
@@ -37,24 +38,38 @@ struct TerminalPreview: View {
     }()
 }
 
-/// The preview above the pages it wraps, while `isShown`. It holds one
-/// terminal, made the first time it shows and kept while the pages change,
-/// so wrap it around the page switch rather than put it inside a page.
+/// The preview above the pages it wraps, while `isShown`, folded away when
+/// its disclosure is closed. It holds one terminal, made the first time it
+/// shows and kept while the pages change, so wrap it around the page switch
+/// rather than put it inside a page.
 private struct TerminalPreviewSlot: ViewModifier {
     let isShown: Bool
+    @AppStorage("TerminalSettingsShowsPreview") private var isExpanded = true
     @State private var terminal: RayonTerminalView?
 
     func body(content: Content) -> some View {
         VStack(spacing: 0) {
-            if isShown, let terminal {
-                TerminalPreview(terminal: terminal)
-                    .frame(height: 168)
-                    .padding([.horizontal, .top])
-                    .transition(.opacity)
+            if isShown {
+                DisclosureGroup(isExpanded: $isExpanded.animation()) {
+                    if let terminal {
+                        TerminalPreview(terminal: terminal)
+                            .frame(height: 168)
+                            .padding(.top, 6)
+                    }
+                } label: {
+                    Text("Preview", bundle: .module)
+                        .font(.headline)
+                }
+                .padding([.horizontal, .top])
+                .transition(.opacity)
             }
             content
         }
-        .onChange(of: isShown, initial: true) { _, shown in
+        #if os(iOS)
+        // The preview sits on the backdrop the form below is drawn on.
+        .background(RXBackdrop().ignoresSafeArea())
+        #endif
+        .onChange(of: isShown && isExpanded, initial: true) { _, shown in
             if shown, terminal == nil { terminal = TerminalPreview.makeTerminal() }
         }
     }

@@ -305,6 +305,8 @@ struct KeybindingList: View {
                         }
                     }
                 }
+                // On the window's material, as the page's form above it.
+                .scrollContentBackground(.hidden)
                 .contextMenu(forSelectionType: Int.self) { ids in
                     rowMenu(all.filter { ids.contains($0.id) })
                 } primaryAction: { ids in

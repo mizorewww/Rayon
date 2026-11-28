@@ -22,7 +22,6 @@
         case portForward
         /// Every server with a remote desktop, and the UU Remote account.
         case desktops
-        case settings
         case terminal(UUID)
         case monitor(UUID)
         case transfer(UUID)
@@ -56,18 +55,29 @@
         /// The sheets over the main windows, at most one per window, asked
         /// for from anywhere: a menu, a context menu, a command.
         @Published private(set) var sheets: [WindowSheet] = []
-        /// Settings category to show when Settings opens.
-        /// Settings follows this itself, so a change of category does not go
+        /// The page Settings shows, kept from one launch to the next.
+        /// Settings follows this itself, so a change of page does not go
         /// through every view that watches the router.
-        let settingsNavigation = ConfigNavigation(SettingsCategory.general)
+        let settingsNavigation = ConfigNavigation(
+            UserDefaults.standard.string(forKey: AppRouter.settingsSelectionKey) ?? SettingsCategory.general
+        )
         var settingsSelection: String {
             get { settingsNavigation.selection }
             set { settingsNavigation.go(newValue) }
         }
 
+        private static let settingsSelectionKey = "SettingsSelection"
+        /// Opens a scene: SwiftUI hands it only to views, so the main
+        /// window's root view passes it on when it appears.
+        var openWindow: OpenWindowAction?
+
         private var cancellables = Set<AnyCancellable>()
 
         private init() {
+            settingsNavigation.$selection
+                .dropFirst()
+                .sink { UserDefaults.standard.set($0, forKey: AppRouter.settingsSelectionKey) }
+                .store(in: &cancellables)
             // When a session closes, leave its page.
             leaveWhenSessionEnds(TerminalManager.shared.$sessionContexts) {
                 if case let .terminal(id) = $0 { return id }
@@ -404,9 +414,11 @@
             sheets.removeAll { $0.id == id }
         }
 
-        func openSettings(_ category: String = SettingsCategory.general) {
-            settingsSelection = category
-            route = .settings
+        /// Shows the Settings window, at `category` if one is given, else
+        /// at the page it showed last.
+        func openSettings(_ category: String? = nil) {
+            if let category { settingsSelection = category }
+            openWindow?(id: SettingsWindow.id)
         }
     }
 

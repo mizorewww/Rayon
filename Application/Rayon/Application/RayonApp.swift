@@ -52,5 +52,8 @@ struct RayonApp: App {
             SidebarCommands()
             RayonCommands()
         }
+        #if os(macOS)
+            SettingsWindow()
+        #endif
     }
 }

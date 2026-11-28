@@ -3,11 +3,12 @@
 //  Rayon
 //
 //  Settings: Rayon's pages and the terminal's categories in one list, the
-//  chosen one as a form, and search across both. On the Mac it is a sidebar
-//  destination with its own list beside the page; on the iPhone and iPad a
-//  list that pushes each page.
+//  chosen one as a form, and search across both. On the Mac it is the
+//  Settings window: a sidebar and the page, on the window's material; on the
+//  iPhone and iPad a list that pushes each page.
 //
 
+import RayonDesign
 import RayonModule
 import RayonTerminal
 import SwiftUI
@@ -16,12 +17,8 @@ struct SettingsView: View {
     #if os(macOS)
         @ObservedObject private var navigation = AppRouter.shared.settingsNavigation
     #endif
-    /// False while the window shows another page: Settings then adds
-    /// nothing to its toolbar.
-    var active = true
+    @Environment(\.undoManager) private var undoManager
     @State private var search = ""
-    @State private var showsPreview = true
-    @State private var confirmingReset = false
     #if os(iOS)
         /// A page opened from search.
         @State private var shown: SettingsPage?
@@ -29,8 +26,11 @@ struct SettingsView: View {
 
     var body: some View {
         content
-            .terminalSettingsChrome(confirmingReset: $confirmingReset)
+            .terminalSettingsChrome()
             .onAppear {
+                // Changes go on the window's undo stack, where ⌘Z, Edit ›
+                // Undo and shaking the device find them.
+                TerminalSettings.shared.useUndoManager(undoManager)
                 #if DEBUG
                     if let text = ProcessInfo.processInfo.environment["RAYON_PREVIEW_SEARCH"] {
                         search = text
@@ -42,6 +42,7 @@ struct SettingsView: View {
                     #endif
                 #endif
             }
+            .onChange(of: undoManager) { TerminalSettings.shared.useUndoManager(undoManager) }
     }
 
     #if os(macOS)
@@ -50,77 +51,77 @@ struct SettingsView: View {
         }
 
         private var content: some View {
-            HStack(spacing: 0) {
-                List(selection: Binding(get: { search.isEmpty ? navigation.selection : nil }, set: { id in
+            NavigationSplitView {
+                List(selection: Binding(get: { search.isEmpty ? selected.sidebarPage.id : nil }, set: { id in
                     guard let id else { return }
                     search = ""
                     navigation.go(id)
                 })) {
-                    ForEach(SettingsPage.sections, id: \.title) { section in
-                        Section(section.title) {
+                    ForEach(SettingsPage.sections) { section in
+                        Section {
                             ForEach(section.pages, id: \.self) { page in
                                 SettingsPageLabel(page: page).tag(page.id)
                             }
+                        } header: {
+                            if let title = section.title { Text(title) }
                         }
                     }
                 }
-                .listStyle(.sidebar)
-                .frame(width: 200)
-                Divider()
-                Group {
-                    if search.isEmpty {
-                        // A new page starts at its top; its rows are all new anyway.
-                        SettingsPageView(page: selected)
-                            .id(selected)
-                    } else {
-                        SettingsSearchResults(query: search) { id in
-                            search = ""
-                            navigation.go(id)
+                .navigationSplitViewColumnWidth(min: 190, ideal: 215, max: 280)
+            } detail: {
+                ZStack {
+                    RXWindowBackground()
+                        .ignoresSafeArea()
+                    Group {
+                        if search.isEmpty {
+                            // A new page starts at its top; its rows are all new anyway.
+                            SettingsPageView(page: selected) { navigation.go($0.id) }
+                                .id(selected)
+                        } else {
+                            SettingsSearchResults(query: search) { id in
+                                search = ""
+                                navigation.go(id)
+                            }
                         }
                     }
+                    // Outside the page's identity, so its terminal outlives page switches.
+                    .terminalPreview(isShown: search.isEmpty && selected.previews)
                 }
-                // Outside the page's identity, so its terminal outlives page switches.
-                .terminalPreview(isShown: search.isEmpty && selected.previews && showsPreview)
-                .frame(minWidth: 420, maxWidth: .infinity, maxHeight: .infinity)
-            }
-            .toolbar {
-                if active {
+                .navigationTitle(search.isEmpty ? selected.title : String(localized: "Search"))
+                .rxClearToolbar()
+                .toolbar {
                     ToolbarItemGroup(placement: .navigation) {
                         Button { navigation.step(-1) } label: { Label("Back", systemImage: "chevron.left") }
                             .disabled(!navigation.canGoBack)
-                            .help("Previous category")
+                            .help("Show the previous page")
                         Button { navigation.step(1) } label: { Label("Forward", systemImage: "chevron.right") }
                             .disabled(!navigation.canGoForward)
-                            .help("Next category")
+                            .help("Show the next page")
                     }
-                    ToolbarItemGroup(placement: .primaryAction) { tools(for: search.isEmpty ? selected : nil) }
                 }
             }
-            .modifier(ToolbarSearch(text: $search, active: active))
-            .onChange(of: active) {
-                _, now in if !now {
-                    search = ""
-                }
-            }
-            .frame(minWidth: 700, minHeight: 560)
+            .searchable(text: $search, placement: .toolbar, prompt: "Search settings")
+            .frame(minWidth: 720, minHeight: 480)
         }
     #else
         private var content: some View {
             Group {
                 if search.isEmpty {
                     List {
-                        ForEach(SettingsPage.sections, id: \.title) { section in
-                            Section(section.title) {
+                        ForEach(SettingsPage.sections) { section in
+                            Section {
                                 ForEach(section.pages, id: \.self) { page in
-                                    NavigationLink {
-                                        destination(page)
-                                    } label: {
+                                    NavigationLink(value: page) {
                                         SettingsPageLabel(page: page)
                                     }
                                 }
+                            } header: {
+                                if let title = section.title { Text(title) }
                             }
                         }
                     }
+                    .scrollContentBackground(.hidden)
+                    .background(RXBackdrop().ignoresSafeArea())
                 } else {
                     SettingsSearchResults(query: search) { id in
                         search = ""
@@ -128,37 +129,21 @@ struct SettingsView: View {
                     }
                 }
             }
+            .navigationDestination(for: SettingsPage.self) { destination($0) }
+            .navigationDestination(for: TerminalSettingsSubpage.self) { destination(.terminalSubpage($0)) }
             .navigationDestination(item: $shown) { destination($0) }
             .searchable(text: $search, prompt: "Search settings")
             .navigationTitle("Settings")
-            .toolbar { ToolbarItem(placement: .primaryAction) { moreMenu(for: nil) } }
         }
 
         private func destination(_ page: SettingsPage) -> some View {
-            SettingsPageView(page: page)
-                .terminalPreview(isShown: page.previews && showsPreview)
+            SettingsPageView(page: page) { _ in }
+                .terminalPreview(isShown: page.previews)
                 .navigationTitle(page.title)
-                .toolbar { ToolbarItem(placement: .primaryAction) { moreMenu(for: page) } }
-        }
-
-        private func moreMenu(for page: SettingsPage?) -> some View {
-            Menu {
-                tools(for: page)
-            } label: {
-                Label("More", systemImage: "ellipsis.circle")
-            }
+                // A large title has no scroll view to collapse into above the preview.
+                .navigationBarTitleDisplayMode(page.previews ? .inline : .automatic)
         }
     #endif
-
-    /// The terminal's tools; Reset only where terminal settings show.
-    private func tools(for page: SettingsPage?) -> some View {
-        TerminalSettingsTools(
-            showsPreview: $showsPreview,
-            confirmingReset: $confirmingReset,
-            previewAvailable: page?.previews ?? false,
-            resetAvailable: page?.isTerminal ?? true
-        )
-    }
 }
 
 private struct SettingsPageLabel: View {
@@ -174,20 +159,25 @@ private struct SettingsPageLabel: View {
     }
 }
 
-/// A page: Rayon's groups, then on a terminal page its settings.
+/// A page: Rayon's groups, then on a terminal page its settings. `open`
+/// shows a terminal subpage on the Mac.
 private struct SettingsPageView: View {
     let page: SettingsPage
+    let open: (TerminalSettingsSubpage) -> Void
 
     var body: some View {
-        if case let .terminal(category) = page {
-            TerminalSettingsPage(category) {
+        switch page {
+        case let .terminal(category):
+            TerminalSettingsPage(category, open: open) {
                 ForEach(page.groups) { SettingsGroupSection(group: $0) }
             }
-        } else {
+        case let .terminalSubpage(subpage):
+            TerminalSettingsPage(subpage.category, subpage: subpage, open: open)
+        default:
             Form {
                 ForEach(page.groups) { SettingsGroupSection(group: $0) }
             }
-            .formStyle(.grouped)
+            .settingsForm()
         }
     }
 }
@@ -227,7 +217,7 @@ private struct SettingsSearchResults: View {
                         }
                         TerminalSettingsSearchSections(found.terminal, show: show)
                     }
-                    .formStyle(.grouped)
+                    .settingsForm()
                 }
             }
         }
@@ -241,18 +231,3 @@ private struct SettingsSearchResults: View {
         }
     }
 }
-
-#if os(macOS)
-    private struct ToolbarSearch: ViewModifier {
-        @Binding var text: String
-        let active: Bool
-
-        func body(content: Content) -> some View {
-            if active {
-                content.searchable(text: $text, placement: .toolbar, prompt: "Search settings")
-            } else {
-                content
-            }
-        }
-    }
-#endif

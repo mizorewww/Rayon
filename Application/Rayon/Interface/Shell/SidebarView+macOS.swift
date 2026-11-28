@@ -3,9 +3,9 @@
 //  Rayon
 //
 //  Home, Dashboard · Manage · Sessions (one row per server with open sessions; the page's
-//  toolbar switches between its Terminal, Files and Monitor), with Settings
-//  pinned to the bottom-left corner. Drawn to the measurements of an AppKit
-//  source list, which UIKit's sidebar list does not share.
+//  toolbar switches between its Terminal, Files and Monitor). Settings is a
+//  window of its own (⌘,). Drawn to the measurements of an AppKit source
+//  list, which UIKit's sidebar list does not share.
 //
 
 #if os(macOS)
@@ -78,14 +78,6 @@
                 .padding(.horizontal, SidebarMetrics.inset)
             }
             .animation(.easeInOut(duration: 0.25), value: sessionIDs)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                // Settings stays pinned to the bottom-left corner, drawn exactly like
-                // the rows above.
-                place(.settings, "Settings", systemImage: "gearshape")
-                    .help("Settings (⌘,)")
-                    .padding(.horizontal, SidebarMetrics.inset)
-                    .frame(height: 48, alignment: .top)
-            }
             .environment(\.sidebarMetrics, metrics)
         }
 

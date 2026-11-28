@@ -3,8 +3,9 @@
 //  Rayon
 //
 //  What Settings is made of: Rayon's own pages (General, Connection, About),
-//  each a form of titled groups, and the terminal's categories from
-//  RayonTerminal between them. Search finds a Rayon group by its words.
+//  each a form of titled groups, and the terminal's categories and their
+//  subpages from RayonTerminal between them. Search finds a Rayon group by
+//  its words.
 //
 
 import RayonModule
@@ -15,6 +16,8 @@ enum SettingsPage: Hashable {
     case general
     case connection
     case terminal(TerminalSettingsCategory)
+    /// A group of a terminal category's settings, opened from its page.
+    case terminalSubpage(TerminalSettingsSubpage)
     case about
 
     /// What the router and preview hooks name it by.
@@ -23,8 +26,14 @@ enum SettingsPage: Hashable {
         case .general: "general"
         case .connection: "connection"
         case let .terminal(category): category.id
+        case let .terminalSubpage(subpage): subpage.id
         case .about: "about"
         }
+    }
+
+    /// The page the sidebar shows as selected: a subpage's category.
+    var sidebarPage: SettingsPage {
+        if case let .terminalSubpage(subpage) = self { .terminal(subpage.category) } else { self }
     }
 
     init?(id: String) {
@@ -33,8 +42,13 @@ enum SettingsPage: Hashable {
         case "connection": self = .connection
         case "about": self = .about
         default:
-            guard let category = TerminalSettingsCategory.all.first(where: { $0.id == id }) else { return nil }
-            self = .terminal(category)
+            if let subpage = TerminalSettingsSubpage(id: id) {
+                self = .terminalSubpage(subpage)
+            } else if let category = TerminalSettingsCategory.all.first(where: { $0.id == id }) {
+                self = .terminal(category)
+            } else {
+                return nil
+            }
         }
     }
 
@@ -43,6 +57,7 @@ enum SettingsPage: Hashable {
         case .general: String(localized: "General")
         case .connection: String(localized: "Connection")
         case let .terminal(category): category.title
+        case let .terminalSubpage(subpage): subpage.title
         case .about: String(localized: "About")
         }
     }
@@ -52,29 +67,48 @@ enum SettingsPage: Hashable {
         case .general: "gearshape"
         case .connection: "network"
         case let .terminal(category): category.icon
+        case let .terminalSubpage(subpage): subpage.category.icon
         case .about: "info.circle"
         }
     }
 
-    var isTerminal: Bool {
-        if case .terminal = self { true } else { false }
-    }
-
     /// Whether the page shows the live terminal preview.
     var previews: Bool {
-        if case let .terminal(category) = self { category.previews } else { false }
+        switch self {
+        case let .terminal(category): category.previews
+        case let .terminalSubpage(subpage): subpage.category.previews
+        default: false
+        }
     }
 
-    /// The list, in its sections: Rayon's pages, the terminal's, then About.
-    static let sections: [(title: String, pages: [SettingsPage])] = [
-        ("Rayon", [.general, .connection]),
-        (String(localized: "Terminal"), TerminalSettingsCategory.all.map(SettingsPage.terminal)),
-        ("", [.about]),
+    /// The list, in its sections: Rayon's pages, the terminal's, then About
+    /// on its own, without a title.
+    static let sections: [SettingsSection] = [
+        SettingsSection(title: "Rayon", pages: [.general, .connection]),
+        SettingsSection(title: String(localized: "Terminal"), pages: TerminalSettingsCategory.all.map(SettingsPage.terminal)),
+        SettingsSection(title: nil, pages: [.about]),
     ]
+
+    /// Every page, subpages after their category: what the benchmark visits.
+    static var all: [SettingsPage] {
+        sections.flatMap(\.pages).flatMap { page -> [SettingsPage] in
+            guard case let .terminal(category) = page else { return [page] }
+            return [page] + category.subpages.map(SettingsPage.terminalSubpage)
+        }
+    }
 
     /// Rayon's groups on this page; on a terminal page they come first.
     var groups: [SettingsGroup] {
         SettingsGroup.allCases.filter { $0.page == self && $0.isAvailable }
+    }
+}
+
+struct SettingsSection: Identifiable {
+    let title: String?
+    let pages: [SettingsPage]
+
+    var id: String {
+        pages.first?.id ?? ""
     }
 }
 

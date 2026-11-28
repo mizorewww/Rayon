@@ -120,11 +120,13 @@
             static func settings() async {
                 let router = AppRouter.shared
                 router.settingsSelection = "general"
-                report("open settings", [await settle { router.route = .settings }])
+                report("open settings", [await settle { router.openSettings() }])
                 // Every page once to load fonts and themes, then `rounds` more
                 // times: the median is what switching pages costs.
                 let rounds = Int(ProcessInfo.processInfo.environment["RAYON_BENCH_SETTINGS"] ?? "") ?? 1
-                let pages = SettingsPage.sections.flatMap(\.pages).map(\.id)
+                // RAYON_BENCH_ONLY=cursor,window cycles just those pages, for a profile of them.
+                let only = ProcessInfo.processInfo.environment["RAYON_BENCH_ONLY"]?.split(separator: ",").map(String.init)
+                let pages = SettingsPage.all.map(\.id).filter { only?.contains($0) ?? true }
                 var switches: [String: [Double]] = [:]
                 for round in 0 ... rounds {
                     for id in pages {
@@ -205,7 +207,7 @@
                 let only = ProcessInfo.processInfo.environment["RAYON_BENCH_ONLY"]?.split(separator: ",").map(String.init)
                 let routes: [(String, Route)] = [
                     ("home", .home), ("dashboard", .dashboard), ("servers", .servers), ("identities", .identities),
-                    ("snippets", .snippets), ("forwards", .portForward), ("desktops", .desktops), ("settings", .settings),
+                    ("snippets", .snippets), ("forwards", .portForward), ("desktops", .desktops),
                     ("terminal", .terminal(terminal.id)), ("files", .transfer(files.id)), ("monitor", .monitor(monitor.id)),
                 ].filter { only?.contains($0.0) ?? true }
                 router.route = .home
