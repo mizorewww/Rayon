@@ -163,6 +163,18 @@ describe("dashboard", () => {
     expect(await read()).toEqual([expect.objectContaining({ count: 10 })]);
   });
 
+  it("counts each crash item without a report id as a report of its own", async () => {
+    // Items an older Worker stored while migration 0003 was already applied.
+    const day = new Date().toISOString().slice(0, 10);
+    await env.DB.batch(
+      Array.from({ length: 10 }, () =>
+        env.DB.prepare("INSERT INTO crashes (day, app_version, os_version, kind, signature, item, report) VALUES (?, '5.2.0', 'macOS 15.4', 'crash', 'crash SIG 11', '{}', '')").bind(day),
+      ),
+    );
+    const data = (await (await get("/dashboard/api/summary", await token())).json()) as { crashes: unknown[] };
+    expect(data.crashes).toEqual([{ kind: "crash", signature: "crash SIG 11", appVersion: "5.2.0", count: 10 }]);
+  });
+
   it("checks the range", async () => {
     const jwt = await token();
     expect((await get("/dashboard/api/summary?from=2026-12-01&to=2026-11-01", jwt)).status).toBe(400);

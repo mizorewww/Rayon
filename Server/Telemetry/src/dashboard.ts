@@ -63,12 +63,16 @@ async function summary(url: URL, env: DashboardEnv, minimumCount: number, email:
     osVersions: share("os_version"),
     platforms: share("substr(os_version, 1, instr(os_version, ' ') - 1)"),
     // A crash cell counts distinct reports, not items: one device crash-looping
-    // within a report fills no cell on its own.
-    crashes: `WITH versions AS (SELECT day, app_version FROM crashes WHERE ${inRange} GROUP BY 1, 2 HAVING COUNT(DISTINCT report) >= ?3),
+    // within a report fills no cell on its own. An item without a report id
+    // (stored by a Worker older than migration 0003) counts as a report of
+    // its own, never as one report with every other such item.
+    crashes: `WITH items AS (SELECT day, app_version, kind, signature, COALESCE(NULLIF(report, ''), 'row ' || id) AS report
+                         FROM crashes WHERE ${inRange}),
+                   versions AS (SELECT day, app_version FROM items GROUP BY 1, 2 HAVING COUNT(DISTINCT report) >= ?3),
                    kept AS (SELECT c.day, c.kind, c.signature, CASE WHEN v.day IS NULL THEN 'other' ELSE c.app_version END AS appVersion,
                                    COUNT(DISTINCT c.report) AS count
-                            FROM crashes c LEFT JOIN versions v ON v.day = c.day AND v.app_version = c.app_version
-                            WHERE c.${inRange} GROUP BY 1, 2, 3, 4 HAVING COUNT(DISTINCT c.report) >= ?3)
+                            FROM items c LEFT JOIN versions v ON v.day = c.day AND v.app_version = c.app_version
+                            GROUP BY 1, 2, 3, 4 HAVING COUNT(DISTINCT c.report) >= ?3)
               SELECT kind, signature, appVersion, SUM(count) AS count FROM kept GROUP BY 1, 2, 3 ORDER BY count DESC LIMIT 200`,
   };
   const names = Object.keys(queries) as (keyof typeof queries)[];
