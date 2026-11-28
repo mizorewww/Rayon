@@ -8,13 +8,13 @@
     import RayonModule
     import SwiftUI
 
-    struct PageScaffold<Leading: View, Trailing: View, Header: View, Content: View>: View {
+    struct PageScaffold<Header: View, Content: View>: View {
         let scrolls: Bool
         let search: Binding<String>?
         let searchPrompt: LocalizedStringResource
         let primary: ToolbarAction?
-        let leading: Leading
-        let trailing: Trailing
+        let leading: [AnyView]
+        let trailing: [AnyView]
         let header: Header
         let content: Content
 
@@ -23,8 +23,8 @@
             search: Binding<String>? = nil,
             searchPrompt: LocalizedStringResource = "Search",
             primary: ToolbarAction? = nil,
-            @ViewBuilder leading: () -> Leading,
-            @ViewBuilder trailing: () -> Trailing,
+            @ToolbarControls leading: () -> [AnyView],
+            @ToolbarControls trailing: () -> [AnyView],
             @ViewBuilder header: () -> Header,
             @ViewBuilder content: () -> Content
         ) {
@@ -66,7 +66,7 @@
                 }
             }
             .pageChrome()
-            .pageToolbar(primary: primary) { leading } trailing: { trailing }
+            .modifier(PageToolbar(leading: leading, trailing: trailing, primary: primary))
             .modifier(OptionalSearch(text: search, prompt: searchPrompt))
         }
     }
@@ -77,8 +77,8 @@
             search: Binding<String>? = nil,
             searchPrompt: LocalizedStringResource = "Search",
             primary: ToolbarAction? = nil,
-            @ViewBuilder leading: () -> Leading,
-            @ViewBuilder trailing: () -> Trailing,
+            @ToolbarControls leading: () -> [AnyView],
+            @ToolbarControls trailing: () -> [AnyView],
             @ViewBuilder content: () -> Content
         ) {
             self.init(scrolls: scrolls, search: search, searchPrompt: searchPrompt, primary: primary, leading: leading, trailing: trailing, header: { EmptyView() }, content: content)
@@ -92,36 +92,47 @@
     }
 
     extension View {
-        func pageToolbar<Leading: View, Trailing: View>(
+        func pageToolbar(
             primary: ToolbarAction? = nil,
-            @ViewBuilder leading: () -> Leading,
-            @ViewBuilder trailing: () -> Trailing
+            @ToolbarControls leading: () -> [AnyView],
+            @ToolbarControls trailing: () -> [AnyView]
         ) -> some View {
             modifier(PageToolbar(leading: leading(), trailing: trailing(), primary: primary))
         }
     }
 
-    private struct PageToolbar<Leading: View, Trailing: View>: ViewModifier {
-        let leading: Leading
-        let trailing: Trailing
+    /// Collects a page's toolbar controls one by one, so each becomes a
+    /// toolbar item of its own, with its own label, in VoiceOver and in the
+    /// overflow menu of a narrow window.
+    @resultBuilder
+    enum ToolbarControls {
+        static func buildExpression(_ control: some View) -> [AnyView] { [AnyView(control)] }
+        static func buildBlock(_ parts: [AnyView]...) -> [AnyView] { parts.flatMap(\.self) }
+        static func buildOptional(_ part: [AnyView]?) -> [AnyView] { part ?? [] }
+        static func buildEither(first part: [AnyView]) -> [AnyView] { part }
+        static func buildEither(second part: [AnyView]) -> [AnyView] { part }
+    }
+
+    private struct PageToolbar: ViewModifier {
+        let leading: [AnyView]
+        let trailing: [AnyView]
         let primary: ToolbarAction?
         @Environment(\.serverToolSwitch) private var toolSwitch
 
         @Environment(\.hoistsPageToolbar) private var hoisted
 
-        private var hasTrailing: Bool { Trailing.self != EmptyView.self }
-
         func body(content: Content) -> some View {
             if hoisted {
+                let _ = assert(max(leading.count, trailing.count) <= PageToolbarContent.slots, "More toolbar controls than PageToolbarContent.slots")
                 content.preference(key: PageToolbarKey.self, value: PageToolbarContent(
-                    leading: Leading.self == EmptyView.self ? nil : AnyView(leading),
-                    trailing: hasTrailing ? AnyView(trailing) : nil,
+                    leading: leading,
+                    trailing: trailing,
                     primary: primary,
                     toolSwitch: toolSwitch
                 ))
             } else if #available(macOS 26.0, *) {
                 content.toolbar {
-                    ToolbarItemGroup(placement: .navigation) { leading }
+                    ToolbarItemGroup(placement: .navigation) { controls(leading) }
                     if let toolSwitch {
                         ToolbarItem(placement: .principal) {
                             ServerToolSwitcher(machine: toolSwitch.machine, current: toolSwitch.current)
@@ -129,12 +140,10 @@
                     } else {
                         ToolbarSpacer(.flexible)
                     }
-                    if hasTrailing {
-                        ToolbarItemGroup(placement: .automatic) {
-                            trailing
-                        }
+                    if !trailing.isEmpty {
+                        ToolbarItemGroup(placement: .automatic) { controls(trailing) }
                     }
-                    if hasTrailing, primary != nil {
+                    if !trailing.isEmpty, primary != nil {
                         ToolbarSpacer(.fixed)
                     }
                     if let primary {
@@ -145,7 +154,7 @@
                 }
             } else {
                 content.toolbar {
-                    ToolbarItemGroup(placement: .navigation) { leading }
+                    ToolbarItemGroup(placement: .navigation) { controls(leading) }
                     if let toolSwitch {
                         ToolbarItem(placement: .principal) {
                             ServerToolSwitcher(machine: toolSwitch.machine, current: toolSwitch.current)
@@ -155,9 +164,7 @@
                             Spacer()
                         }
                     }
-                    ToolbarItemGroup(placement: .automatic) {
-                        trailing
-                    }
+                    ToolbarItemGroup(placement: .automatic) { controls(trailing) }
                     if let primary {
                         ToolbarItem(placement: .primaryAction) {
                             primary
@@ -166,6 +173,10 @@
                 }
             }
         }
+
+        private func controls(_ views: [AnyView]) -> some View {
+            ForEach(views.indices, id: \.self) { views[$0] }
+        }
     }
 
     /// What the page in front puts in the main window's toolbar. The window
@@ -173,10 +184,15 @@
     /// change: with the items declared on each page, every switch had AppKit
     /// remove all of them and add new ones, and lay the toolbar out again.
     struct PageToolbarContent: Equatable {
-        let leading: AnyView?
-        let trailing: AnyView?
+        let leading: [AnyView]
+        let trailing: [AnyView]
         let primary: ToolbarAction?
         let toolSwitch: ServerToolSwitch?
+
+        /// The toolbar items on each side: enough for the page with the most
+        /// controls on a side (the terminal's leading six). A fixed count
+        /// keeps the items in place as pages change.
+        static let slots = 6
 
         // Views have no equality; each update of the page hands new ones.
         static func == (_: Self, _: Self) -> Bool { false }
@@ -197,19 +213,15 @@
     }
 
     /// The main window's toolbar: the same items whatever the page, hidden
-    /// where the page in front has nothing for them.
+    /// where the page in front has nothing for them. Each control has an
+    /// item of its own: one item holding them all would be named after its
+    /// first control and be one entry in the overflow menu.
     @available(macOS 26.0, *)
     struct PageToolbarItems: ToolbarContent {
         let content: PageToolbarContent?
 
         var body: some ToolbarContent {
-            ToolbarItem(placement: .navigation) {
-                HStack { content?.leading }
-                    // Each control keeps its own label; as one element the
-                    // stack would take the item's, the first control's.
-                    .accessibilityElement(children: .contain)
-            }
-            .hidden(content?.leading == nil)
+            PageToolbarSlots(placement: .navigation, controls: content?.leading ?? [])
             ToolbarItem(placement: .principal) {
                 if let toolSwitch = content?.toolSwitch {
                     ServerToolSwitcher(machine: toolSwitch.machine, current: toolSwitch.current)
@@ -218,19 +230,38 @@
             .hidden(content?.toolSwitch == nil)
             ToolbarSpacer(.flexible)
                 .hidden(content?.toolSwitch != nil)
-            ToolbarItem(placement: .automatic) {
-                HStack { content?.trailing }
-                    // Each control keeps its own label; as one element the
-                    // stack would take the item's, the first control's.
-                    .accessibilityElement(children: .contain)
-            }
-            .hidden(content?.trailing == nil)
+            PageToolbarSlots(placement: .automatic, controls: content?.trailing ?? [])
             ToolbarSpacer(.fixed)
-                .hidden(content?.trailing == nil || content?.primary == nil)
+                .hidden(content?.trailing.isEmpty ?? true || content?.primary == nil)
             ToolbarItem(placement: .primaryAction) {
                 content?.primary
             }
             .hidden(content?.primary == nil)
+        }
+    }
+
+    /// `PageToolbarContent.slots` items at one place, each showing one of
+    /// `controls` and hidden past their count. Written out rather than made
+    /// with ForEach, whose toolbar items the window does not show.
+    @available(macOS 26.0, *)
+    private struct PageToolbarSlots: ToolbarContent {
+        let placement: ToolbarItemPlacement
+        let controls: [AnyView]
+
+        var body: some ToolbarContent {
+            slot(0)
+            slot(1)
+            slot(2)
+            slot(3)
+            slot(4)
+            slot(5)
+        }
+
+        private func slot(_ index: Int) -> some ToolbarContent {
+            ToolbarItem(placement: placement) {
+                if index < controls.count { controls[index] }
+            }
+            .hidden(index >= controls.count)
         }
     }
 
