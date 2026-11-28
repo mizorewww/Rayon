@@ -404,10 +404,17 @@
 
         /// The sheet `window` shows, if any.
         func sheet(in window: NSWindow?) -> WindowSheet? {
-            sheets.first { sheet in
-                guard let number = sheet.window else { return true }
-                return number == window?.windowNumber
-            }
+            guard let window else { return nil }
+            return sheets.first { $0.window == window.windowNumber }
+        }
+
+        /// Gives a sheet asked for with no window open to `window`, the
+        /// first on screen to ask, so no other window shows it as well.
+        func claimSheet(for window: NSWindow?) {
+            // A window has its number once it is on screen.
+            guard let window, window.isVisible, window.windowNumber > 0,
+                  let index = sheets.firstIndex(where: { $0.window == nil }) else { return }
+            sheets[index].window = window.windowNumber
         }
 
         func dismissSheet(_ id: WindowSheet.ID) {
@@ -426,7 +433,7 @@
         let id = UUID()
         /// The number of the window it shows in; nil, with no window open,
         /// shows it in the first one that opens.
-        let window: Int?
+        var window: Int?
         let content: (_ dismiss: @escaping () -> Void) -> AnyView
     }
 

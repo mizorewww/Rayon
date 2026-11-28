@@ -144,6 +144,13 @@
                     sheet.content { router.dismissSheet(sheet.id) }
                         .environmentObject(RayonStore.shared)
                 }
+                // A sheet asked for with no window open goes to the first
+                // window shown, or the first on screen once it is asked for.
+                .onChange(of: anchor.window, initial: true) { router.claimSheet(for: anchor.window) }
+                .onChange(of: router.sheets.contains { $0.window == nil }) { router.claimSheet(for: anchor.window) }
+                .onReceive(NotificationCenter.default.publisher(for: NSWindow.didBecomeKeyNotification)) { note in
+                    if note.object as? NSWindow === anchor.window { router.claimSheet(for: anchor.window) }
+                }
         }
     }
 
