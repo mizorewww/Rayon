@@ -9,8 +9,8 @@ import RayonModule
 import SwiftUI
 
 struct SSHSettings: View {
-    @AppSetting(AppSettings.connectionTimeout) private var timeout
-    @AppSetting(AppSettings.installsTerminfo) private var installsTerminfo
+    @AppSetting(AppSettings.connectionTimeout, title: "Connection timeout") private var timeout
+    @AppSetting(AppSettings.installsTerminfo, title: "Install Ghostty's terminfo") private var installsTerminfo
 
     var body: some View {
         LabeledContent {
@@ -60,7 +60,7 @@ private struct HostKeysRow: View {
 }
 
 struct MonitorSettings: View {
-    @AppSetting(AppSettings.monitorInterval) private var interval
+    @AppSetting(AppSettings.monitorInterval, title: "Refresh") private var interval
     private let intervals = [5, 10, 15, 30, 60]
 
     var body: some View {

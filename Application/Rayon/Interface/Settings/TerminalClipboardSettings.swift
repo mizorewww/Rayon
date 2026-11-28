@@ -10,8 +10,8 @@ import RayonModule
 import SwiftUI
 
 struct TerminalClipboardSettings: View {
-    @AppSetting(AppSettings.terminalCopiesOnSelect) private var copiesOnSelect
-    @AppSetting(AppSettings.terminalSharesClipboard) private var sharesClipboard
+    @AppSetting(AppSettings.terminalCopiesOnSelect, title: "Copy on select") private var copiesOnSelect
+    @AppSetting(AppSettings.terminalSharesClipboard, title: "Share clipboard with remote programs") private var sharesClipboard
 
     var body: some View {
         Toggle(isOn: $copiesOnSelect) {

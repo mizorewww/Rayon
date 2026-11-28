@@ -128,7 +128,7 @@ public final class TerminalSettings {
     func set(_ key: String, _ values: [String]) {
         var next = config
         next[key] = values.isEmpty ? nil : values
-        replace(with: next, run: "terminal.\(key)")
+        replace(with: next, run: "terminal.\(key)", name: SettingCatalog.shared.setting(key).map(SettingsLayout.title))
     }
 
     func set(_ key: String, _ value: String) {
@@ -149,17 +149,18 @@ public final class TerminalSettings {
         replace(with: [:])
     }
 
-    /// Shows `next`, with an undo step back to what was there. Changes to
+    /// Shows `next`, with an undo step back to what was there, named after
+    /// the setting changed when it is one (Edit › Undo Size). Changes to
     /// one key in a `run` (a dragged slider, a held stepper) share the
     /// run's first step.
-    private func replace(with next: [String: [String]], run: String? = nil) {
+    private func replace(with next: [String: [String]], run: String? = nil, name: String? = nil) {
         guard next != config else { return }
         let previous = config
         let undoManager = undoManager
         let register = {
             undoManager.beginUndoGrouping()
-            undoManager.registerUndo(withTarget: self) { $0.replace(with: previous) }
-            undoManager.setActionName(String(localized: "Setting Change", bundle: .module))
+            undoManager.registerUndo(withTarget: self) { $0.replace(with: previous, name: name) }
+            undoManager.setActionName(name ?? String(localized: "Setting Change", bundle: .module))
             undoManager.endUndoGrouping()
         }
         if let run {

@@ -10,8 +10,8 @@ import RayonModule
 import SwiftUI
 
 struct AppearanceSettings: View {
-    @AppSetting(AppSettings.appearance) private var appearance
-    @AppSetting(AppSettings.animatesHome) private var animatesHome
+    @AppSetting(AppSettings.appearance, title: "Light or dark") private var appearance
+    @AppSetting(AppSettings.animatesHome, title: "Animate Home") private var animatesHome
 
     var body: some View {
         Picker(selection: $appearance) {
@@ -31,8 +31,8 @@ struct AppearanceSettings: View {
 }
 
 struct SessionSettings: View {
-    @AppSetting(AppSettings.showsSessionOnConnect) private var showsOnConnect
-    @AppSetting(AppSettings.confirmsClosingSession) private var confirmsClose
+    @AppSetting(AppSettings.showsSessionOnConnect, title: "Show a session when it connects") private var showsOnConnect
+    @AppSetting(AppSettings.confirmsClosingSession, title: "Ask before closing a session") private var confirmsClose
 
     var body: some View {
         Toggle(isOn: $showsOnConnect) {
@@ -55,9 +55,9 @@ struct SessionSettings: View {
 }
 
 struct RecentSettings: View {
-    @AppSetting(AppSettings.remembersRecent) private var remembersRecent
-    @AppSetting(AppSettings.recentLimit) private var recentLimit
-    @AppSetting(AppSettings.remembersRecentCommands) private var remembersCommands
+    @AppSetting(AppSettings.remembersRecent, title: "Remember recent servers") private var remembersRecent
+    @AppSetting(AppSettings.recentLimit, title: "Number to keep") private var recentLimit
+    @AppSetting(AppSettings.remembersRecentCommands, title: "Include Quick Connect commands") private var remembersCommands
 
     var body: some View {
         Toggle(isOn: $remembersRecent) {

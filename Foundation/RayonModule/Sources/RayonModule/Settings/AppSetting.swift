@@ -9,6 +9,7 @@
 //  the change in front rather than reaching back to an older one elsewhere.
 //  Elsewhere (a terminal's zoom, an editor's Wrap Lines) it does not: those
 //  are not edits for ⌘Z to take back among the text typed in that window.
+//  Settings gives each its row's title, which names the step on Edit › Undo.
 //
 
 import Combine
@@ -20,9 +21,16 @@ public struct AppSetting<Value: Codable & Equatable & Sendable>: DynamicProperty
     @ObservedObject private var observer: SettingObserver<Value>
     @Environment(\.undoManager) private var windowUndoManager
     @Environment(\.registersSettingUndo) private var registersUndo
+    private let title: LocalizedStringResource?
 
-    public init(_ key: SettingKey<Value>) {
+    /// `title`, the row's in Settings, names the undo step ("Undo Animate Home").
+    public init(_ key: SettingKey<Value>, title: LocalizedStringResource? = nil) {
         observer = SettingObserver.shared(key)
+        self.title = title
+    }
+
+    private var undoName: String {
+        title.map { String(localized: $0) } ?? String(localized: "Setting Change", bundle: .module)
     }
 
     private var undoManager: UndoManager? {
@@ -31,13 +39,14 @@ public struct AppSetting<Value: Codable & Equatable & Sendable>: DynamicProperty
 
     public var wrappedValue: Value {
         get { observer.value }
-        nonmutating set { observer.set(newValue, undoManager: undoManager) }
+        nonmutating set { observer.set(newValue, undoManager: undoManager, name: undoName) }
     }
 
     public var projectedValue: Binding<Value> {
         let observer = observer
         let undoManager = undoManager
-        return Binding(get: { observer.value }, set: { observer.set($0, undoManager: undoManager) })
+        let name = undoName
+        return Binding(get: { observer.value }, set: { observer.set($0, undoManager: undoManager, name: name) })
     }
 }
 
@@ -85,10 +94,10 @@ final class SettingObserver<Value: Codable & Equatable & Sendable>: ObservableOb
         key.set(newValue)
     }
 
-    /// Sets it, and on `undoManager` how to set it back; undoing that
-    /// registers the redo. A run of changes (a held stepper, a dragged
-    /// slider) is one step, back to the value before it.
-    func set(_ newValue: Value, undoManager: UndoManager?) {
+    /// Sets it, and on `undoManager` how to set it back, as the step `name`;
+    /// undoing that registers the redo. A run of changes (a held stepper, a
+    /// dragged slider) is one step, back to the value before it.
+    func set(_ newValue: Value, undoManager: UndoManager?, name: String) {
         let old = value
         guard newValue != old else { return }
         set(newValue)
@@ -96,8 +105,9 @@ final class SettingObserver<Value: Codable & Equatable & Sendable>: ObservableOb
         SettingUndoRun.shared.record(key.key, on: undoManager) {
             // Weak: the manager holds this closure.
             undoManager.registerUndo(withTarget: self) { [weak undoManager] observer in
-                MainActor.assumeIsolated { observer.set(old, undoManager: undoManager) }
+                MainActor.assumeIsolated { observer.set(old, undoManager: undoManager, name: name) }
             }
+            undoManager.setActionName(name)
         }
     }
 }
