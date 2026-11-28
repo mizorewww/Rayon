@@ -33,12 +33,26 @@ public final class TerminalSettings {
     /// Why the last change, or the settings at launch, were not applied.
     var issue: String?
 
-    /// Undo and redo for Settings' own changes.
-    @ObservationIgnored let undoManager: UndoManager = {
+    /// Undo and redo for Settings' own changes: the Settings window's, so
+    /// ⌘Z and Edit › Undo reach them, else one of its own.
+    @ObservationIgnored var undoManager: UndoManager {
+        windowUndoManager ?? ownUndoManager
+    }
+
+    @ObservationIgnored private weak var windowUndoManager: UndoManager?
+    @ObservationIgnored private let ownUndoManager: UndoManager = {
         let manager = UndoManager()
         manager.groupsByEvent = false
         return manager
     }()
+
+    /// Registers changes with `manager` from now on: the Settings window's,
+    /// from its environment.
+    public func useUndoManager(_ manager: UndoManager?) {
+        guard let manager, manager !== windowUndoManager else { return }
+        undoManager.removeAllActions(withTarget: self)
+        windowUndoManager = manager
+    }
 
     /// Bumped with each change, so a view showing Undo's state redraws.
     private(set) var revision = 0
@@ -136,6 +150,13 @@ public final class TerminalSettings {
 
     func reset(_ key: String) { set(key, []) }
 
+    /// These keys go back to their defaults, in one change.
+    func reset(_ keys: [String]) {
+        var next = config
+        for key in keys { next[key] = nil }
+        replace(with: next)
+    }
+
     /// Every setting goes back to its default.
     func resetAll() {
         replace(with: [:])
@@ -146,6 +167,7 @@ public final class TerminalSettings {
         let previous = config
         undoManager.beginUndoGrouping()
         undoManager.registerUndo(withTarget: self) { $0.replace(with: previous) }
+        undoManager.setActionName(String(localized: "Setting Change", bundle: .module))
         undoManager.endUndoGrouping()
         config = next
         revision += 1
@@ -264,7 +286,7 @@ public final class TerminalSettings {
             config = previous
             throw error
         }
-        undoManager.removeAllActions()
+        undoManager.removeAllActions(withTarget: self)
         revision += 1
     }
 
