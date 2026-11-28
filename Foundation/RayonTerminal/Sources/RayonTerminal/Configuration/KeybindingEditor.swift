@@ -174,15 +174,20 @@ struct KeybindingList: View {
     }
 
     /// The friendly name of what the shortcut does, as a menu of the others.
+    /// A name too long for the Action column (in Spanish, at the window's
+    /// narrowest) is cut short to the column's width, with all of it in the
+    /// tooltip, rather than running into the Shortcut column.
     private func actionMenu(_ row: Row) -> some View {
-        Menu {
-            actionChoices(for: row)
-        } label: {
-            Text(KeybindingNames.summary(row.binding))
+        let summary = KeybindingNames.summary(row.binding)
+        return IdealWidthUpToProposal {
+            Menu {
+                actionChoices(for: row)
+            } label: {
+                Text(summary)
+            }
+            .menuIndicator(.visible)
         }
-        .menuIndicator(.visible)
-        .fixedSize()
-        .help(row.raw)
+        .help(summary + "\n" + row.raw)
     }
 
     @ViewBuilder private func actionChoices(for row: Row?) -> some View {
@@ -531,5 +536,19 @@ struct KeybindingBuilder: View {
         // Beyond this the Int conversion would trap; keep the text as typed.
         guard number.isFinite, abs(number) <= 9e15 else { return String(number) }
         return number.rounded() == number ? String(Int(number)) : String(number)
+    }
+}
+
+/// Its view at its ideal width, or narrower when that is all there is: a
+/// menu otherwise takes whatever width it is offered.
+private struct IdealWidthUpToProposal: Layout {
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache _: inout Void) -> CGSize {
+        guard let subview = subviews.first else { return .zero }
+        let ideal = subview.sizeThatFits(.unspecified).width
+        return subview.sizeThatFits(ProposedViewSize(width: min(ideal, proposal.width ?? ideal), height: proposal.height))
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal _: ProposedViewSize, subviews: Subviews, cache _: inout Void) {
+        subviews.first?.place(at: bounds.origin, proposal: ProposedViewSize(bounds.size))
     }
 }
