@@ -290,6 +290,8 @@
                     .accessibilityHidden(true)
                 }
             }
+            // One element, so the row's help is read once, not once per child.
+            .accessibilityElement(children: .combine)
             .help("\(openTools.map { String(localized: $0.title) }.formatted(.list(type: .and))) open")
             .contextMenu { menu }
         }
