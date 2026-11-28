@@ -220,7 +220,7 @@ struct SettingControl: View {
         case .length:
             LengthEditor(value: value) { set($0) }
         case .bytes:
-            BytesEditor(value: value) { set($0) }
+            BytesEditor(title: SettingsLayout.title(setting), value: value) { set($0) }
         case .theme:
             ThemeEditor()
         case .palette:
@@ -446,6 +446,8 @@ private struct LengthEditor: View {
 /// A byte count, edited in megabytes; a small one (an imported 5000
 /// bytes) keeps its digits rather than rounding to 0.
 private struct BytesEditor: View {
+    /// The setting's, for the field and stepper to be read by.
+    let title: String
     let value: String
     let set: (String) -> Void
     /// Far below Int.max, so the conversion cannot trap.
@@ -459,11 +461,11 @@ private struct BytesEditor: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            TextField(String(localized: "MB", bundle: .module), value: Binding(get: { megabytes }, set: { set(megabytes: $0) }), format: .number.precision(.significantDigits(1 ... 6)))
+            TextField(title, value: Binding(get: { megabytes }, set: { set(megabytes: $0) }), format: .number.precision(.significantDigits(1 ... 6)))
                 .labelsHidden()
                 .multilineTextAlignment(.leading)
                 .frame(width: 80)
-            Stepper(.init("Megabytes", bundle: .module), onIncrement: { set(megabytes: megabytes + 1) }, onDecrement: { set(megabytes: megabytes - 1) })
+            Stepper(title, onIncrement: { set(megabytes: megabytes + 1) }, onDecrement: { set(megabytes: megabytes - 1) })
                 .labelsHidden()
             Text("MB", bundle: .module).foregroundStyle(.secondary)
         }
