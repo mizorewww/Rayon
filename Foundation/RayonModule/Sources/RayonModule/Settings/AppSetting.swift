@@ -4,7 +4,9 @@
 //
 //  A setting in a view (or menu commands): `@AppSetting(AppSettings.x) var x`
 //  reads it, sets it through its key, and draws again when it changes,
-//  wherever the change came from.
+//  wherever the change came from. A change made through it goes on the
+//  window's undo stack, beside the terminal's settings, so ⌘Z undoes the
+//  change in front rather than reaching back to an older one elsewhere.
 //
 
 import Combine
@@ -13,6 +15,7 @@ import SwiftUI
 @MainActor @propertyWrapper
 public struct AppSetting<Value: Codable & Equatable & Sendable>: DynamicProperty {
     @ObservedObject private var observer: SettingObserver<Value>
+    @Environment(\.undoManager) private var undoManager
 
     public init(_ key: SettingKey<Value>) {
         observer = SettingObserver.shared(key)
@@ -20,12 +23,13 @@ public struct AppSetting<Value: Codable & Equatable & Sendable>: DynamicProperty
 
     public var wrappedValue: Value {
         get { observer.value }
-        nonmutating set { observer.set(newValue) }
+        nonmutating set { observer.set(newValue, undoManager: undoManager) }
     }
 
     public var projectedValue: Binding<Value> {
         let observer = observer
-        return Binding(get: { observer.value }, set: { observer.set($0) })
+        let undoManager = undoManager
+        return Binding(get: { observer.value }, set: { observer.set($0, undoManager: undoManager) })
     }
 }
 
@@ -65,6 +69,17 @@ final class SettingObserver<Value: Codable & Equatable & Sendable>: ObservableOb
         guard newValue != value else { return }
         value = newValue
         key.set(newValue)
+    }
+
+    /// Sets it, and on `undoManager` how to set it back; undoing that
+    /// registers the redo.
+    func set(_ newValue: Value, undoManager: UndoManager?) {
+        let old = value
+        guard newValue != old else { return }
+        set(newValue)
+        undoManager?.registerUndo(withTarget: self) { observer in
+            MainActor.assumeIsolated { observer.set(old, undoManager: undoManager) }
+        }
     }
 }
 
