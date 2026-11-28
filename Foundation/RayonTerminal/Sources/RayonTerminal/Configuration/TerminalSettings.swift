@@ -124,10 +124,15 @@ public final class TerminalSettings {
 
     // MARK: Changing
 
-    /// Sets a key's values; none removes it, so its default applies.
+    /// Sets a key's values; none, or its default, removes it, so the
+    /// default applies. The saved settings then hold only what differs, and
+    /// a run switched off and on again from the default comes back to where
+    /// it started. A color a theme sets keeps a value equal to the default,
+    /// since it overrides the theme's.
     func set(_ key: String, _ values: [String]) {
         var next = config
-        next[key] = values.isEmpty ? nil : values
+        let isDefault = values == Self.defaultValues(key) && !TerminalThemes.colorKeys.contains(key) && key != "palette"
+        next[key] = values.isEmpty || isDefault ? nil : values
         replace(with: next, run: "terminal.\(key)", name: SettingCatalog.shared.setting(key).map(SettingsLayout.title))
     }
 

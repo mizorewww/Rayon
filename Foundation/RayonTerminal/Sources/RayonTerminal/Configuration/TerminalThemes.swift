@@ -17,6 +17,9 @@ enum TerminalThemes {
 
     static func theme(named name: String) -> GhosttyThemeDefinition? { byName[name] }
 
+    /// The color keys a theme sets, ahead of the user's own.
+    static let colorKeys = ["background", "foreground", "cursor-color", "cursor-text", "selection-background", "selection-foreground"]
+
     private static let supplement: [GhosttyThemeDefinition] = {
         struct Entry: Decodable {
             let name: String

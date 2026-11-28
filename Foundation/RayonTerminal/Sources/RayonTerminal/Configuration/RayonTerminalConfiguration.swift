@@ -104,8 +104,7 @@ enum RayonTerminalConfiguration {
     static func lines(for config: [String: [String]], dark: Bool) -> [(key: String, value: String)] {
         var lines: [(key: String, value: String)] = []
         if let theme = TerminalThemes.theme(for: config["theme"]?.last ?? "", dark: dark) {
-            lines += ["background", "foreground", "cursor-color", "cursor-text", "selection-background", "selection-foreground"]
-                .compactMap { key in theme.color(key).map { (key, $0) } }
+            lines += TerminalThemes.colorKeys.compactMap { key in theme.color(key).map { (key, $0) } }
             lines += (0 ..< 256).compactMap { index in theme.paletteColor(index).map { ("palette", "\(index)=\($0)") } }
         }
         for (key, values) in config.sorted(by: { $0.key < $1.key }) where supportedKeys.contains(key) {

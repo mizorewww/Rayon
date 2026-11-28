@@ -327,6 +327,26 @@ final class ConfigurationRuntimeTests: XCTestCase {
         XCTAssertFalse(settings.undoManager.canUndo)
     }
 
+    /// A key set to its default is not stored, so a toggle switched off and
+    /// on again from its default leaves no undo step, and the dot that marks
+    /// a changed setting goes away. A theme's color keeps a default value,
+    /// which overrides the theme's.
+    @MainActor func testSettingTheDefaultUnsetsTheKey() throws {
+        let settings = try scratchSettings()
+        XCTAssertEqual(settings.value("font-thicken"), "true")
+        settings.set("font-thicken", "false")
+        XCTAssertTrue(settings.isSet("font-thicken"))
+        settings.set("font-thicken", "true")
+        XCTAssertFalse(settings.isSet("font-thicken"))
+        XCTAssertEqual(settings.value("font-thicken"), "true")
+        XCTAssertFalse(settings.undoManager.canUndo)
+        XCTAssertTrue(settings.applyNow())
+        XCTAssertNil(settings.applied["font-thicken"])
+        let background = try XCTUnwrap(TerminalSettings.defaultValues("background").last)
+        settings.set("background", background)
+        XCTAssertTrue(settings.isSet("background"))
+    }
+
     /// A run back to its start does not undo another change registered in
     /// the same event as the run's first step, before or after it.
     @MainActor func testARunBackToItsStartKeepsAnotherChangeInItsEvent() {
