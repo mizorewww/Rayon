@@ -134,15 +134,16 @@ struct SettingsView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
                     // A click on the row already selected changes no
-                    // selection, so clicks are taken here (a tap gesture on
-                    // the row also keeps the list from selecting it): as in
-                    // System Settings, the selected row brings back its page
-                    // from a subpage or from what is pushed over it.
+                    // selection, so that row takes it here: as in System
+                    // Settings, it brings back its page from a subpage or
+                    // from what is pushed over it. Only that row: on the
+                    // others a tap gesture keeps the list from selecting and
+                    // focusing the row clicked, and ↓/↑ from moving on.
                     .simultaneousGesture(TapGesture().onEnded {
                         search = ""
                         navigation.go(page.id)
                         pushed = NavigationPath()
-                    })
+                    }, including: search.isEmpty && page.id == selected.sidebarPage.id ? .all : .subviews)
                     .tag(page.id)
             }
         }
