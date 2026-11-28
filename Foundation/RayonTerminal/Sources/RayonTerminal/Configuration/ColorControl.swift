@@ -111,7 +111,9 @@ struct CommitField: View {
     }
 
     var body: some View {
-        TextField(prompt, text: $draft)
+        // The prompt given as one too: in a Mac form the title is the
+        // row's label, hidden here, and an empty field showed nothing.
+        TextField(prompt, text: $draft, prompt: Text(prompt))
             .labelsHidden()
             .focused($focused)
             .font(monospaced ? .body.monospaced() : .body)
