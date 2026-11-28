@@ -88,17 +88,18 @@
                 TableColumn("Orientation", value: \.forwardOrientation.label, comparator: .localizedStandard) { forward in
                     RXTag("\(forward.forwardOrientation.label)")
                 }
-                .width(min: 90, ideal: 115)
+                .width(min: 90, ideal: 110)
                 TableColumn("Bind", value: \.bindPort) { forward in
                     Text(verbatim: ":\(forward.bindPort)")
                         .font(.rxCode)
                 }
-                .width(min: 60, ideal: 80)
+                .width(min: 50, ideal: 60)
                 TableColumn("Through", value: \.machineName, comparator: .localizedStandard) { forward in
                     RedactableText(forward.getMachineName() ?? String(localized: "No server"), redacted: redaction == .all)
                         .foregroundStyle(forward.usingMachine == nil ? Color.rxInkSecondary : Color.rxInk)
                         .lineLimit(1)
                 }
+                .width(min: 80, ideal: 90)
                 TableColumn("Target", value: \.targetLabel, comparator: .localizedStandard) { forward in
                     Text(verbatim: forward.targetLabel)
                         .font(.rxCode)
@@ -106,6 +107,7 @@
                         .lineLimit(1)
                         .truncationMode(.middle)
                 }
+                .width(min: 80, ideal: 100)
                 TableColumn("Status") { forward in
                     let status = presentation(forward)
                     Label {
@@ -115,11 +117,12 @@
                         StatusDot(status.status, size: .small)
                     }
                 }
-                .width(min: 90, ideal: 120)
+                .width(min: 80, ideal: 100)
                 TableColumn("Running") { forward in
                     runningToggle(forward)
                 }
-                .width(52)
+                // Wide enough for the header in every language, not just the switch.
+                .width(min: 80, ideal: 85)
             }
             .contextMenu(forSelectionType: RDPortForward.ID.self) { chosen in
                 let forwards = filtered.filter { chosen.contains($0.id) }

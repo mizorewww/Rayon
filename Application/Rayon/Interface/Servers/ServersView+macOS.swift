@@ -183,7 +183,7 @@
                         }
                     }
                 }
-                .width(min: 120, ideal: 180)
+                .width(min: 100, ideal: 120)
                 .customizationID("name")
                 TableColumn("Address", value: \.remoteAddress, comparator: .localizedStandard) { machine in
                     if machine.isUURemoteDevice {
@@ -195,14 +195,14 @@
                             .truncationMode(.middle)
                     }
                 }
-                .width(min: 100, ideal: 150)
+                .width(min: 90, ideal: 110)
                 .customizationID("address")
                 TableColumn("Identity") { machine in
                     Text(identityName(machine))
                         .foregroundStyle(machine.associatedIdentity == nil ? Color.rxInkSecondary : Color.rxInk)
                         .lineLimit(1)
                 }
-                .width(min: 80, ideal: 110)
+                .width(min: 70, ideal: 80)
                 .customizationID("identity")
                 TableColumn("CPU") { machine in
                     ServerLiveReader(machine: machine.id) { state in
@@ -218,14 +218,14 @@
                         }
                     }
                 }
-                .width(min: 60, ideal: 110)
+                .width(min: 60, ideal: 70)
                 .customizationID("cpu")
                 TableColumn("Last used", value: \.lastConnection) { machine in
                     Text(RXFormat.relative(machine.lastConnection))
                         .foregroundStyle(.rxInkSecondary)
                         .lineLimit(1)
                 }
-                .width(min: 70, ideal: 120)
+                .width(min: 90, ideal: 110)
                 .customizationID("lastUsed")
                 TableColumn("Tools") { machine in
                     // Words where they fit beside Terminal, icons where not.
@@ -237,7 +237,7 @@
                     }
                     .frame(maxWidth: .infinity, alignment: .trailing)
                 }
-                .width(min: 150, ideal: 300)
+                .width(min: 150, ideal: 150)
                 .customizationID("tools")
             } rows: {
                 ForEach(groups) { group in
