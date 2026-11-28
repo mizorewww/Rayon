@@ -141,11 +141,13 @@
         }
 
         @ViewBuilder var output: some View {
+            // One surface, for the selected server: hidden surfaces stacked
+            // under it kept covering it. A new surface replays that server's
+            // whole output.
             ZStack {
-                ForEach(machines, id: \.self) { machine in
-                    BatchOutputView(machine: machine)
-                        .opacity(selection == machine ? 1 : 0)
-                        .allowsHitTesting(selection == machine)
+                if let selection {
+                    BatchOutputView(machine: selection)
+                        .id(selection)
                 }
             }
             .padding(RX.Space.s2)
