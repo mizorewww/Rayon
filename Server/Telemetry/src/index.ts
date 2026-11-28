@@ -3,6 +3,7 @@
 // aggregate counts and dropped. Only crash and hang items are kept as
 // rows, for 90 days, to symbolicate.
 import { batch, report, type Report } from "./schema";
+import { signature } from "./signature";
 
 export interface Env {
   DB: D1Database;
@@ -76,7 +77,7 @@ async function ingest(request: Request, env: Env): Promise<Response> {
     `INSERT INTO aggregates (day, app_version, os_version, metric, bucket, count) SELECT ?, ?, ?, ?, ?, 1 ${unseen}
      ON CONFLICT (day, app_version, os_version, metric, bucket) DO UPDATE SET count = count + 1`,
   );
-  const crash = env.DB.prepare(`INSERT INTO crashes (day, app_version, os_version, kind, item) SELECT ?, ?, ?, ?, ? ${unseen}`);
+  const crash = env.DB.prepare(`INSERT INTO crashes (day, app_version, os_version, kind, signature, item) SELECT ?, ?, ?, ?, ?, ? ${unseen}`);
   const claim = env.DB.prepare("INSERT INTO nonces (nonce, day) VALUES (?, ?) ON CONFLICT DO NOTHING");
   const statements: D1PreparedStatement[] = [];
   for (const r of reports) {
@@ -84,7 +85,7 @@ async function ingest(request: Request, env: Env): Promise<Response> {
     const os = `${r.platform} ${r.osVersion}`;
     for (const [metric, bucket] of metrics(r)) statements.push(upsert.bind(day, r.appVersion, os, metric, bucket, nonce));
     for (const d of r.diagnostics) {
-      statements.push(crash.bind(day, d.appVersion ?? r.appVersion, d.osVersion ? `${r.platform} ${d.osVersion}` : os, d.kind, JSON.stringify(d), nonce));
+      statements.push(crash.bind(day, d.appVersion ?? r.appVersion, d.osVersion ? `${r.platform} ${d.osVersion}` : os, d.kind, signature(d), JSON.stringify(d), nonce));
     }
     statements.push(claim.bind(nonce, day));
   }

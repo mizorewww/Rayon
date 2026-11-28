@@ -52,6 +52,8 @@ describe("ingest", () => {
     expect(row).toEqual({ app_version: "5.2.0", os_version: "macOS 15.4" });
     const crashes = await env.DB.prepare("SELECT COUNT(*) AS n FROM crashes").first<{ n: number }>();
     expect(crashes?.n).toBe(2);
+    const signatures = await env.DB.prepare("SELECT DISTINCT signature FROM crashes").all<{ signature: string }>();
+    expect(signatures.results.map((r) => r.signature)).toContain("crash NSInvalidArgumentException EXC 1 SIG 11 70B89F27+0x285b8");
 
     const stored = await dump();
     for (const leaked of ["203.0.113.77", "198.51.100.4", "secret-agent", "Mozilla"]) expect(stored).not.toContain(leaked);

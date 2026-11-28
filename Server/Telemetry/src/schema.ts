@@ -101,5 +101,6 @@ export const report = z
   .refine((r) => (r.usage === undefined || r.level >= 2) && (r.detail === undefined || r.level === 3), "more than the level allows");
 
 export type Report = z.infer<typeof report>;
+export type Diagnostic = z.infer<typeof diagnostic>;
 
 export const batch = z.strictObject({ reports: z.array(z.unknown()).min(1).max(10) });
