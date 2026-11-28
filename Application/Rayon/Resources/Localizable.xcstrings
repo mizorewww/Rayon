@@ -9461,18 +9461,18 @@
         }
       }
     },
-    "Servers need an identity set." : {
+    "Servers on Automatic need an identity that authenticates automatically." : {
       "localizations" : {
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "服务器需要设定身份。"
+            "value" : "设为“自动”的服务器需要一个自动认证的身份。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "伺服器需要設定身份。"
+            "value" : "設為「自動」的伺服器需要一個自動認證的身份。"
           }
         }
       }

@@ -26,9 +26,13 @@ enum SnippetActions {
             Indicator.error(String(localized: "This snippet has no command to run."))
             return
         }
+        // A server on Automatic signs in with the identities that authenticate
+        // automatically; it can't when there are none.
+        let store = RayonStore.shared
+        let cannotSignIn = store.identitiesForAutoAuth.isEmpty && store.machines.contains { $0.associatedIdentity == nil }
         ServerPicker.present(
             title: "Run \(snippet.name)",
-            lead: "Servers need an identity set.",
+            lead: cannotSignIn ? "Servers on Automatic need an identity that authenticates automatically." : nil,
             confirmTitle: "Run"
         ) { machines in
             #if os(macOS)
