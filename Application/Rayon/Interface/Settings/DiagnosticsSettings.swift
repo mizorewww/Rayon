@@ -140,7 +140,7 @@ struct PrivacyPolicySheet: View {
     @Environment(\.dismiss) private var dismiss
 
     static var text: AttributedString {
-        let language = Bundle.preferredLocalizations(from: ["en", "zh-Hans", "zh-Hant"], forPreferences: Locale.preferredLanguages).first ?? "en"
+        let language = Bundle.preferredLocalizations(from: ["en", "zh-Hans", "zh-Hant", "ja", "fr", "es"], forPreferences: Locale.preferredLanguages).first ?? "en"
         guard let url = Bundle.main.url(forResource: "PrivacyPolicy-\(language)", withExtension: "md", subdirectory: "Privacy"),
               let markdown = try? String(contentsOf: url, encoding: .utf8)
         else { return AttributedString(localized: "The privacy policy could not be loaded.") }

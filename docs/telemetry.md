@@ -306,7 +306,7 @@ The report is a Swift `Codable` struct whose fields are **only enums, `Bool` and
   - **China storefront:** the non-EEA variant, with the privacy-policy link in the card body.
 - Tasteful also means the level never changes features, never appears in onboarding twice, and is never re-asked after an update unless the data definition changes, which would be a schema bump.
 
-### 4.7 Privacy policy contents (new; en / zh-Hans / zh-Hant, bundled as FlowDown does)
+### 4.7 Privacy policy contents (new; en / zh-Hans / zh-Hant / ja / fr / es, bundled as FlowDown does)
 
 1. What each level sends: the allow-list in plain words.
 2. What is never sent: the forbidden list.
@@ -344,7 +344,7 @@ Assume 30k daily active devices, 70 % at level ≥ 2. That is about 21k requests
 
 - `Foundation/Telemetry`: the report (`TelemetryReport*.swift`, enums, `Bool` and bucketed `Int` only), the MetricKit subscriber and scrubber, the on-device counters (`TelemetryCollector`), the queue in `Application Support/<bundle id>/Telemetry/pending` and the sender. `Telemetry.shared` holds the level. The app keeps it as `AppSettings.telemetryLevel` (with `telemetryNoticeShown`), scope `.deviceLocal`, so neither iCloud nor the preferences backup carries it. The tests pin the JSON in `Tests/TelemetryTests/Fixtures/report-sample.json` and every enum case in `report-enums.json`.
 - `RayonModule` re-exports Telemetry and records events at `RDMachine.connectSSH` (outcome, sign-in method, latency), `TerminalManager`, `FileTransferManager`, `FileTransferContext.upload/download`, `EditorWorkspace.open`, `PortForwardBackend`, `RemoteDesktopManager` and `BatchSnippetExecContext`. `MachineStatusView` records monitor opens and the remote OS family from `uname -s`.
-- The app: `Interface/Settings/DiagnosticsSettings.swift` (the slider, the notice card on Home, "View What's Sent…", the privacy policy sheet) and `Application/TelemetrySnapshot+Rayon.swift`. The privacy policy is bundled from `Resources/Privacy/PrivacyPolicy-{en,zh-Hans,zh-Hant}.md`. `Resources/AppStore/PrivacyPolicy` is a copy of the English text for App Store Connect; keep the two identical.
+- The app: `Interface/Settings/DiagnosticsSettings.swift` (the slider, the notice card on Home, "View What's Sent…", the privacy policy sheet) and `Application/TelemetrySnapshot+Rayon.swift`. The privacy policy is bundled from `Resources/Privacy/PrivacyPolicy-{en,zh-Hans,zh-Hant,ja,fr,es}.md`; the translations say the English text prevails. `Resources/AppStore/PrivacyPolicy` is a copy of the English text for App Store Connect; keep the two identical.
 - `Server/Telemetry`: the Worker, deployed with `cf` as `rayon-telemetry` on the custom domain `telemetry.kfcv50.today` with D1 database `rayon-telemetry` (APAC). Its README has the deploy commands. `TelemetryEndpoint.url` points the app at it.
 
 ### 5.2 Differences from §4
