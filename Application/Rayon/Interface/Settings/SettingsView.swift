@@ -16,6 +16,8 @@ import SwiftUI
 struct SettingsView: View {
     #if os(macOS)
         @ObservedObject private var navigation = AppRouter.shared.settingsNavigation
+        /// What is pushed over the page: Libraries, then a library.
+        @State private var pushed = NavigationPath()
     #endif
     @Environment(\.undoManager) private var undoManager
     @State private var search = ""
@@ -38,6 +40,15 @@ struct SettingsView: View {
                     #if os(iOS)
                         if let id = ProcessInfo.processInfo.environment["RAYON_PREVIEW_SETTINGS"], shown == nil {
                             shown = SettingsPage(id: id)
+                        }
+                    #else
+                        if ProcessInfo.processInfo.environment["RAYON_PREVIEW_LIBRARIES"] != nil, pushed.isEmpty {
+                            navigation.go(SettingsPage.about.id)
+                            // After the page change, which empties the stack.
+                            Task {
+                                pushed.append(LibrariesPage())
+                                if let library = LibrariesView.previewLibrary { pushed.append(library) }
+                            }
                         }
                     #endif
                 #endif
@@ -68,37 +79,44 @@ struct SettingsView: View {
                 .listStyle(.sidebar)
                 .navigationSplitViewColumnWidth(min: 200, ideal: 215, max: 280)
             } detail: {
-                Group {
-                    if search.isEmpty {
-                        // A new page starts at its top; its rows are all new anyway.
-                        SettingsPageView(page: selected) { navigation.go($0.id) }
-                            .id(selected)
-                    } else {
-                        SettingsSearchResults(query: search) { id in
-                            search = ""
-                            navigation.go(id)
+                NavigationStack(path: $pushed) {
+                    Group {
+                        if search.isEmpty {
+                            // A new page starts at its top; its rows are all new anyway.
+                            SettingsPageView(page: selected) { navigation.go($0.id) }
+                                .id(selected)
+                        } else {
+                            SettingsSearchResults(query: search) { id in
+                                search = ""
+                                navigation.go(id)
+                            }
                         }
                     }
+                    // Outside the page's identity, so its terminal outlives page switches.
+                    .terminalPreview(isShown: search.isEmpty && selected.previews)
+                    .navigationTitle(search.isEmpty ? selected.title : String(localized: "Search"))
+                    // On the page itself: what is pushed over it has the
+                    // stack's own Back in their place.
+                    .toolbar {
+                        ToolbarItemGroup(placement: .navigation) {
+                            Button { navigation.step(-1) } label: { Label("Back", systemImage: "chevron.left") }
+                                .disabled(!navigation.canGoBack)
+                                .help("Show the previous page")
+                            Button { navigation.step(1) } label: { Label("Forward", systemImage: "chevron.right") }
+                                .disabled(!navigation.canGoForward)
+                                .help("Show the next page")
+                        }
+                    }
+                    .navigationDestination(for: LibrariesPage.self) { _ in LibrariesView() }
                 }
-                // Outside the page's identity, so its terminal outlives page switches.
-                .terminalPreview(isShown: search.isEmpty && selected.previews)
-                .navigationTitle(search.isEmpty ? selected.title : String(localized: "Search"))
                 // The page on the window's material, as the main window has it.
                 .background(RXWindowBackground().ignoresSafeArea())
-                .toolbar {
-                    ToolbarItemGroup(placement: .navigation) {
-                        Button { navigation.step(-1) } label: { Label("Back", systemImage: "chevron.left") }
-                            .disabled(!navigation.canGoBack)
-                            .help("Show the previous page")
-                        Button { navigation.step(1) } label: { Label("Forward", systemImage: "chevron.right") }
-                            .disabled(!navigation.canGoForward)
-                            .help("Show the next page")
-                    }
-                }
             }
             // In the sidebar, as System Settings has it: it stays put when
             // the sidebar is hidden and shown.
             .searchable(text: $search, placement: .sidebar, prompt: "Search")
+            .onChange(of: navigation.selection) { pushed = NavigationPath() }
+            .onChange(of: search) { if !search.isEmpty { pushed = NavigationPath() } }
             .frame(minWidth: 720, minHeight: 480)
         }
 
@@ -135,6 +153,7 @@ struct SettingsView: View {
             }
             .navigationDestination(for: SettingsPage.self) { destination($0) }
             .navigationDestination(for: TerminalSettingsSubpage.self) { destination(.terminalSubpage($0)) }
+            .navigationDestination(for: LibrariesPage.self) { _ in LibrariesView() }
             .navigationDestination(item: $shown) { destination($0) }
             .searchable(text: $search, prompt: "Search settings")
             .navigationTitle("Settings")

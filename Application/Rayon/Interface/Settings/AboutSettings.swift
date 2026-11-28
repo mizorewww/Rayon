@@ -108,10 +108,6 @@ struct AboutSettings: View {
 }
 
 struct AcknowledgementSettings: View {
-    #if os(macOS)
-        @State private var showsLibraries = false
-    #endif
-
     var body: some View {
         LabeledContent("Maintained by", value: "mizorewww")
         acknowledgement("Originally created by", "Lakr Aream (@Lakr233) with @__oquery, @zlind0, @unixzii, @82flex and @xnth97. This version is not affiliated with or endorsed by them.")
@@ -120,24 +116,14 @@ struct AcknowledgementSettings: View {
         #else
             acknowledgement("Terminal", "Ghostty and its configuration catalog (MIT, Ghostty contributors).")
         #endif
-        #if os(macOS)
+        NavigationLink(value: LibrariesPage()) {
             LabeledContent {
-                Button("Show Libraries…") { showsLibraries = true }
+                Text(LibraryNotice.bundled.count, format: .number)
             } label: {
                 Text("Libraries")
                 Text("Each library Rayon ships, its repository and its license.")
             }
-            .sheet(isPresented: $showsLibraries) { LibrariesView() }
-            #if DEBUG
-                .task { showsLibraries = ProcessInfo.processInfo.environment["RAYON_PREVIEW_LIBRARIES"] != nil }
-            #endif
-        #else
-            NavigationLink {
-                LibrariesView()
-            } label: {
-                LabeledContent("Libraries", value: LibraryNotice.bundled.count, format: .number)
-            }
-        #endif
+        }
     }
 
     private func acknowledgement(_ title: LocalizedStringResource, _ text: LocalizedStringResource) -> some View {

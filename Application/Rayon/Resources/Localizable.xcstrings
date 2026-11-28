@@ -6960,22 +6960,6 @@
         }
       }
     },
-    "No Library Selected" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未选择库"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "未選擇程式庫"
-          }
-        }
-      }
-    },
     "No desktop devices on the account" : {
       "localizations" : {
         "zh-Hans" : {
@@ -10033,22 +10017,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "顯示全部"
-          }
-        }
-      }
-    },
-    "Show Libraries…" : {
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "显示库…"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "顯示程式庫…"
           }
         }
       }

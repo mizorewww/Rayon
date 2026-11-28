@@ -3,26 +3,25 @@
 //  Rayon
 //
 //  Settings › About › Libraries: what the app ships, each with its
-//  repository and license, and the license's full text. On the Mac a sheet
-//  with the list beside the text; on the iPhone and iPad a list that pushes it.
-//  In Debug, `RAYON_PREVIEW_LIBRARIES=[name]` opens it (and that library's
-//  license) from About, for screenshots without input.
+//  repository and license, pushed over About; a library pushes its license's
+//  full text. In Debug, `RAYON_PREVIEW_LIBRARIES=[name]` opens it (and that
+//  library's license), for screenshots without input.
 //
 
 import RayonModule
 import SwiftUI
 
+/// Where About's Libraries row goes.
+struct LibrariesPage: Hashable {}
+
 struct LibrariesView: View {
     @State private var search = ""
-    #if os(macOS)
-        @Environment(\.dismiss) private var dismiss
-        @State private var selection: LibraryNotice.ID? = Self.previewLibrary?.id ?? LibraryNotice.bundled.first?.id
-    #else
+    #if os(iOS)
         @State private var shown: LibraryNotice?
     #endif
 
     /// The library `RAYON_PREVIEW_LIBRARIES` names.
-    private static var previewLibrary: LibraryNotice? {
+    static var previewLibrary: LibraryNotice? {
         #if DEBUG
             LibraryNotice.bundled.first { $0.name == ProcessInfo.processInfo.environment["RAYON_PREVIEW_LIBRARIES"] }
         #else
@@ -39,36 +38,18 @@ struct LibrariesView: View {
     }
 
     var body: some View {
+        List(libraries) { library in
+            NavigationLink(value: library) {
+                LibraryRow(library: library)
+            }
+        }
+        .overlay { emptySearch }
+        .searchable(text: $search, prompt: "Search libraries")
+        .navigationTitle("Libraries")
+        .navigationDestination(for: LibraryNotice.self) { LibraryLicenseView(library: $0) }
         #if os(macOS)
-            NavigationSplitView {
-                List(libraries, selection: $selection) { LibraryRow(library: $0) }
-                    .overlay { emptySearch }
-                    .navigationSplitViewColumnWidth(min: 300, ideal: 330)
-            } detail: {
-                if let library = LibraryNotice.bundled.first(where: { $0.id == selection }) {
-                    LibraryLicenseView(library: library)
-                } else {
-                    ContentUnavailableView("No Library Selected", systemImage: "books.vertical")
-                }
-            }
-            .searchable(text: $search, placement: .sidebar, prompt: "Search libraries")
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-            .frame(minWidth: 920, minHeight: 540)
+            .scrollContentBackground(.hidden)
         #else
-            List(libraries) { library in
-                NavigationLink {
-                    LibraryLicenseView(library: library)
-                } label: {
-                    LibraryRow(library: library)
-                }
-            }
-            .overlay { emptySearch }
-            .searchable(text: $search, prompt: "Search libraries")
-            .navigationTitle("Libraries")
             .navigationDestination(item: $shown) { LibraryLicenseView(library: $0) }
             .task { shown = Self.previewLibrary }
         #endif
