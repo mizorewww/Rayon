@@ -210,7 +210,7 @@ The report is a Swift `Codable` struct whose fields are **only enums, `Bool` and
 - `platform`: macOS / iOS / iPadOS.
 - `osVersion`: **major.minor only** (15.4, not 15.4.1).
 - `deviceClass`: mac-appleSilicon / mac-intel / iPhone / iPad. No model identifier.
-- `language`: one of the app's localisations (en, zh-Hans, zh-Hant, other).
+- `language`: one of the app's localisations (en, zh-Hans, zh-Hant, ja, fr, es, other).
 - `regionGroup`: EEA / CN / other, derived from the storefront. It is coarse, so no Location label is needed. Consider omitting it entirely.
 - **No timestamp.** The server stamps the UTC date (day) at ingest.
 

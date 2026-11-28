@@ -71,6 +71,9 @@
     "en",
     "zh-Hans",
     "zh-Hant",
+    "ja",
+    "fr",
+    "es",
     "other"
   ],
   "latencyBucket" : [

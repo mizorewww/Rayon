@@ -88,6 +88,9 @@ public struct TelemetryEnvironment: Equatable, Sendable {
         case "en": .en
         case "zh-Hans": .zhHans
         case "zh-Hant": .zhHant
+        case "ja": .ja
+        case "fr": .fr
+        case "es": .es
         default: .other
         }
         #if os(macOS)

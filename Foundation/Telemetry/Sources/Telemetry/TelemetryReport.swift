@@ -62,6 +62,7 @@ public extension TelemetryReport {
         case en
         case zhHans = "zh-Hans"
         case zhHant = "zh-Hant"
+        case ja, fr, es
         case other
     }
 

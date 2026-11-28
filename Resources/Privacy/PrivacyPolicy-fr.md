@@ -1,6 +1,6 @@
 # Politique de confidentialité de Rayon
 
-_Dernière mise à jour : 27 novembre 2026_
+_Dernière mise à jour : 28 novembre 2026_
 
 _En cas de divergence entre les versions linguistiques de cette politique, la version anglaise prévaut._
 
@@ -15,7 +15,7 @@ Les seules données que Rayon envoie à ses développeurs sont des diagnostics a
 - **Rapports de plantage et utilisation (2) :** le niveau 1, plus un rapport par jour contenant des décomptes d’utilisation des fonctionnalités, chacun arrondi à une tranche (0, 1, 2–5, 6–20, 21–100, plus de 100). Les fonctionnalités comptées sont les sessions de terminal ouvertes, les navigateurs de fichiers ouverts, les transferts de fichiers, l’éditeur, les moniteurs, les sessions VNC et UU Remote, les extraits exécutés et les redirections de ports par type. Le rapport compte aussi les résultats de connexion (par exemple réussite, authentification refusée, délai dépassé, connexion refusée, clé d’hôte non approuvée, hôte introuvable) et indique quelles méthodes d’authentification ont été utilisées ce jour-là (mot de passe, clé, agent). Il contient également les types de clés parmi vos identités (Ed25519, ECDSA, RSA), des tranches pour le nombre de serveurs et d’identités enregistrés, l’indication de l’activation ou non de la synchronisation iCloud, d’un thème de terminal personnalisé et du masquage des adresses, ainsi qu’une tranche pour le nombre de jours d’utilisation de Rayon au cours des 28 derniers jours.
 - **Diagnostics détaillés (3) :** le niveau 2, plus, environ un jour sur dix : des tranches pour la durée d’authentification, la famille de système d’exploitation des serveurs que vous surveillez (Linux, macOS, BSD, autre), et les mesures de performance quotidiennes d’Apple (temps de lancement, durée des blocages, pic de mémoire, temps CPU, écritures sur disque), chacune arrondie à une tranche.
 
-Chaque rapport contient aussi la version de Rayon, la version majeure et mineure du système d’exploitation, la plateforme (macOS, iOS ou iPadOS), la catégorie d’appareil (Mac avec puce Apple, Mac Intel, iPhone ou iPad), la langue de l’app (anglais, chinois simplifié, chinois traditionnel ou autre), la manière dont Rayon a été installé (App Store, TestFlight ou téléchargement direct) et un groupe de régions approximatif (EEE/Royaume-Uni/Suisse, Chine continentale ou autre) déduit du pays de votre compte App Store.
+Chaque rapport contient aussi la version de Rayon, la version majeure et mineure du système d’exploitation, la plateforme (macOS, iOS ou iPadOS), la catégorie d’appareil (Mac avec puce Apple, Mac Intel, iPhone ou iPad), la langue de l’app (anglais, chinois simplifié, chinois traditionnel, japonais, français, espagnol ou autre), la manière dont Rayon a été installé (App Store, TestFlight ou téléchargement direct) et un groupe de régions approximatif (EEE/Royaume-Uni/Suisse, Chine continentale ou autre) déduit du pays de votre compte App Store.
 
 Vous pouvez consulter les rapports exacts dans Réglages › À propos › Diagnostics et utilisation › Voir ce qui est envoyé…
 

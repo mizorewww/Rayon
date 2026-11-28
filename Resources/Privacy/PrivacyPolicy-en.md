@@ -1,6 +1,6 @@
 # Rayon Privacy Policy
 
-_Last updated: November 27, 2026_
+_Last updated: November 28, 2026_
 
 Rayon is an SSH and server client. Your servers, identities, keys, passwords, snippets, port forwards, files and terminal sessions stay on your devices, and in your own iCloud account if you turn on iCloud Sync. Nobody else can read them, including the Rayon developers.
 
@@ -13,7 +13,7 @@ The only data Rayon sends to its developers is anonymous diagnostics and usage c
 - **Crash Reports and Usage (2):** level 1, plus one report per day with counts of feature use, each rounded into a range (0, 1, 2–5, 6–20, 21–100, more than 100). The features counted are terminal sessions opened, file browsers opened, file transfers, the editor, monitors, VNC and UU Remote sessions, snippets run and port forwards by type. The report also counts connection outcomes (such as success, sign-in refused, timeout, refused, host key not trusted, host not found) and says which sign-in methods were used that day (password, key, agent). It also carries the key types among your identities (Ed25519, ECDSA, RSA), ranges for the number of saved servers and identities, whether iCloud Sync, a custom terminal theme and hiding of addresses are on, and a range for the number of days Rayon was used in the last 28.
 - **Detailed Diagnostics (3):** level 2, plus on about one day in ten: ranges for sign-in time, the operating-system family of the servers you monitor (Linux, macOS, BSD, other), and Apple's daily performance figures (launch time, hang time, peak memory, CPU time, disk writes), each rounded into a range.
 
-Every report also carries the Rayon version, the operating system's major and minor version, the platform (macOS, iOS or iPadOS), the device class (Mac with Apple silicon, Intel Mac, iPhone or iPad), the app's language (English, Simplified Chinese, Traditional Chinese or other), how Rayon was installed (App Store, TestFlight or direct download) and a coarse region group (EEA/UK/Switzerland, mainland China or other) taken from your App Store country.
+Every report also carries the Rayon version, the operating system's major and minor version, the platform (macOS, iOS or iPadOS), the device class (Mac with Apple silicon, Intel Mac, iPhone or iPad), the app's language (English, Simplified Chinese, Traditional Chinese, Japanese, French, Spanish or other), how Rayon was installed (App Store, TestFlight or direct download) and a coarse region group (EEA/UK/Switzerland, mainland China or other) taken from your App Store country.
 
 You can see the exact reports in Settings › About › Diagnostics & Usage › View What's Sent…
 

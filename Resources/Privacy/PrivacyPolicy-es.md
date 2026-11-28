@@ -1,6 +1,6 @@
 # Política de privacidad de Rayon
 
-_Última actualización: 27 de noviembre de 2026_
+_Última actualización: 28 de noviembre de 2026_
 
 _Si las versiones de esta política en distintos idiomas difieren, prevalece la versión en inglés._
 
@@ -15,7 +15,7 @@ Los únicos datos que Rayon envía a sus desarrolladores son diagnósticos anón
 - **Informes de fallos y uso (2):** el nivel 1, más un informe al día con recuentos de uso de funciones, cada uno redondeado a un intervalo (0, 1, 2–5, 6–20, 21–100, más de 100). Las funciones que se cuentan son las sesiones de terminal abiertas, los exploradores de archivos abiertos, las transferencias de archivos, el editor, los monitores, las sesiones de VNC y UU Remote, los fragmentos ejecutados y las redirecciones de puertos por tipo. El informe también cuenta los resultados de conexión (como éxito, inicio de sesión rechazado, tiempo de espera agotado, conexión rechazada, clave de host no confiable, host no encontrado) e indica qué métodos de inicio de sesión se usaron ese día (contraseña, clave, agente). Además incluye los tipos de clave de tus identidades (Ed25519, ECDSA, RSA), intervalos para el número de servidores e identidades guardados, si están activados la sincronización con iCloud, un tema de terminal personalizado y la ocultación de direcciones, y un intervalo para el número de días en que se usó Rayon en los últimos 28.
 - **Diagnóstico detallado (3):** el nivel 2, más, aproximadamente un día de cada diez: intervalos para el tiempo de inicio de sesión, la familia de sistema operativo de los servidores que supervisas (Linux, macOS, BSD, otro) y las cifras de rendimiento diarias de Apple (tiempo de arranque, tiempo de bloqueo, memoria máxima, tiempo de CPU, escrituras en disco), cada una redondeada a un intervalo.
 
-Cada informe incluye también la versión de Rayon, la versión principal y secundaria del sistema operativo, la plataforma (macOS, iOS o iPadOS), la clase de dispositivo (Mac con chip de Apple, Mac con Intel, iPhone o iPad), el idioma de la app (inglés, chino simplificado, chino tradicional u otro), cómo se instaló Rayon (App Store, TestFlight o descarga directa) y un grupo de regiones aproximado (EEE/Reino Unido/Suiza, China continental u otro) obtenido del país de tu App Store.
+Cada informe incluye también la versión de Rayon, la versión principal y secundaria del sistema operativo, la plataforma (macOS, iOS o iPadOS), la clase de dispositivo (Mac con chip de Apple, Mac con Intel, iPhone o iPad), el idioma de la app (inglés, chino simplificado, chino tradicional, japonés, francés, español u otro), cómo se instaló Rayon (App Store, TestFlight o descarga directa) y un grupo de regiones aproximado (EEE/Reino Unido/Suiza, China continental u otro) obtenido del país de tu App Store.
 
 Puedes ver los informes exactos en Ajustes › Acerca de › Diagnóstico y uso › Ver lo que se envía…
 
