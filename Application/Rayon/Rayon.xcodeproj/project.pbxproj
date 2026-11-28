@@ -11,6 +11,7 @@
 		01B3BB8C084B19623AA6156B /* MachineStatusView in Frameworks */ = {isa = PBXBuildFile; productRef = BACEAFD2486E184D130E727E /* MachineStatusView */; };
 		044F6375FF0E2D3CDB066314 /* TerminalClipboardSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F8B14D36D71D3CD49CDE61B /* TerminalClipboardSettings.swift */; };
 		054971055911DBE26AE15A51 /* TitleBarDoubleClick.swift in Sources */ = {isa = PBXBuildFile; fileRef = F06E325B2AB0316062D4788E /* TitleBarDoubleClick.swift */; };
+		054F6183D87B0967A35F39A0 /* LanguageSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AEC7F7BB95DD0952CCFBE84 /* LanguageSettings.swift */; };
 		05F8B57F61A7CF4E328B9981 /* ServerGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA74C3D92BD950F96112FAD2 /* ServerGroup.swift */; };
 		07A6406ADF2E5B14C18F0361 /* LicenseSheet+macOS.swift in Sources */ = {isa = PBXBuildFile; fileRef = BBBC074DA533C8EC63BD3D01 /* LicenseSheet+macOS.swift */; };
 		0918E89A0E6167922AF62B60 /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = 696AB902719D53E8D46BBF28 /* LICENSE */; };
@@ -136,6 +137,7 @@
 		070BE864F47DF0294482E4CC /* MachineStatus */ = {isa = PBXFileReference; lastKnownFileType = folder; name = MachineStatus; path = ../../Foundation/MachineStatus; sourceTree = SOURCE_ROOT; };
 		082936B899509164A1AC3890 /* DashboardView+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "DashboardView+macOS.swift"; sourceTree = "<group>"; };
 		0A93629874F251ED929CADA9 /* RemoteDesktopsView+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "RemoteDesktopsView+macOS.swift"; sourceTree = "<group>"; };
+		0AEC7F7BB95DD0952CCFBE84 /* LanguageSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguageSettings.swift; sourceTree = "<group>"; };
 		0F8B14D36D71D3CD49CDE61B /* TerminalClipboardSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalClipboardSettings.swift; sourceTree = "<group>"; };
 		1157755A37A6A791F9CAD115 /* FileTransferSessionActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileTransferSessionActions.swift; sourceTree = "<group>"; };
 		15E5774EFF6FBF61114C8BB7 /* FileTransferPage+macOS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FileTransferPage+macOS.swift"; sourceTree = "<group>"; };
@@ -285,6 +287,7 @@
 				41317BAA331C5AF4D338C81B /* DataSettings+macOS.swift */,
 				8E7421FF7080E8EE418FC35E /* DiagnosticsSettings.swift */,
 				BDA227414A14A2A06F8B49E6 /* GeneralSettings.swift */,
+				0AEC7F7BB95DD0952CCFBE84 /* LanguageSettings.swift */,
 				18285B1C7D3064792E2CF78B /* LibrariesView.swift */,
 				BBBC074DA533C8EC63BD3D01 /* LicenseSheet+macOS.swift */,
 				68766FBCCF75FCB358204392 /* LicenseView+iOS.swift */,
@@ -777,6 +780,7 @@
 				84EAF6398CE1C7B1F9445752 /* IdentityEditor.swift in Sources */,
 				F44D2B820BAFA7CAA86A864A /* IdentityPicker.swift in Sources */,
 				2B939E9154B161274D98E133 /* Indicator.swift in Sources */,
+				054F6183D87B0967A35F39A0 /* LanguageSettings.swift in Sources */,
 				4F382D7D4FCBA6A7C54DE3BC /* LibrariesView.swift in Sources */,
 				07A6406ADF2E5B14C18F0361 /* LicenseSheet+macOS.swift in Sources */,
 				75640C9BDCC96E2D5815E223 /* LicenseView+iOS.swift in Sources */,

@@ -91,6 +91,24 @@
         func applicationWillTerminate(_: Notification) {
             // A setting changed just before ⌘Q is still waiting out its pause.
             TerminalSettings.shared.flush()
+            if relaunches {
+                // open outlives this process, so the new instance starts as
+                // this one exits rather than beside a running one.
+                let open = Process()
+                open.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+                open.arguments = ["-n", Bundle.main.bundlePath]
+                do { try open.run() } catch { Logger.app.errorFile("relaunch failed: \(error)") }
+            }
+        }
+
+        /// Set by a restart and cleared if the quit is declined: the next
+        /// instance opens once this one has quit.
+        private var relaunches = false
+
+        /// Quits, asking first as ⌘Q does, and opens Rayon again.
+        func restart() {
+            relaunches = true
+            NSApp.terminate(nil)
         }
 
         private func installWindowPolicyObservers() {
@@ -222,7 +240,10 @@
             ) { confirmed in
                 MainActor.assumeIsolated {
                     self.quitAsked = false
-                    guard confirmed else { return }
+                    guard confirmed else {
+                        self.relaunches = false
+                        return
+                    }
                     self.quitConfirmed = true
                     self.terminating = true
                     TerminalManager.shared.closeAll()

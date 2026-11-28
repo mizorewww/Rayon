@@ -117,6 +117,7 @@ struct SettingsSection: Identifiable {
 
 enum SettingsGroup: String, CaseIterable, Identifiable {
     case appearance
+    case language
     case sessions
     case recent
     case sync
@@ -135,7 +136,7 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
 
     var page: SettingsPage {
         switch self {
-        case .appearance, .sessions, .recent, .sync, .data: .general
+        case .appearance, .language, .sessions, .recent, .sync, .data: .general
         case .ssh, .uuRemote, .monitor: .connection
         case .terminalClipboard: SettingsPage(id: "input") ?? .general
         case .about, .diagnostics, .acknowledgements: .about
@@ -145,6 +146,7 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .appearance: String(localized: "Appearance")
+        case .language: String(localized: "Language")
         case .sessions: String(localized: "Sessions")
         case .recent: String(localized: "Recent")
         case .sync: String(localized: "iCloud Sync")
@@ -163,6 +165,7 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
     var keywords: String {
         switch self {
         case .appearance: "appearance dark light mode theme system effects animation background home glow gradient reduce motion"
+        case .language: "language localization translation locale region restart english chinese japanese french spanish 简体中文 繁體中文 日本語 français español"
         case .sessions: "open sessions automatically ask before closing confirmation quit"
         case .recent: "recent servers history quick connect commands record remember"
         case .sync: "icloud sync cloud servers identities snippets port forwards terminal settings credentials devices"
@@ -175,6 +178,16 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
         case .diagnostics: "diagnostics usage telemetry analytics crash reports privacy policy data sent anonymous"
         case .acknowledgements: "acknowledgements credits libraries ghostty"
         }
+    }
+
+    /// Text under the group's rows.
+    var footer: String? {
+        #if os(iOS)
+            if self == .language {
+                return String(localized: "To use another language, open Settings › Apps › Rayon › Language. The Settings app lists it once your device has more than one preferred language.")
+            }
+        #endif
+        return nil
     }
 
     /// The iPhone and iPad keep the UU Remote account under More.
@@ -200,6 +213,7 @@ enum SettingsGroup: String, CaseIterable, Identifiable {
     @MainActor @ViewBuilder var rows: some View {
         switch self {
         case .appearance: AppearanceSettings()
+        case .language: LanguageSettings()
         case .sessions: SessionSettings()
         case .recent: RecentSettings()
         case .sync: CloudSyncSettings()
@@ -221,8 +235,12 @@ struct SettingsGroupSection: View {
     var prefix: String?
 
     var body: some View {
-        Section(prefix.map { String(localized: "\($0) › \(group.title)") } ?? group.title) {
+        Section {
             group.rows
+        } header: {
+            Text(prefix.map { String(localized: "\($0) › \(group.title)") } ?? group.title)
+        } footer: {
+            if let footer = group.footer { Text(footer) }
         }
     }
 }
