@@ -137,7 +137,8 @@
 
         func runningToggle(_ forward: RDPortForward) -> some View {
             let running = backend.sessionExists(withPortForwardID: forward.id)
-            return Toggle("Running", isOn: Binding(get: { running }, set: { on in
+            // Named for what it does: VoiceOver reads its state as on or off.
+            return Toggle("Run", isOn: Binding(get: { running }, set: { on in
                 if on {
                     backend.createSession(withPortForwardID: forward.id)
                 } else {
