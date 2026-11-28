@@ -326,11 +326,14 @@ struct KeybindingList: View {
                         hiddenNote(hidden)
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                            .lineLimit(2)
+                            // Before the spacer, and as many lines as the
+                            // language needs rather than two cut off.
+                            .layoutPriority(1)
                     }
                     Spacer()
                     Button(.init("Restore Defaults…", bundle: .module)) { confirmReset = true }
                         .disabled(!settings.isSet("keybind"))
+                        .fixedSize()
                 }
                 .padding(8)
             }
