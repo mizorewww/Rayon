@@ -99,14 +99,13 @@ It reads one query, `GET /dashboard/api/summary?from=YYYY-MM-DD&to=YYYY-MM-DD`, 
 
 Cloudflare Zero Trust Access guards `/dashboard` and everything under it; `/v1/*` stays outside, so ingest is unaffected. In Zero Trust (team `djtrump.cloudflareaccess.com`):
 
-- Access › Applications › **Rayon telemetry dashboard**: self-hosted, destination `telemetry.kfcv50.today/dashboard`, 24-hour sessions, login with One-time PIN only.
-- Its policy **Rayon telemetry admins** allows the group **Rayon telemetry team** (Access › Groups), which lists the people who may sign in by email.
+- Access › Applications › **Rayon telemetry dashboard**: self-hosted, destination `telemetry.kfcv50.today/dashboard`, 24-hour sessions, and one login method: the **Cloudflare** identity provider (Settings › Authentication), limited to members of this Cloudflare account. Opening the page goes straight to its login.
+- Its policy **Rayon telemetry admins** allows the group **Rayon telemetry team** (Access › Groups), which lists by email the people who may sign in.
 
-Open the URL, enter your email, and type the code Cloudflare emails you. Sign out from the page, or at `/cdn-cgi/access/logout`.
+Open the URL and sign in to Cloudflare as you do for the Cloudflare dashboard; the first time, approve Cloudflare Access's request to use your Cloudflare account. Sign out from the page, or at `/cdn-cgi/access/logout`.
 
-- **Add a teammate**: Zero Trust › Access › Groups › Rayon telemetry team › Edit, add their email under Include › Emails, Save. They sign in the same way.
-- **Remove a teammate**: delete their email from that group. Sessions they already hold last up to 24 hours; to end them now, Zero Trust › My Team › Users › the user › Revoke session.
-- GitHub (or another identity provider) can be added under Settings › Authentication, then allowed in the application's Login methods. GitHub needs an OAuth app registered on GitHub first.
+- **Add a teammate**: two steps, since only account members can sign in and only the group's members are let in. Invite them to the Cloudflare account (Manage Account › Members › Invite; a read-only role is enough), then add the email they use for Cloudflare to Zero Trust › Access › Groups › Rayon telemetry team › Edit › Include › Emails, and Save. They sign in the same way.
+- **Remove a teammate**: delete their email from that group, and remove them from the account's members if they need nothing else there. Sessions they already hold last up to 24 hours; to end them now, Zero Trust › My Team › Users › the user › Revoke session.
 
 The Worker does not trust the route alone: on every `/dashboard*` request it verifies the `Cf-Access-Jwt-Assertion` token Access adds (signature against the team's keys at `/cdn-cgi/access/certs`, issuer, audience, expiry) and answers a bare 403 otherwise. The team domain and the application's AUD tag are the `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` variables in `cloudflare.config.ts` and `wrangler.toml`. Neither is secret. If the application is recreated, copy its new AUD tag (Access › Applications › the app › Overview, "Application Audience (AUD) Tag") into both files and redeploy.
 
