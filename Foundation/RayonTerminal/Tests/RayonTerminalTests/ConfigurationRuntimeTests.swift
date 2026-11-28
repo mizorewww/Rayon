@@ -327,6 +327,38 @@ final class ConfigurationRuntimeTests: XCTestCase {
         XCTAssertFalse(settings.undoManager.canUndo)
     }
 
+    /// A run back to its start does not undo another change registered in
+    /// the same event as the run's first step, before or after it.
+    @MainActor func testARunBackToItsStartKeepsAnotherChangeInItsEvent() {
+        final class Box { var value = 0 }
+        SettingUndoRun.shared.end()
+        defer { SettingUndoRun.shared.end() }
+        for otherFirst in [false, true] {
+            let manager = UndoManager()
+            let setting = Box(), other = Box()
+            func change(to value: Int) {
+                let old = setting.value
+                setting.value = value
+                SettingUndoRun.shared.record("test.setting", from: old, to: value, on: manager) {
+                    manager.registerUndo(withTarget: setting) { $0.value = old }
+                }
+            }
+            func changeOther() {
+                other.value = 1
+                manager.registerUndo(withTarget: other) { $0.value = 0 }
+            }
+            if otherFirst { changeOther() }
+            change(to: 1)
+            if !otherFirst { changeOther() }
+            // The event ends, and with it its automatic undo group.
+            RunLoop.main.run(until: .now.addingTimeInterval(0.01))
+            change(to: 0)
+            XCTAssertEqual(other.value, 1, "other first: \(otherFirst)")
+            XCTAssertEqual(setting.value, 0)
+            SettingUndoRun.shared.end()
+        }
+    }
+
     /// Undo does not reach past settings that came from elsewhere (another
     /// device, a restored backup): it would put back what they replaced.
     @MainActor func testUndoStopsAtAdoptedAndLoadedSettings() throws {

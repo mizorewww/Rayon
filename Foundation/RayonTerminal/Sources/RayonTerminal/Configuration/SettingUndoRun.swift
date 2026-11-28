@@ -19,6 +19,9 @@ public final class SettingUndoRun {
     private var key: String?
     private var last: ContinuousClock.Instant?
     private var start: (any Equatable)?
+    /// The run's step is a top-level undo group of its own, so undoing it
+    /// takes back nothing else.
+    private var alone = false
     private var registering = false
     private var observers: [NSObjectProtocol] = []
 
@@ -47,15 +50,30 @@ public final class SettingUndoRun {
         let continues = !manager.isUndoing && !manager.isRedoing && manager.canUndo
             && manager === self.manager && key == self.key
             && last.map { now - $0 < Self.pause } ?? false
-        if continues, (start as? Value) == new, manager.groupingLevel == 0 {
+        if continues, alone, (start as? Value) == new, manager.groupingLevel == 0 {
             // The run's step would put back what is there now. Undoing it
             // removes it; the undo notification ends the run.
             manager.undo()
             return
         }
         if !continues {
+            // A top-level group of its own, not the event's automatic one,
+            // which another registration in the same event would join.
+            // Beginning a group while grouping by event first opens that
+            // automatic group, so grouping by event is off meanwhile.
+            // Inside a group someone else opened, the step is not alone.
+            alone = manager.groupingLevel == 0
             registering = true
-            register()
+            if alone {
+                let groupsByEvent = manager.groupsByEvent
+                manager.groupsByEvent = false
+                manager.beginUndoGrouping()
+                register()
+                manager.endUndoGrouping()
+                manager.groupsByEvent = groupsByEvent
+            } else {
+                register()
+            }
             registering = false
             start = old
         }
@@ -75,5 +93,6 @@ public final class SettingUndoRun {
         key = nil
         last = nil
         start = nil
+        alone = false
     }
 }
