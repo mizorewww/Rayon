@@ -4,9 +4,11 @@
 //
 //  A setting in a view (or menu commands): `@AppSetting(AppSettings.x) var x`
 //  reads it, sets it through its key, and draws again when it changes,
-//  wherever the change came from. A change made through it goes on the
-//  window's undo stack, beside the terminal's settings, so ⌘Z undoes the
-//  change in front rather than reaching back to an older one elsewhere.
+//  wherever the change came from. In Settings a change made through it goes
+//  on the window's undo stack, beside the terminal's settings, so ⌘Z undoes
+//  the change in front rather than reaching back to an older one elsewhere.
+//  Elsewhere (a terminal's zoom, an editor's Wrap Lines) it does not: those
+//  are not edits for ⌘Z to take back among the text typed in that window.
 //
 
 import Combine
@@ -15,10 +17,15 @@ import SwiftUI
 @MainActor @propertyWrapper
 public struct AppSetting<Value: Codable & Equatable & Sendable>: DynamicProperty {
     @ObservedObject private var observer: SettingObserver<Value>
-    @Environment(\.undoManager) private var undoManager
+    @Environment(\.undoManager) private var windowUndoManager
+    @Environment(\.registersSettingUndo) private var registersUndo
 
     public init(_ key: SettingKey<Value>) {
         observer = SettingObserver.shared(key)
+    }
+
+    private var undoManager: UndoManager? {
+        registersUndo ? windowUndoManager : nil
     }
 
     public var wrappedValue: Value {
@@ -31,6 +38,12 @@ public struct AppSetting<Value: Codable & Equatable & Sendable>: DynamicProperty
         let undoManager = undoManager
         return Binding(get: { observer.value }, set: { observer.set($0, undoManager: undoManager) })
     }
+}
+
+public extension EnvironmentValues {
+    /// Whether changes made through `@AppSetting` go on the window's undo
+    /// stack: true in Settings only.
+    @Entry var registersSettingUndo = false
 }
 
 /// One per setting, shared by every view that shows it.

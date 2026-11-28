@@ -30,6 +30,7 @@ struct SettingsView: View {
     var body: some View {
         content
             .terminalSettingsChrome()
+            .environment(\.registersSettingUndo, true)
             .onAppear {
                 // Changes go on the window's undo stack, where ⌘Z, Edit ›
                 // Undo and shaking the device find them.
@@ -178,6 +179,8 @@ struct SettingsView: View {
                 // A large title has no scroll view to collapse into above the preview.
                 .navigationBarTitleDisplayMode(page.previews ? .inline : .automatic)
                 .toolbar { undoButtons }
+                // A pushed page, which may not inherit it from the list.
+                .environment(\.registersSettingUndo, true)
         }
     #endif
 }
