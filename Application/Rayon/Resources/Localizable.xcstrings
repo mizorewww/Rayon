@@ -1215,19 +1215,7 @@
         }
       }
     },
-    "1080" : {
-      "shouldTranslate" : false
-    },
-    "127.0.0.1" : {
-      "shouldTranslate" : false
-    },
     "22" : {
-      "shouldTranslate" : false
-    },
-    "5432" : {
-      "shouldTranslate" : false
-    },
-    "5433" : {
       "shouldTranslate" : false
     },
     "5900" : {

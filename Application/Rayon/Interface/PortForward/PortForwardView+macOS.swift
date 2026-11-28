@@ -247,7 +247,9 @@
                     }
                     HStack(alignment: .top, spacing: RX.Space.s4) {
                         RXField("Bind port", error: bindPort.isEmpty || UInt16(bindPort) != nil ? nil : "1–65535") {
-                            TextField(orientation == .dynamicSOCKS ? "1080" : "5433", text: $bindPort)
+                            TextField("Bind port", text: $bindPort, prompt: Text(verbatim: orientation == .dynamicSOCKS ? "1080" : "5433"))
+                                // The rounded field shows only the prompt; VoiceOver needs the name.
+                                .accessibilityLabel("Bind port")
                                 .textFieldStyle(.roundedBorder)
                                 .font(.rxCode)
                         }
@@ -269,13 +271,15 @@
                     if orientation != .dynamicSOCKS {
                         HStack(alignment: .top, spacing: RX.Space.s4) {
                             RXField("Target host") {
-                                TextField("127.0.0.1", text: $targetHost)
+                                TextField("Target host", text: $targetHost, prompt: Text(verbatim: "127.0.0.1"))
+                                    .accessibilityLabel("Target host")
                                     .textFieldStyle(.roundedBorder)
                                     .font(.rxCode)
                                     .disableAutocorrection(true)
                             }
                             RXField("Target port", error: targetPort.isEmpty || UInt16(targetPort) != nil ? nil : "1–65535") {
-                                TextField("5432", text: $targetPort)
+                                TextField("Target port", text: $targetPort, prompt: Text(verbatim: "5432"))
+                                    .accessibilityLabel("Target port")
                                     .textFieldStyle(.roundedBorder)
                                     .font(.rxCode)
                             }
