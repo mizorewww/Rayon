@@ -23,14 +23,15 @@ beforeEach(async () => {
   await env.DB.batch(["aggregates", "crashes", "nonces"].map((t) => env.DB.prepare(`DELETE FROM ${t}`)));
 });
 
-const token = (claims: { aud?: string; iss?: string; exp?: number; key?: CryptoKey } = {}) =>
-  new SignJWT({ email: "admin@example.com" })
+const token = (claims: { aud?: string; iss?: string; exp?: number | null; iat?: false; key?: CryptoKey } = {}) => {
+  const jwt = new SignJWT({ email: "admin@example.com" })
     .setProtectedHeader({ alg: "RS256", kid: "access" })
     .setIssuer(claims.iss ?? team)
-    .setAudience(claims.aud ?? "test-aud")
-    .setIssuedAt()
-    .setExpirationTime(claims.exp ?? "1h")
-    .sign(claims.key ?? accessKey);
+    .setAudience(claims.aud ?? "test-aud");
+  if (claims.iat !== false) jwt.setIssuedAt();
+  if (claims.exp !== null) jwt.setExpirationTime(claims.exp ?? "1h");
+  return jwt.sign(claims.key ?? accessKey);
+};
 
 const get = (path: string, jwt?: string) =>
   worker.fetch(new Request(`https://telemetry.test${path}`, { headers: jwt ? { "cf-access-jwt-assertion": jwt } : {} }), env);
@@ -46,6 +47,8 @@ describe("dashboard", () => {
     ["a token for another application", () => token({ aud: "other-app" })],
     ["a token from another team", () => token({ iss: "https://elsewhere.cloudflareaccess.com" })],
     ["an expired token", () => token({ exp: Math.floor(Date.now() / 1000) - 600 })],
+    ["a token without an expiry", () => token({ exp: null })],
+    ["a token without an issue time", () => token({ iat: false })],
     ["a token that is not a JWT", async () => "not-a-jwt"],
   ])("refuses %s with a bare 403", async (_, make) => {
     for (const path of ["/dashboard", "/dashboard/api/summary", "/dashboard/anything"]) {

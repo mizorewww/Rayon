@@ -26,7 +26,7 @@ async function viewer(request: Request, env: DashboardEnv): Promise<string | und
   let keys = keySets.get(team);
   if (!keys) keySets.set(team, (keys = createRemoteJWKSet(new URL("/cdn-cgi/access/certs", team))));
   try {
-    const { payload } = await jwtVerify(token, keys, { issuer: team, audience: env.ACCESS_AUD, algorithms: ["RS256"] });
+    const { payload } = await jwtVerify(token, keys, { issuer: team, audience: env.ACCESS_AUD, algorithms: ["RS256"], requiredClaims: ["exp", "iat"] });
     return typeof payload.email === "string" ? payload.email : "";
   } catch {
     return undefined;
