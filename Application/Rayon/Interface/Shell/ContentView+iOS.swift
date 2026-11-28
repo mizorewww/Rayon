@@ -260,7 +260,7 @@
         }
     }
 
-    /// Identities, Snippets, Remote Desktop, Settings, About, Logs, License.
+    /// Identities, Snippets, Remote Desktop, the UU Remote account, Settings and Logs.
     struct MoreView: View {
         @EnvironmentObject var store: RayonStore
         @State private var openUUAccount = false
@@ -291,14 +291,9 @@
                 Section {
                     NavigationLink { SettingsView() } label: { moreRow("Settings", "gearshape") }
                         .rxListRow()
+                    // The license and the source code are in Settings › About.
                     NavigationLink { LogView() } label: { moreRow("Logs", "doc.text.magnifyingglass") }
                         .rxListRow()
-                    NavigationLink { LicenseView() } label: { moreRow("License", "doc.text") }
-                        .rxListRow()
-                    Link(destination: URL(string: "https://github.com/mizorewww/Rayon")!) {
-                        moreRow("Source Code", "chevron.left.forwardslash.chevron.right")
-                    }
-                    .rxListRow()
                 } header: { RXSectionHeader("App") } footer: {
                     Text(appVersion)
                 }
