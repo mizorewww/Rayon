@@ -15,6 +15,7 @@
         /// This view's window: each of the router's sheets shows only in
         /// the window that asked for it.
         @StateObject private var anchor = WindowAnchor()
+        @State private var pageToolbar: PageToolbarContent?
 
         var body: some View {
             NavigationSplitView(columnVisibility: $router.columnVisibility) {
@@ -39,6 +40,7 @@
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .rxClearToolbar()
+                .pageToolbarItems($pageToolbar)
             }
             .frame(minWidth: 940, minHeight: 600)
             .modifier(HiddenWindowTitle())

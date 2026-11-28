@@ -107,10 +107,19 @@
         let primary: ToolbarAction?
         @Environment(\.serverToolSwitch) private var toolSwitch
 
+        @Environment(\.hoistsPageToolbar) private var hoisted
+
         private var hasTrailing: Bool { Trailing.self != EmptyView.self }
 
         func body(content: Content) -> some View {
-            if #available(macOS 26.0, *) {
+            if hoisted {
+                content.preference(key: PageToolbarKey.self, value: PageToolbarContent(
+                    leading: Leading.self == EmptyView.self ? nil : AnyView(leading),
+                    trailing: hasTrailing ? AnyView(trailing) : nil,
+                    primary: primary,
+                    toolSwitch: toolSwitch
+                ))
+            } else if #available(macOS 26.0, *) {
                 content.toolbar {
                     ToolbarItemGroup(placement: .navigation) { leading }
                     if let toolSwitch {
@@ -155,6 +164,86 @@
                         }
                     }
                 }
+            }
+        }
+    }
+
+    /// What the page in front puts in the main window's toolbar. The window
+    /// owns one fixed set of toolbar items and swaps their content as pages
+    /// change: with the items declared on each page, every switch had AppKit
+    /// remove all of them and add new ones, and lay the toolbar out again.
+    struct PageToolbarContent: Equatable {
+        let leading: AnyView?
+        let trailing: AnyView?
+        let primary: ToolbarAction?
+        let toolSwitch: ServerToolSwitch?
+
+        // Views have no equality; each update of the page hands new ones.
+        static func == (_: Self, _: Self) -> Bool { false }
+    }
+
+    struct PageToolbarKey: PreferenceKey {
+        static var defaultValue: PageToolbarContent? { nil }
+
+        static func reduce(value: inout PageToolbarContent?, nextValue: () -> PageToolbarContent?) {
+            value = nextValue() ?? value
+        }
+    }
+
+    extension EnvironmentValues {
+        /// Set by the main window, which shows the page's items in its own
+        /// toolbar (`PageToolbarItems`); elsewhere a page declares them itself.
+        @Entry var hoistsPageToolbar = false
+    }
+
+    /// The main window's toolbar: the same items whatever the page, hidden
+    /// where the page in front has nothing for them.
+    @available(macOS 26.0, *)
+    struct PageToolbarItems: ToolbarContent {
+        let content: PageToolbarContent?
+
+        var body: some ToolbarContent {
+            ToolbarItem(placement: .navigation) {
+                HStack { content?.leading }
+                    // Each control keeps its own label; as one element the
+                    // stack would take the item's, the first control's.
+                    .accessibilityElement(children: .contain)
+            }
+            .hidden(content?.leading == nil)
+            ToolbarItem(placement: .principal) {
+                if let toolSwitch = content?.toolSwitch {
+                    ServerToolSwitcher(machine: toolSwitch.machine, current: toolSwitch.current)
+                }
+            }
+            .hidden(content?.toolSwitch == nil)
+            ToolbarSpacer(.flexible)
+                .hidden(content?.toolSwitch != nil)
+            ToolbarItem(placement: .automatic) {
+                HStack { content?.trailing }
+                    // Each control keeps its own label; as one element the
+                    // stack would take the item's, the first control's.
+                    .accessibilityElement(children: .contain)
+            }
+            .hidden(content?.trailing == nil)
+            ToolbarSpacer(.fixed)
+                .hidden(content?.trailing == nil || content?.primary == nil)
+            ToolbarItem(placement: .primaryAction) {
+                content?.primary
+            }
+            .hidden(content?.primary == nil)
+        }
+    }
+
+    extension View {
+        /// Shows the toolbar items of the page in front in this view's toolbar.
+        @ViewBuilder
+        func pageToolbarItems(_ content: Binding<PageToolbarContent?>) -> some View {
+            if #available(macOS 26.0, *) {
+                environment(\.hoistsPageToolbar, true)
+                    .onPreferenceChange(PageToolbarKey.self) { content.wrappedValue = $0 }
+                    .toolbar { PageToolbarItems(content: content.wrappedValue) }
+            } else {
+                self
             }
         }
     }
