@@ -8,6 +8,7 @@ The ingest for Rayon's anonymous telemetry, as specified in [`docs/telemetry.md`
 - The Worker never reads `CF-Connecting-IP`, `X-Forwarded-For` or `User-Agent`. Workers Logs, traces, Logpush and `workers.dev` are off in `cloudflare.config.ts` (deploy) and `wrangler.toml` (local).
 - `GET /v1/aggregates?from=YYYY-MM-DD&to=YYYY-MM-DD` and `GET /v1/crashes?from=YYYY-MM-DD` need `Authorization: Bearer <READ_SECRET>`. Aggregates fold app and OS versions with fewer than ten reports in the range into `other`, and leave out every cell under ten.
 - A daily cron deletes crash items older than 90 days and nonces older than three days.
+- `GET /dashboard` is a page over the same sums, behind Cloudflare Access ([Dashboard](#dashboard)).
 
 ## Develop
 
@@ -87,6 +88,36 @@ curl -H "Authorization: Bearer $READ_SECRET" "https://telemetry.kfcv50.today/v1/
 ```
 
 The `reports` metric with bucket `usage` counts daily reports, which approximates daily active devices at level 2 and up. Every other metric is a count of reports per bucket. For example, `usage.counts.terminalSessionsOpened` with bucket `6` is the number of devices that opened 6–20 terminal sessions that day.
+
+## Dashboard
+
+`https://telemetry.kfcv50.today/dashboard` shows, for a range of days: daily reports, reports by app version, platform, OS version, device class, language, region group, channel and telemetry level, feature usage, connection outcomes, settings, level 3 detail, and crash and hang items counted by signature and app version.
+
+It reads one query, `GET /dashboard/api/summary?from=YYYY-MM-DD&to=YYYY-MM-DD`, which sums `aggregates` and `crashes` over the range and leaves out every cell under ten, as `/v1/aggregates` does; app and OS versions under ten fold into `other`. No report or crash item leaves the database. A crash item's signature (kind, exception, first app frame of the attributed thread) is computed at ingest (`src/signature.ts`) and kept in `crashes.signature`.
+
+### Sign in
+
+Cloudflare Zero Trust Access guards `/dashboard` and everything under it; `/v1/*` stays outside, so ingest is unaffected. In Zero Trust (team `djtrump.cloudflareaccess.com`):
+
+- Access › Applications › **Rayon telemetry dashboard**: self-hosted, destination `telemetry.kfcv50.today/dashboard`, 24-hour sessions, login with One-time PIN only.
+- Its policy **Rayon telemetry admins** allows the group **Rayon telemetry team** (Access › Groups), which lists the people who may sign in by email.
+
+Open the URL, enter your email, and type the code Cloudflare emails you. Sign out from the page, or at `/cdn-cgi/access/logout`.
+
+- **Add a teammate**: Zero Trust › Access › Groups › Rayon telemetry team › Edit, add their email under Include › Emails, Save. They sign in the same way.
+- **Remove a teammate**: delete their email from that group. Sessions they already hold last up to 24 hours; to end them now, Zero Trust › My Team › Users › the user › Revoke session.
+- GitHub (or another identity provider) can be added under Settings › Authentication, then allowed in the application's Login methods. GitHub needs an OAuth app registered on GitHub first.
+
+The Worker does not trust the route alone: on every `/dashboard*` request it verifies the `Cf-Access-Jwt-Assertion` token Access adds (signature against the team's keys at `/cdn-cgi/access/certs`, issuer, audience, expiry) and answers a bare 403 otherwise. The team domain and the application's AUD tag are the `ACCESS_TEAM_DOMAIN` and `ACCESS_AUD` variables in `cloudflare.config.ts` and `wrangler.toml`. Neither is secret. If the application is recreated, copy its new AUD tag (Access › Applications › the app › Overview, "Application Audience (AUD) Tag") into both files and redeploy.
+
+### Deploy
+
+The page is `src/dashboard.html`, imported as text, with no build step of its own. A deploy that adds a migration applies it first:
+
+```sh
+bun run test && bun run migrate:remote && bun run deploy
+curl -s -o /dev/null -w '%{http_code}\n' https://telemetry.kfcv50.today/dashboard   # 302 to the Access login
+```
 
 ## Changing the schema
 
