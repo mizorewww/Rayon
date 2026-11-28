@@ -226,7 +226,9 @@ private struct SettingsSearchResults: View {
     }
 
     var body: some View {
-        Group {
+        // A ZStack, not a Group: with nothing found yet a Group has no
+        // view to run the task on, so the search never ran.
+        ZStack {
             if let found {
                 if found.groups.isEmpty, found.terminal.isEmpty {
                     ContentUnavailableView.search(text: found.query)
@@ -244,6 +246,7 @@ private struct SettingsSearchResults: View {
                 }
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .task(id: query) {
             // The first query shows at once; later ones wait for a pause.
             if found != nil {
