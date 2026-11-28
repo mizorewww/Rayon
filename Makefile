@@ -19,7 +19,7 @@ help:
 	@echo "build         Build the Mac and iOS apps"
 	@echo "build-macos   Build the Mac app, signed with your Apple Development certificate or ad hoc"
 	@echo "build-ios     Build the iOS app for the simulator, signed ad hoc so the keychain works"
-	@echo "test          Run the Swift package tests: $(notdir $(TEST_PACKAGES))"
+	@echo "test          Check the privacy policies' Markdown and run the Swift package tests: $(notdir $(TEST_PACKAGES))"
 	@echo "test-telemetry-server  Typecheck and test the telemetry Worker in Server/Telemetry (needs bun)"
 	@echo "resolve       Resolve the workspace's and the packages' dependencies"
 	@echo "scan-license  List the resolved dependencies; fail on any missing from Resources/LICENSE,"
@@ -52,6 +52,7 @@ build-ios:
 		build
 
 test:
+	swift Workflow/Scripts/check-privacy-policy.swift Resources/Privacy
 	for package in $(TEST_PACKAGES); do \
 		echo "==> $$package"; \
 		swift test --package-path "$$package" || exit 1; \
