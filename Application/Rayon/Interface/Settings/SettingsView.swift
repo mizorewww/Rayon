@@ -118,6 +118,8 @@ struct SettingsView: View {
             .onChange(of: navigation.selection) { pushed = NavigationPath() }
             .onChange(of: search) { if !search.isEmpty { pushed = NavigationPath() } }
             .frame(minWidth: 720, minHeight: 480)
+            // Export Backup… and UU Remote Account… ask for theirs here.
+            .routerSheets()
         }
 
         private func rows(_ section: SettingsSection) -> some View {

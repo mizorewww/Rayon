@@ -52,8 +52,8 @@
         /// The last page that is not a session; closing a session returns here.
         private(set) var lastPlace: Route = .home
         @Published var columnVisibility: NavigationSplitViewVisibility = .all
-        /// The sheets over the main windows, at most one per window, asked
-        /// for from anywhere: a menu, a context menu, a command.
+        /// The sheets over the main windows and Settings, at most one per
+        /// window, asked for from anywhere: a menu, a context menu, a command.
         @Published private(set) var sheets: [WindowSheet] = []
         /// The page Settings shows, kept from one launch to the next.
         /// Settings follows this itself, so a change of page does not go
@@ -385,10 +385,10 @@
             }
         }
 
-        /// Shows `content` as a sheet on the main window in front (the one
-        /// a sheet or menu was used in); `dismiss` closes it. While that
-        /// window shows a sheet, the request is refused: replacing the sheet
-        /// would throw away what is typed in it.
+        /// Shows `content` as a sheet on the window in front, a main window
+        /// or Settings (the one a sheet or menu was used in); `dismiss`
+        /// closes it. While that window shows a sheet, the request is
+        /// refused: replacing the sheet would throw away what is typed in it.
         func present<Content: View>(@ViewBuilder _ content: @escaping (_ dismiss: @escaping () -> Void) -> Content) {
             let window = (NSApp.mainWindow ?? MainWindow.ordinaryWindows.first(where: \.isVisible))?.windowNumber
             sheets.removeAll { sheet in

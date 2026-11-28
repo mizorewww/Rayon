@@ -12,9 +12,6 @@
         @ObservedObject var router = AppRouter.shared
 
         @State private var openLicenseAgreement = false
-        /// This view's window: each of the router's sheets shows only in
-        /// the window that asked for it.
-        @StateObject private var anchor = WindowAnchor()
 
         var body: some View {
             NavigationSplitView(columnVisibility: $router.columnVisibility) {
@@ -43,14 +40,7 @@
             }
             .frame(minWidth: 940, minHeight: 600)
             .modifier(HiddenWindowTitle())
-            .background(WindowReader(anchor: anchor))
-            .sheet(item: Binding(
-                get: { router.sheet(in: anchor.window) },
-                set: { if $0 == nil, let shown = router.sheet(in: anchor.window) { router.dismissSheet(shown.id) } }
-            )) { sheet in
-                sheet.content { router.dismissSheet(sheet.id) }
-                    .environmentObject(RayonStore.shared)
-            }
+            .routerSheets()
             .sheet(isPresented: $openLicenseAgreement) {
                 AgreementSheet()
             }
@@ -129,6 +119,31 @@
             } else {
                 content.navigationTitle("Rayon")
             }
+        }
+    }
+
+    extension View {
+        /// Shows the router's sheets that are for this view's window: the
+        /// main windows and Settings each show those asked for in them.
+        func routerSheets() -> some View {
+            modifier(RouterSheets())
+        }
+    }
+
+    private struct RouterSheets: ViewModifier {
+        @ObservedObject private var router = AppRouter.shared
+        @StateObject private var anchor = WindowAnchor()
+
+        func body(content: Content) -> some View {
+            content
+                .background(WindowReader(anchor: anchor))
+                .sheet(item: Binding(
+                    get: { router.sheet(in: anchor.window) },
+                    set: { if $0 == nil, let shown = router.sheet(in: anchor.window) { router.dismissSheet(shown.id) } }
+                )) { sheet in
+                    sheet.content { router.dismissSheet(sheet.id) }
+                        .environmentObject(RayonStore.shared)
+                }
         }
     }
 
