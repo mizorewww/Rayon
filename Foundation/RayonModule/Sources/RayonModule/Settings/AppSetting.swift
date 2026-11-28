@@ -90,7 +90,8 @@ final class SettingObserver<Value: Codable & Equatable & Sendable>: ObservableOb
         let old = value
         guard newValue != old else { return }
         set(newValue)
-        undoManager?.registerUndo(withTarget: self) { observer in
+        // Weak: the manager holds this closure.
+        undoManager?.registerUndo(withTarget: self) { [weak undoManager] observer in
             MainActor.assumeIsolated { observer.set(old, undoManager: undoManager) }
         }
     }
