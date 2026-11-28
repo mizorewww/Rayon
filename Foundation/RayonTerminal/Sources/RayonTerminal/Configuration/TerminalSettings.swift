@@ -272,6 +272,7 @@ public final class TerminalSettings {
     /// and sync would send that on.
     private func take(_ next: [String: [String]]) throws {
         pendingApply?.cancel()
+        pendingApply = nil
         let previous = config
         config = next
         do {
