@@ -92,17 +92,22 @@
             // A setting changed just before ⌘Q is still waiting out its pause.
             TerminalSettings.shared.flush()
             if relaunches {
-                // open outlives this process, so the new instance starts as
-                // this one exits rather than beside a running one.
-                let open = Process()
-                open.executableURL = URL(fileURLWithPath: "/usr/bin/open")
-                open.arguments = ["-n", Bundle.main.bundlePath]
-                do { try open.run() } catch { Logger.app.errorFile("relaunch failed: \(error)") }
+                // Two instances must never share the store, CloudKit, the
+                // status item or UU sessions, and this one is still running
+                // here. The shell outlives it, waits for it to exit, and only
+                // then opens the new one.
+                let relaunch = Process()
+                relaunch.executableURL = URL(fileURLWithPath: "/bin/sh")
+                relaunch.arguments = [
+                    "-c", #"while kill -0 "$1" 2>/dev/null; do sleep 0.1; done; exec /usr/bin/open -n "$2""#,
+                    "sh", String(ProcessInfo.processInfo.processIdentifier), Bundle.main.bundlePath,
+                ]
+                do { try relaunch.run() } catch { Logger.app.errorFile("relaunch failed: \(error)") }
             }
         }
 
         /// Set by a restart and cleared if the quit is declined: the next
-        /// instance opens once this one has quit.
+        /// instance opens once this one has exited.
         private var relaunches = false
 
         /// Quits, asking first as ⌘Q does, and opens Rayon again.
