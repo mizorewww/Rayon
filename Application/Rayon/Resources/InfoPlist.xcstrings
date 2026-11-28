@@ -1,6 +1,47 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "NSCameraUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rayon doesn’t use the camera. A remote desktop component it includes can reach it, so iOS asks for this text; Rayon never asks for camera access."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rayon 不使用相机。它所含的远程桌面组件可以调用相机，因此 iOS 要求提供此说明；Rayon 从不请求相机权限。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rayon 不使用相機。它所含的遠端桌面元件可以呼叫相機，因此 iOS 要求提供此說明；Rayon 從不要求相機權限。"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rayon はカメラを使用しません。含まれているリモートデスクトップ用コンポーネントがカメラを扱えるため iOS がこの説明を求めますが、Rayon がカメラへのアクセスを求めることはありません。"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rayon n’utilise pas l’appareil photo. Un composant de bureau à distance qu’il contient peut y accéder, d’où ce texte exigé par iOS ; Rayon ne demande jamais l’accès à l’appareil photo."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rayon no usa la cámara. Un componente de escritorio remoto que incluye puede acceder a ella, por eso iOS pide este texto; Rayon nunca solicita acceso a la cámara."
+          }
+        }
+      }
+    },
     "NSFaceIDUsageDescription" : {
       "extractionState" : "manual",
       "localizations" : {

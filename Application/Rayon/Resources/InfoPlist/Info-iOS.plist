@@ -30,6 +30,8 @@
 	<array>
 		<string>uuremote</string>
 	</array>
+	<key>NSCameraUsageDescription</key>
+	<string>Rayon doesn’t use the camera. A remote desktop component it includes can reach it, so iOS asks for this text; Rayon never asks for camera access.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Rayon connects to servers and screen-sharing Macs on your local network, and looks for them nearby.</string>
 	<key>NSBonjourServices</key>
