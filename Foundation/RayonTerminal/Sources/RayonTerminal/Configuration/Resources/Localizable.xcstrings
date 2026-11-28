@@ -1346,6 +1346,74 @@
         }
       }
     },
+    "Add or remove space between lines, in points or percent." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Añade o quita espacio entre líneas, en puntos o porcentaje."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajoute ou retire de l’espace entre les lignes, en points ou en pourcentage."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "行間を広げたり狭めたりします（ポイントまたはパーセント）。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "增加或减少行间距，以点或百分比为单位。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "增加或減少行距，以點或百分比為單位。"
+          }
+        }
+      }
+    },
+    "Adjust text that is hard to read on its background; 1 turns this off." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajusta el texto poco legible sobre su fondo; 1 lo desactiva."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajuste le texte peu lisible sur son fond ; 1 désactive."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "背景に対して読みにくいテキストの色を調整します。1 でオフ。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "调整在背景上难以辨认的文本；设为 1 则关闭。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "調整在背景上難以辨認的文字；設為 1 則關閉。"
+          }
+        }
+      }
+    },
     "Advanced" : {
       "localizations" : {
         "es" : {
@@ -1410,6 +1478,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "進階…"
+          }
+        }
+      }
+    },
+    "Allow keyboard lock" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permitir bloqueo del teclado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autoriser le verrouillage du clavier"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キーボードロックを許可"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "允许锁定键盘"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "允許鎖定鍵盤"
           }
         }
       }
@@ -1686,6 +1788,40 @@
         }
       }
     },
+    "Answer to ENQ" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Respuesta a ENQ"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réponse à ENQ"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ENQ への応答"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ENQ 应答"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ENQ 回應"
+          }
+        }
+      }
+    },
     "Apply opacity to colored cells" : {
       "localizations" : {
         "es" : {
@@ -1818,6 +1954,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "箭頭"
+          }
+        }
+      }
+    },
+    "Ask before pasting text that could run commands, such as text with line breaks." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pregunta antes de pegar texto que podría ejecutar órdenes, como uno con saltos de línea."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demande avant de coller du texte pouvant lancer des commandes, comme un texte avec retours à la ligne."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "改行を含むテキストなど、コマンドを実行しうるテキストのペースト前に確認します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粘贴可能执行命令的文本（如含换行的文本）前先询问。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "貼上可能執行指令的文字（如含換行的文字）前先詢問。"
           }
         }
       }
@@ -2090,6 +2260,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "豎線粗細"
+          }
+        }
+      }
+    },
+    "Baseline" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Línea base"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ligne de base"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ベースライン"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "基线"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "基線"
           }
         }
       }
@@ -2468,6 +2672,40 @@
         }
       }
     },
+    "Bold text color" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Color de la negrita"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couleur du gras"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ボールドの色"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粗体文本颜色"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粗體文字顏色"
+          }
+        }
+      }
+    },
     "Bold variation axes" : {
       "localizations" : {
         "es" : {
@@ -2566,6 +2804,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "製表符和方塊"
+          }
+        }
+      }
+    },
+    "Box drawing thickness" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grosor de los trazos de cuadro"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épaisseur des traits de cadre"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "罫線の太さ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "制表符粗细"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "框線字元粗細"
           }
         }
       }
@@ -2774,6 +3046,74 @@
         }
       }
     },
+    "Cell height" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alto de celda"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hauteur des cellules"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "セルの高さ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "单元格高度"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "單元格高度"
+          }
+        }
+      }
+    },
+    "Cell width" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ancho de celda"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Largeur des cellules"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "セルの幅"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "单元格宽度"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "單元格寬度"
+          }
+        }
+      }
+    },
     "Changed from the default" : {
       "localizations" : {
         "es" : {
@@ -2906,6 +3246,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "字元變體 %lld"
+          }
+        }
+      }
+    },
+    "Character width" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ancho de caracteres"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Largeur des caractères"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文字幅"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "字符宽度"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "字元寬度"
           }
         }
       }
@@ -3216,6 +3590,74 @@
         }
       }
     },
+    "Clear the selection as soon as you type." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Borra la selección en cuanto escribes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Efface la sélection dès que vous tapez."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "入力を始めたら選択を解除します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一开始键入就清除所选内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一開始輸入就清除所選內容。"
+          }
+        }
+      }
+    },
+    "Clear the selection once a shortcut copies it." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Borra la selección tras copiarla con un atajo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Efface la sélection une fois copiée par raccourci."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ショートカットでコピーしたら選択を解除します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用快捷键拷贝后清除所选内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用快速鍵複製後清除所選內容。"
+          }
+        }
+      }
+    },
     "Click to record a new shortcut" : {
       "localizations" : {
         "es" : {
@@ -3352,6 +3794,278 @@
         }
       }
     },
+    "Color behind every match while finding." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Color detrás de cada coincidencia al buscar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couleur derrière chaque occurrence pendant la recherche."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "検索中、各一致箇所の背後の色。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查找时每个匹配项背后的颜色。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尋找時每個符合項目背後的顏色。"
+          }
+        }
+      }
+    },
+    "Color behind selected text; by default text and background swap." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Color detrás de la selección; por omisión se invierten texto y fondo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couleur derrière la sélection ; par défaut, texte et fond s’inversent."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選択したテキストの背後の色。デフォルトではテキストと背景の色が入れ替わります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所选文本背后的颜色；默认交换文本和背景颜色。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所選文字背後的顏色；預設交換文字和背景顏色。"
+          }
+        }
+      }
+    },
+    "Color behind the match you are on." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Color detrás de la coincidencia actual."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couleur derrière l’occurrence où vous êtes."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現在の一致箇所の背後の色。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前所在匹配项背后的颜色。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目前所在符合項目背後的顏色。"
+          }
+        }
+      }
+    },
+    "Color behind the text; overrides the theme." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Color detrás del texto; prevalece sobre el tema."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couleur derrière le texte ; prime sur le thème."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "テキストの背後の色。テーマより優先されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文本背后的颜色，优先于主题。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文字背後的顏色，優先於主題。"
+          }
+        }
+      }
+    },
+    "Color of bold text; Bright uses the palette's bright colors." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Color de la negrita; «Colores vivos» usa los de la paleta."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couleur du texte gras ; « Couleurs vives » prend celles de la palette."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ボールドのテキストの色。「明るい色」ではパレットの明るい色を使います。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粗体文本的颜色；“亮色”使用调色板中的亮色。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粗體文字的顏色；「亮色」使用調色盤中的亮色。"
+          }
+        }
+      }
+    },
+    "Color of regular text; overrides the theme." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Color del texto normal; prevalece sobre el tema."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couleur du texte normal ; prime sur le thème."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通常のテキストの色。テーマより優先されます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "常规文本的颜色，优先于主题。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "常規文字的顏色，優先於主題。"
+          }
+        }
+      }
+    },
+    "Color of selected text; by default text and background swap." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Color del texto seleccionado; por omisión se invierten texto y fondo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couleur du texte sélectionné ; par défaut, texte et fond s’inversent."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選択したテキストの色。デフォルトではテキストと背景の色が入れ替わります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所选文本的颜色；默认交换文本和背景颜色。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所選文字的顏色；預設交換文字和背景顏色。"
+          }
+        }
+      }
+    },
+    "Color of the character the cursor covers." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Color del carácter bajo el cursor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couleur du caractère sous le curseur."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カーソルが重なる文字の色。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "光标所覆盖字符的颜色。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "游標所覆蓋字元的顏色。"
+          }
+        }
+      }
+    },
     "Color of the cursor itself." : {
       "localizations" : {
         "es" : {
@@ -3454,6 +4168,40 @@
         }
       }
     },
+    "Color theme" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tema de color"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Thème de couleurs"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カラーテーマ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "颜色主题"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顏色主題"
+          }
+        }
+      }
+    },
     "Colors" : {
       "localizations" : {
         "es" : {
@@ -3484,6 +4232,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "顏色"
+          }
+        }
+      }
+    },
+    "Colors for text, background and the palette, optionally one for light and one for dark." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Colores del texto, el fondo y la paleta; puede haber uno claro y otro oscuro."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couleurs du texte, du fond et de la palette, éventuellement une pour le clair et une pour le sombre."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "テキスト、背景、パレットの色。ライトとダークで別々に選ぶこともできます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文本、背景和调色板的颜色，可分别为浅色和深色外观各选一个。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文字、背景和調色盤的顏色，可分別為淺色和深色外觀各選一個。"
           }
         }
       }
@@ -3552,6 +4334,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "相容性"
+          }
+        }
+      }
+    },
+    "Confirm risky pastes" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirmar pegados de riesgo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirmer les collages à risque"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "危険なペーストを確認"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "确认有风险的粘贴"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "確認有風險的貼上"
           }
         }
       }
@@ -4270,6 +5086,74 @@
         }
       }
     },
+    "Deselect after copying" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deseleccionar al copiar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Désélectionner après copie"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コピー後に選択解除"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "拷贝后取消选择"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "複製後取消選取"
+          }
+        }
+      }
+    },
+    "Deselect when typing" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deseleccionar al escribir"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Désélectionner à la saisie"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "入力時に選択解除"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "键入时取消选择"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "輸入時取消選取"
+          }
+        }
+      }
+    },
     "Detect links" : {
       "localizations" : {
         "es" : {
@@ -4572,6 +5456,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "用更粗的筆畫繪製文字，就像 macOS 上的“終端”一樣。"
+          }
+        }
+      }
+    },
+    "Drop the spaces at the end of copied lines." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quita los espacios al final de las líneas copiadas."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retire les espaces en fin de ligne copiée."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コピーした行の末尾の空白を取り除きます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "拷贝时去掉每行末尾的空格。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "複製時去掉每行末尾的空格。"
           }
         }
       }
@@ -5704,6 +6622,40 @@
         }
       }
     },
+    "Hide pointer while typing" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ocultar puntero al escribir"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Masquer le pointeur en tapant"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "入力中にポインタを隠す"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "键入时隐藏指针"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "輸入時隱藏指標"
+          }
+        }
+      }
+    },
     "Hollow" : {
       "localizations" : {
         "es" : {
@@ -5840,6 +6792,40 @@
         }
       }
     },
+    "How many cells emoji and combined characters take; Legacy suits older programs." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Celdas que ocupan emojis y caracteres combinados; «Antiguo» va mejor con programas viejos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cellules occupées par les emoji et caractères combinés ; « Ancien » convient aux vieux programmes."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "絵文字や結合文字が占めるセルの数。「レガシー」は古いプログラム向けです。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "表情符号和组合字符占用几个单元格；“旧式”适合较旧的程序。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "表情符號和組合字元佔用幾個單元格；「舊式」適合較舊的程式。"
+          }
+        }
+      }
+    },
     "How much heavier strokes are drawn while thickening is on." : {
       "localizations" : {
         "es" : {
@@ -5904,6 +6890,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "暗淡文字的不透明程度，從 0（不可見）到 1（完全不透明）。"
+          }
+        }
+      }
+    },
+    "How opaque the cursor is, from 0 (invisible) to 1 (solid)." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opacidad del cursor, de 0 (invisible) a 1 (sólido)."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opacité du curseur, de 0 (invisible) à 1 (opaque)."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カーソルの不透明度。0（透明）から 1（不透明）まで。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "光标的不透明程度，从 0（不可见）到 1（完全不透明）。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "游標的不透明程度，從 0（不可見）到 1（完全不透明）。"
           }
         }
       }
@@ -6588,6 +7608,40 @@
         }
       }
     },
+    "Key combinations that run terminal actions." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Combinaciones de teclas que ejecutan acciones del terminal."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Combinaisons de touches qui lancent des actions du terminal."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ターミナルの操作を実行するキーの組み合わせ。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "执行终端操作的组合键。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "執行終端機操作的組合鍵。"
+          }
+        }
+      }
+    },
     "Keyboard" : {
       "localizations" : {
         "es" : {
@@ -6856,6 +7910,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "左 Option 鍵"
+          }
+        }
+      }
+    },
+    "Let programs lock keyboard input with KAM mode; rarely needed." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deja que los programas bloqueen el teclado (modo KAM); rara vez hace falta."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Laisse les programmes bloquer le clavier (mode KAM) ; rarement utile."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プログラムが KAM モードでキーボード入力をロックできるようにします。ほとんど不要です。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "允许程序通过 KAM 模式锁定键盘输入；很少需要。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "允許程式透過 KAM 模式鎖定鍵盤輸入；很少需要。"
           }
         }
       }
@@ -7336,6 +8424,142 @@
         }
       }
     },
+    "Make the lines of box-drawing characters thicker or thinner." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Engrosa o adelgaza los caracteres de dibujo de cuadros."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épaissit ou affine les caractères de cadre."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "罫線文字の線を太くしたり細くしたりします。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加粗或减细制表符的线条。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加粗或減細框線字元的線條。"
+          }
+        }
+      }
+    },
+    "Make the overline thicker or thinner." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Engrosa o adelgaza la línea superior."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épaissit ou affine le surlignement."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上線を太くしたり細くしたりします。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加粗或减细上划线。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加粗或減細上劃線。"
+          }
+        }
+      }
+    },
+    "Make the strikethrough line thicker or thinner." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Engrosa o adelgaza la línea de tachado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épaissit ou affine la ligne barrée."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取り消し線を太くしたり細くしたりします。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加粗或减细删除线。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加粗或減細刪除線。"
+          }
+        }
+      }
+    },
+    "Make the underline thicker or thinner." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Engrosa o adelgaza el subrayado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épaissit ou affine le soulignement."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下線を太くしたり細くしたりします。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加粗或减细下划线。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加粗或減細底線。"
+          }
+        }
+      }
+    },
     "Match background" : {
       "localizations" : {
         "es" : {
@@ -7608,6 +8832,40 @@
         }
       }
     },
+    "Minimum contrast" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contraste mínimo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Contraste minimal"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最小コントラスト"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最低对比度"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最低對比度"
+          }
+        }
+      }
+    },
     "Missing '=' between trigger and action" : {
       "localizations" : {
         "es" : {
@@ -7876,6 +9134,108 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "上移"
+          }
+        }
+      }
+    },
+    "Move the overline down or up." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Baja o sube la línea superior."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descend ou monte le surlignement."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上線を上下に移動します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下移或上移上划线。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下移或上移上劃線。"
+          }
+        }
+      }
+    },
+    "Move the strikethrough line down or up." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Baja o sube la línea de tachado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descend ou monte la ligne barrée."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取り消し線を上下に移動します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下移或上移删除线。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下移或上移刪除線。"
+          }
+        }
+      }
+    },
+    "Move the underline down or up." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Baja o sube el subrayado."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descend ou monte le soulignement."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下線を上下に移動します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下移或上移下划线。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下移或上移底線。"
           }
         }
       }
@@ -8934,6 +10294,74 @@
         }
       }
     },
+    "Overline position" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posición de la línea superior"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Position du surlignement"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上線の位置"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上划线位置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上劃線位置"
+          }
+        }
+      }
+    },
+    "Overline thickness" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grosor de la línea superior"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épaisseur du surlignement"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上線の太さ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上划线粗细"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上劃線粗細"
+          }
+        }
+      }
+    },
     "Padding" : {
       "localizations" : {
         "es" : {
@@ -8964,6 +10392,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "邊距"
+          }
+        }
+      }
+    },
+    "Padding color" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Color del margen"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couleur des marges"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "余白の色"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "边距颜色"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "邊距顏色"
           }
         }
       }
@@ -9542,6 +11004,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "標點符號"
+          }
+        }
+      }
+    },
+    "Raise or lower text within its cell." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sube o baja el texto dentro de su celda."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monte ou descend le texte dans sa cellule."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "セル内でテキストを上下に移動します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在单元格内上移或下移文本。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在單元格內上移或下移文字。"
           }
         }
       }
@@ -11022,6 +12518,40 @@
         }
       }
     },
+    "Selected text" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Texto seleccionado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Texte sélectionné"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選択したテキスト"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所选文本"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所選文字"
+          }
+        }
+      }
+    },
     "Selection" : {
       "localizations" : {
         "es" : {
@@ -11052,6 +12582,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "所選內容"
+          }
+        }
+      }
+    },
+    "Selection background" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fondo de la selección"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fond de la sélection"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選択範囲の背景"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所选内容背景"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "所選內容背景"
           }
         }
       }
@@ -11498,6 +13062,40 @@
         }
       }
     },
+    "Shape of the cursor; programs can still ask for another." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forma del cursor; los programas pueden pedir otra."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Forme du curseur ; les programmes peuvent en demander une autre."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "カーソルの形。プログラムが別の形を求めることもできます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "光标的形状；程序仍可请求其他形状。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "游標的形狀；程式仍可要求其他形狀。"
+          }
+        }
+      }
+    },
     "Shift" : {
       "localizations" : {
         "es" : {
@@ -11528,6 +13126,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Shift"
+          }
+        }
+      }
+    },
+    "Shift-click to programs" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mayús-clic a los programas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Maj-clic aux programmes"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shift-クリックをプログラムへ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将 Shift-点按发送给程序"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "將 Shift-點按傳送給程式"
           }
         }
       }
@@ -11732,6 +13364,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "大小"
+          }
+        }
+      }
+    },
+    "Slant or embolden the font when it lacks that style." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inclina o engrosa la letra si le falta ese estilo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Incline ou épaissit la police s’il lui manque ce style."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "フォントにそのスタイルがないとき、太らせたり傾けたりして描きます。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "字体缺少粗体或斜体时，通过加粗或倾斜来模拟。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "字型缺少粗體或斜體時，透過加粗或傾斜來模擬。"
           }
         }
       }
@@ -11974,6 +13640,74 @@
         }
       }
     },
+    "Strikethrough position" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posición del tachado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Position du barré"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取り消し線の位置"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除线位置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除線位置"
+          }
+        }
+      }
+    },
+    "Strikethrough thickness" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grosor del tachado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épaisseur du barré"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取り消し線の太さ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "删除线粗细"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除線粗細"
+          }
+        }
+      }
+    },
     "Style" : {
       "localizations" : {
         "es" : {
@@ -12140,6 +13874,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "風格集 %lld"
+          }
+        }
+      }
+    },
+    "Synthesize missing styles" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sintetizar estilos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Styles de synthèse"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不足スタイルを合成"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "合成缺失的样式"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "合成缺少的樣式"
           }
         }
       }
@@ -12382,6 +14150,40 @@
         }
       }
     },
+    "Text color" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Color del texto"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couleur du texte"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "テキストの色"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文本颜色"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文字顏色"
+          }
+        }
+      }
+    },
     "Text of every match while finding. Cell colors work too." : {
       "localizations" : {
         "es" : {
@@ -12412,6 +14214,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "尋找時每個符合項目的文字顏色，也可使用儲存格顏色。"
+          }
+        }
+      }
+    },
+    "Text of the match you are on." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Texto de la coincidencia actual."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Texte de l’occurrence où vous êtes."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現在の一致箇所のテキストの色。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当前所在匹配项的文字颜色。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目前所在符合項目的文字顏色。"
+          }
+        }
+      }
+    },
+    "Text sent back when a program sends the ENQ character (0x05)." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Texto devuelto cuando un programa envía el carácter ENQ (0x05)."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Texte renvoyé quand un programme envoie le caractère ENQ (0x05)."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プログラムが ENQ 文字（0x05）を送ったときに返すテキスト。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "程序发送 ENQ 字符（0x05）时回传的文本。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "程式傳送 ENQ 字元（0x05）時回傳的文字。"
           }
         }
       }
@@ -12586,6 +14456,74 @@
         }
       }
     },
+    "The 256 colors programs pick by number; the first 16 are the basic colors." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los 256 colores que los programas eligen por número; los 16 primeros son los básicos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les 256 couleurs que les programmes choisissent par numéro ; les 16 premières sont les couleurs de base."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プログラムが番号で選ぶ 256 色。最初の 16 色が基本色です。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "程序按编号选用的 256 种颜色；前 16 种是基本颜色。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "程式按編號選用的 256 種顏色；前 16 種是基本顏色。"
+          }
+        }
+      }
+    },
+    "The pointer comes back when you move the mouse." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El puntero vuelve al mover el ratón."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le pointeur revient quand vous bougez la souris."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "マウスを動かすとポインタが戻ります。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移动鼠标时指针会重新出现。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移動滑鼠時指標會重新出現。"
+          }
+        }
+      }
+    },
     "The terminal settings were not applied: %@" : {
       "localizations" : {
         "es" : {
@@ -12650,6 +14588,108 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "終端設定未儲存：%@"
+          }
+        }
+      }
+    },
+    "The typeface for bold italic text; empty uses the main font." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tipo de letra de la negrita cursiva; vacío usa el principal."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Police du texte gras italique ; vide, la police principale."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ボールドイタリックのテキストに使うフォント。空欄ならメインフォントを使います。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粗斜体文本使用的字体；留空则使用主字体。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粗斜體文字使用的字型；留空則使用主字型。"
+          }
+        }
+      }
+    },
+    "The typeface for bold text; empty uses the main font." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tipo de letra del texto en negrita; vacío usa el principal."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Police du texte gras ; vide, la police principale."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ボールドのテキストに使うフォント。空欄ならメインフォントを使います。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粗体文本使用的字体；留空则使用主字体。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粗體文字使用的字型；留空則使用主字型。"
+          }
+        }
+      }
+    },
+    "The typeface for italic text; empty uses the main font." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tipo de letra de la cursiva; vacío usa el principal."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Police du texte italique ; vide, la police principale."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "イタリックのテキストに使うフォント。空欄ならメインフォントを使います。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "斜体文本使用的字体；留空则使用主字体。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "斜體文字使用的字型；留空則使用主字型。"
           }
         }
       }
@@ -12994,6 +15034,108 @@
         }
       }
     },
+    "Treat a paste as safe when the program marks it, as modern shells do." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trata el pegado como seguro si el programa lo marca, como las shells modernas."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Considère un collage comme sûr si le programme le signale, comme les shells récents."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プログラムがペーストを区別できるとき（最近のシェルは対応）、安全とみなします。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "程序会标记粘贴内容时（现代 shell 都会），视其为安全。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "程式會標記貼上內容時（現代 shell 都會），視其為安全。"
+          }
+        }
+      }
+    },
+    "Trim trailing spaces" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quitar espacios finales"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer les espaces finales"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "末尾の空白を削除"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "去除行尾空格"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "去除行尾空格"
+          }
+        }
+      }
+    },
+    "Trust bracketed paste" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confiar en el pegado delimitado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Faire confiance au collage encadré"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブラケットペーストを信頼"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "信任括号粘贴"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "信任括號貼上"
+          }
+        }
+      }
+    },
     "Turn ligatures and stylistic alternates on or off." : {
       "localizations" : {
         "es" : {
@@ -13160,6 +15302,74 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "下劃線"
+          }
+        }
+      }
+    },
+    "Underline position" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posición del subrayado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Position du soulignement"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下線の位置"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下划线位置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "底線位置"
+          }
+        }
+      }
+    },
+    "Underline thickness" : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grosor del subrayado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Épaisseur du soulignement"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下線の太さ"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下划线粗细"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "底線粗細"
           }
         }
       }
@@ -13504,6 +15714,108 @@
         }
       }
     },
+    "Variable font axes for bold italic text." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ejes de la fuente variable para la negrita cursiva."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Axes de police variable du texte gras italique."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ボールドイタリックのテキストに使う可変フォントの軸。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粗斜体文本的可变字体轴。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粗斜體文字的可變字型軸。"
+          }
+        }
+      }
+    },
+    "Variable font axes for bold text." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ejes de la fuente variable para la negrita."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Axes de police variable du texte gras."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ボールドのテキストに使う可変フォントの軸。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粗体文本的可变字体轴。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粗體文字的可變字型軸。"
+          }
+        }
+      }
+    },
+    "Variable font axes for italic text." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ejes de la fuente variable para la cursiva."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Axes de police variable du texte italique."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "イタリックのテキストに使う可変フォントの軸。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "斜体文本的可变字体轴。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "斜體文字的可變字型軸。"
+          }
+        }
+      }
+    },
     "Variation axes" : {
       "localizations" : {
         "es" : {
@@ -13602,6 +15914,108 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "可變字型的字重、寬度或傾斜度。"
+          }
+        }
+      }
+    },
+    "What a middle-click in the terminal does." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo que hace un clic central en el terminal."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effet d’un clic du milieu dans le terminal."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ターミナルで中クリックしたときの動作。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在终端中中键点按的作用。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在終端機中中鍵點按的作用。"
+          }
+        }
+      }
+    },
+    "What a right-click in the terminal does." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo que hace un clic derecho en el terminal."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Effet d’un clic droit dans le terminal."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ターミナルで右クリックしたときの動作。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在终端中右键点按的作用。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在終端機中右鍵點按的作用。"
+          }
+        }
+      }
+    },
+    "What fills the padding around the text." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lo que rellena el margen alrededor del texto."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce qui remplit les marges autour du texte."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "テキストの周りの余白を何で塗るか。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用什么填充文本周围的边距。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用什麼填充文字周圍的邊距。"
           }
         }
       }
@@ -13708,6 +16122,40 @@
         }
       }
     },
+    "Whether Shift-click reaches programs that use the mouse, instead of extending the selection." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si Mayús-clic llega a los programas que usan el ratón en vez de ampliar la selección."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si Maj-clic va aux programmes qui utilisent la souris plutôt que d’étendre la sélection."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shift-クリックを選択範囲の拡張ではなく、マウスを使うプログラムに送るかどうか。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shift-点按是发送给使用鼠标的程序，还是扩展所选内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shift-點按是傳送給使用滑鼠的程式，還是擴展所選內容。"
+          }
+        }
+      }
+    },
     "Whether the cursor blinks; programs can still ask for either." : {
       "localizations" : {
         "es" : {
@@ -13742,6 +16190,108 @@
         }
       }
     },
+    "Which of the font's styles bold italic text uses." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qué estilo del tipo de letra usa la negrita cursiva."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le style de la police utilisé par le texte gras italique."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ボールドイタリックのテキストに使うフォントのスタイル。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粗斜体文本使用该字体的哪种样式。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粗斜體文字使用該字型的哪種樣式。"
+          }
+        }
+      }
+    },
+    "Which of the font's styles bold text uses." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qué estilo del tipo de letra usa la negrita."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le style de la police utilisé par le texte gras."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ボールドのテキストに使うフォントのスタイル。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粗体文本使用该字体的哪种样式。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "粗體文字使用該字型的哪種樣式。"
+          }
+        }
+      }
+    },
+    "Which of the font's styles italic text uses." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qué estilo del tipo de letra usa la cursiva."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le style de la police utilisé par le texte italique."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "イタリックのテキストに使うフォントのスタイル。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "斜体文本使用该字体的哪种样式。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "斜體文字使用該字型的哪種樣式。"
+          }
+        }
+      }
+    },
     "Which of the font's styles regular text uses." : {
       "localizations" : {
         "es" : {
@@ -13772,6 +16322,40 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "常規文字使用該字型的哪種樣式。"
+          }
+        }
+      }
+    },
+    "Widen or narrow each character cell, in points or percent." : {
+      "localizations" : {
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ensancha o estrecha cada celda, en puntos o porcentaje."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Élargit ou réduit chaque cellule, en points ou en pourcentage."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "各文字セルを広げたり狭めたりします（ポイントまたはパーセント）。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加宽或收窄每个字符单元格，以点或百分比为单位。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加寬或收窄每個字元單元格，以點或百分比為單位。"
           }
         }
       }
