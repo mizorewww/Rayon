@@ -139,24 +139,71 @@ struct TelemetryReportsSheet: View {
 struct PrivacyPolicySheet: View {
     @Environment(\.dismiss) private var dismiss
 
-    static var text: AttributedString {
+    /// A heading, a list item or a paragraph of the policy.
+    struct Block: Identifiable {
+        enum Kind {
+            case heading(level: Int)
+            case listItem
+            case paragraph
+        }
+
+        let id: Int
+        let kind: Kind
+        let text: AttributedString
+    }
+
+    @State private var blocks = Self.load()
+
+    static func load() -> [Block] {
         let language = Bundle.preferredLocalizations(from: ["en", "zh-Hans", "zh-Hant", "ja", "fr", "es"], forPreferences: Locale.preferredLanguages).first ?? "en"
         guard let url = Bundle.main.url(forResource: "PrivacyPolicy-\(language)", withExtension: "md", subdirectory: "Privacy"),
-              let markdown = try? String(contentsOf: url, encoding: .utf8)
-        else { return AttributedString(localized: "The privacy policy could not be loaded.") }
-        let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-        return (try? AttributedString(markdown: markdown, options: options)) ?? AttributedString(markdown)
+              let markdown = try? String(contentsOf: url, encoding: .utf8),
+              let document = try? AttributedString(markdown: markdown, options: .init(interpretedSyntax: .full))
+        else { return [Block(id: 0, kind: .paragraph, text: AttributedString(localized: "The privacy policy could not be loaded."))] }
+        // Text draws a block's inline styles but not the blocks themselves:
+        // they are runs that share one presentation intent, laid out here.
+        return document.runs[\.presentationIntent].enumerated().map { index, run in
+            let (intent, range) = run
+            var kind = Block.Kind.paragraph
+            for component in intent?.components ?? [] {
+                switch component.kind {
+                case let .header(level): kind = .heading(level: level)
+                case .listItem: kind = .listItem
+                default: break
+                }
+            }
+            return Block(id: index, kind: kind, text: AttributedString(document[range]))
+        }
     }
 
     var body: some View {
         SheetScaffold("Privacy Policy") {
             ScrollView {
-                Text(Self.text)
-                    .font(.rxBody)
-                    .foregroundStyle(.rxInkSecondary)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(RX.Space.s4)
+                VStack(alignment: .leading, spacing: RX.Space.s3) {
+                    ForEach(blocks) { block in
+                        switch block.kind {
+                        case let .heading(level):
+                            Text(block.text)
+                                .font(level == 1 ? .title2.bold() : .title3.weight(.semibold))
+                                .foregroundStyle(.rxInk)
+                                .padding(.top, level == 1 ? 0 : RX.Space.s2)
+                        case .listItem:
+                            HStack(alignment: .firstTextBaseline, spacing: RX.Space.s2) {
+                                Text(verbatim: "•")
+                                Text(block.text)
+                            }
+                            .padding(.leading, RX.Space.s2)
+                        case .paragraph:
+                            Text(block.text)
+                        }
+                    }
+                }
+                .font(.rxBody)
+                .foregroundStyle(.rxInkSecondary)
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(RX.Space.s4)
             }
             .frame(minHeight: 320, maxHeight: 480)
             .clipShape(RoundedRectangle(cornerRadius: RX.Radius.lg, style: .continuous))
