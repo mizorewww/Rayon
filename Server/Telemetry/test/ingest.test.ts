@@ -92,7 +92,9 @@ describe("ingest", () => {
     ["an unknown nested key", (r) => ((r.usage as Record<string, unknown>).lastHost = "10.0.0.1")],
     ["an enum value that is not a string", (r) => ((r as Record<string, unknown>).language = 7)],
     ["a string where a bucket goes", (r) => ((r.usage as { savedHosts: unknown }).savedHosts = "12")],
-    ["a count that is not a bucket", (r) => ((r.usage as { savedHosts: unknown }).savedHosts = 12)],
+    ["a count below every bucket", (r) => ((r.usage as { savedHosts: unknown }).savedHosts = -1)],
+    ["a count that is not an integer", (r) => ((r.usage as { savedHosts: unknown }).savedHosts = 2.5)],
+    ["a wrong type in a map keyed by an enum", (r) => ((r.usage as { counts: Record<string, unknown> }).counts.editorOpened = "6")],
     ["a missing feature", (r) => delete (r.usage as { counts: Record<string, unknown> }).counts.editorOpened],
     ["a debug build", (r) => (r.channel = "debug")],
     ["level 0", (r) => (r.level = 0)],
@@ -117,6 +119,29 @@ describe("ingest", () => {
     expect(buckets.results).toEqual(expect.arrayContaining(["language", "deviceClass", "usage.redactionMode"].map((metric) => ({ metric, bucket: "other" }))));
     const stored = await dump();
     for (const leaked of ["tlh", "vision-pro", "db.example.com"]) expect(stored).not.toContain(leaked);
+  });
+
+  it("drops a key it does not know in a map keyed by an enum, without storing it", async () => {
+    const r = clone(samples[0]) as Sample;
+    (r.usage!.counts as Record<string, unknown>).aiChatsOpened = 6;
+    (r.usage!.authMethodUsed as Record<string, unknown>).passkey = true;
+    expect((await post({ reports: [r] })).status).toBe(200);
+    expect(await env.DB.prepare("SELECT 1 FROM aggregates WHERE metric = 'usage.counts.terminalSessionsOpened'").first()).not.toBeNull();
+    const stored = await dump();
+    for (const leaked of ["aiChatsOpened", "passkey"]) expect(stored).not.toContain(leaked);
+  });
+
+  it("counts a bucket step it does not know in the known step below it", async () => {
+    const r = clone(samples[0]) as Sample;
+    r.usage!.savedHosts = 12;
+    r.usage!.counts.editorOpened = 5000;
+    (r.detail as { metrics: Record<string, number> }).metrics.launchTime = 450;
+    expect((await post({ reports: [r] })).status).toBe(200);
+    const bucket = async (metric: string) =>
+      (await env.DB.prepare("SELECT bucket FROM aggregates WHERE metric = ?").bind(metric).first<{ bucket: string }>())?.bucket;
+    expect(await bucket("usage.savedHosts")).toBe("6");
+    expect(await bucket("usage.counts.editorOpened")).toBe("101");
+    expect(await bucket("detail.metrics.launchTime")).toBe("300");
   });
 
   it.each(["ja", "fr", "es"])("takes the language %s", async (language) => {

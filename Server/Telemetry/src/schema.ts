@@ -1,9 +1,11 @@
 // The report the app sends, checked field by field. The enum cases come
 // from the client's own schema snapshot, so the two cannot drift: a case
 // added in Swift changes report-enums.json, and this Worker accepts it once
-// redeployed. Unknown keys are rejected. An enum value this Worker does not
-// know yet is counted as "other" rather than costing the client its whole
-// report; the value itself is never stored.
+// redeployed. Unknown keys are rejected, except inside a map keyed by an
+// enum, where a key this Worker does not know yet (a case added in a newer
+// app) is dropped. An enum value it does not know yet is counted as "other",
+// and a bucket step it does not know yet as the known step below it, rather
+// than costing the client its whole report; the value itself is never stored.
 import { z } from "zod";
 import snapshot from "../../../Foundation/Telemetry/Tests/TelemetryTests/Fixtures/report-enums.json";
 
@@ -16,10 +18,20 @@ const oneOf = (name: Name) => {
   const known = new Set(enums[name]);
   return z.string().transform((value) => (known.has(value) ? value : "other"));
 };
-const numberIn = (name: Name) => z.number().int().refine((n) => enums[name].includes(String(n)));
+// Every step is the lower bound of its bucket, so a value between two known steps
+// (a step added in a newer app) honestly falls in the lower one.
+const numberIn = (name: Name) => {
+  const steps = enums[name].map(Number).sort((a, b) => b - a);
+  return z
+    .number()
+    .int()
+    .min(steps[steps.length - 1])
+    .transform((n) => steps.find((step) => step <= n)!);
+};
 const bucket = numberIn("countBucket");
+// z.object drops the keys it does not list.
 const every = <T extends z.ZodType>(name: Name, value: T) =>
-  z.strictObject(Object.fromEntries(enums[name].map((key) => [key, value])) as Record<string, T>);
+  z.object(Object.fromEntries(enums[name].map((key) => [key, value])) as Record<string, T>);
 
 const appVersion = z.string().regex(/^\d{1,3}\.\d{1,3}\.\d{1,3}$/);
 const osVersion = z.string().regex(/^\d{1,3}\.\d{1,3}$/);
