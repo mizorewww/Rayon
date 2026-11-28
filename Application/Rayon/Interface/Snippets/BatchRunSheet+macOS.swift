@@ -137,7 +137,8 @@
         }
 
         static func seconds(_ seconds: TimeInterval) -> String {
-            String(format: "%.1f s", max(0, seconds))
+            Duration.seconds(max(0, seconds))
+                .formatted(.units(allowed: [.seconds], width: .abbreviated, fractionalPart: .show(length: 1)))
         }
 
         @ViewBuilder var output: some View {
