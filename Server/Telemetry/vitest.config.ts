@@ -6,7 +6,12 @@ export default defineConfig(async () => ({
     cloudflareTest({
       wrangler: { configPath: "./wrangler.toml" },
       miniflare: {
-        bindings: { READ_SECRET: "test-secret", TEST_MIGRATIONS: await readD1Migrations("./migrations") },
+        bindings: {
+          READ_SECRET: "test-secret",
+          ACCESS_TEAM_DOMAIN: "https://rayon-test.cloudflareaccess.com",
+          ACCESS_AUD: "test-aud",
+          TEST_MIGRATIONS: await readD1Migrations("./migrations"),
+        },
       },
     }),
   ],

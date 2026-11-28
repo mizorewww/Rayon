@@ -11,6 +11,7 @@
     "deploy": "cf deploy"
   },
   "dependencies": {
+    "jose": "6.2.17",
     "zod": "4.1.12"
   },
   "devDependencies": {

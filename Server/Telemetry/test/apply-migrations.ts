@@ -5,6 +5,8 @@ declare global {
     interface Env {
       DB: D1Database;
       READ_SECRET: string;
+      ACCESS_TEAM_DOMAIN: string;
+      ACCESS_AUD: string;
       TEST_MIGRATIONS: import("cloudflare:test").D1Migration[];
     }
   }

@@ -18,6 +18,11 @@ enabled = false
 enabled = false
 invocation_logs = false
 
+# The dashboard's Cloudflare Access application (Zero Trust › Access › Applications). Not secret.
+[vars]
+ACCESS_TEAM_DOMAIN = "https://djtrump.cloudflareaccess.com"
+ACCESS_AUD = "5567c33f0c49b3a426feedb4d3f1f0c790208d322708220b669d3d6d1369051f"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "rayon-telemetry"

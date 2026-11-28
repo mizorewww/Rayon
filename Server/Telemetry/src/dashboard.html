@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Rayon Telemetry</title>
+<style nonce="{{nonce}}">
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --ring: rgba(11, 11, 11, 0.10);
+  --series-1: #2a78d6;
+  --series-2: #eb6834;
+  --zero: #e1e0d9;
+  --seq-1: #86b6ef;
+  --seq-2: #5598e7;
+  --seq-3: #2a78d6;
+  --seq-4: #1c5cab;
+  --seq-5: #104281;
+  --seq-6: #0d366b;
+  --critical: #d03b3b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d;
+    --surface: #1a1a19;
+    --ink: #f0efec;
+    --ink-2: #c3c2b7;
+    --grid: #2c2c2a;
+    --axis: #383835;
+    --ring: rgba(255, 255, 255, 0.10);
+    --series-1: #3987e5;
+    --series-2: #d95926;
+    --zero: #383835;
+    --seq-1: #184f95;
+    --seq-2: #1c5cab;
+    --seq-3: #256abf;
+    --seq-4: #3987e5;
+    --seq-5: #6da7ec;
+    --seq-6: #9ec5f4;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d;
+  --surface: #1a1a19;
+  --ink: #f0efec;
+  --ink-2: #c3c2b7;
+  --grid: #2c2c2a;
+  --axis: #383835;
+  --ring: rgba(255, 255, 255, 0.10);
+  --series-1: #3987e5;
+  --series-2: #d95926;
+  --zero: #383835;
+  --seq-1: #184f95;
+  --seq-2: #1c5cab;
+  --seq-3: #256abf;
+  --seq-4: #3987e5;
+  --seq-5: #6da7ec;
+  --seq-6: #9ec5f4;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+header, main { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+header { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; padding-top: 20px; padding-bottom: 8px; }
+h1 { font-size: 20px; margin: 0; font-weight: 650; }
+h2 { font-size: 16px; margin: 32px 0 4px; font-weight: 650; }
+h3 { font-size: 13px; margin: 0 0 10px; font-weight: 600; color: var(--ink-2); }
+p.note { margin: 0 0 12px; color: var(--muted); font-size: 12px; }
+.who { color: var(--ink-2); font-size: 13px; display: flex; gap: 12px; align-items: center; }
+a { color: var(--series-1); }
+form.range { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+form.range label { display: flex; gap: 6px; align-items: center; color: var(--ink-2); font-size: 13px; }
+input, select, button {
+  font: inherit; font-size: 13px; color: var(--ink); background: var(--surface);
+  border: 1px solid var(--axis); border-radius: 8px; padding: 5px 8px; min-height: 32px;
+}
+button { cursor: pointer; }
+.status { color: var(--muted); font-size: 13px; min-height: 20px; margin: 8px 0 0; }
+.status.error { color: var(--critical); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 12px; }
+.tile, .card { background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; padding: 14px 16px; }
+.tile .label { color: var(--ink-2); font-size: 12px; }
+.tile .value { font-size: 26px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+.card { min-width: 0; }
+.card.wide { grid-column: 1 / -1; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; }
+.chart .gridline { stroke: var(--grid); }
+.chart .baseline { stroke: var(--axis); }
+.chart .tick { fill: var(--muted); font-size: 11px; }
+.chart .s1 { fill: var(--series-1); }
+.chart .s2 { fill: var(--series-2); }
+.chart .hit { fill: transparent; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--ink-2); margin: 0 0 8px; }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; background: var(--swatch); }
+.bars { display: grid; grid-template-columns: minmax(70px, max-content) 1fr max-content; gap: 6px 10px; align-items: center; font-size: 13px; }
+.bars .name { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 180px; }
+.bars .track { height: 10px; }
+.bars .fill { height: 100%; min-width: 2px; background: var(--series-1); border-radius: 0 4px 4px 0; }
+.bars .num { font-variant-numeric: tabular-nums; text-align: right; }
+.bars .num small { color: var(--muted); margin-left: 6px; }
+.dist { display: grid; grid-template-columns: minmax(90px, max-content) 1fr; gap: 8px 10px; align-items: center; font-size: 13px; }
+.dist .name { color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+.stack { display: flex; gap: 2px; height: 14px; }
+.stack div { height: 100%; min-width: 2px; }
+.stack div:first-child { border-radius: 4px 0 0 4px; }
+.stack div:last-child { border-radius: 0 4px 4px 0; }
+.empty { color: var(--muted); font-size: 13px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+th { color: var(--ink-2); font-weight: 600; }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+td code { font-size: 12px; word-break: break-all; }
+.scroll { overflow-x: auto; }
+#tip {
+  position: fixed; pointer-events: none; z-index: 10; display: none;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--ring); border-radius: 8px;
+  padding: 6px 9px; font-size: 12px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18); max-width: 260px; white-space: pre-line;
+}
+details summary { cursor: pointer; color: var(--ink-2); font-size: 13px; margin-top: 10px; }
+footer { max-width: 1180px; margin: 40px auto 32px; padding: 0 16px; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Rayon Telemetry</h1>
+  <div class="who"><span id="viewer"></span><a href="/cdn-cgi/access/logout">Sign out</a></div>
+</header>
+<main>
+  <form class="range" id="range">
+    <select id="preset" aria-label="Range">
+      <option value="7">Last 7 days</option>
+      <option value="30" selected>Last 30 days</option>
+      <option value="90">Last 90 days</option>
+      <option value="365">Last 365 days</option>
+      <option value="custom">Custom</option>
+    </select>
+    <label>From <input type="date" id="from" required></label>
+    <label>To <input type="date" id="to" required></label>
+    <button type="submit">Show</button>
+  </form>
+  <p class="status" id="status" role="status"></p>
+  <div id="content"></div>
+</main>
+<footer id="footer"></footer>
+<div id="tip" role="tooltip"></div>
+<script nonce="{{nonce}}">
+"use strict";
+const $ = (id) => document.getElementById(id);
+const fmt = new Intl.NumberFormat();
+const pct = (n) => (n * 100 >= 10 ? Math.round(n * 100) : (n * 100).toFixed(1)) + "%";
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+const day = (d) => d.toISOString().slice(0, 10);
+
+// Bucket labels: a count bucket is its lower bound; steps (ms, MB, s) are thresholds.
+const countLabels = { "0": "0", "1": "1", "2": "2–5", "6": "6–20", "21": "21–100", "101": "101+" };
+const units = { launchTime: " ms", hangTime: " ms", peakMemory: " MB", diskWrites: " MB", cpuTime: " s" };
+const names = {
+  iCloudSyncEnabled: "iCloud sync", sftpBrowsed: "SFTP browsed", vncSessions: "VNC sessions", uuRemoteSessions: "UU Remote sessions",
+  activeDaysLast28: "Active days (last 28)", publicKey: "Public key", keyboardInteractive: "Keyboard-interactive",
+  ed25519: "Ed25519", ecdsa: "ECDSA", rsa: "RSA", cpuTime: "CPU time", dnsFailed: "DNS failed",
+};
+// "terminalSessionsOpened" reads "Terminal sessions opened"; a few keys need their own spelling.
+const pretty = (key) => names[key] || key.replace(/([a-z0-9])([A-Z])/g, "$1 $2").replace(/([a-z])(\d)/g, "$1 $2").toLowerCase().replace(/^./, (c) => c.toUpperCase());
+
+function el(html) {
+  const t = document.createElement("template");
+  t.innerHTML = html.trim();
+  return t.content.firstElementChild;
+}
+
+// One tooltip for every mark with data-tip.
+const tip = $("tip");
+document.addEventListener("pointermove", (e) => {
+  const target = e.target.closest ? e.target.closest("[data-tip]") : null;
+  if (!target) { tip.style.display = "none"; return; }
+  tip.textContent = target.dataset.tip;
+  tip.style.display = "block";
+  const x = Math.min(e.clientX + 12, window.innerWidth - tip.offsetWidth - 8);
+  const y = e.clientY + 14 + tip.offsetHeight > window.innerHeight ? e.clientY - tip.offsetHeight - 10 : e.clientY + 14;
+  tip.style.left = x + "px";
+  tip.style.top = y + "px";
+});
+
+function barList(title, rows, total, note) {
+  const card = el('<div class="card"><h3>' + esc(title) + "</h3></div>");
+  if (note) card.append(el('<p class="note">' + esc(note) + "</p>"));
+  if (!rows.length) { card.append(el('<p class="empty">No cell reaches the minimum.</p>')); return card; }
+  const max = Math.max(...rows.map((r) => r.count));
+  const list = el('<div class="bars"></div>');
+  for (const r of rows) {
+    const share = total ? pct(r.count / total) : "";
+    const tipText = r.name + "\n" + fmt.format(r.count) + " reports" + (share ? " · " + share : "");
+    list.append(el('<div class="name" title="' + esc(r.name) + '">' + esc(r.name) + "</div>"));
+    const track = el('<div class="track" data-tip="' + esc(tipText) + '"><div class="fill"></div></div>');
+    track.firstElementChild.style.width = (100 * r.count) / max + "%";
+    list.append(track);
+    list.append(el('<div class="num">' + fmt.format(r.count) + (share ? "<small>" + share + "</small>" : "") + "</div>"));
+  }
+  card.append(list);
+  return card;
+}
+
+// Rows of one-hundred-percent stacks: each row is a metric, each segment a bucket share of `total`.
+function distribution(title, rows, total, labelOf, note) {
+  const card = el('<div class="card"><h3>' + esc(title) + "</h3></div>");
+  if (note) card.append(el('<p class="note">' + esc(note) + "</p>"));
+  if (!rows.length || !total) { card.append(el('<p class="empty">No cell reaches the minimum.</p>')); return card; }
+  const buckets = [...new Set(rows.flatMap((r) => r.buckets.map((b) => b.bucket)))].sort((a, b) => Number(a) - Number(b) || a.localeCompare(b));
+  const color = (i) => "var(--seq-" + Math.min(6, Math.round(1 + (i * 5) / Math.max(1, buckets.length - 1))) + ")";
+  const legend = el('<div class="legend"></div>');
+  legend.append(el("<span>0 or hidden</span>"));
+  legend.lastElementChild.style.setProperty("--swatch", "var(--zero)");
+  buckets.forEach((b, i) => {
+    const s = el("<span>" + esc(labelOf(b)) + "</span>");
+    s.style.setProperty("--swatch", color(i));
+    legend.append(s);
+  });
+  card.append(legend);
+  const grid = el('<div class="dist"></div>');
+  for (const r of rows) {
+    grid.append(el('<div class="name" title="' + esc(r.name) + '">' + esc(r.name) + "</div>"));
+    const stack = el('<div class="stack"></div>');
+    const seen = r.buckets.reduce((n, b) => n + b.count, 0);
+    const rest = Math.max(0, total - seen);
+    const part = (count, label, swatch) => {
+      if (!count) return;
+      const d = el('<div data-tip="' + esc(r.name + "\n" + label + ": " + fmt.format(count) + " · " + pct(count / total)) + '"></div>');
+      d.style.flex = String(count);
+      d.style.background = swatch;
+      stack.append(d);
+    };
+    part(rest, "0 or hidden", "var(--zero)");
+    for (const b of r.buckets) part(b.count, labelOf(b.bucket), color(buckets.indexOf(b.bucket)));
+    grid.append(stack);
+  }
+  card.append(grid);
+  return card;
+}
+
+function dailyChart(daily, from, to) {
+  const days = [];
+  for (let d = new Date(from + "T00:00:00Z"); day(d) <= to; d = new Date(d.getTime() + 86400000)) days.push(day(d));
+  const by = new Map(days.map((d) => [d, { usage: 0, diagnostics: 0 }]));
+  for (const r of daily) if (by.has(r.day)) by.get(r.day)[r.bucket] = r.count;
+  const totals = days.map((d) => by.get(d).usage + by.get(d).diagnostics);
+  const max = Math.max(10, ...totals);
+  const step = Math.pow(10, Math.floor(Math.log10(max)));
+  const top = Math.ceil(max / step) * step;
+  // Drawn at the card's own width, so labels keep their size on a phone.
+  const W = Math.max(300, $("content").clientWidth - 34), H = W < 600 ? 200 : 240, L = 44, R = 8, T = 8, B = 26;
+  const bw = (W - L - R) / days.length;
+  const gap = Math.min(2, bw * 0.25);
+  const y = (v) => T + (H - T - B) * (1 - v / top);
+  let svg = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Daily reports">';
+  for (let i = 0; i <= 4; i++) {
+    const v = (top * i) / 4;
+    svg += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v) + '" y2="' + y(v) + '" class="' + (i ? "gridline" : "baseline") + '"/>';
+    svg += '<text x="' + (L - 6) + '" y="' + (y(v) + 4) + '" text-anchor="end" class="tick">' + fmt.format(v) + "</text>";
+  }
+  const every = Math.ceil(days.length / Math.max(2, Math.floor(W / 90)));
+  days.forEach((d, i) => {
+    const x = L + i * bw;
+    const { usage, diagnostics } = by.get(d);
+    const tipText = d + "\nWith usage: " + fmt.format(usage) + "\nDiagnostics only: " + fmt.format(diagnostics);
+    svg += '<g data-tip="' + esc(tipText) + '"><rect x="' + x + '" y="' + T + '" width="' + bw + '" height="' + (H - T - B) + '" class="hit"/>';
+    const w = Math.max(1, bw - gap);
+    if (usage) svg += '<rect x="' + (x + gap / 2) + '" y="' + y(usage) + '" width="' + w + '" height="' + (y(0) - y(usage)) + '" class="s1"/>';
+    if (diagnostics) {
+      const base = usage ? y(usage) - gap : y(0);
+      svg += '<rect x="' + (x + gap / 2) + '" y="' + (base - (y(0) - y(diagnostics))) + '" width="' + w + '" height="' + (y(0) - y(diagnostics)) + '" rx="' + Math.min(3, w / 3) + '" class="s2"/>';
+    }
+    svg += "</g>";
+    if (i % every === 0) svg += '<text x="' + (x + bw / 2) + '" y="' + (H - 8) + '" text-anchor="middle" class="tick">' + d.slice(5) + "</text>";
+  });
+  svg += "</svg>";
+  const card = el('<div class="card chart"><div class="legend"><span>With usage (level 2 and 3)</span><span>Diagnostics only (level 1)</span></div></div>');
+  card.querySelectorAll(".legend span")[0].style.setProperty("--swatch", "var(--series-1)");
+  card.querySelectorAll(".legend span")[1].style.setProperty("--swatch", "var(--series-2)");
+  card.append(el(svg));
+  const table = '<details><summary>Table</summary><div class="scroll"><table><thead><tr><th>Day</th><th class="n">With usage</th><th class="n">Diagnostics only</th></tr></thead><tbody>' +
+    days.map((d) => "<tr><td>" + d + '</td><td class="n">' + fmt.format(by.get(d).usage) + '</td><td class="n">' + fmt.format(by.get(d).diagnostics) + "</td></tr>").join("") +
+    "</tbody></table></div></details>";
+  card.append(el(table));
+  return card;
+}
+
+function render(data) {
+  const metrics = new Map();
+  for (const r of data.metrics) {
+    if (!metrics.has(r.metric)) metrics.set(r.metric, []);
+    metrics.get(r.metric).push({ bucket: r.bucket, count: r.count });
+  }
+  const used = new Set();
+  const take = (metric) => { used.add(metric); return metrics.get(metric) || []; };
+  const named = (metric) => take(metric).map((b) => ({ name: b.bucket, count: b.count })).sort((a, b) => b.count - a.count);
+  const count = (metric, bucket) => (take(metric).find((b) => b.bucket === bucket) || { count: 0 }).count;
+  const family = (prefix) => [...metrics.keys()].filter((m) => m.startsWith(prefix + ".")).sort();
+
+  const usageReports = count("reports", "usage");
+  const diagnosticReports = count("reports", "diagnostics");
+  const detailReports = count("level", "3");
+  const content = $("content");
+  content.replaceChildren();
+  const section = (title, note) => {
+    content.append(el("<h2>" + esc(title) + "</h2>"));
+    if (note) content.append(el('<p class="note">' + esc(note) + "</p>"));
+  };
+  const grid = (...cards) => { const g = el('<div class="grid"></div>'); g.append(...cards); content.append(g); };
+
+  const tiles = el('<div class="tiles"></div>');
+  const crashes = named("diagnostics");
+  const kind = (k) => (crashes.find((c) => c.name === k) || { count: 0 }).count;
+  for (const [label, value] of [["Reports", usageReports + diagnosticReports], ["With usage", usageReports], ["Crashes", kind("crash")], ["Hangs", kind("hang")]]) {
+    tiles.append(el('<div class="tile"><div class="label">' + label + '</div><div class="value">' + fmt.format(value) + "</div></div>"));
+  }
+  content.append(tiles);
+
+  section("Daily reports", "One report per device and day, so this approximates daily active devices that share telemetry.");
+  content.append(dailyChart(data.daily, data.from, data.to));
+
+  const total = usageReports + diagnosticReports;
+  section("Who reports", "Report-days over the range. Versions with fewer than " + data.minimumCount + " reports are folded into other.");
+  grid(
+    barList("App version", data.appVersions, total),
+    barList("Platform", data.platforms, total),
+    barList("OS version", data.osVersions, total),
+    barList("Device class", named("deviceClass"), total),
+    barList("Language", named("language"), total),
+    barList("Region group", named("regionGroup"), total),
+    barList("Channel", named("channel"), total),
+    barList("Telemetry level", named("level").map((r) => ({ name: "Level " + r.name, count: r.count })), total),
+  );
+
+  const rows = (prefix) => family(prefix).map((m) => ({ name: pretty(m.slice(prefix.length + 1)), buckets: take(m).slice().sort((a, b) => Number(a.bucket) - Number(b.bucket)) }));
+  const flags = (prefix) => family(prefix).map((m) => ({ name: pretty(m.slice(prefix.length + 1)), count: count(m, "true") })).filter((r) => r.count).sort((a, b) => b.count - a.count);
+  const byCount = (b) => countLabels[b] || b;
+  section("Feature usage", "Share of the " + fmt.format(usageReports) + " usage reports by how often each feature was used that day.");
+  const features = distribution("Features", rows("usage.counts"), usageReports, byCount);
+  features.classList.add("wide");
+  grid(features);
+  grid(
+    distribution("Connection outcomes", rows("usage.connectionOutcome"), usageReports, byCount),
+    distribution("Port forwards started", rows("usage.portForwardsStarted"), usageReports, byCount),
+    barList("Authentication methods used", flags("usage.authMethodUsed"), usageReports),
+    barList("Key types held", flags("usage.keyTypes"), usageReports),
+  );
+
+  const toggles = ["usage.iCloudSyncEnabled", "usage.customTheme"].map((m) => ({ name: pretty(m.slice(6)), count: count(m, "true") })).filter((r) => r.count);
+  section("Settings", "Share of usage reports.");
+  grid(
+    barList("Turned on", toggles, usageReports),
+    barList("Redaction mode", named("usage.redactionMode"), usageReports),
+    distribution("Library and habit", ["usage.savedHosts", "usage.identities", "usage.activeDaysLast28"].filter((m) => metrics.has(m)).map((m) => ({ name: pretty(m.slice(6)), buckets: take(m).slice().sort((a, b) => Number(a.bucket) - Number(b.bucket)) })), usageReports, byCount),
+  );
+
+  section("Detail (level 3)", "Share of the " + fmt.format(detailReports) + " level 3 reports.");
+  grid(
+    distribution("Connect latency", rows("detail.connectLatency"), detailReports, byCount),
+    distribution("Remote OS family", rows("detail.remoteOSFamily"), detailReports, byCount),
+    ...family("detail.metrics").map((m) => {
+      const key = m.slice("detail.metrics.".length);
+      return distribution(pretty(key), [{ name: pretty(key), buckets: take(m).slice().sort((a, b) => Number(a.bucket) - Number(b.bucket)) }], detailReports, (b) => "≥ " + fmt.format(Number(b)) + (units[key] || ""));
+    }),
+  );
+
+  section("Crashes and hangs", "Items by signature: kind, exception and the first app frame. Groups under " + data.minimumCount + " items are left out.");
+  grid(barList("Diagnostics by kind", crashes));
+  const table = el('<div class="card scroll"><table><thead><tr><th>Signature</th><th>Kind</th><th>App version</th><th class="n">Items</th></tr></thead><tbody></tbody></table></div>');
+  const body = table.querySelector("tbody");
+  for (const c of data.crashes) body.append(el("<tr><td><code>" + esc(c.signature || c.kind) + "</code></td><td>" + esc(c.kind) + "</td><td>" + esc(c.appVersion) + '</td><td class="n">' + fmt.format(c.count) + "</td></tr>"));
+  if (!data.crashes.length) body.append(el('<tr><td colspan="4" class="empty">No group reaches the minimum.</td></tr>'));
+  content.append(table);
+
+  used.add("reports");
+  const rest = [...metrics.keys()].filter((m) => !used.has(m));
+  if (rest.length) {
+    section("Other metrics");
+    const t = el('<div class="card scroll"><table><thead><tr><th>Metric</th><th>Bucket</th><th class="n">Reports</th></tr></thead><tbody></tbody></table></div>');
+    for (const m of rest) for (const b of metrics.get(m)) t.querySelector("tbody").append(el("<tr><td>" + esc(m) + "</td><td>" + esc(b.bucket) + '</td><td class="n">' + fmt.format(b.count) + "</td></tr>"));
+    content.append(t);
+  }
+  $("footer").textContent = "Cells under " + data.minimumCount + " reports are left out everywhere, so parts may not add up to totals. Days are UTC.";
+}
+
+function setPreset(days) {
+  const to = new Date();
+  $("to").value = day(to);
+  $("from").value = day(new Date(to.getTime() - (days - 1) * 86400000));
+}
+
+async function load() {
+  const from = $("from").value, to = $("to").value;
+  if (!from || !to || from > to) { $("status").textContent = "Pick a start day before the end day."; return; }
+  $("status").className = "status";
+  $("status").textContent = "Loading…";
+  try {
+    const response = await fetch("/dashboard/api/summary?from=" + from + "&to=" + to, { credentials: "same-origin", headers: { accept: "application/json" } });
+    if (response.status === 403 || response.redirected) { location.reload(); return; }
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    const data = await response.json();
+    $("viewer").textContent = data.viewer;
+    render(data);
+    $("status").textContent = "";
+    history.replaceState(null, "", "#" + from + "/" + to);
+  } catch (error) {
+    $("status").className = "status error";
+    $("status").textContent = "Could not load the summary (" + error.message + ").";
+  }
+}
+
+$("preset").addEventListener("change", () => { if ($("preset").value !== "custom") { setPreset(Number($("preset").value)); load(); } });
+for (const id of ["from", "to"]) $(id).addEventListener("input", () => { $("preset").value = "custom"; });
+$("range").addEventListener("submit", (e) => { e.preventDefault(); load(); });
+
+const hash = /^#(\d{4}-\d{2}-\d{2})\/(\d{4}-\d{2}-\d{2})$/.exec(location.hash);
+if (hash) { $("from").value = hash[1]; $("to").value = hash[2]; $("preset").value = "custom"; } else setPreset(30);
+load();
+</script>
+</body>
+</html>

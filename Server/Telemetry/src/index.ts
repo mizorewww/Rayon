@@ -2,10 +2,11 @@
 // and no User-Agent are ever read; each report is folded into daily
 // aggregate counts and dropped. Only crash and hang items are kept as
 // rows, for 90 days, to symbolicate.
+import { dashboard, type DashboardEnv } from "./dashboard";
 import { batch, report, type Report } from "./schema";
 import { signature } from "./signature";
 
-export interface Env {
+export interface Env extends DashboardEnv {
   DB: D1Database;
   /** `wrangler secret put READ_SECRET`; the read endpoints are closed without it. */
   READ_SECRET?: string;
@@ -138,6 +139,8 @@ export default {
     if (url.pathname === "/v1/reports") {
       return request.method === "POST" ? ingest(request, env) : json({ error: "POST only" }, 405);
     }
+    // Cloudflare Access guards /dashboard*; dashboard() checks its token again.
+    if (url.pathname === "/dashboard" || url.pathname.startsWith("/dashboard/")) return dashboard(request, url, env, minimumCount);
     if (request.method === "GET" && (url.pathname === "/v1/aggregates" || url.pathname === "/v1/crashes")) {
       if (!(await authorized(request, env))) return json({ error: "unauthorized" }, 401);
       return url.pathname === "/v1/aggregates" ? aggregates(url, env) : crashes(url, env);
