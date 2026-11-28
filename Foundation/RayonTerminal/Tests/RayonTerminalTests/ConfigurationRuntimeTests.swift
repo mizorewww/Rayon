@@ -208,8 +208,9 @@ final class ConfigurationRuntimeTests: XCTestCase {
 
     /// An earlier release's config.ghostty moves into the settings at the
     /// first launch, without comments, malformed lines or options Rayon's
-    /// terminal does not use, and is gone after; its time stays the
-    /// settings' time, for sync.
+    /// terminal does not use, which are reported; the file is kept as
+    /// config.ghostty.imported, and its time stays the settings' time, for
+    /// sync.
     @MainActor func testConfigGhosttyIsImportedOnce() throws {
         let folder = FileManager.default.temporaryDirectory.appending(path: "RayonTerminalTests-\(UUID())")
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -228,12 +229,16 @@ final class ConfigurationRuntimeTests: XCTestCase {
         XCTAssertEqual(settings.paletteOverrides, [1: "#010101"])
         XCTAssertEqual(settings.modified, written)
         XCTAssertFalse(FileManager.default.fileExists(atPath: configFile.path))
+        XCTAssertEqual(try Data(contentsOf: configFile.appendingPathExtension("imported")), Data(text.utf8))
+        XCTAssertEqual(settings.lastImport?.earlierRelease, true)
+        XCTAssertEqual(settings.lastImport?.skipped, ["macos-titlebar-style"])
 
         // A config.ghostty that turns up later is not read.
         try Data("font-size = 30\n".utf8).write(to: configFile)
         let relaunched = TerminalSettings(fileURL: url, importing: configFile)
         XCTAssertEqual(relaunched.applied, expected)
         XCTAssertEqual(relaunched.modified, written)
+        XCTAssertNil(relaunched.lastImport)
     }
 
     /// What another device set is applied at once and is not something

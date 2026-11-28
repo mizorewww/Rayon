@@ -5724,6 +5724,22 @@
         }
       }
     },
+    "Terminal settings moved from an earlier version" : {
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已迁移旧版本的终端设置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已遷移舊版本的終端機設定"
+          }
+        }
+      }
+    },
     "Text" : {
       "localizations" : {
         "zh-Hans" : {

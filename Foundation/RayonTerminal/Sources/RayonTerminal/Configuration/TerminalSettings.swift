@@ -70,23 +70,33 @@ public final class TerminalSettings {
 
     /// Reads the settings at `fileURL`. Before there are any, the settings in
     /// `importing` (an earlier release's config.ghostty) move there, and
-    /// that file goes.
+    /// that file is kept beside them as config.ghostty.imported, with what
+    /// the settings have no place for: comments and options Rayon's terminal
+    /// does not use, which Settings reports once.
     public init(fileURL: URL = defaultFileURL, importing configFile: URL? = configFileURL) {
         self.fileURL = fileURL
         var initial: [String: [String]] = [:]
+        var report: GhosttyImport?
         if let data = try? Data(contentsOf: fileURL), let stored = try? JSONDecoder().decode(Stored.self, from: data) {
             initial = stored.values
             modified = stored.modified
         } else if let configFile, let data = try? Data(contentsOf: configFile) {
-            initial = GhosttyConfigImport.parse(String(decoding: data, as: UTF8.self)).values
+            let parsed = GhosttyConfigImport.parse(String(decoding: data, as: UTF8.self))
+            initial = parsed.values
             // The file's time, so sync weighs these settings by when they were made.
             modified = (try? configFile.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate
             if (try? Self.write(Stored(values: initial, modified: modified ?? Date()), to: fileURL)) != nil {
-                try? FileManager.default.removeItem(at: configFile)
+                let kept = configFile.appendingPathExtension("imported")
+                try? FileManager.default.removeItem(at: kept)
+                try? FileManager.default.moveItem(at: configFile, to: kept)
+                if !parsed.skipped.isEmpty {
+                    report = GhosttyImport(earlierRelease: true, imported: parsed.values.count, skipped: parsed.skipped)
+                }
             }
         }
         config = initial
         applied = initial
+        lastImport = report
         countChanges()
     }
 
@@ -283,17 +293,20 @@ public final class TerminalSettings {
         undoManager.removeAllActions(withTarget: self)
     }
 
+    /// What the last "Import from Ghostty…", or the move of an earlier
+    /// release's config.ghostty, found, until it is shown.
+    struct GhosttyImport {
+        /// From an earlier release's config.ghostty, not Ghostty's own.
+        var earlierRelease = false
+        /// No Ghostty configuration was found.
+        var found = true
+        var imported = 0
+        var skipped: [String] = []
+    }
+
+    var lastImport: GhosttyImport?
+
     #if os(macOS)
-        /// What the last "Import from Ghostty…" found, until it is shown.
-        struct GhosttyImport {
-            /// No Ghostty configuration was found.
-            var found = true
-            var imported = 0
-            var skipped: [String] = []
-        }
-
-        var lastImport: GhosttyImport?
-
         /// Sets the options Ghostty's own configuration on this Mac sets, over
         /// these, as one change Undo takes back. Options Rayon's terminal
         /// does not use are skipped and reported.

@@ -134,9 +134,7 @@ public extension View {
     /// every row, not just the visible ones, on each change and page switch.
     func terminalSettingsChrome() -> some View {
         overlay(alignment: .bottom) { IssueBar() }
-        #if os(macOS)
             .modifier(GhosttyImportAlert())
-        #endif
     }
 
     /// A Settings form: grouped, its sections drawn straight on the window's
@@ -154,29 +152,38 @@ public extension View {
     }
 }
 
-#if os(macOS)
-    /// What Advanced's Import from Ghostty found.
-    private struct GhosttyImportAlert: ViewModifier {
-        private var settings: TerminalSettings {
-            .shared
-        }
+/// What Advanced's Import from Ghostty, or the move of an earlier release's
+/// settings, found.
+private struct GhosttyImportAlert: ViewModifier {
+    private var settings: TerminalSettings {
+        .shared
+    }
 
-        func body(content: Content) -> some View {
-            let shown = Binding { settings.lastImport != nil } set: { if !$0 { settings.lastImport = nil } }
-            let result = settings.lastImport
-            content.alert(
-                result?.found == false ? Text("No Ghostty configuration found", bundle: .module) : Text("Imported from Ghostty", bundle: .module),
-                isPresented: shown,
-                presenting: result
-            ) { _ in } message: { result in
-                if !result.found {
-                    Text("Ghostty keeps its configuration in ~/.config/ghostty or ~/Library/Application Support/com.mitchellh.ghostty.", bundle: .module)
-                } else if result.skipped.isEmpty {
-                    Text("Settings imported: \(result.imported)", bundle: .module)
-                } else {
-                    Text("Settings imported: \(result.imported). Skipped, as Rayon's terminal does not use them: \(result.skipped.formatted(.list(type: .and)))", bundle: .module)
-                }
+    func body(content: Content) -> some View {
+        let shown = Binding { settings.lastImport != nil } set: { if !$0 { settings.lastImport = nil } }
+        let result = settings.lastImport
+        content.alert(
+            title(result),
+            isPresented: shown,
+            presenting: result
+        ) { _ in } message: { result in
+            if !result.found {
+                Text("Ghostty keeps its configuration in ~/.config/ghostty or ~/Library/Application Support/com.mitchellh.ghostty.", bundle: .module)
+            } else if result.skipped.isEmpty {
+                Text("Settings imported: \(result.imported)", bundle: .module)
+            } else {
+                Text("Settings imported: \(result.imported). Skipped, as Rayon's terminal does not use them: \(result.skipped.formatted(.list(type: .and)))", bundle: .module)
             }
         }
     }
-#endif
+
+    private func title(_ result: TerminalSettings.GhosttyImport?) -> Text {
+        if result?.earlierRelease == true {
+            Text("Terminal settings moved from an earlier version", bundle: .module)
+        } else if result?.found == false {
+            Text("No Ghostty configuration found", bundle: .module)
+        } else {
+            Text("Imported from Ghostty", bundle: .module)
+        }
+    }
+}
