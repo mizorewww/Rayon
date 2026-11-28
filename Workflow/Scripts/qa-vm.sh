@@ -51,7 +51,17 @@ case $cmd in
     # Each ad-hoc build has a new signature, so keychain items an older build created
     # would raise a login-keychain prompt that cua-driver cannot answer. Drop them;
     # QA re-enters test credentials in the app.
-    gssh 'while security delete-generic-password -s me.mizorewww.rayon.secrets >/dev/null 2>&1; do :; done; while security delete-generic-password -s me.mizorewww.rayon.debug.secrets >/dev/null 2>&1; do :; done; true'
+    # Every service under Rayon's ids (secrets, uu-remote, sync key; debug and release),
+    # as the login keychain lists them. Over SSH the keychain is locked until unlocked
+    # with the guest's password, and a locked one lists and deletes nothing.
+    gssh 'zsh -s' <<'EOF'
+set -euo pipefail
+security unlock-keychain -p lume ~/Library/Keychains/login.keychain-db
+services=(${(f)"$(security dump-keychain | sed -n 's/^ *"svce"<blob>="\(me\.mizorewww\.rayon[^"]*\)"$/\1/p' | sort -u)"})
+for service in $services; do
+  while security delete-generic-password -s $service >/dev/null 2>&1; do :; done
+done
+EOF
     print -- "pushed $name -> ~/Applications/$name (guest keychain items for Rayon cleared)"
     ;;
   run)
