@@ -29,7 +29,7 @@ extension TerminalContext {
             rememberTerminfo()
             return GhosttyTerminfo.terminalType
         case .failed:
-            putInformation("[i] This server could not take Ghostty's terminfo (no tic, or ~/.terminfo not writable); running as \(GhosttyTerminfo.fallbackType).")
+            putInformation("[i] \(String(localized: "This server could not take Ghostty's terminfo (no tic, or ~/.terminfo not writable); running as \(GhosttyTerminfo.fallbackType).", bundle: .module))")
             return GhosttyTerminfo.fallbackType
         }
     }

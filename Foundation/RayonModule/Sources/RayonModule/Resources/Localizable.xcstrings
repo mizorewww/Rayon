@@ -11858,6 +11858,46 @@
         }
       }
     },
+    "This server could not take Ghostty's terminfo (no tic, or ~/.terminfo not writable); running as %@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This server could not take Ghostty's terminfo (no tic, or ~/.terminfo not writable); running as %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este servidor no ha podido recibir la terminfo de Ghostty (no hay tic o ~/.terminfo no admite escritura); se ejecuta como %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ce serveur n’a pas pu recevoir le terminfo de Ghostty (pas de tic, ou ~/.terminfo non accessible en écriture) : exécution en tant que %@."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このサーバに Ghostty の terminfo をインストールできませんでした（tic がないか、~/.terminfo に書き込めません）。%@ として実行します。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此服务器无法安装 Ghostty 的 terminfo（没有 tic，或 ~/.terminfo 不可写），将以 %@ 运行。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此伺服器無法安裝 Ghostty 的 terminfo（沒有 tic，或 ~/.terminfo 無法寫入），將以 %@ 執行。"
+          }
+        }
+      }
+    },
     "This server has no remote desktop configured." : {
       "localizations" : {
         "es" : {
