@@ -148,9 +148,9 @@ final class ConfigurationRuntimeTests: XCTestCase {
         XCTAssertTrue(settings.applyNow())
         let saved1 = saved()
         XCTAssertEqual(saved1, ["background": ["#123456"]])
-        settings.undo()
+        settings.undoManager.undo()
         XCTAssertFalse(settings.isSet("background"))
-        settings.redo()
+        settings.undoManager.redo()
         XCTAssertEqual(settings.value("background"), "#123456")
         XCTAssertTrue(settings.applyNow())
         // A value Ghostty rejects is shown but neither applied nor saved.
@@ -299,7 +299,6 @@ final class ConfigurationRuntimeTests: XCTestCase {
         XCTAssertTrue(settings.undoManager.canUndo)
         settings.adopt(["background": ["#333333"]])
         XCTAssertFalse(settings.undoManager.canUndo)
-        settings.undo()
         XCTAssertEqual(settings.applied, ["background": ["#333333"]])
 
         settings.set("background", "#444444")

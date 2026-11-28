@@ -178,9 +178,6 @@ public final class TerminalSettings {
         scheduleApply()
     }
 
-    func undo() { if undoManager.canUndo { undoManager.undo() } }
-    func redo() { if undoManager.canRedo { undoManager.redo() } }
-
     /// A short pause after the last change, so dragging a slider does not
     /// reload Ghostty's configuration on every step.
     private func scheduleApply() {
