@@ -21466,7 +21466,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Afficher %@"
+            "value" : "Afficher « %@ »"
           }
         },
         "ja" : {
@@ -21478,13 +21478,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "显示%@"
+            "value" : "显示“%@”"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "顯示%@"
+            "value" : "顯示“%@”"
           }
         }
       }
