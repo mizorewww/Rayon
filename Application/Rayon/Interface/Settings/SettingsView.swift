@@ -58,37 +58,33 @@ struct SettingsView: View {
                     navigation.go(id)
                 })) {
                     ForEach(SettingsPage.sections) { section in
-                        Section {
-                            ForEach(section.pages, id: \.self) { page in
-                                Label(page.title, systemImage: page.icon).tag(page.id)
-                            }
-                        } header: {
-                            if let title = section.title { Text(title) }
-                        }
-                    }
-                }
-                .navigationSplitViewColumnWidth(min: 190, ideal: 215, max: 280)
-            } detail: {
-                ZStack {
-                    RXWindowBackground()
-                        .ignoresSafeArea()
-                    Group {
-                        if search.isEmpty {
-                            // A new page starts at its top; its rows are all new anyway.
-                            SettingsPageView(page: selected) { navigation.go($0.id) }
-                                .id(selected)
+                        if let title = section.title {
+                            Section(title) { rows(section) }
                         } else {
-                            SettingsSearchResults(query: search) { id in
-                                search = ""
-                                navigation.go(id)
-                            }
+                            Section { rows(section) }
                         }
                     }
-                    // Outside the page's identity, so its terminal outlives page switches.
-                    .terminalPreview(isShown: search.isEmpty && selected.previews)
                 }
+                .listStyle(.sidebar)
+                .navigationSplitViewColumnWidth(min: 200, ideal: 215, max: 280)
+            } detail: {
+                Group {
+                    if search.isEmpty {
+                        // A new page starts at its top; its rows are all new anyway.
+                        SettingsPageView(page: selected) { navigation.go($0.id) }
+                            .id(selected)
+                    } else {
+                        SettingsSearchResults(query: search) { id in
+                            search = ""
+                            navigation.go(id)
+                        }
+                    }
+                }
+                // Outside the page's identity, so its terminal outlives page switches.
+                .terminalPreview(isShown: search.isEmpty && selected.previews)
                 .navigationTitle(search.isEmpty ? selected.title : String(localized: "Search"))
-                .rxClearToolbar()
+                // The page on the window's material, as the main window has it.
+                .background(RXWindowBackground().ignoresSafeArea())
                 .toolbar {
                     ToolbarItemGroup(placement: .navigation) {
                         Button { navigation.step(-1) } label: { Label("Back", systemImage: "chevron.left") }
@@ -100,8 +96,16 @@ struct SettingsView: View {
                     }
                 }
             }
-            .searchable(text: $search, placement: .toolbar, prompt: "Search settings")
+            // In the sidebar, as System Settings has it: it stays put when
+            // the sidebar is hidden and shown.
+            .searchable(text: $search, placement: .sidebar, prompt: "Search")
             .frame(minWidth: 720, minHeight: 480)
+        }
+
+        private func rows(_ section: SettingsSection) -> some View {
+            ForEach(section.pages, id: \.self) { page in
+                Label(page.title, systemImage: page.icon).tag(page.id)
+            }
         }
     #else
         private var content: some View {

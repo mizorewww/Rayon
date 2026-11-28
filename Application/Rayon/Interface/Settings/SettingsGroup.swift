@@ -107,8 +107,11 @@ struct SettingsSection: Identifiable {
     let title: String?
     let pages: [SettingsPage]
 
+    /// Not its first page's id: the Mac's sidebar takes a section whose
+    /// identity equals the selection for selected too, and highlighted its
+    /// header together with the first row.
     var id: String {
-        pages.first?.id ?? ""
+        "section:" + (pages.first?.id ?? "")
     }
 }
 
