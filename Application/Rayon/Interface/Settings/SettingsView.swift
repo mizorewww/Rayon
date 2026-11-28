@@ -250,6 +250,10 @@ private struct SettingsSearchResults: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        #if os(iOS)
+            // The Form draws it itself; "No Results" would be on black.
+            .background(RXBackdrop().ignoresSafeArea())
+        #endif
         .task(id: query) {
             // The first query shows at once; later ones wait for a pause.
             if found != nil {
