@@ -3,8 +3,8 @@ import Observation
 
 /// The terminal's settings: each Ghostty option set, with its values, kept
 /// as JSON in the app's Application Support folder. A change is applied to
-/// every open terminal a moment later, once Ghostty accepts it, and only
-/// then saved. Ghostty's config text is made from them in memory.
+/// every open terminal a moment later, once Ghostty accepts it, and saved
+/// right then. Ghostty's config text is made from them in memory.
 @MainActor @Observable
 public final class TerminalSettings {
     public static let shared = TerminalSettings()
@@ -57,8 +57,6 @@ public final class TerminalSettings {
     /// Told the new size when an applied change sets another font size.
     @ObservationIgnored public var onFontSizeChange: ((Double) -> Void)?
     @ObservationIgnored private var pendingApply: Task<Void, Never>?
-    /// The last save, which the next one waits for so they land in order.
-    @ObservationIgnored private var saving: Task<Void, Never>?
 
     private static var folder: URL {
         URL.applicationSupportDirectory
@@ -184,6 +182,12 @@ public final class TerminalSettings {
         }
     }
 
+    /// Applies and saves a change still waiting out its pause: for the app
+    /// to call as it quits or goes to the background.
+    public func flush() {
+        if pendingApply != nil { applyNow() }
+    }
+
     /// Applies what Settings shows to every terminal and saves it.
     @discardableResult
     func applyNow() -> Bool {
@@ -211,43 +215,37 @@ public final class TerminalSettings {
         }
     }
 
-    /// Validates `next` with Ghostty, applies it to every terminal, then
-    /// saves it. Nothing changes when Ghostty rejects it.
+    /// Validates `next` with Ghostty, applies it to every terminal and saves
+    /// it, and only then makes it the applied settings and announces it (to
+    /// sync, say). Nothing changes when Ghostty rejects it or it cannot be
+    /// saved.
     private func commit(_ next: [String: [String]]) throws {
         let oldSize = applied["font-size"]?.last
         try RayonTerminalConfiguration.apply(next)
+        let date = Date()
+        // A small file, written at once: a write left for later could be
+        // lost when the app quits first.
+        do {
+            try Self.write(Stored(values: next, modified: date), to: fileURL)
+        } catch {
+            try? RayonTerminalConfiguration.apply(applied)
+            throw SaveError(message: String(localized: "The terminal settings were not saved: \(error.localizedDescription)", bundle: .module))
+        }
         applied = next
-        modified = Date()
+        modified = date
         issue = nil
-        save()
         NotificationCenter.default.post(name: Self.didChange, object: self)
         if let size = next["font-size"]?.last, size != oldSize, let points = Double(size) {
             onFontSizeChange?(points)
         }
     }
 
-    /// Writes the applied settings off the main actor, after the save before.
-    private func save() {
-        let stored = Stored(values: applied, modified: modified ?? Date())
-        let url = fileURL
-        let previous = saving
-        saving = Task.detached(priority: .utility) { [weak self] in
-            await previous?.value
-            do {
-                try Self.write(stored, to: url)
-            } catch {
-                let message = String(localized: "The terminal settings were not saved: \(error.localizedDescription)", bundle: .module)
-                await MainActor.run { self?.issue = message }
-            }
-        }
+    private struct SaveError: LocalizedError {
+        let message: String
+        var errorDescription: String? { message }
     }
 
-    /// Returns once every change applied so far is saved.
-    public func saved() async {
-        await saving?.value
-    }
-
-    private nonisolated static func write(_ stored: Stored, to url: URL) throws {
+    private static func write(_ stored: Stored, to url: URL) throws {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .prettyPrinted]
         let data = try encoder.encode(stored)

@@ -8,6 +8,7 @@
 //
 
 import RayonModule
+import RayonTerminal
 import SwiftUI
 
 @main
@@ -43,6 +44,8 @@ struct RayonApp: App {
                 .environmentObject(store)
                 .onChange(of: scenePhase) { _, phase in
                     if phase == .active { Telemetry.shared.wake() }
+                    // iOS may end the app in the background without a word.
+                    if phase == .background { TerminalSettings.shared.flush() }
                 }
         }
         #if os(macOS)

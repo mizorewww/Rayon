@@ -139,15 +139,14 @@ final class ConfigurationRuntimeTests: XCTestCase {
         try await Task.sleep(for: .milliseconds(50))
         XCTAssertEqual(native.fontSize, 20, "Reappearance must preserve local toolbar zoom")
     }
-    @MainActor func testChangesApplySaveAndUndo() async throws {
+    @MainActor func testChangesApplySaveAndUndo() throws {
         let settings = try scratchSettings()
-        func saved() async -> [String: [String]] {
-            await settings.saved()
-            return TerminalSettings(fileURL: settings.fileURL, importing: nil).applied
+        func saved() -> [String: [String]] {
+            TerminalSettings(fileURL: settings.fileURL, importing: nil).applied
         }
         settings.set("background", "#123456")
         XCTAssertTrue(settings.applyNow())
-        let saved1 = await saved()
+        let saved1 = saved()
         XCTAssertEqual(saved1, ["background": ["#123456"]])
         settings.undo()
         XCTAssertFalse(settings.isSet("background"))
@@ -159,13 +158,37 @@ final class ConfigurationRuntimeTests: XCTestCase {
         XCTAssertFalse(settings.applyNow())
         XCTAssertNotNil(settings.issue)
         XCTAssertNil(settings.applied["font-size"])
-        let saved2 = await saved()
+        let saved2 = saved()
         XCTAssertNil(saved2["font-size"])
         settings.resetAll()
         XCTAssertTrue(settings.applyNow())
         XCTAssertNil(settings.issue)
-        let saved3 = await saved()
+        let saved3 = saved()
         XCTAssertEqual(saved3, [:])
+    }
+
+    /// A change still waiting out its pause is saved when the app quits,
+    /// and one that cannot be saved is neither applied nor announced.
+    @MainActor func testFlushSavesAndAFailedSaveAppliesNothing() throws {
+        let settings = try scratchSettings()
+        settings.set("background", "#123456")
+        settings.flush()
+        XCTAssertEqual(TerminalSettings(fileURL: settings.fileURL, importing: nil).applied, ["background": ["#123456"]])
+
+        let blocker = FileManager.default.temporaryDirectory.appending(path: "RayonTerminalTests-\(UUID())")
+        try Data().write(to: blocker)
+        defer { try? FileManager.default.removeItem(at: blocker) }
+        let unsaved = TerminalSettings(fileURL: blocker.appending(path: "terminal-settings.json"), importing: nil)
+        var announced = false
+        let observer = NotificationCenter.default.addObserver(forName: TerminalSettings.didChange, object: unsaved, queue: .main) { _ in
+            MainActor.assumeIsolated { announced = true }
+        }
+        defer { NotificationCenter.default.removeObserver(observer) }
+        unsaved.set("background", "#654321")
+        XCTAssertFalse(unsaved.applyNow())
+        XCTAssertNotNil(unsaved.issue)
+        XCTAssertEqual(unsaved.applied, [:])
+        XCTAssertFalse(announced)
     }
 
     @MainActor func testPaletteAndEffectiveColors() throws {

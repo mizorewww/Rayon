@@ -131,7 +131,6 @@ final class TerminalSettingsSyncTests: XCTestCase {
         NotificationCenter.default.post(name: RayonStorage.didMergeRemoteChanges, object: nil)
         XCTAssertEqual(theirs.applied, ["font-size": ["30"], "background": ["#101010"], "keybind": ["clear", "ctrl+k=ignore"]])
 
-        await theirs.saved()
         XCTAssertEqual(TerminalSettings(fileURL: theirs.fileURL, importing: nil).applied, theirs.applied)
         withExtendedLifetime((mySync, theirSync)) {}
     }

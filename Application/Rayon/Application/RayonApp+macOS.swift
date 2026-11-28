@@ -88,6 +88,11 @@
             #endif
         }
 
+        func applicationWillTerminate(_: Notification) {
+            // A setting changed just before ⌘Q is still waiting out its pause.
+            TerminalSettings.shared.flush()
+        }
+
         private func installWindowPolicyObservers() {
             let names: [Notification.Name] = [
                 NSWindow.didBecomeKeyNotification,

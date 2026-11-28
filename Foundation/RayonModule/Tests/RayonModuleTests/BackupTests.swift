@@ -189,7 +189,6 @@ final class BackupTests: XCTestCase {
         XCTAssertNil(restored.value(forKey: AppSettings.connectionTimeout.key))
         XCTAssertNil(restored.value(forKey: AppSettings.syncEnabled.key))
         XCTAssertEqual(restoredTerminal.applied, ["background": ["#123456"], "keybind": ["clear", "ctrl+k=ignore"]])
-        await restoredTerminal.saved()
         XCTAssertEqual(TerminalSettings(fileURL: restoredTerminal.fileURL, importing: nil).applied, restoredTerminal.applied)
     }
 
